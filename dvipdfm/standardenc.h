@@ -51,9 +51,9 @@ static char *standardencoding[256] = {
   "dotlessi", ".notdef", ".notdef", "lslash", "oslash",
   "oe", "germandbls", ".notdef", ".notdef", ".notdef",
   ".notdef"
-}
+};
 
-static char *encoding[256] = {
+static char *isoencoding[256] = {
   ".notdef", ".notdef", ".notdef", ".notdef", ".notdef",
   ".notdef", ".notdef", ".notdef", ".notdef", ".notdef",
   ".notdef", ".notdef", ".notdef", ".notdef", ".notdef",

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.38 1998/12/23 18:45:30 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.39 1998/12/23 20:31:21 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -277,6 +277,18 @@ static void clear_a_pfb (struct a_pfb *pfb)
   }
 }
 
+#include "standardenc.h"
+
+static void do_a_standard_enc(char **glyphs, char **encoding) 
+{
+  int i;
+  for (i=0; i<256; i++) {
+    RELEASE (glyphs[i]);
+    glyphs[i] = NEW (strlen(encoding[i])+1, char);
+    strcpy (glyphs[i], encoding[i]);
+  }
+}
+
 static void parse_glyphs (unsigned char *buffer, unsigned long length,
 			  char **glyphs)
 {
@@ -339,6 +351,12 @@ static void parse_glyphs (unsigned char *buffer, unsigned long length,
 	      is_a_number (ident)) {
 	    last_number = atof (ident);
 	    state = 2;
+	  } else if (state == 1 &&
+		     !strcmp (ident, "StandardEncoding")) {
+	    do_a_standard_enc(glyphs, standardencoding);
+	  } else if (state == 1 &&
+		     !strcmp (ident, "ISOLatin1Encoding")) {
+	    do_a_standard_enc(glyphs, isoencoding);
 	  }
 	  RELEASE (ident);
 	  break;
@@ -1020,14 +1038,18 @@ pdf_obj *type1_font_resource (int type1_id)
 char *type1_font_used (int type1_id)
 {
   int pfb_id;
+  char *result;
   if (type1_id>=0 && type1_id<max_type1_fonts &&
       (pfb_id = type1_fonts[type1_id].pfb_id) >= 0 &&
       (pfb_id <max_pfbs))
-    return (pfbs[pfb_id].used_chars);
-  else {
+    result = pfbs[pfb_id].used_chars;
+  else if (type1_id >= 0 && type1_id < max_type1_fonts){
+    result = NULL;
+  } else {
+    fprintf (stderr, "type1_font_used: type1_id=%d\n", type1_id);
     ERROR ("Invalid font id in type1_font_used");
-    return NULL;
   }
+  return result;
 }
 
 static void mangle_fontname()

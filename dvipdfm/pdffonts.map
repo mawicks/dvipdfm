@@ -70,7 +70,7 @@ pplb8r 8r pplb8a
 % Palatino-BoldItalic
 pplbi8r 8r pplbi8a
 % Palatino-Roman
-pplr8r 8r pplr8a
+%pplr8r 8r pplr8a
 % Palatino-Italic
 pplri8r 8r pplri8a
 % Symbol
@@ -95,3 +95,5 @@ putri8r 8r putri8a
 pzcmi8r 8r pzcmi8a
 % ZapfDingbats
 pzdr none
+% Palatino-Roman
+pplr8r none pplr8a pplr8a

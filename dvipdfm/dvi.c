@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.34 1998/12/23 19:08:06 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.35 1998/12/23 20:31:20 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -42,7 +42,7 @@
 /* Interal Variables */
 
 static FILE *dvi_file;
-static verbose = 0;
+static verbose = 1;
 static debug = 0;
 static unsigned numfonts = 0, stackdepth;
 static unsigned long *page_loc = NULL;

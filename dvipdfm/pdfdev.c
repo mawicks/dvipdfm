@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.51 1998/12/21 06:27:31 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.52 1998/12/23 20:31:21 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -78,7 +78,7 @@ double dev_page_height(void)
   return page_height;
 }
 
-static int debug = 0, verbose = 0;
+static int debug = 1, verbose = 1;
 
 void dev_set_verbose (void)
 {
@@ -266,6 +266,8 @@ void dev_set_string (mpt_t xpos, mpt_t ypos, unsigned char *s, int
   pdf_doc_add_to_page (format_buffer, len);
 
   /* Record characters used for partial font embedding */
+  /* Fonts without pfbs don't get counted and have used_chars set to
+     null */
   if (dev_font[font_id].used_chars != NULL) {
     int i;
     for (i=0; i<length; i++){
