@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.56 1999/09/08 16:51:45 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.57 1999/09/10 02:31:08 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -363,6 +363,38 @@ static void do_args (int argc, char *argv[])
 	pk_set_verbose();
 	pdf_obj_set_verbose();
 	pdf_doc_set_verbose();
+	break;
+      case 'V':
+	{
+	  unsigned level = 2;
+	  if (isdigit (*(flag+1))) {
+	    level = *(++flag) - '0';
+	  } else {
+	    char *result, *end, *start = argv[1];
+	    if (argc < 2) {
+	      fprintf (stderr, "\nVersion specification missing number (2 or 3)\n\n");
+	      usage();
+	    }
+	    end = start + strlen(argv[1]);
+	    result = parse_number (&start, end);
+	    if (result != NULL && start == end) {
+	      level = (int) atof (result);
+	    }
+	    else {
+	      fprintf (stderr, "\nError in number following version specification\n\n");
+	      usage();
+	    }
+	    if (result != NULL) {
+	      RELEASE (result);
+	    }
+	    pop_arg();
+	  }
+	  if (level >= 2 && level <= 3) {
+	    pdf_set_version(level);
+	  } else {
+	    fprintf (stderr, "\nNumber following version specification is out of range\n\n");
+	  }
+	}
 	break;
       case 'z': 
 	{

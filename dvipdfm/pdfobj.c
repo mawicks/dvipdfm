@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.56 1999/09/08 16:51:47 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.57 1999/09/10 02:31:08 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -115,6 +115,14 @@ void pdf_obj_set_compression (int level)
   return;
 }
 
+static pdf_version = 2;
+void pdf_set_version (unsigned version)
+{
+  if (version >= 2 && version <= 3) {
+    pdf_version = version;
+  }
+}
+
 void pdf_obj_set_debug(void)
 {
   debug = 1;
@@ -132,6 +140,7 @@ void pdf_out_init (const char *filename)
 #ifdef MEM_DEBUG
 MEM_START
 #endif
+  char v;
   if (!(pdf_output_file = FOPEN (filename, FOPEN_WBIN_MODE))) {
     if (strlen(filename) < 128) {
       sprintf (format_buffer, "Unable to open %s\n", filename);
@@ -139,7 +148,10 @@ MEM_START
       sprintf (format_buffer, "Unable to open file");
     ERROR (format_buffer);
   }
-  pdf_out (pdf_output_file, "%PDF-1.2\n", 9);
+  pdf_out (pdf_output_file, "%PDF-1.", strlen("%PDF-1."));
+  v = '0'+pdf_version;
+  pdf_out (pdf_output_file, &v, 1);
+  pdf_out (pdf_output_file, "\n", 1);
 #ifdef MEM_DEBUG
 MEM_END
 #endif
@@ -1685,11 +1697,16 @@ void pdf_close (void)
 
 int check_for_pdf (FILE *file) 
 {
+  int result = 0;
   rewind (file);
-  if (fread (work_buffer, sizeof(char), strlen("%PDF-1.2"), file) != 8 ||
-      strncmp(work_buffer, "%PDF-1.", 7) ||
-      work_buffer[7] < '0' || work_buffer[7] > '2')
-    return 0;
-  return 1;
+  if (fread (work_buffer, sizeof(char), strlen("%PDF-1.x"), file) ==
+      strlen("%PDF-1.x") &&
+      !strncmp(work_buffer, "%PDF-1.", strlen("%PDF-1."))) {
+    if (work_buffer[7] >= '0' && work_buffer[7] <= '0'+pdf_version)
+      result = 1;
+    else {
+      fprintf (stderr, "\nVersion of PDF file (1.%c) is newer than version limit specification.\n", work_buffer[7]);
+    }
+  }
+  return result;
 }
-

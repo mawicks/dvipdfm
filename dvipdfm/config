@@ -23,3 +23,7 @@ D "cat %i | gs -q -sDEVICE=pdfwrite -dUseFlateCompression=false -sOutputFile=%o 
 
 % Set default paper size here
 p letter
+
+% PDF version stamp to use in output file and max version of files
+% allowed to be included (2 for 1.2, 3 for 1.3)
+V 3

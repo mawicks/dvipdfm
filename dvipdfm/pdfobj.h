@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.h,v 1.25 1999/09/06 14:48:13 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.h,v 1.26 1999/09/10 02:31:08 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -179,6 +179,7 @@ extern void pdf_close (void);
 extern int pdfobj_escape_str (char *buffer, int size, unsigned char
 			      *s, int len, int remap);
 extern int check_for_pdf (FILE *file);
+extern void pdf_set_version (unsigned version);
 extern pdf_obj *pdf_read_object (unsigned long obj_no);
 
 #endif  /* PDFOBJ_H */

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.21 1999/09/08 16:51:46 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.22 1999/09/10 02:31:08 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1109,58 +1109,15 @@ static int do_operator(char *token)
   return !error;
 }
 
-static char line_buffer[1024];
-int parse_contents (FILE *image_file)
-{
-  int error = 0;
-  top_stack = 0;
-  x_state = 0.0;
-  y_state = 0.0;
-  state = 0;
-  while (!feof(image_file) && mfgets (line_buffer, sizeof(line_buffer),
-				      image_file)) {
-    char *start, *end, *token, *save;
-    pdf_obj *obj;
-    start = line_buffer;
-    end = start+strlen(line_buffer);
-    skip_white (&start, end);
-    while (start < end && !error) {
-      save = start;
-      if (isdigit (*start) || *start == '-' || *start == '.' ) {
-	token = parse_number (&start, end);
-	PUSH (pdf_new_number(atof(token)));
-	RELEASE (token);
-      } else if (*start == '[' && /* This code assumes that arrays are contained on one line */
-		 (obj = parse_pdf_array (&start, end))) {
-	PUSH (obj);
-      } else if (*start == '(' &&
-		 (obj = parse_pdf_string (&start, end))) {
-	PUSH (obj);
-      } else {
-	token = parse_ident (&start, end);
-	if (!do_operator (token)) {
-	  error = 1;
-	}
-	RELEASE (token);
-      }
-      skip_white (&start, end);
-    }
-    if (start < end)
-      dump (start, end);
-  }
-  return !error;
-}
-
-int do_raw_ps_special (char **start, char* end, int cleanup)
+static void do_one_ps_line (char **start, char *end)
 {
   char *token, *save = NULL;
-  int error = 0;
   pdf_obj *obj;
-  state = 0;
+  int error = 0;
   skip_white (start, end);
   while (*start < end && !error) {
     save = *start;
-    if (isdigit (**start) || **start == '-' || **start == '.') {
+    if (isdigit (**start) || **start == '-' || **start == '.' ) {
       token = parse_number (start, end);
       PUSH (pdf_new_number(atof(token)));
       RELEASE (token);
@@ -1179,9 +1136,33 @@ int do_raw_ps_special (char **start, char* end, int cleanup)
     }
     skip_white (start, end);
   }
-  if (save && *start < end) {
-    dump (save, end);
+  if (*start < end)
+    dump (*start, end);
+}
+
+static char line_buffer[1024];
+int parse_contents (FILE *image_file)
+{
+  int error = 0;
+  top_stack = 0;
+  x_state = 0.0;
+  y_state = 0.0;
+  state = 0;
+  while (!feof(image_file) && mfgets (line_buffer, sizeof(line_buffer),
+				      image_file)) {
+    char *start, *end;
+    start = line_buffer;
+    end = start+strlen(line_buffer);
+    do_one_ps_line (&start, end);
   }
+  return !error;
+}
+
+int do_raw_ps_special (char **start, char* end, int cleanup)
+{
+  int error = 0;
+  state = 0;
+  do_one_ps_line (start, end);
   if (cleanup)
     mp_cleanup(1);
   return !error;
