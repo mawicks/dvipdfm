@@ -1,3 +1,12 @@
+July 8, 2000 - Version 0.12.8
+
+   The primary change in this release involves fixing file inclusion
+so that it works with the older TeXfig style specials used by the
+psfig macros.  Other changes include fixing several bugs in metapost
+file inclusion, bugs in the parsing of colormaps of PDF files to be
+embedded, and a bug that could cause characters to disappear under
+certain conditions.  Work on a problem that affects use of XYPIC
+is in progress.
 
    WARNING: THE LATEX SUPPORT FILE NAMED DVIPDFM.DEF HAS CHANGED IN VERSION
 	    0.12 TO BE MORE COMPATIBLE WITH DVIPS AND OTHER DVI DRIVERS.  IT
