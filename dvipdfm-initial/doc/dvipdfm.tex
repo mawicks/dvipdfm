@@ -1,4 +1,4 @@
-% $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/doc/dvipdfm.tex,v 1.15 1998/11/22 07:38:19 mwicks Exp $
+% $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/doc/dvipdfm.tex,v 1.16 1998/11/23 02:32:20 mwicks Exp $
 \special{  pdf:  docview <</PageMode /UseOutlines>>}%
 \catcode`\ =11\def\space{ }\catcode`\ =10
 % Page layout
@@ -15,6 +15,29 @@
 \setbox0\hbox{\c\char13}\skip0\wd0\box0\setbox0\hbox{\r R}\advance\skip0 by
 \wd0\kern-0.5\skip0\box0}}
 \def\tm{{\font\r=cmss10 at 4pt \hbox{\r TM}}}%
+%
+% Verbatim mode borrowed from manmac macros
+%
+\outer\def\begindisplay{\obeylines\startdisplay}
+{\obeylines\gdef\startdisplay#1
+  {\catcode`\^^M=5$$#1\halign\bgroup\indent##\hfil&&\qquad##\hfil\cr}}
+\outer\def\enddisplay{\crcr\egroup$$}
+\chardef\other=12
+\def\ttverbatim{\begingroup \catcode`\\=\other \catcode`\{=\other
+ \catcode`\}=\other \catcode`\$=\other \catcode `\&=\other
+ \catcode`\#=\other \catcode`\%=\other \catcode `\~=\other
+ \catcode`\_=\other \catcode`\^=\other
+  \obeyspaces \obeylines \tt}
+{\obeyspaces\gdef {\ }}
+\outer\def\begintt{$$\let\par=\endgraf\ttverbatim \parskip=0pt
+ \catcode`\|=0 \rightskip=-5pc \ttfinish}
+{\catcode`\|=0 |catcode`|\=\other
+ |obeylines % end of line is now active
+ |gdef|ttfinish#1^^M#2\endtt{#1|vbox{#2}|endgroup$$}}
+\catcode`\|=\active
+{\obeylines\gdef|{\ttverbatim\spaceskip=\ttglue\let^^M=\ \let|=\endgroup}}
+\newskip\ttglue
+\ttglue=0.5em plus 0.25em minus 0.15em
 %
 %
 % Some color definitions
@@ -59,8 +82,8 @@
 \newskip\indentlevel\indentlevel=\parindent
 \newskip\secskip\secskip=24pt plus 1pt minus 2pt
 \newskip\subsecskip\subsecskip=16pt plus 1pt minus 2pt
-\def\beginlist{\par\advance\leftskip by \indentlevel\advance\rightskip by
-\indentlevel\medskip}
+\def\beginlist{\par\nobreak\advance\leftskip by \indentlevel\advance\rightskip by
+\indentlevel\medskip\nobreak}
 \def\endlist{\par\advance\leftskip by -\indentlevel\advance\rightskip by
 -\indentlevel\medskip}
 %
@@ -110,48 +133,47 @@
           #1}\par\nobreak\smallskip}%
 %
 \def\display#1{\medskip\line{\quad #1\hfil}\medskip}
-\def\example{\medskip\noindent{\it Example:\quad\nobreak}}
+\def\example{\medskip\noindent{\it Example:\quad}\nobreak}
 \def\note{\medskip\noindent{\it Note:\quad\nobreak}}
-\def\syntax{\medskip\noindent{\it Syntax:\quad}}
-\def\description{\medskip\noindent{\it Description:\quad}}
+\def\syntax{\medskip\noindent{\it Syntax:\quad}\nobreak}
+\def\description{\medskip\noindent{\it Description:\quad}\nobreak}
 %
 \def\newpage{\vfill\eject}
 %
 \def\dvipdfm{{\tt dvipdfm}}%
-\input verbatim
 %
 \title{Dvipdfm User's Manual}
 \author{Mark A. Wicks}
-\version{Version 0.7dev}
+\version{Version 0.7}
 \date{November, 1998}
 \maketitle
 \section{Introduction}
-\vskip 2in
-\special{pdf:epdf scale 0.5 (xp56ref.pdf)}
-\hbox{}\vskip 2in
 This package is a DVI (\TeX) to PDF conversion utility,
 having the following features:
 
-% \special{pdf: epdf (5004.AFM_Spec.pdf) }
-
 \beginlist
-\item{$\bullet$} Support for outline (bookmark) entries, named destinations,
-and \link{annotations}{annotate} (including hyperlinks, forms and widgets).  Nearly
+\item{$\bullet$} {\it Support for outline entries (also called bookmarks), named destinations,
+and \link{annotations}{annotate} (including hyperlinks, forms and widgets).}  Nearly
 every Acrobat Distiller pdfmark is approximated.
 
-\item{$\bullet$} Support for arbitrary, nested linear transformations
-of typeset material.  Any material on the page, including
+\item{$\bullet$} {\it Support for arbitrary, nested linear transformations
+of typeset material.}  Any material on the page, including
 \TeX\ text, may be \link{scaled}{textxform} \link{and}{textxform} \link{rotated}{textxform}.
 
-\item{$\bullet$} Ability to include a \link{PDF file}{pdfimage} as
-an encapsulated object along with its embedded resources such as fonts.
-Note:  Currently, this doesn't work for linearized PDF files or
-second generation PDF files.
+\item{$\bullet$} {\it Ability to include the first page of a \link{PDF file}{pdfimage} as
+an encapsulated object along with its embedded resources such as fonts.}
+Note:  Currently, this doesn't work of the contents stream
+has multiple segments. 
 
-\item{$\bullet$} Ability to include a \link{JPEG image}{jpegimage} as an encapsulated
-object.
+\item{$\bullet$} {\it Ability to include a \link{JPEG image}{jpegimage} as an encapsulated
+object.}
 
-\item{$\bullet$} A color stack.
+\item{$\bullet$} {\it A color stack.} A color stack allows you to change the current color, pushing the
+current color onto a stack.  At any time, the original color
+can be popped from the stack.  This is useful, for example, in
+headlines, that may have a different color from the current text.
+The headline macro can restore the current color without knowing
+what it is.
 \endlist
 
 The electronic version of the document exercises
@@ -476,7 +498,7 @@ and cannot immediately follow a level 1 outline entry.
 \subsection{Put}
 \syntax
 \beginlist
-{\tt put} @{\it name} {\it PDF\_Object}
+{\tt put} @{\it name} {\it PDF\_Object}+
 \endlist
 or 
 \beginlist
@@ -485,8 +507,9 @@ or
 \description
 The |put| command modifies an existing PDF object created with |obj|.
 The first form is used when @{\it name} is an array.  The second
-form is used when @{\tt name} is a dictionary.  Arrays are
-incremented one object at a time.  All keys in {\it PDF\_Dictionary}
+form is used when @{\tt name} is a dictionary.  More than
+one object may be added to an array at once.
+All keys in {\it PDF\_Dictionary}
 are added to the dictionary represented by @{\it name}.
 \example
 \begintt
@@ -777,13 +800,13 @@ so the images are actually scaled by 1.095.  The first
 image in this section has a printed width of 1.643in
 even though 1.50in was specified in the |\special|.
 
-Several command line utilities are available to read
+Several command line utilities exist that read
 the pixel dimensions of a JPEG file.  For PDF files,
 you can |grep| on |/MediaBox| to get an indication
 of the image size.  The |/MediaBox| dimensions are
 in PDF points.
 
-\link{Figure~3}{pdfimage} was produced by embedding a PDF file
+The image in \link{Figure~3}{pdfimage} was produced by embedding a PDF file
 using |epdf|.
 
 \topinsert
