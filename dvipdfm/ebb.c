@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.16 1999/02/09 03:24:06 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.17 1999/02/09 03:33:02 mwicks Exp $
 
     This is ebb, a bounding box extraction program.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -62,7 +62,7 @@ char *extensions[] = {
   ".jpeg", ".JPEG", ".jpg", ".JPG", ".pdf", ".PDF"
 };
 
-static char *make_bb_filename (char *name)
+static char *make_bb_filename (const char *name)
 {
   int i;
   char *result;
