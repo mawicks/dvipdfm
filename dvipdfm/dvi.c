@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.18 1998/12/10 22:29:32 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.19 1998/12/10 23:04:28 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -1139,6 +1139,7 @@ void dvi_do_page(int n)  /* Most of the work of actually interpreting
 	ERROR("Unexpected opcode or DVI file ended prematurely");
       }
   }
+}
 
 /* The following are need to implement virtual fonts
    According to documentation, the vf "subroutine"
@@ -1147,7 +1148,7 @@ void dvi_do_page(int n)  /* Most of the work of actually interpreting
    is determined by the virtual font header, which
    may be undefined */
 
-static int saved_dvi_font;
+  static int saved_dvi_font;
 
 void dvi_vf_init (int dev_font_id)
 {

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.17 1998/12/10 22:29:32 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.18 1998/12/10 23:04:29 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -87,7 +87,7 @@ static void release_array (pdf_array *data);
 static void write_dict (FILE *file, const pdf_dict *dict);
 static void release_dict (pdf_dict *data);
 
-static void write_stream (FILE *file, const pdf_stream *stream);
+static void write_stream (FILE *file, pdf_stream *stream);
 static void release_stream (pdf_stream *stream);
 static int pdf_match_name (const pdf_obj *name_obj, const char *name);  /* Name does not include the / */
 
@@ -860,31 +860,28 @@ pdf_obj *pdf_new_stream (void)
   pdf_add_dict (data->dict,
 		pdf_new_name ("Length"),
 		pdf_ref_obj (data -> length));
-  if ((data -> tmpfile = tmpfile()) == NULL) {
+  /*  if ((data -> tmpfile = tmpfile()) == NULL) {
     ERROR ("pdf_new_stream:  Could not create temporary file");
-  };
+    }; */
+  data -> stream_length = 0;
+  data -> max_length = 0;
+  data -> stream = NULL;
   return result;
 }
 
-static void write_stream (FILE *file, const pdf_stream *stream)
+static void write_stream (FILE *file, pdf_stream *stream)
 {
-  int length = 0, nwritten = 0, lastchar = 0;
   pdf_write_obj (file, stream -> dict);
   pdf_out (file, "\nstream\n", 8);
-  rewind (stream -> tmpfile);
-  while ((nwritten = fread (work_buffer, sizeof (char),
-			    WORK_BUFFER_SIZE,
-			    stream -> tmpfile)) > 0) {
-    pdf_out (file, work_buffer, nwritten);
-    length += nwritten;
-    lastchar = work_buffer[nwritten-1];
+  if (stream -> stream_length > 0) {
+    pdf_out (file, stream -> stream, stream -> stream_length);
+/* If stream doesn't have an eol, put one there */
+    if ((stream->stream)[stream->stream_length] != '\n') {
+      pdf_out (file, "\n", 1);
+      stream->stream_length +=1;
+    }
   }
-  /* If stream doesn't have an eol, put one there */
-  if (lastchar != '\n') {
-    pdf_out (file, "\n", 1);
-    length +=1;
-  }
-  pdf_set_number (stream -> length, length);
+  pdf_set_number (stream -> length, stream->stream_length);
   pdf_out (file, "endstream", 9);
 }
 
@@ -893,7 +890,8 @@ static void release_stream (pdf_stream *stream)
 {
   pdf_release_obj (stream -> dict);
   pdf_release_obj (stream -> length);
-  fclose (stream -> tmpfile);
+/*  fclose (stream -> tmpfile); */
+  RELEASE (stream -> stream);
   RELEASE (stream);
 }
 
@@ -916,7 +914,13 @@ void pdf_add_stream (pdf_obj *stream, char *stream_data, unsigned length)
   if (length == 0)
     return;
   data = stream -> data;
-  fwrite (stream_data, 1, length, data -> tmpfile);
+  if (data -> stream_length + length > data -> max_length) {
+    data -> max_length += length + STREAM_ALLOC_SIZE;
+    data -> stream = RENEW (data -> stream, data->max_length, char);
+  }
+  memcpy ((data->stream)+(data->stream_length), stream_data,
+	  length);
+  data->stream_length += length;
 }
 
 void pdf_write_obj (FILE *file, const pdf_obj *object)
