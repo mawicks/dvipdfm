@@ -16,7 +16,7 @@
  /Theta /Lambda /Xi /Pi /Sigma /Upsilon /Phi /Psi /Omega /ff
  /fi /fl /ffi /ffl /dotlessi /dotlessj /grave /acute /caron /breve
  /macron /ring /cedilla /germandbls /ae /oe /oslash /AE /OE /Oslash
- /space /Gamma  /Delta  /Theta  /Lambda  /Xi  /Pi  /Sigma  /Upsilon /Phi
+ /suppress /Gamma  /Delta  /Theta  /Lambda  /Xi  /Pi  /Sigma  /Upsilon /Phi
  /Psi /.notdef /.notdef /Omega  /ff  /fi  /fl  /ffi  /ffl  /dotlessi
  /dotlessj /grave /acute  /caron  /breve  /macron  /ring  /cedilla /germandbls  /ae
  /oe  /oslash /AE  /OE  /Oslash /suppress /dieresis /.notdef  /.notdef /.notdef
