@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.h,v 1.3 1998/11/29 08:54:31 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.h,v 1.4 1998/11/29 09:21:48 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -71,7 +71,7 @@ typedef struct pdf_number pdf_number;
 
 struct pdf_string
 {
-  char *string;
+  unsigned char *string;
   unsigned length;
 };
 typedef struct pdf_string pdf_string;
@@ -141,7 +141,7 @@ double pdf_number_value (pdf_obj *number);
 
 char *pdf_name_value (pdf_obj *object);
 
-pdf_obj *pdf_new_string (const char *string, unsigned length);
+pdf_obj *pdf_new_string (const unsigned char *string, unsigned length);
 void pdf_set_string (pdf_obj *object, char *string, unsigned length);
 char *pdf_string_value (pdf_obj *object);
 
@@ -182,7 +182,7 @@ void pdf_write_obj (FILE *file, const pdf_obj *object);
 pdf_obj *pdf_open (char *filename);
 void pdf_close (void);
 
-int pdfobj_escape_c (char *buffer, char ch);
+int pdfobj_escape_c (char *buffer, unsigned char ch);
 int check_for_pdf (FILE *file);
 
 #endif  /* PDFOBJ_H */

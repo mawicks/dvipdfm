@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.3 1998/11/29 08:54:30 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.4 1998/11/29 09:21:48 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -422,9 +422,7 @@ double pdf_number_value (pdf_obj *object)
   return ((pdf_number *)(object -> data)) -> value;
 }
 
-
-
-pdf_obj *pdf_new_string (const char *string, unsigned length)
+pdf_obj *pdf_new_string (const unsigned char *string, unsigned length)
 {
   pdf_obj *result;
   pdf_string *data;
@@ -451,7 +449,7 @@ char *pdf_string_value (pdf_obj *a_pdf_string)
 }
 
 
-int pdfobj_escape_c (char *buffer, char ch)
+int pdfobj_escape_c (char *buffer, unsigned char ch)
 {
   switch (ch) {
   case '(':
@@ -482,7 +480,7 @@ int pdfobj_escape_c (char *buffer, char ch)
 
 static void write_string (FILE *file, const pdf_string *string)
 {
-  char *s = string -> string;
+  unsigned char *s = string -> string;
   int i, count;
   pdf_out_char (file, '(');
   for (i=0; i< string -> length; i++) {
