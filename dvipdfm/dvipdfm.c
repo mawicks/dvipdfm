@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.52 1999/09/05 02:56:35 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.53 1999/09/05 21:01:21 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -133,8 +133,12 @@ struct page_range
 } *page_ranges = NULL;
 int max_page_ranges = 0, num_page_ranges = 0;
 
-#define pop_arg() {argv += 1; argc -= 1;}
+void set_landscape_mode (void)
+{
+  dev_set_page_size (paper_height, paper_width);
+}
 
+#define pop_arg() {argv += 1; argc -= 1;}
 static void do_args (int argc, char *argv[])
 {
   char *flag;

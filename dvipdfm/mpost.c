@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.16 1999/09/05 18:02:44 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.17 1999/09/05 21:01:21 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1083,8 +1083,8 @@ static int do_operator(char *token)
     PUSH (pdf_new_string (token, strlen(token)));
     break;
   default: 
-    fprintf (stderr, "\nUnknown PS operator: \"%s\"\n", token);
-    fprintf (stderr, "\nUnknown PS operator: %d\n", operator);
+    fprintf (stderr,
+	     "\nIgnoring remaining special text following unknown PS operator: \"%s\"\n", token);
     error = 1;
     break;
   }
@@ -1101,12 +1101,13 @@ int parse_contents (FILE *image_file)
   state = 0;
   while (!feof(image_file) && mfgets (line_buffer, sizeof(line_buffer),
 				      image_file)) {
-    char *start, *end, *token;
+    char *start, *end, *token, *save;
     pdf_obj *obj;
     start = line_buffer;
     end = start+strlen(line_buffer);
     skip_white (&start, end);
     while (start < end && !error) {
+      save = start;
       if (isdigit (*start) || *start == '-') {
 	token = parse_number (&start, end);
 	PUSH (pdf_new_number(atof(token)));
@@ -1119,24 +1120,28 @@ int parse_contents (FILE *image_file)
 	PUSH (obj);
       } else {
 	token = parse_ident (&start, end);
-	if (!do_operator (token))
+	if (!do_operator (token)) {
 	  error = 1;
+	}
 	RELEASE (token);
       }
       skip_white (&start, end);
     }
+    if (start < end)
+      dump (start, end);
   }
   return !error;
 }
 
 int do_raw_ps_special (char **start, char* end, int cleanup)
 {
-  char *token;
+  char *token, *save;
   int error = 0;
   pdf_obj *obj;
   state = 0;
   skip_white (start, end);
   while (*start < end && !error) {
+    save = *start;
     if (isdigit (**start) || **start == '-') {
       token = parse_number (start, end);
       PUSH (pdf_new_number(atof(token)));
@@ -1155,6 +1160,9 @@ int do_raw_ps_special (char **start, char* end, int cleanup)
       RELEASE (token);
     }
     skip_white (start, end);
+  }
+  if (*start < end) {
+    dump (save, end);
   }
   if (cleanup)
     mp_cleanup(1);

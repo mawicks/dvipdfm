@@ -35,6 +35,7 @@ dvi.c
 dvi.h
 dvicodes.h
 dvipdfm.c
+dvipdfm.h
 ebb.c
 epdf.c
 epdf.h
