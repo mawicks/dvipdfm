@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.8 1998/12/03 02:40:39 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.9 1998/12/03 02:51:53 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -340,7 +340,6 @@ static int parse_dimension (char **start, char *end,
 
 static void do_pagesize(char **start, char *end)
 {
-  pdf_obj *rectangle;
   struct xform_info *p;
   p = new_xform_info();
   skip_white(start, end);
