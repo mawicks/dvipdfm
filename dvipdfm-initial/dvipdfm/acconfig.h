@@ -1,1 +1,0 @@
-/* acconfig.h.  Generated automatically by configure.  */
