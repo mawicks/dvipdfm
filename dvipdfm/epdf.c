@@ -44,7 +44,7 @@ pdf_obj *pdf_include_page(pdf_obj *trailer, double x_user, double y_user,
 			  struct xform_info *p)
 {
   pdf_obj *catalog, *page_tree, *kids_ref, *kids;
-  pdf_obj *media_box, *resources, *contents, *contents_ref;
+  pdf_obj *media_box = NULL, *crop_box = NULL, *resources, *contents, *contents_ref;
   pdf_obj *this_form_contents;
   pdf_obj *tmp1;
 #ifdef MEM_DEBUG
@@ -65,7 +65,10 @@ MEM_START
   pdf_release_obj (catalog);
   /* Media box and resources can be inherited so start looking for
      them here */
-  media_box = pdf_deref_obj (pdf_lookup_dict (page_tree, "MediaBox"));
+  if ((tmp1 = pdf_lookup_dict (page_tree, "CropBox")))
+    crop_box = pdf_deref_obj (tmp1);
+  if ((tmp1 = pdf_lookup_dict (page_tree, "MediaBox")))
+    media_box = pdf_deref_obj (tmp1);
   resources = pdf_deref_obj (pdf_lookup_dict (page_tree, "Resources"));
   if (resources == NULL) {
     resources = pdf_new_dict();
@@ -81,6 +84,12 @@ MEM_START
       pdf_release_obj (media_box);
     if (tmp1) 
       media_box = tmp1;
+    /* Do same for CropBox */
+    tmp1 = pdf_deref_obj(pdf_lookup_dict (page_tree, "CropBox"));
+    if (tmp1 && crop_box)
+      pdf_release_obj (crop_box);
+    if (tmp1) 
+      crop_box = tmp1;
     /* Add resources if they're here */
     tmp1 = pdf_deref_obj (pdf_lookup_dict (page_tree, "Resources"));
     if (tmp1) {
@@ -89,8 +98,15 @@ MEM_START
       resources = tmp1;
     }
   }
-  /* At this point, page_tree contains the first page.  media_box and
-     resources should also be set. */
+  /* At this point, page_tree contains the first page.  media_box,
+     crop_box,  and resources should also be set. */
+  /* If there's a crop_box, replace media_box with crop_box.
+     The rest of this routine assumes crop_box has been released */
+  if (crop_box) {
+    pdf_release_obj (media_box);
+    media_box = crop_box;
+    crop_box = NULL;
+  }
   /* Adjust scaling information as necessary */
   do_scaling (media_box, p);
   if ((contents =
@@ -105,9 +121,12 @@ MEM_START
     int i=0;
     if (1) {
       fprintf (stderr, "\nCan't handle content streams with multiple segments\n");
-      pdf_release_obj (media_box);
-      pdf_release_obj (resources);
-      pdf_release_obj (contents);
+      if (media_box)
+	pdf_release_obj (media_box);
+      if (resources)
+	pdf_release_obj (resources);
+      if (contents)
+	pdf_release_obj (contents);
       return NULL;
     }
     pdf_doc_add_to_page (" q", 2);

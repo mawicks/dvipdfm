@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.44 1999/01/25 22:41:44 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.45 1999/01/26 16:20:56 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -1450,6 +1450,7 @@ static void extend_xref (long new_size)
     xref_table[i].direct = NULL;
     xref_table[i].indirect = NULL;
     xref_table[i].used = 0;
+    xref_table[i].position = 0;
   }
   num_input_objects = new_size;
 }
@@ -1470,36 +1471,56 @@ static int parse_xref (void)
     return 0;
   }
   /* Next line in file has first item and size of table */
-  mfgets (work_buffer, WORK_BUFFER_SIZE, pdf_input_file);
-  sscanf (work_buffer, "%ld %ld", &first_obj, &num_table_objects);
-  if (num_input_objects < first_obj+num_table_objects) {
-    extend_xref (first_obj+num_table_objects);
-  }
-  if (debug) {
-    fprintf (stderr, "\nfirstobj=%ld,number=%ld\n",
-	     first_obj,num_table_objects);
-  }
-  
-  for (i=first_obj; i<first_obj+num_table_objects; i++) {
-    fread (work_buffer, sizeof(char), 20, pdf_input_file);
-    work_buffer[19] = 0;
-    sscanf (work_buffer, "%ld %d", &(xref_table[i].position), 
-	    &(xref_table[i].generation));
-    if (0) {
-      fprintf (stderr, "pos: %ld gen: %d\n", xref_table[i].position,
-	       xref_table[i].generation);
+  while (1) {
+    unsigned long current_pos;
+    current_pos = tell_position (pdf_input_file);
+    if (mfgets (work_buffer, WORK_BUFFER_SIZE, pdf_input_file) ==
+	NULL)
+      ERROR ("parse_xref: premature end of PDF file while parsing xref");
+    if (!strncmp (work_buffer, "trailer", strlen ("trailer"))) {
+      /* Backup... This is ugly, but it seems like the safest thing to
+	 do.  It is possible the trailer dictionary starts on the same
+	 logical line as the word trailer.  In that case, the mfgets
+	 call might have started to read the trailer dictionary and
+	 parse_trailer would fail */
+      seek_absolute (pdf_input_file, current_pos);
+      break;
     }
-    if (work_buffer[17] != 'n' && work_buffer[17] != 'f') {
-      fprintf (stderr, "PDF file is corrupt\n");
-      fprintf (stderr, "[%s]\n", work_buffer);
-      return 0;
+    sscanf (work_buffer, "%ld %ld", &first_obj, &num_table_objects);
+    if (num_input_objects < first_obj+num_table_objects) {
+      extend_xref (first_obj+num_table_objects);
     }
-    if (work_buffer[17] == 'n')
-      xref_table[i].used = 1;
-    else
-      xref_table[i].used = 0;
-    xref_table[i].direct = NULL;
-    xref_table[i].indirect = NULL;
+    if (debug) {
+      fprintf (stderr, "\nfirstobj=%ld,number=%ld\n",
+	       first_obj,num_table_objects);
+    }
+    for (i=first_obj; i<first_obj+num_table_objects; i++) {
+      fread (work_buffer, sizeof(char), 20, pdf_input_file);
+      /* Don't overwrite positions that have already been set by a
+	 modified xref table.  We are working our way backwards
+	 through the reference table, so we only set "position" 
+	 if it hasn't been set yet. */
+      if (xref_table[i].position == 0) {
+	work_buffer[19] = 0;
+	sscanf (work_buffer, "%ld %d", &(xref_table[i].position), 
+		&(xref_table[i].generation));
+      }
+      if (debug) {
+	fprintf (stderr, "pos: %ld gen: %d\n", xref_table[i].position,
+		 xref_table[i].generation);
+      }
+      if (work_buffer[17] != 'n' && work_buffer[17] != 'f') {
+	fprintf (stderr, "PDF file is corrupt\n");
+	fprintf (stderr, "[%s]\n", work_buffer);
+	return 0;
+      }
+      if (work_buffer[17] == 'n')
+	xref_table[i].used = 1;
+      else
+	xref_table[i].used = 0;
+      xref_table[i].direct = NULL;
+      xref_table[i].indirect = NULL;
+    }
   }
   return 1;
 }

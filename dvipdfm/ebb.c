@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.12 1999/01/11 02:10:28 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.13 1999/01/26 16:20:56 mwicks Exp $
 
     This is ebb, a bounding box extraction program.
     Copyright (C) 1998  by Mark A. Wicks
@@ -32,7 +32,7 @@
 #include "numbers.h"
 
 #define EBB_PROGRAM "ebb"
-#define EBB_VERSION "Version 0.2"
+#define EBB_VERSION "Version 0.3"
 
 static void usage (void)
 {
@@ -139,7 +139,7 @@ void do_jpeg (FILE *file, char *filename)
 
 void do_pdf (FILE *file, char *filename)
 {
-  pdf_obj *trailer, *catalog, *page_tree, *media_box;
+  pdf_obj *trailer, *catalog, *page_tree, *media_box, *crop_box;
   pdf_obj *kids_ref, *kids, *tmp1;;
   if (verbose) {
     fprintf (stderr, "%s looks like a PDF file...", filename);
@@ -160,6 +160,7 @@ void do_pdf (FILE *file, char *filename)
   pdf_release_obj (catalog);
   /* Media box can be inherited so start looking for it now */
   media_box = pdf_deref_obj (pdf_lookup_dict (page_tree, "MediaBox"));
+  crop_box = pdf_deref_obj (pdf_lookup_dict (page_tree, "MediaBox"));
   while ((kids_ref = pdf_lookup_dict (page_tree, "Kids")) != NULL) {
     kids = pdf_deref_obj (kids_ref);
     pdf_release_obj (page_tree);
@@ -171,10 +172,21 @@ void do_pdf (FILE *file, char *filename)
       pdf_release_obj (media_box);
     if (tmp1) 
       media_box = tmp1;
+    /* Likewise for CropBox */
+    tmp1 = pdf_deref_obj(pdf_lookup_dict (page_tree, "CropBox"));
+    if (tmp1 && crop_box)
+      pdf_release_obj (crop_box);
+    if (tmp1) 
+      crop_box = tmp1;
   }
   /* At this point, we should have the media box for the first page */ 
   {
     pdf_obj *bbllx, *bblly, *bburx, *bbury;
+    if (crop_box) {
+      pdf_release_obj (media_box);
+      media_box = crop_box;
+      crop_box = NULL;
+    }
     if ((bbllx = pdf_get_array (media_box, 0)) == NULL ||
 	(bblly = pdf_get_array (media_box, 1)) == NULL ||
 	(bburx = pdf_get_array (media_box, 2)) == NULL ||
