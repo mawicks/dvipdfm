@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tpic.c,v 1.1 1999/01/20 06:09:47 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tpic.c,v 1.2 1999/01/22 00:46:51 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -104,8 +104,6 @@ MEM_START
     }
     path[path_length].x = atof(x)*MI2PT;
     path[path_length].y = atof(y)*MI2PT;
-    fprintf (stderr, "added x=%g, y=%g\n", path[path_length].x,
-	     path[path_length].y);
     path_length += 1;
   } else {
     dump (*buffer, end);
@@ -117,7 +115,23 @@ MEM_END
   return;
 }
 
-static void flush_path (double x_user, double y_user, int hidden)
+static void show_path (int hidden) 
+{
+  if (!hidden && fill_shape) {
+    pdf_doc_add_to_page (" b", 2);
+  }
+  if (hidden && fill_shape) {
+    pdf_doc_add_to_page (" f", 2);
+  }
+  if (!hidden && !fill_shape)
+    pdf_doc_add_to_page (" S", 2);
+  if (fill_shape)
+    fill_shape = 0;
+}
+
+
+static void flush_path (double x_user, double y_user, int hidden,
+			double dash_dot)
 {
   int len;
 MEM_START
@@ -125,6 +139,15 @@ MEM_START
     int i;
     len = sprintf (work_buffer, " q 1.4 M %.2f w", pen_size);
     pdf_doc_add_to_page (work_buffer, len);
+    if (dash_dot != 0.0) {
+      if (dash_dot > 0.0) {
+	len = sprintf (work_buffer, " [%.1f %.1f] 0 d", dash_dot, dash_dot/3.0);
+      } else {
+	len = sprintf (work_buffer, " [%.1f %.1f] 0 d 1 J", pen_size,
+		       -dash_dot);
+      }
+      pdf_doc_add_to_page (work_buffer, len);
+    }
     if (fill_shape) {
       len = sprintf (work_buffer, " %.2f g", fill_color);
       pdf_doc_add_to_page (work_buffer, len);
@@ -142,16 +165,7 @@ MEM_START
       path_length = 0;
       max_path_length = 0;
     }
-    if (!hidden && fill_shape) {
-      pdf_doc_add_to_page (" b", 2);
-    }
-    if (hidden && fill_shape) {
-      pdf_doc_add_to_page (" f", 2);
-    }
-    if (!hidden && !fill_shape)
-      pdf_doc_add_to_page (" S", 2);
-    if (fill_shape)
-      fill_shape = 0;
+    show_path (hidden);
     pdf_doc_add_to_page (" Q", 2);
   } else {
     fprintf (stderr, "tpic special: fp: Not enough points!\n");
@@ -160,6 +174,68 @@ MEM_END
   return;
 }
 
+static void arc (char **buffer, char *end, double x_user, double
+		 y_user, int hidden) 
+{
+  char *xcs= NULL, *ycs= NULL,
+    *xrs=NULL, *yrs=NULL, *sas=NULL, *eas=NULL;
+  char *save;
+  double xc, yc, xr, yr, sa, ea;
+MEM_START
+  save = *buffer;
+  if ((xcs=parse_number(buffer, end)) &&
+      (ycs=parse_number(buffer, end)) &&
+      (xrs=parse_number(buffer, end)) &&
+      (yrs=parse_number(buffer, end)) &&
+      (sas=parse_number(buffer, end)) &&
+      (eas=parse_number(buffer, end))) {
+    double c, s, cur_x, cur_y, inc_ang;
+    double cp1_x, cp1_y, cp2_x, cp2_y;
+    double new_x, new_y;
+    int len, i, nsteps;
+    xc=atof (xcs)*MI2PT; yc=atof (ycs)*MI2PT;
+    xr=atof (xrs)*MI2PT; yr=atof (yrs)*MI2PT;
+    sa=atof (sas); ea=atof (eas);
+#define ROTATE(x,y,c,s) {new_x=(c)*(x)-(s)*(y);new_y=(s)*(x)+(c)*(y);x=new_x,y=new_y;}
+    #define MAX_ANG_STEP 1.0
+    nsteps = (int) ((ea-sa)/MAX_ANG_STEP) + 1;
+    inc_ang = (ea-sa)/nsteps;
+    c = cos(inc_ang); s = sin(inc_ang);
+    cur_x=cos(sa); cur_y=sin(sa);
+    cp1_x = cur_x - inc_ang/3.0*cur_y;
+    cp1_y = cur_y + inc_ang/3.0*cur_x;
+    cp2_x = cur_x + inc_ang/3.0*cur_y;
+    cp2_y = cur_y - inc_ang/3.0*cur_x;
+    len = sprintf (work_buffer, " q %.2f w %.2f %.2f m ", pen_size,
+		   x_user+xr*cur_x+xc, y_user-yr*cur_y-yc);
+    pdf_doc_add_to_page (work_buffer, len);
+    ROTATE (cp2_x, cp2_y, c, s);
+    ROTATE (cur_x, cur_y, c, s);
+    for (i=0; i<nsteps; i++) {
+      len = sprintf (work_buffer, " %.2f %.2f %.2f %.2f %.2f %.2f c",
+		     x_user+xr*cp1_x+xc, y_user-yr*cp1_y-yc,
+		     x_user+xr*cp2_x+xc, y_user-yr*cp2_y-yc,
+		     x_user+xr*cur_x+xc, y_user-yr*cur_y-yc);
+      pdf_doc_add_to_page (work_buffer, len);
+      ROTATE (cur_x, cur_y, c, s);
+      ROTATE (cp1_x, cp1_y, c, s);
+      ROTATE (cp2_x, cp2_y, c, s);
+    }
+    show_path (hidden);
+    pdf_doc_add_to_page (" Q", 2);
+  } else {
+    dump (save, end);
+    fprintf (stderr, "tpic special: ar/ir: Error in parameters\n");
+  }
+  if (xcs) RELEASE(xcs);
+  if (ycs) RELEASE(ycs);
+  if (xrs) RELEASE(xrs);
+  if (yrs) RELEASE(yrs);
+  if (sas) RELEASE(sas);
+  if (eas) RELEASE(eas);
+MEM_END
+  return;
+}
 
 #define TPIC_PN 1
 #define TPIC_PA 2
@@ -216,34 +292,48 @@ int tpic_parse_special(char *buffer, UNSIGNED_QUAD size, double
       add_point (&buffer, end);
       break;
     case TPIC_FP:
-      flush_path(x_user, y_user, 0);
+      flush_path(x_user, y_user, 0, 0.0);
       break;
-    case TPIC_IP:
-      flush_path(x_user, y_user, 1);
+    case TPIC_IP: 
+      flush_path(x_user, y_user, 1, 0.0);
       break;
     case TPIC_DA:
-      flush_path(x_user, y_user, 0);
+      {
+	char *s;
+	if ((s=parse_number(&buffer, end))) {
+	  flush_path(x_user, y_user, 0, -atof (s));
+	  RELEASE (s);
+	}
+      }
       break;
     case TPIC_DT:
-      flush_path(x_user, y_user, 0);
+      {
+	char *s;
+	if ((s=parse_number(&buffer, end))) {
+	  flush_path(x_user, y_user, 0, atof (s));
+	  RELEASE (s);
+	}
+      }
       break;
     case TPIC_SP:
-      flush_path(x_user, y_user, 0);
+      flush_path(x_user, y_user, 0, 0.0);
       break;
     case TPIC_AR:
+      arc (&buffer, end, x_user, y_user, 0);
       break;
     case TPIC_IA:
+      arc (&buffer, end, x_user, y_user, 1);
       break;
     case TPIC_SH:
       set_fill_color (&buffer, end);
       break;
     case TPIC_WH: 
       fill_shape = 1;
-      fill_color = 1;
+      fill_color = 1.0;
       break;
     case TPIC_BK:
       fill_shape = 1;
-      fill_color = 0;
+      fill_color = 0.0;
       break;
     case TPIC_TX:
       fill_shape = 1;
