@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.73 1999/08/12 00:24:22 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.74 1999/08/12 00:31:09 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -660,7 +660,6 @@ static char *pfb_find_name (FILE *pfb_file)
 #ifdef MEM_DEBUG
   MEM_END
 #endif /* MEM_DEBUG */
-    fprintf (stderr, "find_name returning %s\n", fontname);
   return fontname;
 }
 
@@ -1227,9 +1226,6 @@ int type1_font (const char *tex_name, int tfm_font_id, const char *resource_name
   if (font_record -> enc_name != NULL) {
     encoding_id = get_encoding (font_record -> enc_name);
   }
-  fprintf (stderr, "DEBUG: font_name: %s, is_a_base_font()=%d\n",
-	   font_record->font_name,
-	   is_a_base_font(font_record->font_name));
   
   if (is_a_base_font(font_record->font_name) ||
       (pfb_id = type1_pfb_id(font_record -> font_name, encoding_id)) >= 0) {
