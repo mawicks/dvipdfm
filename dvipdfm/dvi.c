@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.33 1998/12/16 03:00:06 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.34 1998/12/23 19:08:06 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -263,7 +263,6 @@ static void get_a_font_record (SIGNED_QUAD tex_id)
   RELEASE (directory);
   RELEASE (name);
 }
-
 
 static void get_dvi_fonts (void)
 {
@@ -1074,10 +1073,10 @@ void dvi_do_page(int n)  /* Most of the work of actually interpreting
   }
 }
 
-error_t dvi_init (char * filename, double mag, double x_offset, double
+error_t dvi_init (char *dvi_filename, char *pdf_filename, double mag, double x_offset, double
 		  y_offset)
 {
-  if (!(dvi_file = fopen (filename, FOPEN_RBIN_MODE))) {
+  if (!(dvi_file = fopen (dvi_filename, FOPEN_RBIN_MODE))) {
     ERROR ("dvi_init:  Specified DVI file doesn't exist");
     return (FATAL_ERROR);
   }
@@ -1088,6 +1087,7 @@ error_t dvi_init (char * filename, double mag, double x_offset, double
   do_scales(mag);
   dev_init(dvi2pts, x_offset, y_offset);
   get_page_info();
+  pdf_doc_init (pdf_filename);
   get_dvi_fonts();
   get_comment();
   clear_state();
@@ -1114,6 +1114,7 @@ void dvi_close (void)
   dev_close_all_fonts();
   vf_close_all_fonts();
   tfm_close_all();
+  pdf_doc_close();
 }
 
 /* The following are need to implement virtual fonts

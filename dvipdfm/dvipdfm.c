@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.13 1998/12/17 03:56:27 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.14 1998/12/23 19:08:06 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -302,8 +302,7 @@ int CDECL main (int argc, char *argv[])
   
   if (!really_quiet)
     fprintf (stdout, "%s -> %s\n", dvi_filename, pdf_filename);
-  pdf_doc_init (pdf_filename);
-  dvi_init (dvi_filename, mag, x_offset, y_offset);
+  dvi_init (dvi_filename, pdf_filename, mag, x_offset, y_offset);
   if (ignore_colors)
     pdf_special_ignore_colors();
   if (landscape_mode)
@@ -318,7 +317,6 @@ int CDECL main (int argc, char *argv[])
     fprintf (stderr, "]");
   }
   dvi_close();
-  pdf_doc_close();
   fprintf (stderr, "\n");
   cleanup();
   return 0;
