@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.106 2000/07/10 02:14:38 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.107 2000/07/10 04:33:29 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -44,6 +44,9 @@
 #include "twiddle.h"
 
 #define DEFAULT_MAP_FILE "t1fonts.map"
+static void type1_fill_font_descriptor (pdf_obj *descriptor, int
+					pfb_id);
+
 static unsigned char verbose = 0, really_quiet = 0;
 
 void type1_set_verbose(void)
@@ -393,7 +396,7 @@ struct a_pfb
 {
   char *pfb_name;
   char *fontname;
-  pdf_obj *direct, *indirect;
+  pdf_obj *direct, *indirect, *descriptor;
   char *used_chars;
   int encoding_id, remap;
 } *pfbs = NULL;
@@ -415,6 +418,7 @@ static void init_a_pfb (struct a_pfb *pfb)
   pfb->direct = NULL;
   pfb->indirect = NULL;
   pfb->encoding_id = -1;
+  pfb->descriptor = NULL;
 }
 
 #include "standardenc.h"
@@ -1070,6 +1074,7 @@ static int type1_pfb_id (const char *pfb_name, int encoding_id, int remap)
     pfbs[i].direct = pdf_new_stream(STREAM_COMPRESS);
     pfbs[i].indirect = pdf_ref_obj (pfbs[i].direct);
     pfbs[i].encoding_id = encoding_id;
+    pfbs[i].descriptor = pdf_new_dict ();
     if (partial_enabled) {
       pfbs[i].fontname = NEW (strlen(short_fontname)+8, char);
       strcpy (pfbs[i].fontname, short_fontname);
@@ -1146,6 +1151,9 @@ static void do_pfb (int pfb_id)
 		pdf_new_number (length2));
   pdf_add_dict (stream_dict, pdf_new_name("Length3"),
 		pdf_new_number (length3));
+  /* Finally, make the descriptor */
+  type1_fill_font_descriptor (pfbs[pfb_id].descriptor, pfb_id);
+  pdf_release_obj (pfbs[pfb_id].descriptor);
   if (verbose > 1)
     fprintf (stderr, "Embedded size: %ld bytes\n", length1+length2+length3);
   return;
@@ -1160,26 +1168,23 @@ static void do_pfb (int pfb_id)
 			cmr, should be set to be symbolic */
 #define STEMV 80
 
-static pdf_obj *type1_font_descriptor (int pfb_id, int tfm_font_id)
+static void type1_fill_font_descriptor (pdf_obj *font_descriptor, int pfb_id)
 {
-  pdf_obj *font_descriptor, *font_descriptor_ref, *tmp1;
+  pdf_obj *tmp1;
   int flags;
   double italic_angle;
-  font_descriptor = pdf_new_dict ();
   pdf_add_dict (font_descriptor,
 		pdf_new_name ("Type"),
 		pdf_new_name ("FontDescriptor"));
-  /* Make an educated guess at CapHeight */
+  /* For now, insert dummy values */
   pdf_add_dict (font_descriptor,
 		pdf_new_name ("CapHeight"),
-		pdf_new_number (ROUND(1000.0*tfm_get_height(tfm_font_id,
-						     'M'), 0.01)));
+		pdf_new_number (1000.0));
   {
     double max_height, max_depth, max_width;
-    /* Make an educated guess at Ascent and Descent */
-    max_height = tfm_get_max_height (tfm_font_id)*1000.0;
-    max_depth = tfm_get_max_depth (tfm_font_id)*1000.0;
-    max_width = tfm_get_max_width (tfm_font_id)*1000.0;
+    max_height = 1000.0;
+    max_depth = -1000.0;
+    max_width = 1000.0;
     pdf_add_dict (font_descriptor,
 		  pdf_new_name ("Ascent"),
 		  pdf_new_number (ROUND(max_height,0.01)));
@@ -1187,14 +1192,13 @@ static pdf_obj *type1_font_descriptor (int pfb_id, int tfm_font_id)
 		  pdf_new_name ("Descent"),
 		  pdf_new_number (ROUND(-max_depth,0.01)));
     tmp1 = pdf_new_array ();
-
-    pdf_add_array (tmp1, pdf_new_number(ROUND(-0.10*max_width,1.0)));
+    pdf_add_array (tmp1, pdf_new_number(-1000.0));
     pdf_add_array (tmp1,
-		   pdf_new_number(ROUND(-max_depth-0.10*(max_height+max_depth),1.0)));
+		   pdf_new_number(-1000.0));
     pdf_add_array (tmp1,
-		   pdf_new_number(ROUND(MAX(1.10*max_width,1.0),1.0)));
+		   pdf_new_number(1000.0));
     pdf_add_array (tmp1,
-		   pdf_new_number(ROUND(MAX(max_height+0.10*(max_height+max_depth),1.0),1.0)));
+		   pdf_new_number(1000.0));
     pdf_add_dict (font_descriptor, pdf_new_name ("FontBBox"), tmp1);
     pdf_add_dict (font_descriptor,
 		  pdf_new_name ("FontName"),
@@ -1203,14 +1207,13 @@ static pdf_obj *type1_font_descriptor (int pfb_id, int tfm_font_id)
 #ifndef M_PI
   #define M_PI (4.0*atan(1.0))
 #endif
-  italic_angle = ROUND(-180.0/M_PI*atan(tfm_get_it_slant(tfm_font_id)),0.1);
+  italic_angle = 0.0;
   pdf_add_dict (font_descriptor,
 		pdf_new_name ("ItalicAngle"),
 		pdf_new_number(italic_angle));
   pdf_add_dict (font_descriptor,
 		pdf_new_name ("XHeight"),
-		pdf_new_number
-		(ROUND(tfm_get_x_height(tfm_font_id)*1000.0,0.1)));
+		pdf_new_number (500.0));
   pdf_add_dict (font_descriptor,
 		pdf_new_name ("StemV"),  /* This is required */
 		pdf_new_number (STEMV));
@@ -1219,29 +1222,27 @@ static pdf_obj *type1_font_descriptor (int pfb_id, int tfm_font_id)
     pdf_add_dict (font_descriptor,
 		  pdf_new_name ("FontFile"),
 		  type1_fontfile (pfb_id));
-  font_descriptor_ref = pdf_ref_obj (font_descriptor);
 
   /* Take care of flags */
   {
     flags = 0;
     if (italic_angle != 0.0)
       flags += ITALIC;
-    if (tfm_is_fixed_width(tfm_font_id))
-      flags += FIXED_WIDTH;
+/*  if (tfm_is_fixed_width(tfm_font_id)) */
+       flags += FIXED_WIDTH;
     flags += SYMBOLIC;
     pdf_add_dict (font_descriptor,
 		  pdf_new_name ("Flags"),
 		  pdf_new_number (flags));
   }
-  pdf_release_obj (font_descriptor);
-  return font_descriptor_ref;
+  return;
 }
 
 
 struct a_type1_font
 {
   pdf_obj *indirect;
-  int pfb_id;
+  long pfb_id;
   double slant, extend;
   int remap;
 } *type1_fonts = NULL;
@@ -1389,8 +1390,7 @@ int type1_font (const char *tex_name, int tfm_font_id, char *resource_name)
     if (type1_fonts[num_type1_fonts].pfb_id >= 0) {
       pdf_add_dict (font_resource, 
 		    pdf_new_name ("FontDescriptor"),
-		    type1_font_descriptor(type1_fonts[num_type1_fonts].pfb_id,
-					  tfm_font_id));
+		    pdf_ref_obj(pfbs[type1_fonts[num_type1_fonts].pfb_id].descriptor));
     }
       /* If we are embedding this font, it may have been used by another virtual
 	 font and we need to use the same mangled name.  Mangled
@@ -1466,7 +1466,7 @@ void type1_close_all (void)
   /* Three arrays are created by this module and need to be released */
 
   /* First, each TeX font name that ends up as a postscript font gets
-     added to type1_fonts (yes, even times, etc.) */
+     added to type1_fonts (yes, even Times-Roman, etc.) */
   for (i=0; i<num_type1_fonts; i++) {
     pdf_release_obj (type1_fonts[i].indirect);
   }
