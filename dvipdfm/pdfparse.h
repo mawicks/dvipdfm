@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.h,v 1.7 1999/09/02 00:38:27 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.h,v 1.8 1999/09/04 13:40:24 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -56,6 +56,7 @@
 extern int is_a_number(const char *s);
 
 extern char *parse_ident (char **start, char *end);
+extern char *parse_c_ident (char **start, char *end);
 extern char *parse_number (char **start, char*end);
 extern char *parse_unsigned (char **start, char*end);
 extern void parse_crap (char **start, char *end);

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.c,v 1.25 1999/09/02 00:38:26 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.c,v 1.26 1999/09/04 13:40:24 mwicks Exp $
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
 
@@ -238,11 +238,9 @@ MEM_END
   return NULL;
 }
 
-char *parse_ident (char **start, char *end)
+static char *parse_gen_ident (char **start, char *end, char *valid_chars)
 {
   char *ident, *save;
-  static char *valid_chars =
-    "!\"#$&'*+,-.0123456789:;=?@ABCDEFGHIJKLMNOPQRSTUVWXYZ\\^_`abcdefghijklmnopqrstuvwxyz|~";
   skip_white(start, end);
   save = *start;
   while (*start < end && strchr (valid_chars, **start))
@@ -254,6 +252,22 @@ char *parse_ident (char **start, char *end)
   ident[*start-save] = 0;
   return ident;
 }
+
+char *parse_ident (char **start, char *end)
+{
+  static char *valid_chars =
+    "!\"#$&'*+,-.0123456789:;=?@ABCDEFGHIJKLMNOPQRSTUVWXYZ\\^_`abcdefghijklmnopqrstuvwxyz|~";
+  return parse_gen_ident (start, end, valid_chars);
+}
+
+char *parse_c_ident (char **start, char *end)
+{
+  static char *valid_chars =
+    "0123456789@ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
+  return parse_gen_ident (start, end, valid_chars);
+}
+
+
 
 
 char *parse_opt_ident(char **start, char *end)
