@@ -1,3 +1,6 @@
+Nov. 28, 1998
+   Encoding support now works.  There is a font map file for
+the more common PostScript fonts.
 
 Nov. 26, 1998
 

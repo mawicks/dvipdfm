@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.2 1998/11/28 00:12:53 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.3 1998/11/29 21:37:16 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -98,9 +98,10 @@ static void usage (void)
    fprintf (stderr, "under certain conditions.  Details are distributed with the software.\n");
    fprintf (stderr, "\nUsage: dvipdf [options] dvifile\n");
    fprintf (stderr, "where [options] is one or more of\n\n");
-   fprintf (stderr, "\t-o filename\t(Output file name)\n");
-   fprintf (stderr, "\t-p papersize\t(papersize is letter, legal, ledger, tabloid, a4, or a3)\n");
-   fprintf (stderr, "\t-l \t\t(landscape mode)\n");
+   fprintf (stderr, "\t-o filename\tOutput file name\n");
+   fprintf (stderr, "\t-p papersize\tpapersize is letter, legal, ledger, tabloid, a4, or a3\n");
+   fprintf (stderr, "\t-l \t\tlandscape mode\n");
+   fprintf (stderr, "\t-m filename\tFont map file name [pdffonts.map]\n");
    exit(1);
 }
 
@@ -135,6 +136,11 @@ static void do_args (int argc, char *argv[])
 	landscape_mode = 1;
 	argv += 1;
 	argc -= 1;
+	break;
+      case 'm':
+	type1_set_mapfile (argv[1]);
+	argv += 2;
+	argc -= 2;
 	break;
       default:
 	usage();

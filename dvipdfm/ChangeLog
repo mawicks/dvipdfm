@@ -1,3 +1,10 @@
+1998-11-29  Mark A. Wicks  <mwicks@betelgeuse.wicks.net>
+
+	* Added font re-encoding support and created a map file for common
+	  PostScript fonts.
+
+	* Cleaned up some little things.
+
 1998-11-27  Mark A. Wicks  <mwicks@odo.kettering.edu>
 
 	* Changed source tree to fit with texk distribution.

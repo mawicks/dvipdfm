@@ -23,17 +23,29 @@ dvipdfm:$(kpathsea) $(objects)
 ac_include ../make/tkpathsea.make
 
 
-install: install-exec 
-uninstall: uninstall-exec 
+install: install-exec install-data
+uninstall: uninstall-exec uninstall-data
 
 install-exec: all
 	$(SHELL) $(top_srcdir)/../mkinstalldirs $(bindir) 
 	$(INSTALL_LIBTOOL_PROG) $(bindir) $(programs)
+install-data:
+# psfonts.map.
+	$(SHELL) $(top_srcdir)/../mkinstalldirs $(psheaderdir)/dvipdfm
+	if test ! -r $(psheaderdir)/dvipdfm/pdffonts.map \
+	   || grep 'original pdffonts.map --' $(psheaderdir)/dvipdfm/pdffonts.map \
+	   >/dev/null; then  \
+	   $(INSTALL_DATA) $(srcdir)/pdffonts.map $(psheaderdir)/dvipdfm/pdffonts.map; \
+	else true; fi
 
 uninstall-exec:
 	rm -f $(bindir)/$(programs)
 
-
+uninstall-data:
+	if grep 'original pdffonts.map --' $(psheaderdir)/dvipdfm/pdffonts.map \
+	   >/dev/null 2>&1; then rm -f $(psheaderdir)/dvipdfm/pdffonts.map; \
+	else true; fi
+ 
 ac_include ../make/dist.make
 ac_include ../make/config.make
 ac_include ../make/clean.make

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.3 1998/11/29 08:54:31 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.4 1998/11/29 21:37:16 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -38,7 +38,7 @@
 #include "pdfparse.h"
 #include "pdflimits.h"
 
-#define MAP_FILE "pdffonts.map"
+static const char *map_filename = "pdffonts.map";
 
 struct font_record 
 {
@@ -53,6 +53,11 @@ struct encoding {
 } encodings[MAX_ENCODINGS];
 int num_encodings = 0;
 
+void type1_set_mapfile (const char *name)
+{
+  map_filename = name;
+  return;
+}
 
 #include "winansi.h"
 
@@ -156,7 +161,7 @@ struct font_record *get_font_record (const char *tex_name)
   char *full_map_filename, *start, *end, *record_name, *afm_name;
   if (first) {
     first = 0;
-    full_map_filename = kpse_find_file (MAP_FILE, kpse_fontmap_format,
+    full_map_filename = kpse_find_file (map_filename, kpse_tex_ps_header_format,
 					0);
     if (full_map_filename == NULL || 
 	(mapfile = fopen (full_map_filename, "r")) == NULL) {
@@ -167,7 +172,7 @@ struct font_record *get_font_record (const char *tex_name)
   if (mapfile == NULL) 
     return NULL;
   rewind (mapfile);
-  while ((start = fgets (work_buffer, WORK_BUFFER_SIZE, mapfile)) !=
+  while ((start = mfgets (work_buffer, WORK_BUFFER_SIZE, mapfile)) !=
 	 NULL) {
     end = work_buffer + strlen(work_buffer);
     skip_white (&start, end);
@@ -290,8 +295,7 @@ pdf_obj *type1_fontfile (const char *pfb_name)
 				  1);
   if (full_pfb_name == NULL ||
       (type1_binary_file = fopen (full_pfb_name, FOPEN_RBIN_MODE)) == NULL) {
-    fprintf (stderr, "%s: ", pfb_name);
-    fprintf (stderr, "type1_fontfile:  Unable to find binary font file...Hope that's okay.");
+    fprintf (stderr, "type1_fontfile:  Unable to find or open binary font file (%s)...Hope that's okay.", pfb_name);
     return NULL;
   }
   stream = pdf_new_stream();
@@ -353,7 +357,7 @@ static FILE *type1_afm_file;
 static get_afm_token (void)
 {
   int i;
-  if (fgets (buffer, sizeof(buffer), type1_afm_file)) {
+  if (mfgets (buffer, sizeof(buffer), type1_afm_file)) {
     if (strlen (buffer) == sizeof(buffer)-1) {
       ERROR ("get_afm_token:  Line to long");
     }
@@ -383,6 +387,7 @@ static reset_afm_variables (void)
   bburx = 0.0; bbury = 0.0;
   capheight = 0.0; italicangle = 0.0;
   isfixed = 0;
+  return;
 }
 
 static void open_afm_file (const char *afm_name)
@@ -391,19 +396,18 @@ static void open_afm_file (const char *afm_name)
   reset_afm_variables ();
   full_afm_name = kpse_find_file (afm_name, kpse_afm_format,
 				  1);
-  if (full_afm_name == NULL) {
-    fprintf (stderr, "%s: ", afm_name);
-    ERROR ("type1_font_descriptor:  Unable to find AFM file");
+  if (full_afm_name == NULL || 
+      (type1_afm_file = fopen (full_afm_name, FOPEN_R_MODE)) == NULL) {
+    sprintf (work_buffer, "open_afm_file: Unable to find or open AFM file named (%s)", afm_name);
+    ERROR (work_buffer);
   }
-  if ((type1_afm_file = fopen (full_afm_name, FOPEN_R_MODE)) == NULL) {
-    fprintf (stderr, "type1_font_descriptor:  %s\n", afm_name);
-    ERROR ("type1_font_descriptor:  Unable to open AFM file");
-  }
+  return;
 }
 
 static void close_afm_file (void)
 {
   fclose (type1_afm_file);
+  return;
 }
 
 
@@ -458,6 +462,7 @@ static void scan_afm_file (void)
       break;
     }
   }
+  return;
 }
 
 #define FIXED_WIDTH 1
