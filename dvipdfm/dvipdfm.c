@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.45 1999/08/21 02:47:56 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.46 1999/08/22 17:48:11 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -304,8 +304,8 @@ static void do_args (int argc, char *argv[])
 #ifdef HAVE_LIBPNG
 	  pdf_doc_enable_thumbnails ();
 #else
-	  ERROR ("The thumbnail option requires libpng, which you apparently don't have");
-#endif	   
+	  ERROR ("The thumbnail option requires libpng, which you apparently don't have.");
+#endif /* HAVE_LIBPNG */
 	}
 	break;
       case 'd':
@@ -313,8 +313,8 @@ static void do_args (int argc, char *argv[])
 #ifdef HAVE_LIBPNG
 	  thumb_remove ();
 #else
-	  ERROR ("The thumbnail option requires libpng, which you apparently don't have");
-#endif	   
+	  ERROR ("The thumbnail option requires libpng, which you apparently don't have.");
+#endif /* HAVE_LIBPNG */
 	}
 	break;
       case 'p':
