@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.20 1998/12/08 06:19:36 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.21 1998/12/08 06:41:15 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -600,17 +600,18 @@ void dev_select_font (int dev_font_id)
   if (dev_font_id < 0 || dev_font_id >= n_dev_fonts) {
     ERROR ("dev_change_to_font: dvi wants a font that isn't loaded");
   }
-  if (current_font != dev_font_id) {
+  if (current_font != dev_font_id &&
+      dev_font[dev_font_id].type == PHYSICAL) {
     text_mode();
     sprintf (format_buffer, " /%s %g Tf", dev_font[dev_font_id].short_name,
 	     ROUND(dev_font[dev_font_id].ptsize*DPI/72, 0.01));
     pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
-    current_font = dev_font_id;
-    current_ptsize = dev_font[dev_font_id].ptsize;
     /* Add to Font list in Resource dictionary for this page */
     pdf_doc_add_to_page_fonts (dev_font[dev_font_id].short_name,
 			       pdf_link_obj(dev_font[dev_font_id].font_resource));
   }
+  current_font = dev_font_id;
+  current_ptsize = dev_font[dev_font_id].ptsize;
 }
 /* The following routine is here for forms.  Since
    a form is self-contained, it will need its own Tf command
@@ -642,15 +643,15 @@ void dev_set_char (unsigned ch, double width)
       fprintf (stderr, "(%c)", ch);
     fprintf (stderr, ")");
   }
-  /*  switch (dev_font[current_font].type) {
+  switch (dev_font[current_font].type) {
   case PHYSICAL:
+    string_mode();
+    len = pdfobj_escape_c (format_buffer, ch);
+    pdf_doc_add_to_page (format_buffer, len);
     break;
   case VIRTUAL:
     break;
-    } */
-  string_mode();
-  len = pdfobj_escape_c (format_buffer, ch);
-  pdf_doc_add_to_page (format_buffer, len);
+  }
   dev_xpos += width;
 }
 
