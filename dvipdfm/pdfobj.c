@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.15 1998/12/07 20:32:50 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.16 1998/12/10 17:52:17 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -465,32 +465,36 @@ void *pdf_string_value (pdf_obj *a_pdf_string)
 
 int pdfobj_escape_c (char *buffer, unsigned char ch)
 {
-  switch (ch) {
-  case '(':
-    return sprintf (buffer, "\\(");
-  case ')':
-    return sprintf (buffer, "\\)");
-  case '\\':
-    return sprintf (buffer, "\\\\");
-  case '\n':
-    return sprintf (buffer, "\\n");
-  case '\r':
-    return sprintf (buffer, "\\r");
-  case '\t':
-    return sprintf (buffer, "\\t");
-  case '\b':
-    return sprintf (buffer, "\\b");
-  case '\f':
-    return sprintf (buffer, "\\f");
-  default:
-    if (!isprint (ch)) {
-      return sprintf (buffer, "\\%03o", ch);
-    } else {
-      return sprintf (buffer, "%c", ch);
+  int result;
+  /* Exit this routine as fast as possible for printable characters */
+  if (isprint (ch) && ch != '(' && ch != ')') {
+    buffer[0] = ch;
+    result = 1;
+  }
+  else {
+    switch (ch) {
+    case '(':
+      result = sprintf (buffer, "\\(");
+    case ')':
+      result = sprintf (buffer, "\\)");
+    case '\\':
+      result = sprintf (buffer, "\\\\");
+    case '\n':
+      result = sprintf (buffer, "\\n");
+    case '\r':
+      result = sprintf (buffer, "\\r");
+    case '\t':
+      result = sprintf (buffer, "\\t");
+    case '\b':
+      result = sprintf (buffer, "\\b");
+    case '\f':
+      result = sprintf (buffer, "\\f");
+    default:
+      result = sprintf (buffer, "\\%03o", ch);
     }
   }
+  return result;
 }
-
 
 static void write_string (FILE *file, const pdf_string *string)
 {
@@ -530,6 +534,7 @@ void pdf_set_string (pdf_obj *object, unsigned char *string, unsigned length)
     data -> length = 0;
     data -> string = NULL;
   }
+  return;
 }
 
 int pdf_check_name(const char *name)

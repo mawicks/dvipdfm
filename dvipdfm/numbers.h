@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/numbers.h,v 1.3 1998/12/06 21:15:31 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/numbers.h,v 1.4 1998/12/10 17:52:17 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -53,6 +53,8 @@ SIGNED_QUAD get_signed_quad (FILE *);
 UNSIGNED_QUAD get_unsigned_quad (FILE *);
 
 #define ROUND(n,acc) (floor(((double)n)/(acc)+0.5)*(acc)) 
+
+SIGNED_QUAD sqxfw (SIGNED_QUAD sq, SIGNED_QUAD fw);
 
 #endif /* NUMBERS_H */
 

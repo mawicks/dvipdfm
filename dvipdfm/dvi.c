@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.16 1998/12/10 02:25:33 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.17 1998/12/10 17:52:16 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -962,6 +962,14 @@ void dvi_do_page(int n)  /* Most of the work of actually interpreting
       if (isprint (opcode)) fprintf (stderr, " (%c)\n", opcode);
       else  fprintf (stderr, "\n");
     }
+    if (opcode >= SET_CHAR_0 && opcode <= SET_CHAR_127) {
+      dvi_set (opcode);
+      continue;
+    }
+    if (opcode >= FNT_NUM_0 && opcode <= FNT_NUM_63) {
+      do_fnt (opcode - FNT_NUM_0);
+      continue;
+    }
     switch (opcode)
       {
       case SET1:
@@ -1125,16 +1133,6 @@ void dvi_do_page(int n)  /* Most of the work of actually interpreting
       case POST_POST:
 	ERROR("Unexpected preamble or postamble in dvi file");
 	break;
-      default:
-	/* One day when these were commented out, some of the doc_
-	   stuff core dumped, possibly because there were no
-	   characters or fonts on the page.  Some day make sure an empty page
-	   doesn't core dump */
-	if (opcode >= SET_CHAR_0 && opcode <= SET_CHAR_127) {
-	  dvi_set (opcode);
-	} else if (opcode >= FNT_NUM_0 && opcode <= FNT_NUM_63) {
-	  do_fnt (opcode - FNT_NUM_0);
-	}
       }
   }
 }
@@ -1165,4 +1163,3 @@ void dvi_vf_finish (void)
   current_font = saved_dvi_font;
   dev_select_font (current_font);
 }
-

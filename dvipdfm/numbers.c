@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/numbers.c,v 1.3 1998/12/01 05:19:42 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/numbers.c,v 1.4 1998/12/10 17:52:16 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -116,5 +116,36 @@ UNSIGNED_QUAD get_unsigned_quad(FILE *file)
   return (UNSIGNED_QUAD) quad;
 }
 
-
-
+SIGNED_QUAD sqxfw (SIGNED_QUAD sq, SIGNED_QUAD fw)
+{
+  int sign = 1;
+  unsigned long a, b, c, d, ad, bd, bc, ac;
+  unsigned long e, f, g, h, i, j, k;
+  unsigned long result;
+  /* Make positive. */
+  if (sq < 0) {
+    sign = -sign;
+    sq = -sq;
+  }
+  if (fw < 0) {
+    sign = -sign;
+    fw = -fw;
+  }
+  fprintf (stderr, "sq=%ld, fw=%ld\n", sq, fw);
+  a = ((unsigned long) sq) >> 16u;
+  b = ((unsigned long) sq) & 0xffffu;
+  c = ((unsigned long) fw) >> 16u;
+  d = ((unsigned long) fw) & 0xffffu;
+  ad = a*d; bd = b*d; bc = b*c; ac = a*c;
+  e = bd >> 16u;
+  f = ad >> 16u;
+  g = ad & 0xffffu;
+  h = bc >> 16u;
+  i = bc & 0xffffu;
+  j = ac >> 16u;
+  k = ac & 0xffffu;
+  result = (e+g+i + (1<<3)) >> 4u;  /* 1<<3 is for rounding */
+  result += (f+h+k) << 12u;
+  result += j << 28u;
+  return (sign>0)?result:-result;
+}

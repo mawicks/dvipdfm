@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.30 1998/12/10 02:25:33 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.31 1998/12/10 17:52:17 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -98,16 +98,16 @@ unsigned long dev_tell_ydpi(void)
   return DPI;
 }
 
-int motion_state = 1; /* Start in graphics mode */
-
 #define GRAPHICS_MODE 1
 #define TEXT_MODE 2
 #define STRING_MODE 3
-#define NO_MODE -1
+
+int motion_state = GRAPHICS_MODE; /* Start in graphics mode */
 
 static char format_buffer[256];
+
  /* Device coordinates are relative to upper left of page.  One of the
-    first things appearing on the page is a coordinate transformation
+    first things appearing in the page stream is a coordinate transformation
     matrix that forces this to be true.  This coordinate
     transformation is the only place where the paper size is required.
     Unfortunately, positive is up, which doesn't agree with TeX's convention.  */
@@ -148,7 +148,8 @@ static void reset_text_state(void)
 static void text_mode (void)
 {
   switch (motion_state) {
-  case NO_MODE:
+  case TEXT_MODE:
+    break;
   case GRAPHICS_MODE:
     pdf_doc_add_to_page (" BT", 3);
     reset_text_state();
@@ -158,11 +159,14 @@ static void text_mode (void)
     break;
   }
   motion_state = TEXT_MODE;
+  return;
 }
 
 static void graphics_mode (void)
 {
   switch (motion_state) {
+  case GRAPHICS_MODE:
+    break;
   case STRING_MODE:
     pdf_doc_add_to_page (")]TJ", 4); /* Fall through */
   case TEXT_MODE:
@@ -170,13 +174,15 @@ static void graphics_mode (void)
     break;
   }
   motion_state = GRAPHICS_MODE;
+  return;
 }
 
 static void string_mode (double xpos, double ypos)
 {
   double delx, dely;
   switch (motion_state) {
-  case NO_MODE:
+  case STRING_MODE:
+    break;
   case GRAPHICS_MODE:
     pdf_doc_add_to_page (" BT", 3); /* Fall through */
     reset_text_state();
@@ -202,6 +208,7 @@ static void string_mode (double xpos, double ypos)
     break;
   }
   motion_state = STRING_MODE;
+  return;
 }
 
 void dev_init (char *outputfile)
