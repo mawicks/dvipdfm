@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.64 2000/05/14 16:52:34 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.65 2000/06/29 12:30:18 mwicks Exp $
  
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1112,9 +1112,14 @@ void doc_make_form_xobj (pdf_obj *this_form_contents, pdf_obj *bbox,
   return;
 }
 
-static pdf_obj *save_page_contents, *save_page_fonts;
-static pdf_obj *save_page_xobjects, *save_page_resources;
-static char xobject_pending = 0;
+struct resource_stack 
+{
+  pdf_obj *save_page_contents, *save_page_fonts;
+  pdf_obj *save_page_xobjects, *save_page_resources;
+  int xform_depth;
+} res_stack[4];
+
+static int xobjects_pending = 0;
 
 /* begin_form_xobj creates an xobject with its "origin" at
    xpos and ypos that is clipped to the specified bbox. Note
@@ -1124,32 +1129,31 @@ pdf_obj *begin_form_xobj (double xpos, double ypos,
 			  double bburx, double bbury, char *res_name)
 {
   pdf_obj *bbox;
-  if (xobject_pending) {
-    fprintf (stderr, "\nCannot nest form XObjects\n");
+  fprintf (stderr, "\nBeginform_xobj\n");
+  if (xobjects_pending >= sizeof(res_stack)/sizeof(res_stack[0])) {
+    fprintf (stderr, "\nForm XObjects nested too deeply.  Limit is %d\n",
+	     sizeof(res_stack)/sizeof(res_stack[0]));
     return NULL;
   }
-  dev_close_all_xforms();
-  xobject_pending = 1;
-  /* This is a hack.  We basically treat an xobj as a separate mini
-     page unto itself.  Save all the page structures and reinitialize them. */
-  save_page_resources = current_page_resources;
+  /* This is a real hack.  We basically treat each xobj as a separate mini
+     page unto itself.  Save all the page structures and reinitialize
+     them when we finish this xobject. */
+  res_stack[xobjects_pending].save_page_resources = current_page_resources;
   current_page_resources = NULL;
-  save_page_xobjects = this_page_xobjects;
+  res_stack[xobjects_pending].save_page_xobjects = this_page_xobjects;
   this_page_xobjects = NULL;
-  save_page_fonts = this_page_fonts;
+  res_stack[xobjects_pending].save_page_fonts = this_page_fonts;
   this_page_fonts = NULL;
-  save_page_contents = this_page_contents;
+  res_stack[xobjects_pending].save_page_contents = this_page_contents;
   this_page_contents = NULL;
+  res_stack[xobjects_pending].xform_depth = dev_xform_depth();
+  xobjects_pending += 1;
   start_current_page_resources(); /* Starts current_page_resources */
   this_page_contents = pdf_new_stream (STREAM_COMPRESS);
   /* Make a bounding box for this Xobject */
   /* Translate coordinate system so reference point of object 
      is at 0 */
   bbox = pdf_new_array ();
-  /*  pdf_add_array (bbox, pdf_new_number (ROUND(bbllx-xpos,0.01)));
-      pdf_add_array (bbox, pdf_new_number (ROUND(bblly-ypos,0.01)));
-      pdf_add_array (bbox, pdf_new_number (ROUND(bburx-xpos,0.01)));
-      pdf_add_array (bbox, pdf_new_number (ROUND(bbury-ypos,0.01))); */
   pdf_add_array (bbox, pdf_new_number (ROUND(bbllx,0.01)));
   pdf_add_array (bbox, pdf_new_number (ROUND(bblly,0.01)));
   pdf_add_array (bbox, pdf_new_number (ROUND(bburx,0.01)));
@@ -1168,9 +1172,10 @@ pdf_obj *begin_form_xobj (double xpos, double ypos,
 
 void end_form_xobj (void)
 {
-  if (xobject_pending) {
-    xobject_pending = 0;
-    dev_close_all_xforms();
+  fprintf (stderr, "\nendform_xobj, objects=%d\n", xobjects_pending);
+  if (xobjects_pending>0) {
+    xobjects_pending -= 1;
+    dev_close_all_xforms(res_stack[xobjects_pending].xform_depth);
     if (this_page_xobjects) {
       pdf_add_dict (current_page_resources, pdf_new_name ("XObject"),
 		    pdf_ref_obj (this_page_xobjects));
@@ -1185,10 +1190,10 @@ void end_form_xobj (void)
       pdf_release_obj (current_page_resources);
     if (this_page_contents)
       pdf_release_obj (this_page_contents);
-    current_page_resources = save_page_resources;
-    this_page_xobjects = save_page_xobjects;
-    this_page_fonts = save_page_fonts;
-    this_page_contents = save_page_contents;
+    current_page_resources = res_stack[xobjects_pending].save_page_resources;
+    this_page_xobjects = res_stack[xobjects_pending].save_page_xobjects;
+    this_page_fonts = res_stack[xobjects_pending].save_page_fonts;
+    this_page_contents = res_stack[xobjects_pending].save_page_contents;
     /* Must reselect the font again in case there was a font change in
        the object */
     dev_reselect_font();
@@ -1202,9 +1207,11 @@ void end_form_xobj (void)
 
 void finish_pending_xobjects (void)
 {
-  if (xobject_pending) {
-    fprintf (stderr, "\nFinishing a pending form XObject at end of page\n");
-    end_form_xobj();
+  if (xobjects_pending) {
+    fprintf (stderr, "\nFinishing a pending form XObject at end of page\n"); 
+    while (xobjects_pending--) {
+      end_form_xobj();
+    }
   }
   return;
 }

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.30 2000/06/29 02:23:21 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.31 2000/06/29 12:30:18 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -427,7 +427,6 @@ static unsigned top_stack;
 double x_state, y_state;
 static int state = 0;
 static int num_saves = 0;
-double fig_width, fig_height, fig_llx, fig_lly, fig_urx, fig_ury;
 
 #define PUSH(o) { \
   if (top_stack<PS_STACK_SIZE) { \
@@ -556,7 +555,17 @@ static int lookup_operator(char *token)
 }
 
 
-static int do_operator(char *token)
+/* Following needed to save texfig state */
+
+static long next_fig = 1;
+static pdf_obj *fig_xobj = NULL;
+struct xform_info *fig_p;
+static char fig_res_name[16];
+
+static int do_operator(char *token,
+		       double x_user, double y_user)
+     /* Again, the only piece that needs x_user and y_user is
+	that piece dealing with texfig */
 {
   int operator, error = 0;
   pdf_obj *tmp1=NULL, *tmp2=NULL, *tmp3=NULL, *tmp4 = NULL;
@@ -1083,6 +1092,7 @@ static int do_operator(char *token)
       pdf_release_obj (tmp1);
     break;
   case TEXFIG:
+    fprintf (stderr, "\nTEXFIG\n");
     if ((tmp6 = POP_STACK()) && (tmp6 -> type == PDF_NUMBER) &&
 	(tmp5 = POP_STACK()) && (tmp5 -> type == PDF_NUMBER) &&
 	(tmp4 = POP_STACK()) && (tmp4 -> type == PDF_NUMBER) &&
@@ -1090,12 +1100,17 @@ static int do_operator(char *token)
 	(tmp2 = POP_STACK()) && (tmp2 -> type == PDF_NUMBER) &&
 	(tmp1 = POP_STACK()) && (tmp1 -> type == PDF_NUMBER)) {
       double dvi2pts = dvi_unit_size();
-      fig_width = pdf_number_value(tmp1)*dvi2pts;
-      fig_height = pdf_number_value(tmp2)*dvi2pts;
-      fig_llx = pdf_number_value(tmp3)*dvi2pts;
-      fig_lly = pdf_number_value(tmp4)*dvi2pts;
-      fig_urx = pdf_number_value(tmp5)*dvi2pts;
-      fig_ury = pdf_number_value(tmp6)*dvi2pts;
+      fig_p = new_xform_info ();
+      fig_p -> width = pdf_number_value(tmp1)*dvi2pts;
+      fig_p -> height = pdf_number_value(tmp2)*dvi2pts;
+      fig_p -> c_llx = pdf_number_value(tmp3)*dvi2pts;
+      fig_p -> c_lly = pdf_number_value(tmp4)*dvi2pts;
+      fig_p -> c_urx = pdf_number_value(tmp5)*dvi2pts;
+      fig_p -> c_ury = pdf_number_value(tmp6)*dvi2pts;
+      pdf_scale_image (fig_p);
+      sprintf (fig_res_name, "Tf%ld", next_fig);
+      fig_xobj = begin_form_xobj (fig_p->u_llx, fig_p->u_lly, fig_p->c_llx, fig_p->c_lly, 
+				  fig_p->c_urx, fig_p->c_ury, fig_res_name);
     }
     if (tmp1) pdf_release_obj(tmp1);
     if (tmp2) pdf_release_obj(tmp2);
@@ -1104,10 +1119,25 @@ static int do_operator(char *token)
     if (tmp5) pdf_release_obj(tmp5);
     if (tmp6) pdf_release_obj(tmp6);
     break;
-  case ETEXFIG: /* Don't do much for now */
-    fig_width = 0.0; fig_height = 0.0;
-    fig_llx = 0.0; fig_lly = 0.0;
-    fig_urx = 0.0; fig_ury = 0.0;
+  case ETEXFIG:
+    fprintf (stderr, "\nETEXFIG\n");
+    if (fig_xobj) {
+      next_fig += 1;
+      end_form_xobj ();
+      pdf_doc_add_to_page_xobjects (fig_res_name, pdf_ref_obj(fig_xobj));
+      pdf_release_obj (fig_xobj);
+      fig_xobj = NULL;
+      pdf_doc_add_to_page (" q", 2);
+      add_xform_matrix (x_user, y_user, fig_p->xscale, fig_p->yscale, fig_p->rotate);
+      if (fig_p->depth != 0.0)
+	add_xform_matrix (0.0, -fig_p->depth, 1.0, 1.0, 0.0);
+      release_xform_info (fig_p);
+      pdf_doc_add_to_page (work_buffer, 
+			   sprintf (work_buffer, " /%s Do Q", 
+				    fig_res_name));
+    } else {
+      fprintf (stderr, "\nendTexFig without valid startTexFig ignored\n");
+    }
     break;
   case TRANSLATE:
     if ((tmp2 = POP_STACK()) &&  tmp2->type == PDF_NUMBER &&
@@ -1145,7 +1175,10 @@ static int do_operator(char *token)
   return !error;
 }
 
-static int do_one_ps_line (char **start, char *end)
+static int do_one_ps_line (char **start, char *end,
+			   double x_user, double y_user)
+ /* the only sections that need to know x_user and y _user are those
+    dealing with texfig */
 {
   char *token, *save = NULL;
   pdf_obj *obj;
@@ -1169,7 +1202,7 @@ static int do_one_ps_line (char **start, char *end)
       error = 1;
     } else {
       token = parse_ident (start, end);
-      if (!token || !do_operator (token)) {
+      if (!token || !do_operator (token, x_user, y_user)) {
 	error = 1;
       }
       if (token)
@@ -1197,7 +1230,7 @@ int parse_contents (FILE *image_file)
     char *start, *end;
     start = line_buffer;
     end = start+strlen(line_buffer);
-    if (!do_one_ps_line (&start, end)) {
+    if (!do_one_ps_line (&start, end, 0.0, 0.0)) {
       error = 1;
       break;
     }
@@ -1205,11 +1238,12 @@ int parse_contents (FILE *image_file)
   return !error;
 }
 
-int do_raw_ps_special (char **start, char* end, int cleanup)
+int do_raw_ps_special (char **start, char* end, int cleanup,
+		       double x_user, double y_user)
 {
   int error = 0;
   state = 0;
-  do_one_ps_line (start, end);
+  do_one_ps_line (start, end, x_user, y_user);
   if (cleanup)
     mp_cleanup(1);
   return !error;
@@ -1291,7 +1325,7 @@ pdf_obj *mp_include (FILE *image_file,  struct xform_info *p,
    return xobj;
 }
 
-struct xform_info *texfig_info (void)
+/* struct xform_info *texfig_info (void)
 {
   struct xform_info *p;
   p = new_xform_info ();
@@ -1303,4 +1337,4 @@ struct xform_info *texfig_info (void)
   p -> u_urx = fig_urx;
   p -> u_ury = fig_ury;
   return p;
-}
+} */

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/psspecial.c,v 1.10 2000/06/26 04:13:04 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/psspecial.c,v 1.11 2000/06/29 12:30:18 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -188,17 +188,16 @@ static int parse_psfile (char **start, char *end, double x_user, double y_user)
   return !error;
 }
 
-static void do_texfig (char **start, char *end, double x_user, double y_user)
+static void do_texfig (char **start, char *end)
 {
   char *filename;
   struct xform_info *p;
   skip_white (start, end);
   if (*start < end && (filename = parse_val_ident (start, end))) {
-
-    p = texfig_info ();
+    p = new_xform_info (); /* Leave this empty */
     if (validate_image_xform_info (p)) {
       pdf_obj *result;
-      result = embed_image (filename, p, x_user, y_user-p->height, NULL);
+      result = embed_image (filename, p, 0.0, 0.0, NULL);
       if (result)
 	pdf_release_obj (result);
     }
@@ -215,7 +214,6 @@ int ps_parse_special (char *buffer, UNSIGNED_QUAD size, double x_user,
 		      double y_user)
 {
   char *start = buffer, *end;
-  static char cleanup = 1;
   int result = 0;
   end = buffer + size;
   skip_white (&start, end);
@@ -227,30 +225,28 @@ int ps_parse_special (char *buffer, UNSIGNED_QUAD size, double x_user,
   } else if (!strncmp (start, "ps::[begin]", strlen("ps::[begin]"))) {
     start += strlen("ps::[begin]");
     result = 1; /* Likewise */
-    cleanup = 0;
-    do_raw_ps_special (&start, end, cleanup);
+    do_raw_ps_special (&start, end, 1, x_user, y_user);
   } else if (!strncmp (start, "ps::[end]", strlen("ps::[end]"))) {
     start += strlen("ps::[end]");
     result = 1; /* Likewise */
-    cleanup = 1;
-    do_raw_ps_special (&start, end, cleanup);
+    do_raw_ps_special (&start, end, 1, x_user, y_user);
   } else if (!strncmp (start, "ps: plotfile", strlen("ps: plotfile"))) {
     /* This is a bizarre, ugly  special case.. Not really postscript
        code */
     start += strlen ("ps: plotfile");
     result = 1;
-    do_texfig (&start, end, x_user, y_user);
+    do_texfig (&start, end);
   } else if (!strncmp (start, "ps::", strlen("ps::")) ||
 	     !strncmp (start, "PS::", strlen("PS::"))) {
     /* dvipdfm doesn't distinguish between ps:: and ps: */
     start += 4;
     result = 1; /* Likewise */
-    do_raw_ps_special (&start, end, 0);
+    do_raw_ps_special (&start, end, 1, x_user, y_user);
   } else if (!strncmp (start, "ps:", strlen("ps:")) ||
 	     !strncmp (start, "PS:", strlen("PS:"))) {
     start += 3;
     result = 1; /* Likewise */
-    do_raw_ps_special (&start, end, 1);
+    do_raw_ps_special (&start, end, 1, x_user, y_user);
   }
   return result;
 }

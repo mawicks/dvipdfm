@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.100 2000/01/14 16:06:32 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.101 2000/06/29 12:30:18 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -693,11 +693,16 @@ void dev_end_xform (void)
   return;
 }
 
-void dev_close_all_xforms (void)
+int dev_xform_depth (void)
 {
-  if (num_transforms) {
+  return num_transforms;
+}
+
+void dev_close_all_xforms (int depth)
+{
+  if (num_transforms > depth) {
     fprintf (stderr, "\nspecial: Closing pending transformations at end of page/XObject\n");
-    while (num_transforms > 0) {
+    while (num_transforms > depth) {
       num_transforms -= 1;
       pdf_doc_add_to_page (" Q", 2);
     }
@@ -764,7 +769,7 @@ MEM_START
     fprintf (stderr, "dev_eop:\n");
   }
   graphics_mode();
-  dev_close_all_xforms();
+  dev_close_all_xforms(0);
   pdf_doc_finish_page ();
   /* Finish any pending PS specials */
   mp_eop_cleanup();
