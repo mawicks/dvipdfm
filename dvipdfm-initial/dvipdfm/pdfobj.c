@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfobj.c,v 1.6 1998/11/21 20:18:58 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfobj.c,v 1.7 1998/11/21 21:02:17 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -1053,7 +1053,7 @@ static long find_xref(void)
   return pdf_input_file_xref_pos;
 }
 
-static long find_trailer(void)
+/* static long find_trailer(void)
 {
   long currentpos;
   if (debug) {
@@ -1074,7 +1074,7 @@ static long find_trailer(void)
     seek_absolute(pdf_input_file, currentpos);
   } while (strncmp (work_buffer, "trailer", strlen ("trailer")));
   return currentpos;
-}
+} */
 
 pdf_obj *parse_trailer (char **start, char *end)
 {
@@ -1100,7 +1100,7 @@ struct object
   pdf_obj *direct;
   pdf_obj *indirect;
   int used;
-} *xref_table;
+} *xref_table = NULL;
 long num_input_objects;
 
 
@@ -1179,6 +1179,9 @@ pdf_obj *pdf_read_object (int obj_no)
   long start_pos, end_pos, length;
   char *buffer, *number, *parse_pointer, *end;
   pdf_obj *result;
+  if (debug) {
+    fprintf (stderr, "\nread_object: obj=%d\n", obj_no);
+  }
   if (obj_no < 0 || obj_no >= num_input_objects) {
     fprintf (stderr, "\nTrying to read nonexistent object\n");
     return NULL;
@@ -1187,12 +1190,23 @@ pdf_obj *pdf_read_object (int obj_no)
     fprintf (stderr, "\nTrying to read deleted object\n");
     return NULL;
   }
+  if (debug) {
+    fprintf (stderr, "\nobj@%d\n", xref_table[obj_no].position);
+  }
   seek_absolute (pdf_input_file, start_pos =
 		 xref_table[obj_no].position);
   end_pos = next_object (obj_no);
+  if (debug) {
+    fprintf (stderr, "\nendobj@%d\n", end_pos);
+  }
+  
   buffer = NEW (end_pos - start_pos+1, char);
   fread (buffer, sizeof(char), end_pos-start_pos, pdf_input_file);
   buffer[end_pos-start_pos] = 0;
+  if (debug) {
+    fprintf (stderr, "\nobject:\n%s", buffer);
+  }
+  
   parse_pointer = buffer;
   end = buffer+(end_pos-start_pos);
   skip_white (&parse_pointer, end);
@@ -1252,7 +1266,7 @@ pdf_obj *pdf_deref_obj (pdf_obj *obj)
 int parse_xref (void)
 {
   long first_obj;
-  int i, length;
+  int i, length, num_table_objects;
   char *start, *end;
   if ((pdf_input_file_xref_pos = find_xref()) == 0) {
     fprintf (stderr, "No xref loc.  Are you sure this is a PDF file?\n");
@@ -1270,13 +1284,21 @@ int parse_xref (void)
     return 0;
   }
   mfgets (work_buffer, WORK_BUFFER_SIZE, pdf_input_file);
-  sscanf (work_buffer, "%ld %d", &first_obj, &num_input_objects);
-  xref_table = NEW (num_input_objects, struct object);
-  for (i=0; i<num_input_objects; i++) {
+  sscanf (work_buffer, "%ld %d", &first_obj, &num_table_objects);
+  if (num_input_objects < first_obj+num_table_objects) {
+    num_input_objects = first_obj + num_table_objects;
+    xref_table = RENEW (xref_table, num_input_objects,
+			struct object);
+  }
+  for (i=first_obj; i<first_obj+num_table_objects; i++) {
     fread (work_buffer, sizeof(char), 20, pdf_input_file);
     work_buffer[19] = 0;
     sscanf (work_buffer, "%ld %d", &(xref_table[i].position), 
 	    &(xref_table[i].generation));
+    if (debug) {
+      fprintf (stderr, "pos: %d gen: %d\n", xref_table[i].position,
+	       xref_table[i].generation);
+    }
     if (work_buffer[17] != 'n' && work_buffer[17] != 'f') {
       fprintf (stderr, "PDF file is corrupt\n");
       fprintf (stderr, "[%s]\n", work_buffer);
@@ -1311,8 +1333,14 @@ pdf_obj *pdf_open (char *file)
     fprintf (stderr, "\nProbably not a PDF file\n");
     return NULL;
   }
-  trailer_pos = find_trailer();
-  seek_absolute (pdf_input_file, trailer_pos);
+  if (debug) {
+    fprintf (stderr, "\nDone with xref:\n");
+  }
+  
+  /*  trailer_pos = find_trailer();
+      seek_absolute (pdf_input_file, trailer_pos); */
+  trailer_pos = tell_position (pdf_input_file);
+  
   /* Let's go ahead and try to read the rest of the file into
      work_buffer.  Normally, this shouldn't be that big */
   if (eof_pos - trailer_pos >= WORK_BUFFER_SIZE) {
@@ -1322,6 +1350,10 @@ pdf_obj *pdf_open (char *file)
   }
   fread (work_buffer, sizeof(char), eof_pos-trailer_pos,
 	 pdf_input_file);
+  if (debug) {
+    work_buffer[eof_pos-trailer_pos] = 0;
+    fprintf (stderr, "Trailer:\n%s\n", work_buffer);
+  }
   parse_pointer = work_buffer;
   trailer = parse_trailer (&parse_pointer,
 			   work_buffer+(eof_pos-trailer_pos));
@@ -1348,6 +1380,7 @@ void pdf_close (void)
     }
   } while (!done);
   release (xref_table);
+  xref_table = NULL;
   num_input_objects = 0;
   fclose (pdf_input_file);
   pdf_input_file = NULL;
