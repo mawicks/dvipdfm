@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.h,v 1.10 1998/12/13 22:37:54 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.h,v 1.11 1998/12/13 23:09:47 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -29,7 +29,7 @@
 #include "numbers.h"
 #include "pdfdev.h"
 
-extern error_t dvi_open (char *filename);
+extern error_t dvi_init (char *filename);
 
 extern void dvi_set_verbose (void);
 extern void dvi_set_debug (void);
@@ -37,8 +37,6 @@ extern void dvi_set_debug (void);
 extern void dvi_close (void);  /* Closes data structures created by dvi_open */
 extern void dvi_complete (void);  /* Closes output file being written by an
 			      actual driver */
-
-extern void dvi_init (char *outputfile);
 
 extern double dvi_tell_mag (void);
 extern double dvi_unit_size (void);

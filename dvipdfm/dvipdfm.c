@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.7 1998/12/12 01:37:18 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.8 1998/12/13 23:09:47 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -196,8 +196,8 @@ int CDECL main (int argc, char *argv[])
   
   if (!really_quiet)
     fprintf (stdout, "%s -> %s\n", dvi_filename, pdf_filename);
-  dvi_open (dvi_filename);
-  dvi_init (pdf_filename);
+  dev_init (pdf_filename);
+  dvi_init (dvi_filename);
   if (landscape_mode)
     dev_set_page_size (paper_height, paper_width);
   else

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.26 1998/12/13 22:37:54 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.27 1998/12/13 23:09:47 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -22,100 +22,6 @@
 	mwicks@kettering.edu
 */
 
-	
-/* DVI op codes */
-#define SET_CHAR_0 0
-#define SET_CHAR_1 1
-/* etc. */
-#define SET_CHAR_127 127
-#define SET1   128 /* Typesets its single operand between 128 and 255 */
-#define SET2   129 /* Typesets its single two byte unsigned operand */
-#define SET3   130 /* Typesets its single three byte unsigned operand */
-#define SET4   131 /* Typesets its single four byte unsigned operand */
-#define SET_RULE 132 /* Sets a rule of height param1(four bytes) and width param2(four bytes) */
-                     /* These are *signed*.  Nothing typeset for nonpositive values */
-                     /* However, negative value *do* change current point */
-#define PUT1   133 /* Like SET1, but point doesn't change */
-#define PUT2   134 /* Like SET2 */
-#define PUT3   135 /* Like SET3 */
-#define PUT4   136 /* Like SET4 */
-#define PUT_RULE 137 /* Like SET_RULE */
-#define NOP    138 
-#define BOP    139 /* Followed by 10 four byte count registers (signed?).  Last parameter points to */
-                   /* previous BOP (backward linked, first BOP has -1).  BOP clears stack and resets current point. */
-#define EOP    140
-#define PUSH   141 /* Pushes h,v,w,x,y,z */
-#define POP    142 /* Opposite of push*/
-#define RIGHT1 143 /* Move right by one byte signed operand */
-#define RIGHT2 144 /* Move right by two byte signed operand */
-#define RIGHT3 145 /* Move right by three byte signed operand */
-#define RIGHT4 146 /* Move right by four byte signed operand */
-#define W0     147 /* Move right w */
-#define W1     148 /* w <- single byte signed operand.  Move right by same amount */
-#define W2     149 /* Same as W1 with two byte signed operand */
-#define W3     150 /* Three byte signed operand */
-#define W4     151 /* Four byte signed operand */
-#define X0     152 /* Move right x */
-#define X1     153 /* Like W1 */
-#define X2     154 /* Like W2 */
-#define X3     155 /* Like W3 */
-#define X4     156 /* Like W4 */
-#define DOWN1  157 /* Move down by one byte signed operand */
-#define DOWN2  158 /* Two byte signed operand */
-#define DOWN3  159 /* Three byte signed operand */
-#define DOWN4  160 /* Four byte signed operand */
-#define Y0     161 /* Move down by y */
-#define Y1     162 /* Move down by one byte signed operand, which replaces Y */
-#define Y2     163 /* Two byte signed operand */
-#define Y3     164 /* Three byte signed operand */
-#define Y4     165 /* Four byte signed operand */
-#define Z0     166 /* Like Y0, but use z */
-#define Z1     167 /* Like Y1 */
-#define Z2     168 /* Like Y2 */
-#define Z3     169 /* Like Y3 */
-#define Z4     170 /* Like Y4 */
-#define FNT_NUM_0 171 /* Switch to font 0 */
-#define FNT_NUM_1 172 /* Switch to font 1 */
-/* etc. */
-#define FNT_NUM_63 234 /* Switch to font 63 */
-#define FNT1       235 /* Switch to font described by single byte unsigned operand */
-#define FNT2       236 /* Switch to font described by two byte unsigned operand */
-#define FNT3       237 /* Three byte font descriptor */
-#define FNT4       238 /* Four byte operator (Knuth says signed, but what would be the point? */
-#define XXX1       239 /* Special.  Operand is one byte length.  Special follows immediately */
-#define XXX2       240 /* Two byte operand */
-#define XXX3       241 /* Three byte operand */ 
-#define XXX4       242 /* Four byte operand (Knuth says TeX uses only XXX1 and XXX4 */
-#define FNT_DEF1  243 /* One byte font number, four byte checksum, four byte magnified size (DVI units),
-                          four byte designed size, single byte directory length, single byte name length,
-                          followed by complete name (area+name) */
-#define FNT_DEF2  244 /* Same for two byte font number */
-#define FNT_DEF3  245 /* Same for three byte font number */
-#define FNT_DEF4  246 /* Four byte font number (Knuth says signed) */
-#define PRE        247 /* Preamble:
-                              one byte DVI version (should be 2)
-                              four byte unsigned numerator
-                              four byte unsigned denominator -- one DVI unit = den/num*10^(-7) m
-                              four byte magnification (multiplied by 1000)
-                              one byte unsigned comment length followed by comment. */
-#define DVI_ID             2    /* ID Byte for current DVI file */
-#define POST       248  /* Postamble- -- similar to preamble
-                              four byte pointer to final bop
-                              four byte numerator
-                              four byte denominator
-                              four byte mag
-                              four byte maximum height (signed?)
-                              four byte maximum width 
-                              two byte max stack depth required to process file
-                              two byte number of pages */
-#define POST_POST  249  /* End of postamble
-                              four byte pointer to POST command
-                              Version byte (same as preamble)
-                              Padded by four or more 223's to the end of the file. */
-#define PADDING    223
-
-/* Font definitions appear between POST and POST_POST */
-
 #include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -129,19 +35,7 @@
 #include "mem.h"
 #include "dvi.h"
 
-/* External functions defined in this file:
-      dvi_set_verbose ()   - Enable verbose progress reporting
-      dvi_set_debug ()   - Enable verbose progress reporting
-      dvi_open(filename)   - Open a dvi file and initialize
-                             data structures to represent file.
-      int dvi_npages()     - Returns the total number of pages in the
-      			     dvi file.
-      dvi_close()          - Close a dvi file
-      void dvi_do_page(n)  - Process page #n (First page is 0!)
-  
-   Static functions defined in this file:
-      invalid_signature ()  - Error handler for noncomforming DVI file.
-      find_post_post(file) - Find the post_post signature in a DVI file. */
+#include "dvicodes.h"
 
 
 /* Interal Variables */
@@ -158,16 +52,25 @@ static UNSIGNED_PAIR numpages = 0;
 static UNSIGNED_QUAD media_width, media_height;
 static UNSIGNED_QUAD dvi_unit_num, dvi_unit_den, dvi_mag;
 
+
+#define PHYSICAL 1
+#define VIRTUAL 2
+#define DVI 1
+#define VF 2
 struct font_def {
+  int type;  /* Type is physical or virtual */
+  int font_id;  /* id returned by dev (for PHYSICAL fonts)
+		   or by vf module for (VIRTUAL fonts) */
+  mpt_t size;
+  int source;  /* Source is either DVI or VF */
   signed long tex_id /* id used internally by TeX */;
-  unsigned long checksum, size, design_size;
+  unsigned long checksum, design_size;
   char *directory, *name;
-  int dev_id;  /* id returned by DEV module */
 } font_def[MAX_FONTS];
 
 static void invalid_signature()
 {
-  ERROR ("dvi_open:  Something is wrong.  Are you sure this is a DVI file?\n");
+  ERROR ("dvi_init:  Something is wrong.  Are you sure this is a DVI file?\n");
 }
 
 #define range_check_loc(loc) {if ((loc) > dvi_file_size) invalid_signature();}
@@ -195,13 +98,13 @@ static void find_post (void)
   int read_byte;
 
   if (dvi_debug) {
-    fprintf (stderr, "dvi_open: Searching for post\n");
+    fprintf (stderr, "dvi_init: Searching for post\n");
   }
 
   /* First find end of file */  
   dvi_file_size = file_size (dvi_file);
   if (dvi_debug) {
-    fprintf (stderr, "dvi_open: DVI size is %ld\n", dvi_file_size);
+    fprintf (stderr, "dvi_init: DVI size is %ld\n", dvi_file_size);
   }
   current = dvi_file_size;
  
@@ -252,7 +155,7 @@ static void get_page_info (void)
     fprintf (stderr, "Page count:\t %4d\n", numpages);
   }
   if (numpages == 0) {
-    ERROR ("dvi_open:  Page count is 0!");
+    ERROR ("dvi_init:  Page count is 0!");
   }
   max_pages = numpages;
   page_loc = NEW (max_pages, unsigned long);
@@ -270,10 +173,26 @@ static void get_page_info (void)
   }
 }
 
+/* Following are computed "constants" used for unit conversion */
+static double dvi2pts = 0.0;
+static fixword mpts2dvi = 0, dvi2mpts = 0;
+
 double dvi_tell_mag (void)
 {
   return (dvi_mag/1000.0);
 }
+
+static void do_scales (void)
+{
+  dvi2pts = (double) dvi_unit_num / (double) dvi_unit_den;
+  dvi2pts *= (72.0)/(254000.0);
+  dvi2pts *= (double) dvi_mag / 1000.0;
+  mpts2dvi = ((double) dvi_unit_den / (double) (dvi_unit_num))*
+    (254000.0/72.0)/dvi_mag*(1<<20);
+  dvi2mpts = ((double) dvi_unit_num / (double) (dvi_unit_den))*
+    (72.0/254000.0)*dvi_mag*(1<<20);
+}
+
 
 static void get_dvi_info (void)
 {
@@ -339,13 +258,13 @@ static void get_a_font_record (struct font_def * a_font)
 }
 
 
-static void get_font_info (void)
+static void get_dvi_fonts (void)
 {
   UNSIGNED_BYTE code;
   if (dvi_verbose)
     fprintf(stderr, "Fonts..");
   seek_absolute (dvi_file, post_location+29);
-  while ((code = get_unsigned_byte(dvi_file)) != POST_POST) {
+  while (numfonts < MAX_FONTS && (code = get_unsigned_byte(dvi_file)) != POST_POST) {
     switch (code)
       {
       case FNT_DEF1:
@@ -367,6 +286,8 @@ static void get_font_info (void)
     get_a_font_record(&font_def[numfonts]);
     numfonts += 1;
   }
+  if (numfonts >= MAX_FONTS)
+    ERROR ("Font capacity exceeded");
   if (dvi_verbose) {
     dump_font_info ();
     fprintf (stderr, "\nRead %d fonts.\n", numfonts);
@@ -389,41 +310,6 @@ void get_comment(void)
 }
 
 
-error_t dvi_open (char * filename)
-{
-  if (!(dvi_file = fopen (filename, FOPEN_RBIN_MODE))) {
-    ERROR ("dvi_open:  Specified DVI file doesn't exist");
-    return (FATAL_ERROR);
-  }
-  /* DVI files are most easily read backwards by searching
-     for post_post and then post opcode */
-  find_post ();
-
-  get_dvi_info();
-  get_page_info();
-  get_font_info();
-  get_comment();
-  return (NO_ERROR);
-}
-
-void dvi_close (void)
-{
-  int i;
-  
-  /* Do some house cleaning */
-  fclose (dvi_file);
-  for (i=0; i<numfonts; i++) {
-    RELEASE (font_def[i].directory);
-    RELEASE (font_def[i].name);
-  }
-  RELEASE (page_loc);
-  numfonts = 0;
-  numpages = 0;
-  dvi_file = NULL;
-  dev_close_all_fonts();
-  tfm_close_all();
-}
-
 /* The section below this line deals with the actual processing of the
    dvi file.
 
@@ -440,11 +326,6 @@ static int current_font;
 static dvi_stack_depth = 0;  
 static int processing_page = 0;
 
-/* Following are computed "constants" used for unit conversion */
-
-static double dvi2pts = 0.0;
-static fixword mpts2dvi = 0, dvi2mpts = 0;
-
 static void clear_state (void)
 {
   dvi_state.h = 0; dvi_state.v = 0; dvi_state.w = 0;
@@ -453,16 +334,6 @@ static void clear_state (void)
   current_font = -1;
 }
 
-static void do_scales (void)
-{
-  dvi2pts = (double) dvi_unit_num / (double) dvi_unit_den;
-  dvi2pts *= (72.0)/(254000.0);
-  dvi2pts *= (double) dvi_mag / 1000.0;
-  mpts2dvi = ((double) dvi_unit_den / (double) (dvi_unit_num))*
-    (254000.0/72.0)/dvi_mag*(1<<20);
-  dvi2mpts = ((double) dvi_unit_num / (double) (dvi_unit_den))*
-    (72.0/254000.0)*dvi_mag*(1<<20);
-}
 
 double dvi_unit_size(void)
 {
@@ -480,22 +351,10 @@ static void do_locate_fonts (void)
     }
     /* Only need to read tfm once for the same name.  Check to see
        if it already exists */
-    font_def[i].dev_id = dev_locate_font (font_def[i].name, font_def[i].size*dvi2pts);
+    font_def[i].font_id = dev_locate_font (font_def[i].name, font_def[i].size*dvi2pts);
   }
 }
 
-
-void dvi_init (char *outputfile)
-{
-  clear_state();
-  if (dvi_debug) fprintf (stderr, "dvi: computing scaling parameters\n");
-  do_scales();
-  if (dvi_debug) fprintf (stderr, "dvi: Initializing output device\n");
-  dev_init (outputfile);
-  if (dvi_debug) fprintf (stderr, "dvi: locating fonts\n");
-  do_locate_fonts();
-  if (dvi_debug) fprintf (stderr, "dvi: pdf_init done\n");
-}
 
 void dvi_complete (void)    
 {
@@ -877,7 +736,7 @@ static void do_fnt (SIGNED_QUAD font_id)
     fprintf (stderr, "fontid: %ld\n", font_id);
     ERROR ("dvi_do_fnt:  Tried to select a font that hasn't been defined");
   }
-  current_font = font_def[i].dev_id;
+  current_font = font_def[i].font_id;
 }
 
 static void do_fnt1(void)
@@ -1179,6 +1038,44 @@ void dvi_do_page(int n)  /* Most of the work of actually interpreting
   }
 }
 
+error_t dvi_init (char * filename)
+{
+  if (!(dvi_file = fopen (filename, FOPEN_RBIN_MODE))) {
+    ERROR ("dvi_init:  Specified DVI file doesn't exist");
+    return (FATAL_ERROR);
+  }
+  /* DVI files are most easily read backwards by searching
+     for post_post and then post opcode */
+  find_post ();
+
+  get_dvi_info();
+  do_scales();
+  get_page_info();
+  get_dvi_fonts();
+  get_comment();
+  clear_state();
+  do_locate_fonts();
+  return (NO_ERROR);
+}
+
+void dvi_close (void)
+{
+  int i;
+  
+  /* Do some house cleaning */
+  fclose (dvi_file);
+  for (i=0; i<numfonts; i++) {
+    RELEASE (font_def[i].directory);
+    RELEASE (font_def[i].name);
+  }
+  RELEASE (page_loc);
+  numfonts = 0;
+  numpages = 0;
+  dvi_file = NULL;
+  dev_close_all_fonts();
+  tfm_close_all();
+}
+
 /* The following are need to implement virtual fonts
    According to documentation, the vf "subroutine"
    must have state pushed and must have
@@ -1203,3 +1100,4 @@ void dvi_vf_finish (void)
   dvi_pop();
   current_font = saved_dvi_font;
 }
+
