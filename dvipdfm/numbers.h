@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/numbers.h,v 1.1 1998/11/27 21:16:37 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/numbers.h,v 1.2 1998/12/01 05:19:42 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -28,6 +28,8 @@
 
 #include <stdio.h>
 #include <math.h>
+
+typedef unsigned char Ubyte;
 
 typedef int UNSIGNED_BYTE, SIGNED_BYTE, SIGNED_PAIR;
 typedef unsigned UNSIGNED_PAIR;

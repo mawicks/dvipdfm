@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/numbers.c,v 1.2 1998/11/30 20:47:02 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/numbers.c,v 1.3 1998/12/01 05:19:42 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -30,9 +30,7 @@
 
 UNSIGNED_BYTE get_unsigned_byte (FILE *file)
 {
-  UNSIGNED_BYTE byte;
-  byte = read_byte (file);
-  return byte;
+  return read_byte(file);
 }
 
 SIGNED_BYTE get_signed_byte (FILE *file)
@@ -46,11 +44,11 @@ SIGNED_BYTE get_signed_byte (FILE *file)
 
 UNSIGNED_PAIR get_unsigned_pair (FILE *file)
 {
-  UNSIGNED_BYTE byte;
   int i;
-  unsigned pair = 0;
+  UNSIGNED_BYTE byte;
+  UNSIGNED_PAIR pair = 0;
   for (i=0; i<2; i++) {
-    byte = read_byte (file);
+    byte = read_byte(file);
     pair = pair*0x100u + byte;
   }
   return pair;
@@ -58,11 +56,10 @@ UNSIGNED_PAIR get_unsigned_pair (FILE *file)
 
 SIGNED_PAIR get_signed_pair (FILE *file)
 {
-  int byte, i;
+  int i;
   long pair = 0;
   for (i=0; i<2; i++) {
-    byte = read_byte (file);
-    pair = pair*0x100 + byte;
+    pair = pair*0x100 + read_byte(file);
   }
   if (pair >= 0x8000) {
     pair -= 0x10000l;
@@ -73,23 +70,20 @@ SIGNED_PAIR get_signed_pair (FILE *file)
 
 UNSIGNED_TRIPLE get_unsigned_triple(FILE *file)
 {
-  UNSIGNED_BYTE byte;
   int i;
   long triple = 0;
   for (i=0; i<3; i++) {
-    byte = read_byte(file);
-    triple = triple*0x100u + byte;
+    triple = triple*0x100u + read_byte(file);
   }
   return (UNSIGNED_TRIPLE) triple;
 }
 
 SIGNED_TRIPLE get_signed_triple(FILE *file)
 {
-  int byte, i;
+  int i;
   long triple = 0;
   for (i=0; i<3; i++) {
-    byte = read_byte(file);
-    triple = triple*0x100 + byte;
+    triple = triple*0x100 + read_byte(file);
   }
   if (triple >= 0x800000l) 
     triple -= 0x1000000l;
@@ -106,24 +100,18 @@ SIGNED_QUAD get_signed_quad(FILE *file)
   quad = byte;
   if (quad >= 0x80) 
     quad = byte - 0x100;
-
   for (i=0; i<3; i++) {
-    byte = read_byte(file);
-    quad = quad*0x100 + byte;
+    quad = quad*0x100 + read_byte(file);
   }
-
   return (SIGNED_QUAD) quad;
 }
 
 UNSIGNED_QUAD get_unsigned_quad(FILE *file)
 {
-  UNSIGNED_BYTE byte;
   int i;
   unsigned long quad = 0;
-
   for (i=0; i<4; i++) {
-    byte = read_byte(file);
-    quad = quad*0x100u + byte;
+    quad = quad*0x100u + read_byte(file);
   }
   return (UNSIGNED_QUAD) quad;
 }

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.5 1998/11/30 20:47:02 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.6 1998/12/01 05:19:42 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -33,6 +33,7 @@
 #include "error.h"
 #include "mem.h"
 #include "pdfdoc.h"
+#include "numbers.h"
 #include "numbers.h"
 
 static pdf_obj *catalog = NULL;
@@ -448,7 +449,7 @@ static int CDECL cmp_dest (const void *d1, const void *d2)
   int tmp;
   length = MIN (((dest_entry *) d1) -> length, ((dest_entry *) d2) ->
 		length);
-  if ((tmp = strncmp (((dest_entry *) d1) -> name, ((dest_entry *) d2)
+  if ((tmp = memcmp (((dest_entry *) d1) -> name, ((dest_entry *) d2)
 		      -> name, length)) != 0)
     return tmp;
   if (((dest_entry *) d1) -> length == ((dest_entry *) d2) -> length)
@@ -477,7 +478,7 @@ static void finish_dests_tree (void)
 		name_array);
   tmp1 = pdf_new_array();
   pdf_add_array (tmp1, pdf_new_string (dests[0].name,
-				       dests[0].length));
+ 				       dests[0].length));
   pdf_add_array (tmp1, pdf_new_string (dests[number_dests-1].name,
 				       dests[number_dests-1].length));
   pdf_add_dict (kid,
@@ -499,7 +500,7 @@ void pdf_doc_add_dest (char *name, unsigned length, pdf_obj *array )
     ERROR ("pdf_doc_add_dest:  Too many named destinations\n");
   }
   dests[number_dests].name = NEW (length, char);
-  strncpy (dests[number_dests].name, name, length);
+  memcpy (dests[number_dests].name, name, length);
   dests[number_dests].length = length;
   dests[number_dests].array = pdf_ref_obj (array);
   number_dests++;

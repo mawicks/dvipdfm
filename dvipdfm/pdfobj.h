@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.h,v 1.5 1998/11/30 20:38:25 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.h,v 1.6 1998/12/01 05:19:43 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -26,7 +26,6 @@
 #ifndef PDFOBJ_H
 #define PDFOBJ_H
 #include <stdio.h>
-#include "pdflimits.h"
 
 /* Here is the complete list of PDF object types */
 
@@ -140,11 +139,11 @@ double pdf_number_value (pdf_obj *number);
 
 char *pdf_name_value (pdf_obj *object);
 
-pdf_obj *pdf_new_string (const unsigned char *string, unsigned length);
+pdf_obj *pdf_new_string (const void *string, unsigned length);
 void pdf_set_string (pdf_obj *object, unsigned char *string, unsigned length);
-unsigned char *pdf_string_value (pdf_obj *object);
+void *pdf_string_value (pdf_obj *object);
 
-#define pdf_obj_string_value(s) (((pdf_string *)((s)->data)) -> string)
+#define pdf_obj_string_value(s) ((void *)(((pdf_string *)((s)->data)) -> string))
 #define pdf_obj_string_length(s) (((pdf_string *)((s)->data)) -> length)
 
 pdf_obj *pdf_new_name (const char *name);  /* Name does not include the / */

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.3 1998/11/30 20:47:01 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.4 1998/12/01 05:19:42 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -870,8 +870,8 @@ static void do_fnt4(void)
 static void do_xxx(UNSIGNED_QUAD size) 
 {
   UNSIGNED_QUAD i;
-  char *buffer;
-  buffer = NEW (size+1, char);
+  Ubyte *buffer;
+  buffer = NEW (size+1, Ubyte);
   for (i=0; i<size; i++) {
     buffer[i] = get_unsigned_byte(dvi_file);
   }

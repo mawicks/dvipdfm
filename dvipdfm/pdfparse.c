@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.c,v 1.5 1998/11/30 20:47:03 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.c,v 1.6 1998/12/01 05:19:43 mwicks Exp $
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
 
@@ -178,7 +178,7 @@ char *parse_number (char **start, char *end)
   }
   if (*start > save) {
     number = NEW ((*start-save)+1, char);
-    strncpy (number, save, (*start-save));
+    memcpy (number, save, (*start-save));
     number[*start-save] = 0;
     return number;
   }
@@ -199,7 +199,7 @@ char *parse_ident (char **start, char *end)
   if (save == *start)
     return NULL;
   ident = NEW (*start-save+1, char);
-  strncpy (ident, save, *start-save);
+  memcpy (ident, save, *start-save);
   ident[*start-save] = 0;
   return ident;
 }

@@ -15,7 +15,7 @@
 extern void pdf_doc_creator(char *s);
 extern void pdf_set_info(pdf_obj *object);
 extern void pdf_set_root(pdf_obj *object);
-extern void dev_do_special(char *buffer,unsigned long size);
+extern void dev_do_special(void *buffer,unsigned long size);
 extern void pdf_doc_add_to_page_xobjects(const char *name,pdf_obj *resource);
 extern void pdf_doc_add_to_page(char *buffer,unsigned int length);
 extern struct pdf_obj *parse_pdf_null(char **start ,char *end);

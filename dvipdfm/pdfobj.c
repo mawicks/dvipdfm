@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.6 1998/11/30 20:47:02 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.7 1998/12/01 05:19:42 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -25,7 +25,7 @@
 	
 #include <ctype.h>
 #include <string.h>
-
+#include "pdflimits.h"
 #include "system.h" 
 #include "pdfobj.h"
 #include "mem.h"
@@ -422,7 +422,7 @@ double pdf_number_value (pdf_obj *object)
   return ((pdf_number *)(object -> data)) -> value;
 }
 
-pdf_obj *pdf_new_string (const unsigned char *string, unsigned length)
+pdf_obj *pdf_new_string (const void *string, unsigned length)
 {
   pdf_obj *result;
   pdf_string *data;
@@ -441,7 +441,7 @@ pdf_obj *pdf_new_string (const unsigned char *string, unsigned length)
   return result;
 }
 
-unsigned char *pdf_string_value (pdf_obj *a_pdf_string)
+void *pdf_string_value (pdf_obj *a_pdf_string)
 {
   pdf_string *data;
   data = a_pdf_string -> data;
@@ -508,8 +508,9 @@ void pdf_set_string (pdf_obj *object, unsigned char *string, unsigned length)
   }
   if (length != 0) {
     data -> length = length;
-    data -> string = NEW (length, unsigned char);
-    strncpy (data -> string, string, length);
+    data -> string = NEW (length+1, unsigned char);
+    memcpy (data -> string, string, length);
+    (data->string)[length] = 0;
   } else {
     data -> length = 0;
     data -> string = NULL;
@@ -540,7 +541,8 @@ pdf_obj *pdf_new_name (const char *name)  /* name does *not* include the / */
   result -> data = data;
   if (length != 0) {
     data -> name = NEW (length+1, char);
-    strncpy (data -> name, name, length+1);
+    memcpy (data -> name, name, length+1);
+    (data->name)[length] = 0;
   } else 
     data -> name = NULL;
   return result;
@@ -597,7 +599,8 @@ void pdf_set_name (pdf_obj *object, char *name)
   }
   if (length != 0) {
     data -> name = NEW (length, char);
-    strncpy (data -> name, name, length);
+    memcpy (data -> name, name, length);
+    (data->name)[length] = 0;
   } else {
     data -> name = NULL;
   }
