@@ -63,11 +63,12 @@ MAKEINFO = makeinfo
 PACKAGE = dvipdf
 VERSION = 0.01
 
-include_HEADERS = dvi.h error.h io.h tfm.h numbers.h pdfobj.h
-bin_PROGRAMS = dvitest tfmtest pdftest
+include_HEADERS = dvi.h error.h io.h tfm.h numbers.h pdfobj.h pdfdoc.h
+bin_PROGRAMS = dvitest tfmtest pdftest doctest
 dvitest_SOURCES = dvitest.c numbers.c dvi.c io.c mem.c
 tfmtest_SOURCES = tfmtest.c numbers.c tfm.c io.c mem.c
 pdftest_SOURCES = pdftest.c pdfobj.c mem.c 
+doctest_SOURCES = doctest.c pdfdoc.c pdfobj.c mem.c
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = config.h
@@ -91,6 +92,10 @@ pdftest_OBJECTS =  pdftest.o pdfobj.o mem.o
 pdftest_LDADD = $(LDADD)
 pdftest_DEPENDENCIES = 
 pdftest_LDFLAGS = 
+doctest_OBJECTS =  doctest.o pdfdoc.o pdfobj.o mem.o
+doctest_LDADD = $(LDADD)
+doctest_DEPENDENCIES = 
+doctest_LDFLAGS = 
 COMPILE = $(CC) $(DEFS) $(INCLUDES) $(CPPFLAGS) $(CFLAGS)
 LINK = $(CC) $(CFLAGS) $(LDFLAGS) -o $@
 HEADERS =  $(include_HEADERS)
@@ -104,11 +109,11 @@ DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
 
 TAR = tar
 GZIP = --best
-DEP_FILES =  .deps/dvi.P .deps/dvitest.P .deps/io.P .deps/mem.P \
-.deps/numbers.P .deps/pdfobj.P .deps/pdftest.P .deps/tfm.P \
-.deps/tfmtest.P
-SOURCES = $(dvitest_SOURCES) $(tfmtest_SOURCES) $(pdftest_SOURCES)
-OBJECTS = $(dvitest_OBJECTS) $(tfmtest_OBJECTS) $(pdftest_OBJECTS)
+DEP_FILES =  .deps/doctest.P .deps/dvi.P .deps/dvitest.P .deps/io.P \
+.deps/mem.P .deps/numbers.P .deps/pdfdoc.P .deps/pdfobj.P \
+.deps/pdftest.P .deps/tfm.P .deps/tfmtest.P
+SOURCES = $(dvitest_SOURCES) $(tfmtest_SOURCES) $(pdftest_SOURCES) $(doctest_SOURCES)
+OBJECTS = $(dvitest_OBJECTS) $(tfmtest_OBJECTS) $(pdftest_OBJECTS) $(doctest_OBJECTS)
 
 all: Makefile $(PROGRAMS) $(HEADERS) config.h
 
@@ -204,6 +209,10 @@ tfmtest: $(tfmtest_OBJECTS) $(tfmtest_DEPENDENCIES)
 pdftest: $(pdftest_OBJECTS) $(pdftest_DEPENDENCIES)
 	@rm -f pdftest
 	$(LINK) $(pdftest_LDFLAGS) $(pdftest_OBJECTS) $(pdftest_LDADD) $(LIBS)
+
+doctest: $(doctest_OBJECTS) $(doctest_DEPENDENCIES)
+	@rm -f doctest
+	$(LINK) $(doctest_LDFLAGS) $(doctest_OBJECTS) $(doctest_LDADD) $(LIBS)
 
 install-includeHEADERS: $(include_HEADERS)
 	@$(NORMAL_INSTALL)
