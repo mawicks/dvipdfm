@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.27 1998/12/09 20:11:53 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.28 1998/12/09 20:56:57 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -602,42 +602,50 @@ void dev_select_font (int dev_font_id)
   if (dev_font_id < 0 || dev_font_id >= n_dev_fonts) {
     ERROR ("dev_change_to_font: dvi wants a font that isn't loaded");
   }
-  if (dev_font_id >= 0 && 
-      current_phys_font != dev_font_id &&
-      dev_font[dev_font_id].type == PHYSICAL) {
-    text_mode();
-    sprintf (format_buffer, " /%s %g Tf", dev_font[dev_font_id].short_name,
-	     ROUND(dev_font[dev_font_id].ptsize*DPI/72, 0.01));
-    pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
-    /* Add to Font list in Resource dictionary for this page */
-    pdf_doc_add_to_page_fonts (dev_font[dev_font_id].short_name,
-			       pdf_link_obj(dev_font[dev_font_id].font_resource));
-    current_phys_font = dev_font_id;
-  }
   current_font = dev_font_id;
   if (dev_font_id >= 0)
     current_ptsize = dev_font[dev_font_id].ptsize;
   else
     current_ptsize = 0.0;
 }
+/* The purpose of the following routine is to force a Tf only
+   when it's actually necessary.  This became a problem when the
+   VF code was added.  The VF spec says to instantiate the
+   first font contained in the VF file before drawing a virtual
+   character.  However, that font may not be used for
+   many characters (e.g. small caps fonts).  For this reason, 
+   dev_select_font() should not force a "physical" font selection.
+   This routine prevents a PDF Tf font selection until there's
+   really a character in that font.  */
+
+void dev_need_phys_font (void)
+{
+  if (current_phys_font != current_font &&
+      current_font >= 0 &&
+      dev_font[current_font].type == PHYSICAL) {
+    text_mode();
+    sprintf (format_buffer, " /%s %g Tf", dev_font[current_font].short_name,
+	     ROUND(dev_font[current_font].ptsize*DPI/72, 0.01));
+    pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
+    /* Add to Font list in Resource dictionary for this page */
+    pdf_doc_add_to_page_fonts (dev_font[current_font].short_name,
+			       pdf_link_obj(dev_font[current_font].font_resource));
+    current_phys_font = current_font;
+  }
+  if (current_font < 0) {
+    ERROR ("dev_need_phys_font:  Tried to put a character with no font defined\n");
+  }
+}
+
 /* The following routine is here for forms.  Since
    a form is self-contained, it will need its own Tf command
    at the beginningg even if it is continuing to set type
-   in the current font.  This routine simply reinstantuates
-   the current font. */
+   in the current font.  This routine simply forces reinstantiation
+   of the current font. */
 
 void dev_reselect_font(void)
 {
-  if (current_phys_font >= 0) {
-    text_mode();
-    sprintf (format_buffer, " /%s %g Tf ", dev_font[current_phys_font].short_name,
-	     ROUND(dev_font[current_phys_font].ptsize*DPI/72,0.01)); 
-    pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
-    /* Add to Font list in Resource dictionary for the object (which
-       acts like a mini page so it uses pdf_doc_add_to_page_fonts()*/
-    pdf_doc_add_to_page_fonts (dev_font[current_phys_font].short_name,
-			       pdf_link_obj(dev_font[current_phys_font].font_resource));
-  }
+  current_phys_font = -1;
 }
 
 void dev_set_char (unsigned ch, double width)
@@ -651,6 +659,8 @@ void dev_set_char (unsigned ch, double width)
   }
   switch (dev_font[current_font].type) {
   case PHYSICAL:
+    dev_need_phys_font(); /* Force a Tf since we are actually trying
+			     to write a character */
     if (ROUND(dvi_dev_ypos()-text_yorigin,0.01) != 0.0 ||
 	fabs(dvi_dev_xpos()-text_xorigin-text_offset) > current_ptsize)
       text_mode();

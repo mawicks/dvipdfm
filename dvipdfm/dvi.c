@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.14 1998/12/09 19:03:02 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.15 1998/12/09 20:56:57 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -547,7 +547,8 @@ void dvi_set (SIGNED_QUAD ch)
      size.  It's keeping me sane to keep *point sizes* of *all* fonts in
      the dev.c file and convert them back if necessary */ 
 
-  dvi_width = tfm_get_width (dev_font_tfm(current_font), ch) * dev_font_size(current_font) / dvi2pts;
+  dvi_width = tfm_get_width (dev_font_tfm(current_font), ch) *
+    dev_font_size(current_font) / dvi2pts;
   dev_set_char (ch, dvi_width*dvi2pts);
   dvi_state.h += dvi_width;
   if (dvi_debug) {

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/vf.c,v 1.5 1998/12/09 20:11:53 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/vf.c,v 1.6 1998/12/09 20:56:58 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -40,7 +40,8 @@
 #define TEXPT2PT (72.0/72.27)
 #define FW2PT (TEXPT2PT/((double)(FIX_WORD_BASE)))
 
-static verbose = 0;
+static verbose = 1, debug = 0;
+
 struct font_def {
   signed long font_id /* id used internally in vf file */;
   unsigned long checksum, size, design_size;
@@ -96,10 +97,6 @@ static int read_header(FILE *vf_file, int thisfont)
     
     vf_fonts[thisfont].design_size =
       get_unsigned_quad(vf_file);
-    if (verbose) 
-      fprintf (stderr, "Design size: %g (TeX) pts\n",
-	       (double)vf_fonts[thisfont].design_size/(double)
-	       FIX_WORD_BASE);
   } else { /* Try to fail gracefully and return an error to caller */
     fprintf (stderr, "VF file may be corrupt\n");
     result = 0;
@@ -127,7 +124,7 @@ static void read_a_char_def(FILE *vf_file, int thisfont, unsigned long pkt_len,
 			    unsigned long ch)
 {
   unsigned char *pkt;
-  if (verbose)
+  if (debug)
     fprintf (stderr, "read_a_char_def: len=%ld, ch=%ld\n", pkt_len,
 	     ch);
   if (pkt_len > 0) {
@@ -146,7 +143,7 @@ static void read_a_font_def(FILE *vf_file, signed long font_id, int thisfont)
 {
   dev_font *dev_font;
   int dir_length, name_length;
-  if (verbose) {
+  if (debug) {
     fprintf (stderr, "read_a_font_def: font_id = %ld\n", font_id);
   }
   if (vf_fonts[thisfont].num_dev_fonts >=
@@ -176,7 +173,7 @@ static void read_a_font_def(FILE *vf_file, signed long font_id, int thisfont)
   dev_font->dev_id =
     dev_locate_font (dev_font->name, 
 		     ((double)dev_font->size)*FW2PT*vf_fonts[thisfont].ptsize);
-  if (verbose) {
+  if (debug) {
     fprintf (stderr, "[%s/%s]\n", dev_font -> directory, dev_font -> name);
   }
   return;
@@ -249,14 +246,15 @@ int vf_font_locate (char *tex_name, double ptsize)
   int thisfont = -1;
   char *full_vf_file_name;
   FILE *vf_file;
-  fprintf (stderr, "vf_font_locate: (%s@%g)\n", tex_name, ptsize);
+  if (verbose)
+    fprintf (stderr, "VF: (%s@%g pt)\n", tex_name, ROUND(ptsize,0.01));
   full_vf_file_name = kpse_find_file (tex_name, 
 				      kpse_vf_format,
 				      1);
   if (full_vf_file_name &&
       (vf_file = fopen (full_vf_file_name, "rb")) != NULL) {
     if (verbose) {
-      fprintf (stderr, "Loading VF: %s\n", full_vf_file_name);
+      fprintf (stderr, "VF path: %s\n", full_vf_file_name);
     }
     if (num_vf_fonts >= max_vf_fonts) {
       resize_vf_fonts (max_vf_fonts + VF_ALLOC_SIZE);
@@ -266,8 +264,6 @@ int vf_font_locate (char *tex_name, double ptsize)
     read_header(vf_file, thisfont);
     vf_fonts[thisfont].mag =
       ptsize/(vf_fonts[thisfont].design_size*FW2PT);
-    if (verbose)
-      fprintf (stderr, "Mag: %g\n", vf_fonts[thisfont].mag);
     clear_vf_characters();
     process_vf_file (vf_file, thisfont);
     fclose (vf_file);
@@ -757,7 +753,7 @@ void vf_set_char(int ch, int vf_font)
     end = start + (vf_fonts[vf_font].pkt_len)[ch];
     while (start < end) {
       opcode = *(start++);
-      if (verbose) {
+      if (debug) {
 	fprintf (stderr, "Opcode: %d", opcode);
 	if (isprint (opcode)) fprintf (stderr, " (%c)\n", opcode);
 	else  fprintf (stderr, "\n");
