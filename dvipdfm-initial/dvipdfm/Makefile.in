@@ -26,5 +26,6 @@ distclean: clean
 clean:
 	rm -f $(OBJ)
 	rm -f $(PROGRAMS)
+	rm -f ../doc/*.log
 $(OBJ): $(HEADERS)	
 
