@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.40 1999/01/11 02:10:29 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.41 1999/01/19 03:36:57 mwicks Exp $
  
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -1045,7 +1045,7 @@ pdf_obj *begin_form_xobj (double bbllx, double bblly, double bburx,
 {
   pdf_obj *bbox;
   if (xobject_pending) {
-    fprintf (stderr, "\nCannot next form XObjects\n");
+    fprintf (stderr, "\nCannot nest form XObjects\n");
     return NULL;
   }
   dev_close_all_xforms();
@@ -1053,11 +1053,14 @@ pdf_obj *begin_form_xobj (double bbllx, double bblly, double bburx,
   /* This is a hack.  We basically treat an xobj as a separate mini
      page unto itself.  Save all the page structures and reinitialize them. */
   save_page_resources = current_page_resources;
+  current_page_resources = NULL;
   save_page_xobjects = this_page_xobjects;
+  this_page_xobjects = NULL;
   save_page_fonts = this_page_fonts;
+  this_page_fonts = NULL;
   save_page_contents = this_page_contents;
-  start_current_page_resources(); /* Starts current_page_resources,
-				     this_page_xobjects, and this_page_fonts */
+  this_page_contents = NULL;
+  start_current_page_resources(); /* Starts current_page_resources */
   this_page_contents = pdf_new_stream (STREAM_COMPRESS);
   /* Make a bounding box for this Xobject */
   bbox = pdf_new_array ();
@@ -1084,10 +1087,20 @@ void end_form_xobj (void)
   if (xobject_pending) {
     xobject_pending = 0;
     dev_close_all_xforms();
-    pdf_release_obj (current_page_resources);
-    pdf_release_obj (this_page_xobjects);
-    pdf_release_obj (this_page_fonts);
-    pdf_release_obj (this_page_contents);
+    if (this_page_xobjects) {
+      pdf_add_dict (current_page_resources, pdf_new_name ("XObject"),
+		    pdf_ref_obj (this_page_xobjects));
+      pdf_release_obj (this_page_xobjects);
+    }
+    if (this_page_fonts) {
+      pdf_add_dict (current_page_resources, pdf_new_name ("Font"),
+		    pdf_ref_obj (this_page_fonts));
+      pdf_release_obj (this_page_fonts);
+    }
+    if (current_page_resources)
+      pdf_release_obj (current_page_resources);
+    if (this_page_contents)
+      pdf_release_obj (this_page_contents);
     current_page_resources = save_page_resources;
     this_page_xobjects = save_page_xobjects;
     this_page_fonts = save_page_fonts;

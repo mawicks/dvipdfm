@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.35 1999/01/06 03:37:11 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.36 1999/01/19 03:36:58 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -50,7 +50,8 @@ static void release_reference (char *name);
 static pdf_obj *lookup_reference(char *name);
 static char *lookup_ref_res_name (char *name);
 static pdf_obj *lookup_object(char *name);
-static void do_content (char **start, char *end);
+static void do_content (char **start, char *end, double x_user, double
+			y_user);
 static void do_epdf(char **start, char *end, double x_user, double y_user);
 static void do_image(char **start, char *end, double x_user, double y_user);
 static pdf_obj *jpeg_build_object(struct jpeg *jpeg,
@@ -1016,11 +1017,18 @@ static void do_obj(char **start, char *end)
   return;
 }
 
-static void do_content(char **start, char *end)
+static void do_content(char **start, char *end, double x_user, double y_user)
 {
-  if (*start < end)
+  int len;
+  if (*start < end) {
+    len = sprintf (work_buffer, " q 1 0 0 1 %.2f %.2f cm ", x_user,
+		   y_user);
+    pdf_doc_add_to_page (work_buffer, len);
     pdf_doc_add_to_page (*start, end-*start);
+    pdf_doc_add_to_page (" Q", 1);
+  }
   *start = end;
+  return;
 }
 
 
@@ -1385,7 +1393,7 @@ MEM_START
     do_obj(&start, end);
     break;
   case CONTENT:
-    do_content(&start, end);
+    do_content(&start, end, x_user, y_user);
     break;
   case PUT:
     do_put(&start, end);

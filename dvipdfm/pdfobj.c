@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.41 1999/01/19 02:53:13 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.42 1999/01/19 03:36:58 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -778,15 +778,19 @@ void pdf_add_dict (pdf_obj *dict, pdf_obj *key, pdf_obj *value) /* Array is ende
 {
   pdf_dict *data;
   pdf_dict *new_node;
-  if (dict == NULL || dict -> type != PDF_DICT) {
-     ERROR ("pdf_add_dict:  Passed non-dict object");
-  }
   if (key == NULL || key -> type != PDF_NAME ) {
     ERROR ("pdf_add_dict: Passed invalid key");
   }
   if (value != NULL &&
       (value -> type == 0 || value -> type > PDF_INDIRECT )) {
     ERROR ("pdf_add_dict: Passed invalid value");
+  }
+  if (dict == NULL || dict -> type != PDF_DICT) {
+    fprintf (stderr, "key:");
+    pdf_write_obj (stderr, key);
+    fprintf (stderr, "value:");
+    pdf_write_obj (stderr, value);
+    ERROR ("pdf_add_dict:  Passed non-dict object");
   }
   data = dict -> data;
   /* If this key already exists, simply replace the value */
