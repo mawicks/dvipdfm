@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.63 1999/09/06 02:15:10 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.64 1999/09/06 14:48:13 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -77,8 +77,6 @@ void pdf_special_ignore_colors(void)
 {
   ignore_colors = 1;
 }
-
-
 
 static void do_bop(char **start, char *end)
 {
@@ -1129,13 +1127,9 @@ static int is_pdf_special (char **start, char *end)
   }
   return 0;
 }
-/* Unfortunately, already defined in WIN32 */
-#ifdef OUT
-#undef OUT
-#endif
 
 #define ANN 1
-#define OUT 2
+#define OUTLINE 2
 #define ARTICLE 3
 #define DEST 4
 #define DOCINFO 7
@@ -1171,8 +1165,8 @@ struct pdfmark
   {"annot", ANN},
   {"annotate", ANN},
   {"annotation", ANN},
-  {"out", OUT},
-  {"outline", OUT},
+  {"out", OUTLINE},
+  {"outline", OUTLINE},
   {"art", ARTICLE},
   {"article", ARTICLE},
   {"bead", BEAD},
@@ -1453,7 +1447,7 @@ MEM_START
     case ANN:
       do_ann(&start, end);
       break;
-    case OUT:
+    case OUTLINE:
       do_outline(&start, end);
       break;
     case ARTICLE:

@@ -2,6 +2,8 @@ unsigned short int r;
 unsigned short int c1 = 52845;
 unsigned short int c2 = 22719;
 
+#include "t1crypt.h"
+
 unsigned char t1_encrypt(unsigned char plain)
 {
   unsigned char cipher;

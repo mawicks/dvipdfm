@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.89 1999/09/06 01:48:41 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.90 1999/09/06 14:48:13 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -54,11 +54,6 @@ double hoffset = 72.0, voffset=72.0;
 #define DPI 72u 
 
 static double dvi2pts = 0.0;
-
-double dev_dvi2pts (void)
-{
-  return dvi2pts;
-}
 
  /* Acrobat doesn't seem to like coordinate systems
     that involve scalings around 0.01, so we use

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.h,v 1.17 1999/02/21 14:30:19 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.h,v 1.18 1999/09/06 14:48:12 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -36,9 +36,6 @@ extern void dvi_set_verbose (void);
 extern void dvi_set_debug (void);
 
 extern void dvi_close (void);  /* Closes data structures created by dvi_open */
-extern void dvi_complete (void);  /* Closes output file being written by an
-			      actual driver */
-
 extern double dvi_tell_mag (void);
 extern double dvi_unit_size (void);
 

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.19 1999/09/06 02:15:10 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.20 1999/09/06 14:48:12 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -87,7 +87,7 @@ int mp_locate_font (char *tex_name, double pt_size)
     /* The following line is a bit of a kludge.  MetaPost inclusion
        was an afterthought */
     mp_fonts[i].font_id = dev_locate_font (tex_name,
-					   pt_size/dev_dvi2pts());
+					   pt_size/dvi_unit_size());
     result = mp_fonts[i].font_id;
   } else 
     result = -1;
@@ -696,7 +696,7 @@ static int do_operator(char *token)
 	  fprintf (stderr, "\n\"fshow\": Missing font in MetaPost file? %s@%g\n", 
 		   (char *) pdf_string_value(tmp2), pdf_number_value(tmp3));
 	}
-	dev_set_string (x_state/dev_dvi2pts(), y_state/dev_dvi2pts(),
+	dev_set_string (x_state/dvi_unit_size(), y_state/dvi_unit_size(),
 			pdf_string_value(tmp1),
 			pdf_string_length(tmp1), 0, mp_fonts[fontid].font_id);
 	graphics_mode();
@@ -1054,7 +1054,7 @@ static int do_operator(char *token)
 	(tmp3 = POP_STACK()) && (tmp3 -> type == PDF_NUMBER) &&
 	(tmp2 = POP_STACK()) && (tmp2 -> type == PDF_NUMBER) &&
 	(tmp1 = POP_STACK()) && (tmp1 -> type == PDF_NUMBER)) {
-      double dvi2pts = dev_dvi2pts();
+      double dvi2pts = dvi_unit_size();
       fig_width = pdf_number_value(tmp1)*dvi2pts;
       fig_height = pdf_number_value(tmp2)*dvi2pts;
       fig_llx = pdf_number_value(tmp3)*dvi2pts;

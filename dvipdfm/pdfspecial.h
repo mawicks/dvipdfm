@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.h,v 1.13 1999/09/06 01:48:41 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.h,v 1.14 1999/09/06 14:48:13 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -60,7 +60,7 @@ extern void pdf_scale_image (struct xform_info *p, double nat_width,
 extern pdf_obj *embed_image (char *filename, struct xform_info *p, 
 			     double x_user, double y_user, char
 			     *objname);
-extern void set_distiller_template (char *s);
+extern void pdf_finish_specials(void);
 
 #ifndef M_PI
   #define M_PI (4.0*atan(1.0))

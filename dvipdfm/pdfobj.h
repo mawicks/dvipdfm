@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.h,v 1.24 1999/08/26 04:51:03 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.h,v 1.25 1999/09/06 14:48:13 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -121,37 +121,24 @@ typedef struct pdf_indirect pdf_indirect;
 /* External interface to pdf routines */
 
 extern void pdf_obj_set_verbose(void);
-
 struct pdf_obj *pdf_new_obj (pdf_obj_type type);
-
 extern void pdf_out_init (const char *filename);
-
 extern void pdf_out_flush (void);
-
 extern pdf_obj *pdf_new_obj(pdf_obj_type type);
-
 extern pdf_obj *pdf_link_obj(pdf_obj *object);
-
 extern pdf_obj *pdf_new_null (void);
-
 extern pdf_obj *pdf_new_boolean (char value);
 extern void pdf_set_boolean (pdf_obj *object, char value);
-
 extern void pdf_set_info (pdf_obj *object);
 extern void pdf_set_root (pdf_obj *object);
-     
-
 extern pdf_obj *pdf_new_number (double value);
 extern void pdf_set_number (pdf_obj *object, double value);
 extern double pdf_number_value (pdf_obj *number);
-
 extern char *pdf_name_value (pdf_obj *object);
-
 extern pdf_obj *pdf_new_string (const void *string, unsigned length);
 extern void pdf_set_string (pdf_obj *object, unsigned char *string, unsigned length);
 extern void *pdf_string_value (pdf_obj *object);
 extern unsigned int pdf_string_length (pdf_obj *object);
-
 #define pdf_obj_string_value(s) ((void *)(((pdf_string *)((s)->data)) -> string))
 #define pdf_obj_string_length(s) (((pdf_string *)((s)->data)) -> length)
 
@@ -192,6 +179,7 @@ extern void pdf_close (void);
 extern int pdfobj_escape_str (char *buffer, int size, unsigned char
 			      *s, int len, int remap);
 extern int check_for_pdf (FILE *file);
+extern pdf_obj *pdf_read_object (unsigned long obj_no);
 
 #endif  /* PDFOBJ_H */
 

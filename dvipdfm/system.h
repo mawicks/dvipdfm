@@ -8,7 +8,6 @@
 #ifdef WIN32
 #  undef ERROR
 #  undef NO_ERROR
-#  undef OUT
 #  undef CDECL
 #  define CDECL __cdecl
 #  pragma warning(disable : 4101 4018)
@@ -17,3 +16,6 @@
 #endif /* WIN32 */
 
 #endif /* _SYSTEM_H_ */
+
+
+
