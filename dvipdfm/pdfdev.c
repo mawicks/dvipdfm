@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.65.2.1 1999/04/08 03:14:42 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.65.2.2 1999/04/08 03:20:59 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -764,13 +764,16 @@ void dev_rule (mpt_t xpos, mpt_t ypos, mpt_t width, mpt_t height)
     fprintf (stderr, "(dev_rule)");
   }
   graphics_mode();
-  if (width> height) {
+   /* Is using a real stroke the right thing to do?  It seems to preserve
+      the logical meaning of a "rule" as opposed to a filled rectangle.
+      I am assume the reader can more intelligently render a rule than a filled rectangle */
+  if (width> height) {  /* Horizontal stroke? */
     mpt_t half_height = height/2;
     len = sprintf (format_buffer, " %.2f w %.2f %.2f m %.2f %.2f l S",
 		   height*dvi2pts,
 		   xpos*dvi2pts, (ypos+half_height)*dvi2pts,
 		   (xpos+width)*dvi2pts, (ypos+half_height)*dvi2pts);
-  } else {
+  } else { /* Vertical stroke */
     mpt_t half_width = width/2;
     len = sprintf (format_buffer, " %.2f w %.2f %.2f m %.2f %.2f l S",
 		   width*dvi2pts,
