@@ -24,5 +24,5 @@ dvipdfm.o: dvipdfm.c c-auto.h dvi.h error.h system.h numbers.h \
  pdfdev.h mem.h pdfdoc.h pdfobj.h type1.h
 epdf.o: epdf.c system.h pdfobj.h pdfdoc.h pdfspecial.h numbers.h \
  mfileio.h epdf.h mem.h
-vf.o: vf.c pdflimits.h numbers.h /usr/include/kpathsea/tex-file.h \
- mem.h error.h system.h tfm.h pdfdev.h dvi.h dvicodes.h
+vf.o: vf.c pdflimits.h numbers.h mem.h error.h system.h tfm.h pdfdev.h \
+ dvi.h dvicodes.h
