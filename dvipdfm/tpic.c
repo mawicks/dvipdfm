@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tpic.c,v 1.5 1999/01/27 04:23:20 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tpic.c,v 1.6 1999/02/05 19:57:22 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -139,14 +139,14 @@ static void flush_path (double x_user, double y_user, int hidden,
 MEM_START
   if (path_length > 1) {
     int i;
-    len = sprintf (work_buffer, " q 1.4 M %.2f w", pen_size);
+    len = sprintf (work_buffer, " q %.2f w", pen_size);
     pdf_doc_add_to_page (work_buffer, len);
     if (dash_dot != 0.0) {
       if (dash_dot > 0.0) {
 	len = sprintf (work_buffer, " [%.1f %.1f] 0 d",
 		       dash_dot*72.0, dash_dot*36.0);
       } else {
-	len = sprintf (work_buffer, " [%.1f %.1f] 0 d 1 J", pen_size,
+	len = sprintf (work_buffer, " [%.1f %.1f] 0 d 1 J 1 j", pen_size,
 		       -dash_dot*72.0);
       }
       pdf_doc_add_to_page (work_buffer, len);
