@@ -1,4 +1,4 @@
-% $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/doc/dvipdfm.tex,v 1.16.2.1 1998/11/25 18:34:55 mwicks Exp $
+% $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/doc/dvipdfm.tex,v 1.16.2.2 1998/11/25 18:37:12 mwicks Exp $
 \special{  pdf:  docview <</PageMode /UseOutlines>>}%
 \catcode`\ =11\def\space{ }\catcode`\ =10
 % Page layout
@@ -106,12 +106,12 @@
 %  
 \def\setheading#1{%
   {\headingfont\colored{\blue}{#1}}\raise\baselineskip
-  \hbox{\special{pdf: outline 5 << /Title (#1) /Dest [
+  \hbox{\special{pdf: outline 1 << /Title (#1) /Dest [
 @thispage /FitH @ypos ]  >> }}}%
 %
 \def\setsubheading#1{%
   {\subheadingfont\colored{\blue}{#1}}\raise\baselineskip
-  \hbox{\special{pdf: outline 6 << /Title (#1) /Dest [
+  \hbox{\special{pdf: outline 2 << /Title (#1) /Dest [
 @thispage /FitH @ypos ]  >> }}}%
 %
 \def\link#1#2{\setbox0\hbox{\setlink{#1}}%
@@ -341,8 +341,7 @@ prefixed with the characters ``|pdf:|''.
 \dest{annotate}
 \subsection{Annotate}
 \hbox to 0pt{\hskip-1.0in\special{pdf: ann width 3.0in height 36pt << /Type /Annot /Subtype /Text
-/Contents (This is a /Text Annotation.  Aren't these things ugly?.  It's a
-good thing they don't print by default.) >>}\hss}
+/Contents (This is a /Text Annotation that looks like a sticky note.) >>}\hss}
 \syntax
 {\tt annotate} [{\tt @}{\it name}] {\it dimension}+ {\it PDF\_dictionary}
 \description
