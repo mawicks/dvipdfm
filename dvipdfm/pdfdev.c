@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.80 1999/08/26 04:51:03 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.81 1999/08/27 01:11:51 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -664,7 +664,8 @@ static int locate_type1_font (char *tex_name, mpt_t ptsize)
     dev_font[i].short_name[0] = 'F';
     sprintf (dev_font[i].short_name+1, "%d", n_phys_fonts+1);
     type1_id = type1_font (tex_name, 
-			   dev_font[thisfont].tfm_font_id);
+			   dev_font[thisfont].tfm_font_id,
+			   dev_font[thisfont].short_name);
     /* type1_font_resource on next line always returns an *indirect* obj */ 
     if (type1_id >= 0) { /* If we got one, it must be a physical font */
       dev_font[thisfont].font_resource = type1_font_resource (type1_id);

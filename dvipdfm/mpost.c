@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.8 1999/08/26 22:58:12 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.9 1999/08/27 01:11:50 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -54,7 +54,6 @@ int check_for_mp (FILE *image_file)
   if (strlen(work_buffer) >= strlen("%%Creator: MetaPost") &&
       strncmp (work_buffer, "%%Creator: MetaPost", strlen("%%Creator: MetaPost")))
     return 0;
-  fprintf (stderr, "\nMetapost file\n");
   return 1;
 }
 static struct mp_fonts 
@@ -88,7 +87,6 @@ int mp_locate_font (char *tex_name, double pt_size)
     result = mp_fonts[i].font_id;
   } else 
     result = -1;
-  fprintf (stderr, "mp_locate_font() =%d\n", result);
   return result;
 }
 
@@ -117,18 +115,15 @@ int mp_is_font_name (char *tex_name)
 int mp_fontid (char *tex_name, double pt_size)
 {
   int i;
-  fprintf (stderr, "mp_fontid: f=%s,s=%g\n", tex_name, pt_size);
   for (i=0; i<n_mp_fonts; i++) {
     if (!strcmp (tex_name, mp_fonts[i].tex_name) &&
 	(mp_fonts[i].pt_size == pt_size))
       break;
   }
   if (i < n_mp_fonts) {
-    fprintf (stderr, "returning=%d\n", i);
     return i;
   }
   else
-    fprintf (stderr, "returning=%d\n", -1);
     return -1;
 }
 
@@ -171,8 +166,6 @@ int mp_parse_headers (FILE *image_file)
   } else
     return 0;
   /* Got four numbers */
-  fprintf (stderr, "bbllx=%g,bblly=%g,bburx=%g,bbury=%g\n",
-	   bbllx,bblly,bburx,bbury);
   /* Read all headers--act on *Font records */
   save_position = tell_position(image_file);
   while (!feof(image_file) && mfgets (work_buffer, WORK_BUFFER_SIZE,
@@ -197,7 +190,6 @@ int mp_parse_headers (FILE *image_file)
 	RELEASE (token);
       } else
 	return 0;
-      fprintf (stderr, "name=%s,size=%g\n", name, ps_ptsize);
       mp_locate_font (name, ps_ptsize);
     }
   }
@@ -533,7 +525,7 @@ static void do_operator(char *token)
       pdf_release_obj (tmp2);
     break;
   case NEWPATH:
-    /* pdf_doc_add_to_page (" n", 2); */
+    pdf_doc_add_to_page (" n", 2);
     break;
   case POP:
     tmp1 = POP_STACK();
@@ -751,7 +743,6 @@ static char line_buffer[1024];
 void parse_contents (FILE *image_file)
 {
   top_stack = 0;
-  fprintf (stderr, "parse_contents()\n");
   x_state = 0.0;
   y_state = 0.0;
   while (!feof(image_file) && mfgets (line_buffer, sizeof(line_buffer),
@@ -784,10 +775,9 @@ void parse_contents (FILE *image_file)
 
 static void mp_cleanup (void)
 {
-  fprintf (stderr, "\nmp_cleanup\n");
   release_fonts();
   if (top_stack != 0) {
-    fprintf (stderr, "\nMetaPost: PS stack not empty!\n");
+    fprintf (stderr, "\nMetaPost: PS stack not empty at end of figure!\n");
   }
   while (top_stack > 0) {
     pdf_obj *p;
@@ -822,8 +812,6 @@ pdf_obj *mp_include (FILE *image_file,  struct xform_info *p,
        return NULL;
      /* Flesh out the contents */
      parse_contents (image_file);
-     fprintf (stderr, "Returned from parse_contents\n");
-     
      /* Finish off the form */
      end_form_xobj();
    }

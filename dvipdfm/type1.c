@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.85 1999/08/25 03:52:01 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.86 1999/08/27 01:11:51 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1273,7 +1273,7 @@ static int is_a_base_font (char *name)
   return 0;
 }
 
-int type1_font (const char *tex_name, int tfm_font_id)
+int type1_font (const char *tex_name, int tfm_font_id, char *resource_name)
 {
   int i, result = -1;
   int tfm_firstchar, tfm_lastchar;
@@ -1332,6 +1332,9 @@ int type1_font (const char *tex_name, int tfm_font_id)
     pdf_add_dict (font_resource,
 		  pdf_new_name ("Subtype"),
 		  pdf_new_name ("Type1"));
+    pdf_add_dict (font_resource, 
+		  pdf_new_name ("Name"),
+		  pdf_new_name (resource_name));
     if (type1_fonts[num_type1_fonts].pfb_id >= 0) {
       pdf_add_dict (font_resource, 
 		    pdf_new_name ("FontDescriptor"),
