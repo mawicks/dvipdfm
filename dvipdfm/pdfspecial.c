@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.40 1999/02/09 03:24:08 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.41 1999/02/17 03:42:55 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1585,7 +1585,8 @@ static void do_bxobj (char **start, char *end, double x_user, double y_user)
     /* If there's an object name and valid dimension, add it to the
        tables */
     if (!errors) {
-      xobject = begin_form_xobj (x_user, y_user-p->depth,
+      xobject = begin_form_xobj (x_user, y_user,
+				 x_user, y_user-p->depth,
 				 x_user+p->width, y_user+p->height);
       add_reference (objname, xobject,
 		     pdf_name_value(pdf_lookup_dict(pdf_stream_dict(xobject), "Name")));

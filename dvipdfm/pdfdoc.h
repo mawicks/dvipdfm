@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.h,v 1.15 1999/02/09 03:24:08 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.h,v 1.16 1999/02/17 03:42:55 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -81,8 +81,9 @@ extern void pdf_doc_this_eop (char *string, unsigned length);
 
 extern void doc_make_form_xobj (pdf_obj *stream, pdf_obj *bbox, pdf_obj
 			 *resources);
-extern pdf_obj *begin_form_xobj (double bbllx, double bblly, double bburx,
-			  double bbury);
+extern pdf_obj *begin_form_xobj (double xpos, double ypos,
+				 double bbllx, double bblly,
+				 double bburx, double bbury);
 extern void end_form_xobj (void);
 
 #endif /* PDFDOC_H */
