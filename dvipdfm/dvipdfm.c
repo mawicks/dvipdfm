@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.23 1998/12/30 21:10:43 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.24 1998/12/30 21:15:16 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -305,7 +305,7 @@ static void do_args (int argc, char *argv[])
     fprintf (stderr, "No dvi filename specified.\n");
     usage();
   }
-  if (argc > 0) {
+  if (argc > 1) {
     fprintf (stderr, "Multiple dvi filenames?\n");
     usage();
   }
