@@ -1,5 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/mem.c,v 1.3 1998/11/21 21:02:17 mwicks Exp $
-
+/*
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
 
@@ -29,17 +28,8 @@
 void *new (unsigned long size)
 {
   void *result;
-  if ((result = malloc (size)) == NULL) {
-    fprintf (stderr, "Out of memory!\n");
-    exit (1);
-  }
-  return result;
-}
-
-void *renew (void *mem, unsigned long size)
-{
-  void *result;
-  if ((result = realloc (mem, size)) == NULL) {
+  result = malloc (size);
+  if (!result) {
     fprintf (stderr, "Out of memory!\n");
     exit (1);
   }

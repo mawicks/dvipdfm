@@ -9,7 +9,6 @@ Installation:
    4.  If all goes well, type "make install" in the top directory.
    
    I have installed this cleanly on Solaris 2.5 and RedHat Linux 5.1.
-I have been using it primarily under Linux.on Solaris
 
    Please e-mail bug reports to
 
@@ -41,13 +40,10 @@ Notes/Possible Problems:
        documentation about debugging path searching (located in the
        "kpathsea") directory.  This package uses version 3.2 of the kpathsea
        library.  Make sure your TeX installation has a texmf.cnf that is
-       compatible with version 3.2 of the kpathsea library.  Version
-       3.2 of "kpathsea" along with its texmf.cnf is contained in
-       this distribution.  If your TeX distribution doesn't use version 3.2,
+       compatible with version 3.2 of the kpathsea library.  If it doesn't,
        or if you can't get it to find the fonts, kpathsea can always find the
-       fonts using environment variables.  If "kpathsea" can't finding
-       your texmf.cnf, try setting the environment variable TEXMFCNF
-       to point to the directory containing texmf.cnf.  As an
-       alternative, you can set AFMFONTS to point to your ".afm" files
-       (dvipdfm needs these),  set T1FONTS to point to your ".pfb" files,
-       and set TFMFONTS to point to your ".tfm" files.
+       fonts using environment variables. Set AFMFONTS to point to your
+       ".afm" files (dvipdfm needs these). Set T1FONTS to point to your
+       ".pfb" files.
+
+

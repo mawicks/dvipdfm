@@ -2,7 +2,6 @@
 #define NUMBERS_H
 
 #include <stdio.h>
-#include <math.h>
 
 typedef int UNSIGNED_BYTE, SIGNED_BYTE, SIGNED_PAIR;
 typedef unsigned UNSIGNED_PAIR;
@@ -24,8 +23,6 @@ SIGNED_TRIPLE get_signed_triple (FILE *);
 SIGNED_QUAD get_signed_quad (FILE *);
 
 UNSIGNED_QUAD get_unsigned_quad (FILE *);
-
-#define ROUND(n,acc) ((double)floor((n)/(acc)+0.5)*(acc)) 
 
 #endif /* NUMBERS_H */
 

@@ -58,19 +58,16 @@ NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
 CC = gcc
-CFLAGS = -g --pedantic
-CPPFLAGS = -I./kpathsea/ -DTEXMFCNF=/usr/lib/texmf/texmf.cnf
-LN_S = ln -s
+CFLAGS = -g --pedantic --ansi
 MAKEINFO = makeinfo
 PACKAGE = dvipdf
-VERSION = 0.7dev
+VERSION = 0.01
 
-include_HEADERS = dvi.h error.h io.h tfm.h numbers.h pdfobj.h pdfdoc.h type1.h pdfdev.h pdfspecial.h pdfparse.h jpeg.h
-bin_PROGRAMS = dvipdf dvitest 
-dvitest_SOURCES = dvitest.c numbers.c dvi.c io.c mem.c pdfdev.c pdfdoc.c pdfobj.c type1.c tfm.c pdfspecial.c pdfparse.c jpeg.c
-dvipdf_LDADD = ./kpathsea/kpathsea/kpathsea.a
-dvipdf_SOURCES = dvipdf.c numbers.c dvi.c io.c mem.c pdfdev.c pdfdoc.c pdfobj.c type1.c tfm.c pdfspecial.c pdfparse.c jpeg.c
-dvitest_LDADD = ./kpathsea/kpathsea/kpathsea.a
+include_HEADERS = dvi.h error.h io.h tfm.h numbers.h pdfobj.h
+bin_PROGRAMS = dvitest tfmtest pdftest
+dvitest_SOURCES = dvitest.c numbers.c dvi.c io.c mem.c
+tfmtest_SOURCES = tfmtest.c numbers.c tfm.c io.c mem.c
+pdftest_SOURCES = pdftest.c pdfobj.c mem.c 
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = config.h
@@ -79,16 +76,21 @@ PROGRAMS =  $(bin_PROGRAMS)
 
 
 DEFS = -DHAVE_CONFIG_H -I. -I$(srcdir) -I.
+CPPFLAGS = 
 LDFLAGS = 
-LIBS = -lm 
-dvipdf_OBJECTS =  dvipdf.o numbers.o dvi.o io.o mem.o pdfdev.o pdfdoc.o \
-pdfobj.o type1.o tfm.o pdfspecial.o pdfparse.o jpeg.o
-dvipdf_DEPENDENCIES =  ./kpathsea/kpathsea/kpathsea.a
-dvipdf_LDFLAGS = 
-dvitest_OBJECTS =  dvitest.o numbers.o dvi.o io.o mem.o pdfdev.o \
-pdfdoc.o pdfobj.o type1.o tfm.o pdfspecial.o pdfparse.o jpeg.o
-dvitest_DEPENDENCIES =  ./kpathsea/kpathsea/kpathsea.a
+LIBS = 
+dvitest_OBJECTS =  dvitest.o numbers.o dvi.o io.o mem.o
+dvitest_LDADD = $(LDADD)
+dvitest_DEPENDENCIES = 
 dvitest_LDFLAGS = 
+tfmtest_OBJECTS =  tfmtest.o numbers.o tfm.o io.o mem.o
+tfmtest_LDADD = $(LDADD)
+tfmtest_DEPENDENCIES = 
+tfmtest_LDFLAGS = 
+pdftest_OBJECTS =  pdftest.o pdfobj.o mem.o
+pdftest_LDADD = $(LDADD)
+pdftest_DEPENDENCIES = 
+pdftest_LDFLAGS = 
 COMPILE = $(CC) $(DEFS) $(INCLUDES) $(CPPFLAGS) $(CFLAGS)
 LINK = $(CC) $(CFLAGS) $(LDFLAGS) -o $@
 HEADERS =  $(include_HEADERS)
@@ -102,12 +104,11 @@ DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
 
 TAR = tar
 GZIP = --best
-DEP_FILES =  .deps/dvi.P .deps/dvipdf.P .deps/dvitest.P .deps/io.P \
-.deps/jpeg.P .deps/mem.P .deps/numbers.P .deps/pdfdev.P .deps/pdfdoc.P \
-.deps/pdfobj.P .deps/pdfparse.P .deps/pdfspecial.P .deps/tfm.P \
-.deps/type1.P
-SOURCES = $(dvipdf_SOURCES) $(dvitest_SOURCES)
-OBJECTS = $(dvipdf_OBJECTS) $(dvitest_OBJECTS)
+DEP_FILES =  .deps/dvi.P .deps/dvitest.P .deps/io.P .deps/mem.P \
+.deps/numbers.P .deps/pdfobj.P .deps/pdftest.P .deps/tfm.P \
+.deps/tfmtest.P
+SOURCES = $(dvitest_SOURCES) $(tfmtest_SOURCES) $(pdftest_SOURCES)
+OBJECTS = $(dvitest_OBJECTS) $(tfmtest_OBJECTS) $(pdftest_OBJECTS)
 
 all: Makefile $(PROGRAMS) $(HEADERS) config.h
 
@@ -192,13 +193,17 @@ distclean-compile:
 
 maintainer-clean-compile:
 
-dvipdf: $(dvipdf_OBJECTS) $(dvipdf_DEPENDENCIES)
-	@rm -f dvipdf
-	$(LINK) $(dvipdf_LDFLAGS) $(dvipdf_OBJECTS) $(dvipdf_LDADD) $(LIBS)
-
 dvitest: $(dvitest_OBJECTS) $(dvitest_DEPENDENCIES)
 	@rm -f dvitest
 	$(LINK) $(dvitest_LDFLAGS) $(dvitest_OBJECTS) $(dvitest_LDADD) $(LIBS)
+
+tfmtest: $(tfmtest_OBJECTS) $(tfmtest_DEPENDENCIES)
+	@rm -f tfmtest
+	$(LINK) $(tfmtest_LDFLAGS) $(tfmtest_OBJECTS) $(tfmtest_LDADD) $(LIBS)
+
+pdftest: $(pdftest_OBJECTS) $(pdftest_DEPENDENCIES)
+	@rm -f pdftest
+	$(LINK) $(pdftest_LDFLAGS) $(pdftest_OBJECTS) $(pdftest_LDADD) $(LIBS)
 
 install-includeHEADERS: $(include_HEADERS)
 	@$(NORMAL_INSTALL)

@@ -1,19 +1,14 @@
 dnl Process this file with autoconf to produce a configure script.
 dnl PACKAGE(dvipdf)
-dnl VERSION(0.5)
-AC_INIT(acconfig.h)
+dnl VERSION(0.01)
+AC_INIT(dvi.h)
 AM_CONFIG_HEADER(config.h)
-AM_INIT_AUTOMAKE(dvipdf, 0.7dev)
+AM_INIT_AUTOMAKE(dvipdf, 0.01)
 
 AC_PREFIX_DEFAULT(/usr/local/texmf)
 
-CFLAGS="-g --pedantic"
-dnl CFLAGS="-O2 --pedantic"
+CFLAGS="-g --pedantic --ansi"
 AC_SUBST(CFLAGS)
-CPPFLAGS="-I./kpathsea/ -DTEXMFCNF=/usr/lib/texmf/texmf.cnf"
-AC_SUBST(CPPFLAGS)
-# LIBS="-lm"
-# AC_SUBST(LIBS)
 dnl MAX_PAGES=4096
 dnl AC_DEFINE_UNQUOTED(MAX_PAGES, $MAX_PAGES)
 dnl MAX_FONTS=256
@@ -22,22 +17,17 @@ dnl AC_DEFINE_UNQUOTED(MAX_FONTS, $MAX_FONTS)
 dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_INSTALL
-AC_PROG_LN_S
 AC_ARG_PROGRAM
 
 dnl Checks for libraries.
-dnl Replace main' with a function in -lm:
-AC_CHECK_LIB(m, floor)
 
 dnl Checks for header files.
 AC_CHECK_HEADERS(unistd.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
-AC_C_CONST
-AC_STRUCT_TM
 
 dnl Checks for library functions.
-AC_CHECK_FUNCS(strstr)
+
 
 AC_OUTPUT(Makefile paths.h)
 

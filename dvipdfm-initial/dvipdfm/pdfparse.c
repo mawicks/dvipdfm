@@ -1,5 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfparse.c,v 1.8 1998/11/26 20:15:11 mwicks Exp $
-
+/*
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
 
@@ -58,14 +57,14 @@ void skip_white (char **start, char *end)
 
 void skip_line (char **start, char *end)
 {
-  /* Skip_line is used only after word 'stream'. 
-     PDF spec says that all platforms must end line with '\n' here */
+  /* PDF spec says that all platforms must end line with '\n' here */
   while (*start < end && **start != '\n') 
     (*start)++;
   if (*start < end)
     (*start)++;
   return;
 }
+
 
 void parse_crap (char **start, char *end)
 {
@@ -81,8 +80,6 @@ int is_a_number(const char *s)
 {
   int i;
   for (i=0; i<strlen(s); i++) {
-    if (i == 0 && *s == '-')
-      continue;
     if (!isdigit (*s))
       return 0;
   }
@@ -159,9 +156,6 @@ char *parse_number (char **start, char *end)
   int length;
   skip_white(start, end);
   save = *start;
-  if (*start < end && (**start == '+' || **start == '-')) {
-    *start += 1;
-  }
   while (*start < end &&
 	 isdigit(**start))
     (*start)++;
@@ -286,54 +280,14 @@ static pdf_obj *parse_pdf_number (char **start, char *end)
   }
   return NULL;
 }
-
-int xtod (char c) 
-{
-  if (c >= '0' && c <= '9')
-    return c-'0';
-  if (c >= 'A' && c <= 'F')
-    return c-'F';
-  if (c >= 'a' && c <= 'f')
-    return c-'f';
-  return 0;
-}
-
-pdf_obj *parse_pdf_hex_string (char **start, char *end)
-{
-  pdf_obj *result;
-  char *save, *string;
-  int strlength;
-  skip_white (start, end);
-  if (*start == end || *((*start)++) != '<')
-    return NULL;
-  save = *start;
-  string = NEW ((end - *start)/2+2, char); /* A little excess here */
-  strlength = 0;
-  while (*start < end && **start != '>') {
-    string[strlength] = xtod(**start) * 16;
-    (*start) += 1;
-    if (*start < end && **start != '>') {
-      string[strlength] += xtod(**start);
-      (*start) += 1;
-    }
-    skip_white (start, end);
-    strlength += 1;
-  }
-  release(string);
-  if (*start == end)
-    return NULL;
-  *start += 1;
-  result = pdf_new_string (string, strlength);
-  return result;
-}
-
+  
 pdf_obj *parse_pdf_string (char **start, char *end)
 {
   pdf_obj *result;
   char *save, *string;
   int strlength;
   skip_white(start, end);
-  if (*start == end || *((*start)++) != '(')
+  if (*((*start)++) != '(')
     return NULL;
   save = *start;
   string = NEW (end - *start, char);
@@ -382,7 +336,7 @@ pdf_obj *parse_pdf_string (char **start, char *end)
 static pdf_obj *parse_pdf_stream (char **start, char *end, pdf_obj
 				  *dict)
 {
-  pdf_obj *result, *new_dict, *tmp1, *tmp2, *length_obj;
+  pdf_obj *result, *new_dict, *tmp1, *tmp2;
   int length;
   if (pdf_lookup_dict(dict, "F")) {
     fprintf (stderr, "File streams not implemented (yet)");
@@ -392,14 +346,12 @@ static pdf_obj *parse_pdf_stream (char **start, char *end, pdf_obj
     fprintf (stderr, "No length specified");
     return NULL;
   }
-  length = pdf_number_value (length_obj = pdf_deref_obj (tmp1));
-  pdf_release_obj (length_obj);
+  length = pdf_number_value (pdf_deref_obj (tmp1));
   skip_white(start, end);
   skip_line(start, end);
   result = pdf_new_stream();
   new_dict = pdf_stream_dict(result);
   pdf_merge_dict (new_dict, dict);
-  pdf_release_obj (dict);
   pdf_add_stream (result, *start, length);
   *start += length;
   skip_white(start, end);
@@ -418,15 +370,8 @@ pdf_obj *parse_pdf_object (char **start, char *end)
   char *save = *start;
   char *position2;
   skip_white(start, end);
-  if (*start >= end)
-    return NULL;
-  switch (**start) {
+  if (*start < end) switch (**start) {
   case '<': 
-    /* Check for those troublesome strings starting with '<' */
-    if (*start+1 < end && *(*start+1) != '<') {
-      result = parse_pdf_hex_string (start, end);
-      break;
-    }
     result = parse_pdf_dict (start, end);
     skip_white(start, end);
     if (end - *start > strlen("stream") &&
@@ -456,8 +401,7 @@ pdf_obj *parse_pdf_object (char **start, char *end)
        tell a number from an indirect object reference with some
        serious looking ahead */
     
-    if (*start < end && 
-	(isdigit(**start) || **start == '+' || **start == '-' || **start == '.')) {
+    if (*start < end && isdigit(**start)) {
       tmp1 = parse_pdf_number(start, end);
       tmp2 = NULL;
       /* This could be a # # R type reference.  We can't be sure unless
@@ -497,3 +441,7 @@ pdf_obj *parse_pdf_object (char **start, char *end)
   }
   return result;
 }
+
+
+
+

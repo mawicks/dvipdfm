@@ -1,5 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/dvipdfm.c,v 1.2 1998/11/27 01:25:42 mwicks Exp $
-
+/*
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
 
@@ -72,7 +71,7 @@ char *dvi_filename = NULL, *pdf_filename = NULL;
 
 static void set_default_pdf_filename(void)
 {
-  const char *dvi_base;
+  char *dvi_base;
   dvi_base = basename (dvi_filename);
   if (strlen (dvi_base) < 5 || strncmp (".dvi", dvi_base+strlen(dvi_base)-4, 4)) 
   {
@@ -187,6 +186,16 @@ int main (int argc, char *argv[])
   else
     dev_set_page_size (paper_width, paper_height);
 
+  
+  /*   dvi_set_debug(); 
+     dvi_set_verbose(); */
+  /*   tfm_set_verbose(); */
+  /*   tfm_set_debug(); */
+  /*   pdf_doc_set_verbose();
+       pdf_doc_set_debug(); */
+  /*  dev_set_verbose();
+      dev_set_debug(); */
+  
   for (i=0; i<dvi_npages(); i++) {
     fprintf (stderr, "[%d", i+1);
     dvi_do_page (i);
@@ -198,4 +207,3 @@ int main (int argc, char *argv[])
   return 0;
 
 }
-

@@ -1,5 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfobj.h,v 1.5 1998/11/26 20:15:11 mwicks Exp $
-
+/*
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
 
@@ -176,10 +175,10 @@ pdf_obj *pdf_ref_file_obj (int obj_no);
 
 void pdf_write_obj (FILE *file, const pdf_obj *object);
 pdf_obj *pdf_open (char *filename);
-void pdf_close (void);
 
 int pdfobj_escape_c (char *buffer, char ch);
-int check_for_pdf (FILE *file);
 
 #endif  /* PDFOBJ_H */
+
+
 

@@ -1,5 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/dvi.c,v 1.3 1998/11/19 22:56:29 mwicks Exp $
-
+/*
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
 
@@ -469,10 +468,8 @@ static void do_locate_fonts (void)
 {
   int i, j;
   for (i=0; i<numfonts; i++) {
-    if (dvi_verbose) { 
-    fprintf (stderr, "<%s @ %gpt>",
+    fprintf (stderr, "\n<%s @ %gpt>",
 	     font_def[i].name, ROUND(font_def[i].size*dvi2pts,0.1));
-    }
     /* Only need to read tfm once for the same name.  Check to see
        if it already exists */
     for (j=0; j<i; j++) {
@@ -496,7 +493,6 @@ void dvi_init (char *outputfile)
   do_scales();
   if (dvi_debug) fprintf (stderr, "dvi: Initializing output device\n");
   dev_init (outputfile);
-  dev_add_comment (dvi_comment);
   if (dvi_debug) fprintf (stderr, "dvi: locating fonts\n");
   do_locate_fonts();
   if (dvi_debug) fprintf (stderr, "dvi: pdf_init done\n");
