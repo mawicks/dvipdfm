@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.47 1999/02/09 03:24:08 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.48 1999/02/21 03:40:07 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -145,7 +145,7 @@ static void dump_xref(void)
   startxref = pdf_output_file_position;	/* Record where this xref is for
 				   trailer */
   pdf_out (pdf_output_file, "xref\n", 5);
-  length = sprintf (format_buffer, "%d %ld\n", 0, next_label);
+  length = sprintf (format_buffer, "%d %lu\n", 0, next_label);
   pdf_out (pdf_output_file, format_buffer, length);
   length = sprintf (format_buffer, "%010ld %05ld f \n", 0L, 65535L);
   /* Every space counts.  The space after the 'f' and 'n' is
@@ -168,7 +168,7 @@ static void dump_trailer(void)
   starttrailer = pdf_output_file_position;
   pdf_out (pdf_output_file, "trailer\n", 8);
   pdf_out (pdf_output_file, "<<\n", 3);
-  length = sprintf (format_buffer, "/Size %ld\n",
+  length = sprintf (format_buffer, "/Size %lu\n",
 		    next_label);
   pdf_out (pdf_output_file, format_buffer, length);
   if (pdf_root_obj == 0) 
@@ -181,7 +181,7 @@ static void dump_trailer(void)
   }
   pdf_out (pdf_output_file, ">>\n", 3);
   pdf_out (pdf_output_file, "startxref\n", 10);
-  length = sprintf (format_buffer, "%ld\n", startxref);
+  length = sprintf (format_buffer, "%lu\n", startxref);
   pdf_out (pdf_output_file, format_buffer, length);
   pdf_out (pdf_output_file, "%%EOF\n", 6);
 }
@@ -195,11 +195,11 @@ void pdf_out_flush (void)
     dump_trailer();
     if (verbose) {
       if (compression_level>0) {
-	fprintf (stderr, "\nCompression eliminated approximately %ld bytes",
+	fprintf (stderr, "\nCompression eliminated approximately %lu bytes",
 		 compression_saved);
       }
     }
-    fprintf (stderr, "\n%ld bytes written",
+    fprintf (stderr, "\n%lu bytes written",
 	     pdf_output_file_position);
     fclose (pdf_output_file);
   }
@@ -1092,7 +1092,7 @@ static void pdf_flush_obj (FILE *file, const pdf_obj *object)
   /* Record file position.  No object is numbered 0, so subtract 1
      when using as an array index */
   output_xref[object->label-1].file_position = pdf_output_file_position;
-  length = sprintf (format_buffer, "%ld %d obj\n", object -> label ,
+  length = sprintf (format_buffer, "%lu %d obj\n", object -> label ,
 		    object -> generation);
   pdf_out (file, format_buffer, length);
   pdf_write_obj (file, object);
@@ -1220,7 +1220,7 @@ static long find_xref(void)
   RELEASE (number);
   if (debug) {
     fprintf (stderr, ")\n");
-    fprintf (stderr, "xref @ %ld\n", xref_pos);
+    fprintf (stderr, "xref @ %lu\n", xref_pos);
   }
   return xref_pos;
 }
@@ -1350,7 +1350,7 @@ pdf_obj *pdf_read_object (unsigned long obj_no)
 MEM_START
 #endif
   if (debug) {
-    fprintf (stderr, "\nread_object: obj=%ld\n", obj_no);
+    fprintf (stderr, "\nread_object: obj=%lu\n", obj_no);
   }
   if (obj_no < 0 || obj_no >= num_input_objects) {
     fprintf (stderr, "\nTrying to read nonexistent object\n");
@@ -1361,13 +1361,13 @@ MEM_START
     return NULL;
   }
   if (debug) {
-    fprintf (stderr, "\nobj@%ld\n", xref_table[obj_no].position);
+    fprintf (stderr, "\nobj@%lu\n", xref_table[obj_no].position);
   }
   seek_absolute (pdf_input_file, start_pos =
 		 xref_table[obj_no].position);
   end_pos = next_object (obj_no);
   if (debug) {
-    fprintf (stderr, "\nendobj@%ld\n", end_pos);
+    fprintf (stderr, "\nendobj@%lu\n", end_pos);
   }
   buffer = NEW (end_pos - start_pos+1, char);
   fread (buffer, sizeof(char), end_pos-start_pos, pdf_input_file);
@@ -1486,12 +1486,12 @@ static int parse_xref (void)
       seek_absolute (pdf_input_file, current_pos);
       break;
     }
-    sscanf (work_buffer, "%ld %ld", &first_obj, &num_table_objects);
+    sscanf (work_buffer, "%lu %lu", &first_obj, &num_table_objects);
     if (num_input_objects < first_obj+num_table_objects) {
       extend_xref (first_obj+num_table_objects);
     }
     if (debug) {
-      fprintf (stderr, "\nfirstobj=%ld,number=%ld\n",
+      fprintf (stderr, "\nfirstobj=%lu,number=%lu\n",
 	       first_obj,num_table_objects);
     }
     for (i=first_obj; i<first_obj+num_table_objects; i++) {
@@ -1502,11 +1502,11 @@ static int parse_xref (void)
 	 if it hasn't been set yet. */
       if (xref_table[i].position == 0) {
 	work_buffer[19] = 0;
-	sscanf (work_buffer, "%ld %d", &(xref_table[i].position), 
+	sscanf (work_buffer, "%lu %u", &(xref_table[i].position), 
 		&(xref_table[i].generation));
       }
       if (debug) {
-	fprintf (stderr, "pos: %ld gen: %d\n", xref_table[i].position,
+	fprintf (stderr, "pos: %lu gen: %u\n", xref_table[i].position,
 		 xref_table[i].generation);
       }
       if (work_buffer[17] != 'n' && work_buffer[17] != 'f') {
@@ -1538,7 +1538,7 @@ MEM_START
     return NULL;
   }
   if (debug) {
-    fprintf(stderr, "xref@%ld\n", xref_pos);
+    fprintf(stderr, "xref@%lu\n", xref_pos);
   }
   /* Read primary xref table */
   seek_absolute (pdf_input_file, xref_pos);
