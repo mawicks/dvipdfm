@@ -173,6 +173,6 @@ depend.make:
 @MAINT@web-dist: rpm-dist tarball
 @MAINT@	cp -a ../dvipdfm-@VERSION@.tar.gz /usr/src/redhat/RPMS/i386/dvipdfm-@VERSION@-1.i386.rpm /home/httpd/html/dvipdfm/
 @MAINT@ftp-dist: rpm-dist tarball
-@MAINT@	scp ../dvipdfm-@VERSION@.tar.gz ftp:pub/outgoing/mwicks/dvipdfm/dvipdfm-@VERSION@.tar.gz
-@MAINT@	scp /usr/src/redhat/RPMS/i386/dvipdfm-@VERSION@-1.i386.rpm ftp:pub/outgoing/mwicks/dvipdfm/dvipdfm-@VERSION@-1.i386.rpm
+@MAINT@	scp ../dvipdfm-@VERSION@.tar.gz mwicks@ftp:pub/outgoing/mwicks/dvipdfm/dvipdfm-@VERSION@.tar.gz
+@MAINT@	scp /usr/src/redhat/RPMS/i386/dvipdfm-@VERSION@-1.i386.rpm mwicks@ftp:pub/outgoing/mwicks/dvipdfm/dvipdfm-@VERSION@-1.i386.rpm
 
