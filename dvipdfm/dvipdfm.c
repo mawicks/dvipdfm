@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.18 1998/12/30 20:14:17 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.19 1998/12/30 20:17:53 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -119,7 +119,7 @@ static void usage (void)
    fprintf (stderr, "\t-z number\tSet compression level (0-9) [default is 9])\n");
    fprintf (stderr, "\t-v          \tBe verbose\n");
    fprintf (stderr, "\t-vv         \tBe more verbose\n");
-   fprintf (stderr, "\nAll dimensions entered on the command are \"true\" TeX dimensions.\n");
+   fprintf (stderr, "\nAll dimensions entered on the command line are \"true\" TeX dimensions.\n");
    exit(1);
 }
 
