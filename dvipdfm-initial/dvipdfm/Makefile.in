@@ -1,9 +1,9 @@
 programs = dvipdfm ebb
-CC=@CC@
+cc=@CC@
 install=@INSTALL@
 CFLAGS += @CFLAGS@  @DEFS@ -I../kpathsea/
-LIBDIR = ../kpathsea/kpathsea/STATIC
-INCDIR = ../kpathsea/
+LDFLAGS += @LDFLAGS@
+libdir = ../kpathsea/kpathsea/STATIC
 prefix=@prefix@
 datadir=@datadir@
 exec_prefix=@exec_prefix@
@@ -18,9 +18,10 @@ config = config.cache config.status Makefile config.h config.log
 default: all
 all:	$(programs)
 dvipdfm: $(obj)
-	$(CC) $(LDFLAGS) -o dvipdfm $(obj) -lkpathsea -lm -L$(LIBDIR)
+	$(cc) $(LDFLAGS) -o dvipdfm $(obj) -lkpathsea -lm -L$(libdir)
+# Next entry requires GNU make (sorry)	
 ebb: ebb.o jpeg.o pdfobj.o mem.o io.o numbers.o pdfparse.o
-	$(CC) $(LDFLAGS) -o ebb $+ -lm
+	$(cc) $(LDFLAGS) -o ebb $+ -lm
 install: install-exec
 uninstall: uninstall-exec
 install-exec: all
