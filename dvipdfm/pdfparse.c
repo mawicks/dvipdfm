@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.c,v 1.21 1999/02/09 03:24:08 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.c,v 1.22 1999/02/20 05:51:28 mwicks Exp $
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
 
@@ -214,6 +214,29 @@ MEM_END
   return NULL;
 }
 
+char *parse_unsigned (char **start, char *end)
+{
+  char *number, *save;
+#ifdef MEM_DEBUG
+MEM_START
+#endif
+  skip_white(start, end);
+  save = *start;
+  while (*start < end &&
+	 isdigit(**start))
+    (*start)++;
+  if (*start > save) {
+    number = NEW ((*start-save)+1, char);
+    memcpy (number, save, (*start-save));
+    number[*start-save] = 0;
+    return number;
+  }
+  *start = save;
+#ifdef MEM_DEBUG
+MEM_END
+#endif
+  return NULL;
+}
 
 char *parse_ident (char **start, char *end)
 {

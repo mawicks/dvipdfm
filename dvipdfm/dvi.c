@@ -1,5 +1,5 @@
 
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.44 1999/02/09 03:24:06 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.45 1999/02/20 05:51:27 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -47,7 +47,6 @@ static FILE *dvi_file;
 static debug = 0;
 static unsigned numfonts = 0, stackdepth;
 static unsigned long *page_loc = NULL;
-static long max_pages = 0;
 static unsigned long post_location, dvi_file_size;
 static UNSIGNED_PAIR numpages = 0;
 static UNSIGNED_QUAD media_width, media_height;
@@ -147,8 +146,7 @@ static void get_page_info (void)
   if (numpages == 0) {
     ERROR ("dvi_init:  Page count is 0!");
   }
-  max_pages = numpages;
-  page_loc = NEW (max_pages, unsigned long);
+  page_loc = NEW (num_pages, unsigned long);
   seek_absolute (dvi_file, post_location+1);
   page_loc[numpages-1] = get_unsigned_quad(dvi_file);
   range_check_loc(page_loc[numpages-1]+41);
