@@ -42,25 +42,24 @@ include depend.make
 # Install/uninstall
 #
 install: install-exec install-data install-man
-uninstall: uninstall-exec uninstall-data
+uninstall: uninstall-exec uninstall-data uninstall-man
 install-exec: all
-	$(mkinstalldirs) $(bindir) 2> /dev/null || true;
+	$(mkinstalldirs) $(bindir); \
 	for i in $(programs) $(scripts) ; \
 	  do $(INSTALL) $$i $(bindir); \
 	done
 # t1fonts.map.
 install-man:
-	$(mkinstalldirs) $(mandir)/man1 2> /dev/null || true;
+	$(mkinstalldirs) $(mandir)/man1; \
 	for i in $(manpages); \
   	   do $(INSTALL) -m 644 $$i $(mandir)/man1; \
 	done
 install-data:
-	$(mkinstalldirs) $(dvipdfmdir) 2> /dev/null || true;
-	$(mkinstalldirs) $(dvipdfmdir)/base 2> /dev/null || true;
+	$(mkinstalldirs) $(dvipdfmdir)/base; \
 	if test -f $(dvipdfmdir)/config; then \
 	  /bin/mv $(dvipdfmdir)/config $(dvipdfmdir)/config.sav; \
 	fi
-	$(mkinstalldirs) $(dvipdfmdir)/config 2> /dev/null || true;
+	$(mkinstalldirs) $(dvipdfmdir)/config; \
 	if test -f $(dvipdfmdir)/t1fonts.map; then \
 	  /bin/mv $(dvipdfmdir)/t1fonts.map $(dvipdfmdir)/config; \
 	fi
@@ -86,7 +85,16 @@ install-data:
 	   do $(INSTALL) -m 644 $$i $(dvipdfmdir)/base; \
 	done
 uninstall-exec:
-	rm -f $(bindir)/$(programs) $(bindir)/$(scripts)
+	for i in $(programs); \
+	    do rm -f $(bindir)/$$i; \
+	done
+	for i in $(scripts); \
+	    do rm -f $(bindir)/$$i; \
+	done
+uninstall-man:
+	for i in $(manpages); \
+	    do rm -f $(mandir)/man1/$$i; \
+	done
 uninstall-data:
 	if grep 'original pdffonts.map --' $(psheaderdir)/dvipdfm/pdffonts.map \
 	   >/dev/null 2>&1; then rm -f $(psheaderdir)/dvipdfm/pdffonts.map; \

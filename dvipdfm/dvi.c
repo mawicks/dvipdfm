@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.72 2001/04/14 03:25:00 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.73 2001/05/31 03:09:00 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -955,8 +955,8 @@ void dvi_do_page(unsigned n)  /* Most of the work of actually interpreting
     /* The most likely opcodes are individual setchars.  These are
        buffered for speed */
     s_len = 0;
-    while (s_len < S_BUFFER_SIZE && (opcode = fgetc (dvi_file)) <=
-	   SET_CHAR_127) {
+    while ((opcode = fgetc (dvi_file)) <= SET_CHAR_127 &&
+	   s_len < S_BUFFER_SIZE) {
       s_buffer[s_len++] = opcode;
     }
     if (s_len > 0) {

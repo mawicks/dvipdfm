@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pkfont.c,v 1.20 2001/04/14 03:25:00 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pkfont.c,v 1.21 2001/05/31 03:09:00 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -204,22 +204,20 @@ int pk_font (const char *tex_name, double ptsize, int tfm_font_id, char
 
 pdf_obj *pk_font_resource (int pk_id)
 {
-  if (pk_id >= 0 && pk_id < num_pk_fonts)
-    return pdf_link_obj (pk_fonts[pk_id].indirect);
-  else {
+  if (pk_id <0 || pk_id >= num_pk_fonts) {
     fprintf (stderr, "pk_id = %d\n", pk_id);
     ERROR ("pk_font_resource:  Invalid pk_id\n");
   }
+  return pdf_link_obj (pk_fonts[pk_id].indirect);
 }
 
 char *pk_font_used (int pk_id)
 {
-  if (pk_id >= 0 && pk_id < num_pk_fonts) 
-    return pk_fonts[pk_id].used_chars;
-  else {
+  if (pk_id < 0 || pk_id >= num_pk_fonts) {
     fprintf (stderr, "pk_id = %d\n", pk_id);
     ERROR ("pk_font_used:  Invalid pk_id\n");
   }
+  return pk_fonts[pk_id].used_chars;
 }
 
 
