@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.10 1998/12/07 18:16:28 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.11 1998/12/08 19:53:32 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -445,8 +445,7 @@ static int processing_page = 0;
 
 /* Following are computed "constants" used for unit conversion */
 
-static double dvi2dev_x, dvi2dev_y;
-static double dvi2pts;
+static double dvi2pts = 0.0;
 
 static void clear_state (void)
 {
@@ -458,19 +457,16 @@ static void clear_state (void)
 
 static void do_scales (void)
 {
-  unsigned long dev_xres, dev_yres;
-  dev_xres = dev_tell_xdpi();
-  dev_yres = dev_tell_ydpi();
-  clear_state();
-  dvi2dev_x = (double) dvi_unit_num / (double) dvi_unit_den;
-  dvi2dev_x *= (double) dvi_mag / 1000.0;
-  dvi2dev_y = dvi2dev_x;
-  dvi2dev_x *= (double) dev_xres/254000.0;
-  dvi2dev_y *= (double) dev_yres/254000.0;
   dvi2pts = (double) dvi_unit_num / (double) dvi_unit_den;
   dvi2pts *= (72.0)/(254000.0);
   dvi2pts *= (double) dvi_mag / 1000.0;
 }
+
+double dvi_unit_size(void)
+{
+  return dvi2pts;
+}
+
 
 static void do_locate_fonts (void) 
 {
@@ -499,6 +495,7 @@ static void do_locate_fonts (void)
 
 void dvi_init (char *outputfile)
 {
+  clear_state();
   if (dvi_debug) fprintf (stderr, "dvi: computing scaling parameters\n");
   do_scales();
   if (dvi_debug) fprintf (stderr, "dvi: Initializing output device\n");
@@ -525,47 +522,45 @@ static void do_moveto (SIGNED_QUAD x, SIGNED_QUAD y)
   dvi_state.h = x;
   dvi_state.v = y;
   if (dvi_debug) fprintf (stderr, "do_moveto: x = %ld, y = %ld\n", x, y);
-  dev_moveto (x*dvi2dev_x, y*dvi2dev_y);
+  dev_moveto (x*dvi2pts, y*dvi2pts);
 }
 
-static void do_right (SIGNED_QUAD x)
+void dvi_right (SIGNED_QUAD x)
 {
   dvi_state.h += x;
-  dev_moveright (x*dvi2dev_x);
-  /*  do_moveto (dvi_state.h, dvi_state.v); */
+  dev_moveright (x*dvi2pts);
 }
 
-static void do_down (SIGNED_QUAD y)
+void dvi_down (SIGNED_QUAD y)
 {
   dvi_state.v += y;
   do_moveto (dvi_state.h, dvi_state.v);
 }
 
-
-static void do_set (SIGNED_QUAD ch)
+void dvi_set (SIGNED_QUAD ch)
 {
   double dvi_width;
   if (current_font < 0) {
-    ERROR ("do_set:  No font selected");
+    ERROR ("dvi_set:  No font selected");
   }
   /*  dvi_width = tfm_get_width (font_def[current_font].tfm_id, ch) * font_def[current_font].design_size; */
   dvi_width = tfm_get_width (font_def[current_font].tfm_id, ch) * font_def[current_font].size;
   dvi_state.h += dvi_width;
-  dev_set_char (ch, dvi_width*dvi2dev_x);
+  dev_set_char (ch, dvi_width*dvi2pts);
   if (dvi_debug) {
     fprintf (stderr, "Done\n");
   }
 }
 
-static void do_rule (SIGNED_QUAD width, SIGNED_QUAD height)
+void dvi_rule (SIGNED_QUAD width, SIGNED_QUAD height)
 {
   do_moveto (dvi_state.h, dvi_state.v);
-  dev_rule (width*dvi2dev_x, height*dvi2dev_y);
+  dev_rule (width*dvi2pts, height*dvi2pts);
 }
 
 static void do_set1(void)
 {
-  do_set (get_unsigned_byte(dvi_file));
+  dvi_set (get_unsigned_byte(dvi_file));
 }
 
 static void do_setrule(void)
@@ -574,9 +569,9 @@ static void do_setrule(void)
   height = get_signed_quad (dvi_file);
   width = get_signed_quad (dvi_file);
   if (width > 0 && height > 0) {
-    do_rule (width, height);
+    dvi_rule (width, height);
   }
-  do_right (width);
+  dvi_right (width);
 }
 
 static void do_putrule(void)
@@ -586,15 +581,15 @@ static void do_putrule(void)
   width = get_signed_quad (dvi_file);
   if (width > 0 && height > 0) {
     do_moveto (dvi_state.h, dvi_state.v);
-    do_rule (width, height);
+    dvi_rule (width, height);
     do_moveto (dvi_state.h, dvi_state.v); 
   }
 }
 
-static void do_put (SIGNED_QUAD ch)
+void dvi_put (SIGNED_QUAD ch)
 {
   if (current_font < 0) {
-    ERROR ("do_put:  No font selected");
+    ERROR ("dvi_put:  No font selected");
   }
   dev_set_char (ch, 0.0);
   do_moveto (dvi_state.h, dvi_state.v); /* Move back */
@@ -603,10 +598,10 @@ static void do_put (SIGNED_QUAD ch)
 
 static void do_put1(void)
 {
-  do_put (get_unsigned_byte(dvi_file));
+  dvi_put (get_unsigned_byte(dvi_file));
 }
 
-static void do_push (void) 
+void dvi_push (void) 
 {
   if (dvi_debug) {
     fprintf (stderr, "Pushing onto stack of depth %d\n",
@@ -615,7 +610,7 @@ static void do_push (void)
   dvi_stack[dvi_stack_depth++] = dvi_state;
 }
 
-static void do_pop (void)
+void dvi_pop (void)
 {
   if (dvi_debug) {
     fprintf (stderr, "Popping off stack of depth %d\n",
@@ -624,173 +619,173 @@ static void do_pop (void)
   if (dvi_stack_depth > 0) {
     dvi_state = dvi_stack[--dvi_stack_depth];
   } else
-    ERROR ("dvi_do_pop: Tried to pop an empty stack");
+    ERROR ("dvi_pop: Tried to pop an empty stack");
   do_moveto (dvi_state.h, dvi_state.v);
 }
 
 
 static void do_right1(void)
 {
-  do_right (get_signed_byte(dvi_file));
+  dvi_right (get_signed_byte(dvi_file));
 }
 
 static void do_right2(void)
 {
-  do_right (get_signed_pair(dvi_file));
+  dvi_right (get_signed_pair(dvi_file));
 }
 
 static void do_right3(void)
 {
-  do_right (get_signed_triple(dvi_file));
+  dvi_right (get_signed_triple(dvi_file));
 }
 
 static void do_right4(void)
 {
-  do_right (get_signed_quad(dvi_file));
+  dvi_right (get_signed_quad(dvi_file));
 }
 
-static void do_w (SIGNED_QUAD ch)
+void dvi_w (SIGNED_QUAD ch)
 {
   dvi_state.w = ch;
-  do_right (ch);
+  dvi_right (ch);
 }
 
-static void do_w0(void)
+void dvi_w0(void)
 {
-  do_right (dvi_state.w);
+  dvi_right (dvi_state.w);
 }
 
 static void do_w1(void)
 {
-  do_w (get_signed_byte(dvi_file));
+  dvi_w (get_signed_byte(dvi_file));
 }
 
 static void do_w2(void)
 {
-  do_w (get_signed_pair(dvi_file));
+  dvi_w (get_signed_pair(dvi_file));
 }
 
 static void do_w3(void)
 {
-  do_w (get_signed_triple(dvi_file));
+  dvi_w (get_signed_triple(dvi_file));
 }
 
 static void do_w4(void)
 {
-  do_w (get_signed_quad(dvi_file));
+  dvi_w (get_signed_quad(dvi_file));
 }
 
-static void do_x (SIGNED_QUAD ch)
+void dvi_x (SIGNED_QUAD ch)
 {
   dvi_state.x = ch;
-  do_right (ch);
+  dvi_right (ch);
 }
 
-static void do_x0(void)
+void dvi_x0(void)
 {
-  do_right (dvi_state.x);
+  dvi_right (dvi_state.x);
 }
 
 static void do_x1(void)
 {
-  do_x (get_signed_byte(dvi_file));
+  dvi_x (get_signed_byte(dvi_file));
 }
 
 static void do_x2(void)
 {
-  do_x (get_signed_pair(dvi_file));
+  dvi_x (get_signed_pair(dvi_file));
 }
 
 static void do_x3(void)
 {
-  do_x (get_signed_triple(dvi_file));
+  dvi_x (get_signed_triple(dvi_file));
 }
 
 static void do_x4(void)
 {
-  do_x (get_signed_quad(dvi_file));
+  dvi_x (get_signed_quad(dvi_file));
 }
 
 static void do_down1(void)
 {
-  do_down (get_signed_byte(dvi_file));
+  dvi_down (get_signed_byte(dvi_file));
 }
 
 static void do_down2(void)
 {
-  do_down (get_signed_pair(dvi_file));
+  dvi_down (get_signed_pair(dvi_file));
 }
 
 static void do_down3(void)
 {
-  do_down (get_signed_triple(dvi_file));
+  dvi_down (get_signed_triple(dvi_file));
 }
 
 static void do_down4(void)
 {
-  do_down (get_signed_quad(dvi_file));
+  dvi_down (get_signed_quad(dvi_file));
 }
 
-static void do_y (SIGNED_QUAD ch)
+void dvi_y (SIGNED_QUAD ch)
 {
   dvi_state.y = ch;
-  do_down (ch);
+  dvi_down (ch);
 }
 
-static void do_y0(void)
+void dvi_y0(void)
 {
-  do_down (dvi_state.y);
+  dvi_down (dvi_state.y);
 }
 
 static void do_y1(void)
 {
-  do_y (get_signed_byte(dvi_file));
+  dvi_y (get_signed_byte(dvi_file));
 }
 
 static void do_y2(void)
 {
-  do_y (get_signed_pair(dvi_file));
+  dvi_y (get_signed_pair(dvi_file));
 }
 
 static void do_y3(void)
 {
-  do_y (get_signed_triple(dvi_file));
+  dvi_y (get_signed_triple(dvi_file));
 }
 
 static void do_y4(void)
 {
-  do_y (get_signed_quad(dvi_file));
+  dvi_y (get_signed_quad(dvi_file));
 }
 
-static void do_z (SIGNED_QUAD ch)
+void dvi_z (SIGNED_QUAD ch)
 {
   dvi_state.z = ch;
-  do_down (ch);
+  dvi_down (ch);
 }
 
-static void do_z0(void)
+void dvi_z0(void)
 {
-  do_down (dvi_state.z);
+  dvi_down (dvi_state.z);
 }
 
 static void do_z1(void)
 {
-  do_z (get_signed_byte(dvi_file));
+  dvi_z (get_signed_byte(dvi_file));
 }
 
 static void do_z2(void)
 {
-  do_z (get_signed_pair(dvi_file));
+  dvi_z (get_signed_pair(dvi_file));
 }
 
 static void do_z3(void)
 {
-  do_z (get_signed_triple(dvi_file));
+  dvi_z (get_signed_triple(dvi_file));
 }
 
 static void do_z4(void)
 {
-  do_z (get_signed_quad(dvi_file));
+  dvi_z (get_signed_quad(dvi_file));
 }
 
 static void do_fntdef(void)
@@ -992,10 +987,10 @@ void dvi_do_page(int n)  /* Most of the work of actually interpreting
 	do_eop();
 	return;
       case PUSH:
-	do_push();
+	dvi_push();
 	break;
       case POP:
-	do_pop();
+	dvi_pop();
 	break;
       case RIGHT1:
 	do_right1();
@@ -1010,7 +1005,7 @@ void dvi_do_page(int n)  /* Most of the work of actually interpreting
 	do_right4();
 	break;
       case W0:
-	do_w0();
+	dvi_w0();
 	break;
       case W1:
 	do_w1();
@@ -1025,7 +1020,7 @@ void dvi_do_page(int n)  /* Most of the work of actually interpreting
 	do_w4();
 	break;
       case X0:
-	do_x0();
+	dvi_x0();
 	break;
       case X1:
 	do_x1();
@@ -1052,7 +1047,7 @@ void dvi_do_page(int n)  /* Most of the work of actually interpreting
 	do_down4();
 	break;
       case Y0:
-	do_y0();
+	dvi_y0();
 	break;
       case Y1:
 	do_y1();
@@ -1067,7 +1062,7 @@ void dvi_do_page(int n)  /* Most of the work of actually interpreting
 	do_y4();
 	break;
       case Z0:
-	do_z0();
+	dvi_z0();
 	break;
       case Z1:
 	do_z1();
@@ -1128,7 +1123,7 @@ void dvi_do_page(int n)  /* Most of the work of actually interpreting
 	   characters or fonts on the page.  Some day make sure an empty page
 	   doesn't core dump */
 	if (opcode >= SET_CHAR_0 && opcode <= SET_CHAR_127) {
-	  do_set (opcode);
+	  dvi_set (opcode);
 	} else if (opcode >= FNT_NUM_0 && opcode <= FNT_NUM_63) {
 	  do_fnt (opcode - FNT_NUM_0);
 	}
@@ -1136,7 +1131,24 @@ void dvi_do_page(int n)  /* Most of the work of actually interpreting
   }
 }
 
+/* The following are need to implement virtual fonts
+   According to documentation, the vf "subroutine"
+   must have state pushed and must have
+   w,v,y, and z set to zero.  The current font
+   is determined by the virtual font header, which
+   may be undefined */
 
-
-
-
+void dvi_vf_init (unsigned font)
+{
+  dvi_push ();
+  dvi_state.v = 0; dvi_state.w = 0;
+  dvi_state.y = 0; dvi_state.z = 0;
+  current_font = font;
+  if (current_font >= 0)
+    dev_select_font (font_def[current_font].dev_id);
+}
+/* After VF subroutine is finished, we simply pop the DVI stack */
+void dvi_vf_finish (void)
+{
+  dvi_pop();
+}

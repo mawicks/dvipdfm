@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.21 1998/12/08 06:41:15 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.22 1998/12/08 19:53:33 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -545,7 +545,7 @@ int dev_locate_font (char *tex_name,
       dev_font[i].short_name[0] = 'F';
       sprintf (dev_font[i].short_name+1, "%d", ++n_phys_fonts);
     } else { /* No physical font, see if we can locate a virtual one */
-      dev_font[i].vf_font_id = vf_font_locate (tex_name);
+      dev_font[i].vf_font_id = vf_font_locate (tex_name, ptsize);
       if (dev_font[i].vf_font_id < 0) {
 	fprintf (stderr, "%s: Can't locate an AFM or VF file\n", tex_name);
 	ERROR ("Not sure how to proceed.  For now this is fatal\n\
@@ -590,7 +590,6 @@ void dev_close_all_fonts(void)
     RELEASE (dev_font[i].tex_name);
   }
 }
-
 
 void dev_select_font (int dev_font_id)
 {
