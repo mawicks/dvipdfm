@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.10 1998/12/04 03:55:08 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.11 1998/12/05 02:39:45 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -133,11 +133,11 @@ static void text_mode (void)
   switch (motion_state) {
   case NO_MODE:
   case GRAPHICS_MODE:
-    pdf_doc_add_to_page (" BT ", 4);
+    pdf_doc_add_to_page (" BT", 3);
     /* Following may be necessary after a rule (and also after
        specials) */
     if (current_font != -1) {
-      sprintf (format_buffer, " /%s %g Tf ", dev_font[current_font].short_name,
+      sprintf (format_buffer, " /%s %g Tf", dev_font[current_font].short_name,
 	       ROUND(dev_font[current_font].ptsize*DPI/72,0.01));
       pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
     }
@@ -145,7 +145,7 @@ static void text_mode (void)
   case STRING_MODE:
     pdf_doc_add_to_page (")", 1);  /*  Fall through */
   case LINE_MODE:
-    pdf_doc_add_to_page ("]TJ ", 4);
+    pdf_doc_add_to_page ("]TJ", 3);
     break;
   }
   motion_state = TEXT_MODE;
@@ -157,9 +157,9 @@ static void graphics_mode (void)
   case STRING_MODE:
     pdf_doc_add_to_page (")", 1); /* Fall through */
   case LINE_MODE:
-    pdf_doc_add_to_page ("]TJ ", 4); /* Fall through */
+    pdf_doc_add_to_page ("]TJ", 3); /* Fall through */
   case TEXT_MODE:
-    pdf_doc_add_to_page (" ET ", 4);
+    pdf_doc_add_to_page (" ET", 3);
     break;
   }
   motion_state = GRAPHICS_MODE;
@@ -170,16 +170,16 @@ static void string_mode (void)
  switch (motion_state) {
  case NO_MODE:
  case GRAPHICS_MODE:
-   pdf_doc_add_to_page (" BT ", 4); /* Fall through */
+   pdf_doc_add_to_page (" BT", 3); /* Fall through */
     /* Following may be necessary after a rule (and also after
        specials) */
    if (current_font != -1) {
-     sprintf (format_buffer, " /%s %g Tf ", dev_font[current_font].short_name,
+     sprintf (format_buffer, " /%s %g Tf", dev_font[current_font].short_name,
 	      ROUND(dev_font[current_font].ptsize*DPI/72,0.01));
      pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
    }
  case TEXT_MODE:
-   sprintf (format_buffer, "1 0 0 1 %g %g Tm [",
+   sprintf (format_buffer, " 1 0 0 1 %g %g Tm [",
 	    ROUND(dev_xpos,0.01), ROUND(dev_ypos,0.01));
    pdf_doc_add_to_page (format_buffer, strlen(format_buffer)); /* Fall
 								  through */
@@ -195,16 +195,16 @@ static void line_mode (void)
  switch (motion_state) {
  case NO_MODE:
  case GRAPHICS_MODE:
-   pdf_doc_add_to_page (" BT ", 4); /* Fall through */
+   pdf_doc_add_to_page (" BT", 3); /* Fall through */
     /* Following may be necessary after a rule (and also after
        specials) */
    if (current_font != -1) {
-     sprintf (format_buffer, " /%s %g Tf ", dev_font[current_font].short_name,
+     sprintf (format_buffer, " /%s %g Tf", dev_font[current_font].short_name,
 	      ROUND(dev_font[current_font].ptsize*DPI/72,0.01));
      pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
    }
  case TEXT_MODE:
-   sprintf (format_buffer, "1 0 0 1 %g %g Td [",
+   sprintf (format_buffer, " 1 0 0 1 %g %g Td [",
 	    ROUND(dev_xpos,0.01), ROUND(dev_ypos,0.01));
    pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
    break;
@@ -324,7 +324,7 @@ static void dev_clear_color_stack (void)
 void dev_do_color (void) 
 {
   if (num_colors == 0) {
-    pdf_doc_add_to_page (" 0 g 0 G ", 9);
+    pdf_doc_add_to_page (" 0 g 0 G", 8);
     return;
   }
   switch (colorstack[num_colors-1].colortype) {
@@ -336,10 +336,10 @@ void dev_do_color (void)
     pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
     pdf_doc_add_to_page (" rg", 3);
     pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
-    pdf_doc_add_to_page (" RG ", 4);
+    pdf_doc_add_to_page (" RG", 3);
     break;
   case CMYK:
-    sprintf (format_buffer, " %g %g %g %g ",
+    sprintf (format_buffer, " %g %g %g %g",
 	     colorstack[num_colors-1].c1,
 	     colorstack[num_colors-1].c2,
 	     colorstack[num_colors-1].c3,
@@ -354,7 +354,7 @@ void dev_do_color (void)
     pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
     pdf_doc_add_to_page (" g", 2);
     pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
-    pdf_doc_add_to_page (" G ", 3);
+    pdf_doc_add_to_page (" G", 2);
     break;
   default:
     ERROR ("Internal error: Invalid color item on color stack");
@@ -432,7 +432,7 @@ void dev_begin_xform (double xscale, double yscale, double rotate)
   }
   c = ROUND (cos(rotate),1e-5);
   s = ROUND (sin(rotate),1e-5);
-  sprintf (work_buffer, " q %g %g %g %g %g %g cm ",
+  sprintf (work_buffer, " q %g %g %g %g %g %g cm",
 	   xscale*c, xscale*s, -yscale*s, yscale*c,
 	   ROUND((1.0-xscale*c)*dev_xpos+yscale*s*dev_ypos,0.001),
 	   ROUND(-xscale*s*dev_xpos+(1.0-yscale*c)*dev_ypos,0.001));
@@ -447,7 +447,7 @@ void dev_end_xform (void)
     fprintf (stderr, "\ndev_end_xform:  End transform with no corresponding begin\n");
     return;
   }
-  pdf_doc_add_to_page (" Q ", 3);
+  pdf_doc_add_to_page (" Q", 2);
   num_transforms -= 1;
   return;
 }
@@ -458,7 +458,7 @@ void dev_close_all_xforms (void)
     fprintf (stderr, "\nspecial: Closing pending transformations at end of page\n");
   while (num_transforms > 0) {
     num_transforms -= 1;
-    pdf_doc_add_to_page (" Q ", 3);
+    pdf_doc_add_to_page (" Q", 2);
   }
   return;
 }
@@ -475,7 +475,7 @@ void dev_bop (void)
   dev_xpos = 0.0;
   dev_ypos = 0.0;
   bop_font_reset();
-  pdf_doc_add_to_page (" 0 w ", 5);
+  pdf_doc_add_to_page ("0 w", 3);
   dev_do_color();
 }
 
@@ -546,7 +546,7 @@ void dev_select_font (long tex_font_id)
     ERROR ("dev_change_to_font:  dvi wants a font that isn't loaded");
   }
   text_mode();
-  sprintf (format_buffer, " /%s %g Tf ", dev_font[i].short_name,
+  sprintf (format_buffer, " /%s %g Tf", dev_font[i].short_name,
 	   ROUND(dev_font[i].ptsize*DPI/72,0.01));
   pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
   current_font = i;
@@ -597,7 +597,7 @@ void dev_rule (double width, double height)
     fprintf (stderr, "(dev_rule)");
   }
   graphics_mode();
-  sprintf (format_buffer, "%g %g m %g %g l %g %g l %g %g l b ",
+  sprintf (format_buffer, " %g %g m %g %g l %g %g l %g %g l b",
 	   ROUND(dev_xpos,0.01), ROUND(dev_ypos,0.01),
 	   ROUND(dev_xpos+width,0.01), ROUND(dev_ypos,0.01),
 	   ROUND(dev_xpos+width,0.01), ROUND(dev_ypos+height,0.01),

@@ -105,7 +105,7 @@ pdf_obj *pdf_include_page(pdf_obj *trailer, double x_user, double y_user,
       pdf_release_obj (contents);
       return NULL;
     }
-    pdf_doc_add_to_page (" q ", 3);
+    pdf_doc_add_to_page (" q", 2);
     add_xform_matrix (x_user, y_user, xscale, yscale, p->rotate);
     if (p->depth != 0.0)
       add_xform_matrix (0.0, -p->depth, 1.0, 1.0, 0.0);
@@ -119,18 +119,18 @@ pdf_obj *pdf_include_page(pdf_obj *trailer, double x_user, double y_user,
 				    pdf_ref_obj(this_form_contents));
       contents_ref = pdf_ref_obj (this_form_contents);
       pdf_release_obj (this_form_contents);
-      sprintf (work_buffer, " /%s Do ",
+      sprintf (work_buffer, " /%s Do",
 	       pdf_name_value(pdf_lookup_dict(pdf_stream_dict(contents), "Name")));
       pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
       i += 1;
     }
-    pdf_doc_add_to_page (" Q ", 3);
+    pdf_doc_add_to_page (" Q", 2);
     pdf_release_obj (media_box);
     pdf_release_obj (resources);
     pdf_release_obj (contents);
     return (contents_ref);
   } else {
-    pdf_doc_add_to_page (" q ", 3);
+    pdf_doc_add_to_page (" q", 2);
     add_xform_matrix (x_user, y_user, xscale, yscale, p->rotate);
     if (p->depth != 0.0)
     add_xform_matrix (0.0, -p->depth, 1.0, 1.0, 0.0);
@@ -139,12 +139,12 @@ pdf_obj *pdf_include_page(pdf_obj *trailer, double x_user, double y_user,
 						   (contents), "Name")),
 				  pdf_ref_obj(contents));
     contents_ref = pdf_ref_obj (contents);
-    sprintf (work_buffer, " /%s Do ",
+    sprintf (work_buffer, " /%s Do",
 	     pdf_name_value(pdf_lookup_dict
 			      (pdf_stream_dict(contents), "Name")));
     pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
     pdf_release_obj (contents);
-    pdf_doc_add_to_page (" Q ", 3);
+    pdf_doc_add_to_page (" Q", 2);
   }
   return (contents_ref);
 }

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.15 1998/12/04 20:26:07 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.16 1998/12/05 02:39:46 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -1324,7 +1324,7 @@ void add_xform_matrix (double xoff, double yoff,
   double c, s;
   c = ROUND(cos(rotate),1e-5);
   s = ROUND(sin(rotate),1e-5);
-  sprintf (work_buffer, " %g %g %g %g %g %g cm ", 
+  sprintf (work_buffer, " %g %g %g %g %g %g cm", 
 	   c*xscale, s*xscale, -s*yscale, c*yscale, xoff, yoff);
   pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
 }
@@ -1393,11 +1393,11 @@ pdf_obj *jpeg_build_object(struct jpeg *jpeg, double x_user, double
 	xscale = p->yscale;
     }
   }
-  pdf_doc_add_to_page (" q ", 3);
+  pdf_doc_add_to_page (" q", 2);
   add_xform_matrix (x_user, y_user, xscale, yscale, p->rotate);
   if (p->depth != 0.0)
     add_xform_matrix (0.0, -p->depth, 1.0, 1.0, 0.0);
-  sprintf (work_buffer, " /Im%d Do Q ", num_images);
+  sprintf (work_buffer, " /Im%d Do Q", num_images);
   pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
   return (xobject);
 }
@@ -1464,7 +1464,7 @@ static void do_uxobj (char **start, char *end, double x_user, double y_user)
 	     objname);
   }
   release (objname);
-  sprintf (work_buffer, " q 1 0 0 1 %g %g cm /%s Do Q ",
+  sprintf (work_buffer, " q 1 0 0 1 %g %g cm /%s Do Q",
 	   ROUND(x_user, 0.1), ROUND(y_user, 0.1), res_name);
   pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
   pdf_doc_add_to_page_xobjects (res_name, xobj_res);

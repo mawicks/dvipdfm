@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.14 1998/12/04 20:26:06 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.15 1998/12/05 02:39:46 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -201,7 +201,7 @@ static char *asn_date (void)
   return date_string;
 }
 
-#define BANNER "dvipdfm %s, Copyright (C) 1998, by Mark A. Wicks"
+#define BANNER "dvipdfm %s, Copyright \251 1998, by Mark A. Wicks"
 static void create_docinfo (void)
 {
   char *time_string, *banner;
@@ -961,7 +961,7 @@ pdf_obj *begin_form_xobj (double bbllx, double bblly, double bburx,
   pdf_add_array (bbox, pdf_new_number (ROUND(bburx-bbllx,0.1)));
   pdf_add_array (bbox, pdf_new_number (ROUND(bbury-bblly,0.1)));
   /* Resource is already made, so call doc_make_form_xobj() */
-  sprintf (work_buffer, " 1 0 0 1 %g %g cm ",
+  sprintf (work_buffer, "1 0 0 1 %g %g cm",
 	   ROUND(-bbllx,0.1), ROUND(-bblly,0.1));
   pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
   doc_make_form_xobj (this_page_contents, bbox,
