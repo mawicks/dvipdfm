@@ -1,4 +1,4 @@
-% $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/doc/dvipdfm.tex,v 1.28 2001/04/14 03:25:00 mwicks Exp $
+% $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/doc/dvipdfm.tex,v 1.29 2001/06/26 14:59:00 mwicks Exp $
 % \special{ pdf: pagesize width 8.5truein height 11.0truein}
 \special{  pdf:  docview <</PageMode /UseOutlines>>}%
 \catcode`\ =11\def\space{ }\catcode`\ =10
@@ -978,15 +978,12 @@ combinations of ``|bt rotate 10|'' and ``|bt rotate -10|''.
 
 \def\up#1{\special{pdf:bt rotate 10}\hbox{#1}}
 \def\down#1{\special{pdf:bt rotate -10}\hbox{#1}}
-You \down{can} \down{nest} \down{the} \up{text}
-\up{trans}\up{form}\up{ation} \up{capa}\down{bili}\down{ties} \down{to}
-\down{achieve} \down{effects} \down{like}
+You \down{can} nest \down{the} \up{text}
+trans\up{form}ation \up{capa}\down{bili}ties \down{to}
+achieve \down{effects} \down{like}
 {this}.
 \special{pdf:et}\special{pdf:et}\special{pdf:et}\special{pdf:et}
 \special{pdf:et}\special{pdf:et}\special{pdf:et}\special{pdf:et}
-\special{pdf:et}\special{pdf:et}\special{pdf:et}
-\special{pdf:et}
-\special{pdf:et}
 \special{pdf:et}
 \vskip 0.5in
 
