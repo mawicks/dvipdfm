@@ -153,7 +153,7 @@ static char *asn_date (void)
   return date_string;
 }
 
-#define BANNER "dvipdf %s, Copyright 1998, by Mark A. Wicks"
+#define BANNER "dvipdfm %s, Copyright (C) 1998, by Mark A. Wicks"
 static create_docinfo (void)
 {
   pdf_obj *tmp1, *tmp2;

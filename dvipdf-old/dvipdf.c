@@ -60,13 +60,16 @@ static void set_default_pdf_filename(void)
 
 static void usage (void)
 {
-  fprintf (stderr, "%s, version %s, Copyright 1998 by Mark A. Wicks\n\n", PACKAGE, VERSION);
-  fprintf (stderr, "Usage: dvipdf [options] dvifile\n");
-  fprintf (stderr, "where [options] is one or more of\n\n");
-  fprintf (stderr, "\t-o filename\t(Output file name)\n");
-  fprintf (stderr, "\t-p papersize\t(e.g., letter, tabloid, ledger, tabloid, a4, a3\n");
-  fprintf (stderr, "\t-l \t\t(landscape mode)\n");
-  exit(1);
+   fprintf (stderr, "%s, version %s, Copyright (C) 1998 by Mark A. Wicks\n", PACKAGE, VERSION);
+   fprintf (stderr, "dvipdfm comes with ABSOLUTELY NO WARRANTY.\n");
+   fprintf (stderr, "This is free software, and you are welcome to redistribute it\n");
+   fprintf (stderr, "under certain conditions.  Details are distributed with the software.\n");
+   fprintf (stderr, "\nUsage: dvipdf [options] dvifile\n");
+   fprintf (stderr, "where [options] is one or more of\n\n");
+   fprintf (stderr, "\t-o filename\t(Output file name)\n");
+   fprintf (stderr, "\t-p papersize\t(e.g., letter, tabloid, ledger, tabloid, a4, a3)\n");
+   fprintf (stderr, "\t-l \t\t(landscape mode)\n");
+   exit(1);
 }
 
 static double paper_width = 612.0, paper_height = 792.0;

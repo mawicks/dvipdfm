@@ -3,7 +3,7 @@ dnl PACKAGE(dvipdf)
 dnl VERSION(0.5)
 AC_INIT(acconfig.h)
 AM_CONFIG_HEADER(config.h)
-AM_INIT_AUTOMAKE(dvipdf, 0.5d)
+AM_INIT_AUTOMAKE(dvipdf, 0.6dev)
 
 AC_PREFIX_DEFAULT(/usr/local/texmf)
 
