@@ -1,3 +1,19 @@
+July 25, 2000 - Version 0.13
+
+   This release adds support for 16 bit character sets via Omega's OFM
+files.  The DVI and VF code was made 16 bit clean.  I am anxious
+to hear from Omega users.
+
+   The release also changes the way encodings are written to the PDF file.
+The prior method was causing compatibility problems with certain software
+that tried to merge PDF files.
+
+   Much of the Type1 font code has been rewritten for this release. The
+rewritten code allows multiple encodings to be used with the same Type 1
+font in the same document so that *all* glyphs (even >256) are available
+from a Type 1 font.  Font subsetting has been improved. In particular, the
+internal encoding is completely removed if it's not needed.
+
 July 8, 2000 - Version 0.12.8
 
    The primary change in this release involves fixing file inclusion
