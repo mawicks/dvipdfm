@@ -3,7 +3,7 @@ CFLAGS=@CFLAGS@
 LDFLAGS=@LDFLAGS@
 CPPFLAGS=@CPPFLAGS@ -I .
 INSTALL=@INSTALL@
-LIBS=@LIBS@ -lm 
+LIBS=@LIBS@ -lm
 srcdir=@srcdir@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
@@ -14,6 +14,7 @@ dvipdfmdir=$(texmf)/dvipdfm
 psheaderdir=$(texmf)/dvips
 programs=dvipdfm ebb
 scripts=dvipdft
+@MAINT@webdir=/home/httpd/html/dvipdfm
 headers=dvi.h pdflimits.h error.h mfileio.h jpeg.h mem.h numbers.h \
 	pdfdev.h pdfdoc.h pdfparse.h pdfspecial.h tfm.h type1.h epdf.h \
 	vf.h dvicodes.h t1crypt.h pkfont.h tpic.h thumbnail.h htex.h \
@@ -186,14 +187,16 @@ depend.make:
 @MAINT@	cp -a ../dvipdfm-@VERSION@.tar.gz /usr/src/redhat/SOURCES/
 @MAINT@	rpm -ba /usr/src/redhat/SPECS/dvipdfm-@VERSION@.spec
 @MAINT@web-dist: rpm-dist tarball doc/dvipdfm.pdf
-@MAINT@	rm /home/httpd/html/dvipdfm/dvipdfm.tar.gz
+@MAINT@	rm -f $(webdir)/dvipdfm.tar.gz
 @MAINT@	cp -a ../dvipdfm-@VERSION@.tar.gz /usr/src/redhat/RPMS/i386/dvipdfm-@VERSION@-1.i386.rpm /usr/src/redhat/SRPMS/dvipdfm-@VERSION@-1.src.rpm /home/httpd/html/dvipdfm/
-@MAINT@	ln -s dvipdfm-@VERSION@.tar.gz /home/httpd/html/dvipdfm/dvipdfm.tar.gz
-@MAINT@	cp -a doc/dvipdfm.pdf /home/httpd/html/dvipdfm/dvipdfm-@VERSION@.pdf
-@MAINT@	rm -f /home/httpd/html/dvipdfm/dvipdfm.pdf
-@MAINT@	ln -s dvipdfm-@VERSION@.pdf /home/httpd/html/dvipdfm/dvipdfm.pdf
-@MAINT@	ln -s dvipdfm-@VERSION@-1.i386.rpm /home/httpd/html/dvipdfm/dvipdfm-latest.i386.rpm
-@MAINT@	ln -s dvipdfm-@VERSION@-1.src.rpm /home/httpd/html/dvipdfm/dvipdfm-latest.src.rpm
+@MAINT@	ln -s dvipdfm-@VERSION@.tar.gz $(webdir)/dvipdfm.tar.gz
+@MAINT@	cp -a doc/dvipdfm.pdf $(webdir)/dvipdfm-@VERSION@.pdf
+@MAINT@	rm -f $(webdir)/dvipdfm.pdf
+@MAINT@	ln -s dvipdfm-@VERSION@.pdf $(webdir)/dvipdfm.pdf
+@MAINT@	rm -f $(webdir)/dvipdfm-latest.i386.rpm
+@MAINT@	ln -s dvipdfm-@VERSION@-1.i386.rpm $(webdir)/dvipdfm-latest.i386.rpm
+@MAINT@	rm -f $(webdir)/dvipdfm-latest.src.rpm
+@MAINT@	ln -s dvipdfm-@VERSION@-1.src.rpm $(webdir)/dvipdfm-latest.src.rpm
 @MAINT@ftp-dist: rpm-dist tarball doc/dvipdfm.pdf
 @MAINT@	ssh mwicks@ftp 'rm pub/outgoing/mwicks/dvipdfm/*.tar.gz pub/outgoing/mwicks/dvipdfm/*.pdf ; cd pub/outgoing/mwicks/dvipdfm/; ln -s dvipdfm-@VERSION@.tar.gz dvipdfm.tar.gz'
 @MAINT@	scp ../dvipdfm-@VERSION@.tar.gz mwicks@ftp:pub/outgoing/mwicks/dvipdfm/dvipdfm-@VERSION@.tar.gz
