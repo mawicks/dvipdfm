@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.65 2000/01/17 14:27:53 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.66 2000/01/19 00:23:47 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1469,12 +1469,13 @@ pdf_obj *pdf_deref_obj (pdf_obj *obj)
     ERROR ("Tried to deref a non-file object");
   }
   result = pdf_read_object (indirect -> label);
-if (debug){
-  fprintf (stderr, "\npdf_deref_obj: read_object returned\n");
-  pdf_write_obj (stderr, result);
+
+  if (debug){
+    fprintf (stderr, "\npdf_deref_obj: read_object returned\n");
+    pdf_write_obj (stderr, result);
   }
- 
-  while (result -> type == PDF_INDIRECT) {
+  
+  while (result && result -> type == PDF_INDIRECT) {
     tmp = pdf_read_object (result -> label);
     pdf_release_obj (result);
     result = tmp;

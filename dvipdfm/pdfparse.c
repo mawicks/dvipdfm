@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.c,v 1.30 2000/01/15 16:40:06 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.c,v 1.31 2000/01/19 00:23:47 mwicks Exp $
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
 
@@ -547,7 +547,7 @@ static pdf_obj *parse_pdf_stream (char **start, char *end, pdf_obj
 				  *dict)
 {
   pdf_obj *result, *new_dict, *tmp1, *length_obj;
-  int length;
+  unsigned long length;
   if (pdf_lookup_dict(dict, "F")) {
     fprintf (stderr, "File streams not implemented (yet)");
     return NULL;
@@ -659,7 +659,6 @@ pdf_obj *parse_pdf_object (char **start, char *end)
     fprintf (stderr, "\nExpecting an object, but didn't find one");
     *start = save;
     dump(*start, end);
-    return NULL;
   }
   return result;
 }
