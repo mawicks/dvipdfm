@@ -37,6 +37,8 @@ ebb.c
 epdf.c
 epdf.h
 error.h
+htex.c
+htex.h
 install-sh
 jpeg.c
 jpeg.h
