@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.7 1999/08/26 21:48:39 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.8 1999/08/26 22:58:12 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -358,8 +358,8 @@ static void do_operator(char *token)
       for (i=0; i<6; i++) {
 	if (!(tmp2 = pdf_get_array(tmp1, i)))
 	  break;
-	len += sprintf (work_buffer+len, " %.4g",
-			pdf_number_value(tmp2));
+	len += sprintf (work_buffer+len, " %g",
+			ROUND(pdf_number_value(tmp2),0.0001));
       }
       len += sprintf (work_buffer+len, " cm");
       pdf_doc_add_to_page (work_buffer, len);
@@ -376,10 +376,13 @@ static void do_operator(char *token)
 	(tmp3 = POP_STACK()) && tmp3->type == PDF_NUMBER &&
 	(tmp2 = POP_STACK()) && tmp2->type == PDF_NUMBER &&
 	(tmp1 = POP_STACK()) && tmp1->type == PDF_NUMBER) {
-      len = sprintf (work_buffer, " %.2f %.2f %.2f %.2f %.2f %.2f c", 
-		     pdf_number_value(tmp1),pdf_number_value(tmp2),
-		     pdf_number_value(tmp3),pdf_number_value(tmp4),
-		     pdf_number_value(tmp5),pdf_number_value(tmp6));
+      len = sprintf (work_buffer, " %g %g %g %g %g %g c", 
+		     ROUND(pdf_number_value(tmp1),0.01),
+		     ROUND(pdf_number_value(tmp2),0.01),
+		     ROUND(pdf_number_value(tmp3),0.01),
+		     ROUND(pdf_number_value(tmp4),0.01),
+		     ROUND(pdf_number_value(tmp5),0.01),
+		     ROUND(pdf_number_value(tmp6),0.01));
       pdf_doc_add_to_page (work_buffer, len);
     } else {
       fprintf (stderr, "\nMissing number(s) before \"curveto\"\n");
@@ -485,8 +488,9 @@ static void do_operator(char *token)
       int len;
       if ((tmp2 = POP_STACK()) && tmp2-> type == PDF_NUMBER &&
 	  (tmp1 = POP_STACK()) && tmp1-> type == PDF_NUMBER) {
-	len = sprintf (work_buffer, " %.2f %.2f l",
-		 pdf_number_value (tmp1),pdf_number_value (tmp2));
+	len = sprintf (work_buffer, " %g %g l",
+		       ROUND(pdf_number_value(tmp1),0.01),
+		       ROUND(pdf_number_value(tmp2),0.01));
 	pdf_doc_add_to_page (work_buffer, len);
 	x_state = pdf_number_value (tmp1);
 	y_state = pdf_number_value (tmp2);
@@ -500,8 +504,9 @@ static void do_operator(char *token)
   case MOVETO:
     if ((tmp2 = POP_STACK()) && tmp2-> type == PDF_NUMBER &&
 	(tmp1 = POP_STACK()) && tmp1-> type == PDF_NUMBER) {
-      len = sprintf (work_buffer, " %.2f %.2f m",
-		     pdf_number_value (tmp1),pdf_number_value (tmp2));
+      len = sprintf (work_buffer, " %g %g m",
+		     ROUND(pdf_number_value (tmp1),0.01),
+		     ROUND(pdf_number_value (tmp2),0.01));
       pdf_doc_add_to_page (work_buffer, len);
       /* MetaPost likes to ship out a moveto before displayed text.
 	 This causes the reader to choke since it thinks we are
@@ -538,9 +543,9 @@ static void do_operator(char *token)
   case RLINETO: 
     if ((tmp2 = POP_STACK()) && tmp2->type == PDF_NUMBER &&
 	(tmp1 = POP_STACK()) && tmp1->type == PDF_NUMBER) {
-      len = sprintf (work_buffer, " %.2f %.2f l",
-		     x_state+pdf_number_value(tmp1),
-		     y_state+pdf_number_value(tmp2));
+      len = sprintf (work_buffer, " %g %g l",
+		     ROUND(x_state+pdf_number_value(tmp1),0.01),
+		     ROUND(y_state+pdf_number_value(tmp2),0.01));
       pdf_doc_add_to_page (work_buffer, len);
     }
     if (tmp1)
@@ -551,9 +556,9 @@ static void do_operator(char *token)
   case SCALE: 
     if ((tmp2 = POP_STACK()) &&  tmp2->type == PDF_NUMBER &&
 	(tmp1 = POP_STACK()) && tmp1->type == PDF_NUMBER) {
-      len = sprintf (work_buffer, " %.2f 0 0 %.2f 0 0 cm", 
-		     pdf_number_value (tmp1),
-		     pdf_number_value (tmp2));
+      len = sprintf (work_buffer, " %g 0 0 %g 0 0 cm", 
+		     ROUND(pdf_number_value (tmp1),0.01),
+		     ROUND(pdf_number_value (tmp2),0.01));
       pdf_doc_add_to_page (work_buffer, len);
     }
     if (tmp1)
@@ -566,13 +571,17 @@ static void do_operator(char *token)
 	(tmp3 = POP_STACK()) && tmp3->type == PDF_NUMBER &&
 	(tmp2 = POP_STACK()) && tmp2->type == PDF_NUMBER &&
 	(tmp1 = POP_STACK()) && tmp1->type == PDF_NUMBER) {
-      len = sprintf (work_buffer, " %.3f %.3f %.3f %.3f k",
-		     pdf_number_value (tmp1), pdf_number_value (tmp2),
-		     pdf_number_value (tmp3), pdf_number_value (tmp4));
+      len = sprintf (work_buffer, " %g %g %g %g k",
+		     ROUND(pdf_number_value (tmp1),0.001),
+		     ROUND(pdf_number_value (tmp2),0.001),
+		     ROUND(pdf_number_value (tmp3),0.001),
+		     ROUND(pdf_number_value (tmp4),0.001));
       pdf_doc_add_to_page (work_buffer, len);
-      len = sprintf (work_buffer, " %.3f %.3f %.3f %.3f K",
-		     pdf_number_value (tmp1), pdf_number_value (tmp2),
-		     pdf_number_value (tmp3), pdf_number_value (tmp4));
+      len = sprintf (work_buffer, " %g %g %g %g K",
+		     ROUND(pdf_number_value (tmp1),0.001),
+		     ROUND(pdf_number_value (tmp2),0.001),
+		     ROUND(pdf_number_value (tmp3),0.001),
+		     ROUND(pdf_number_value (tmp4),0.001));
       pdf_doc_add_to_page (work_buffer, len);
     } else {
       fprintf (stderr, "\nExpecting four numbers before \"setcmykcolor\"\n");
@@ -594,14 +603,14 @@ static void do_operator(char *token)
       for (i=0;; i++) {
 	if ((tmp3 = pdf_get_array (tmp1, i)) &&
 	    tmp3 -> type == PDF_NUMBER) {
-	  len = sprintf (work_buffer, " %.2f", pdf_number_value(tmp3));
+	  len = sprintf (work_buffer, " %g", ROUND(pdf_number_value(tmp3),0.01));
 	  pdf_doc_add_to_page (work_buffer, len);
 	} else 
 	  break;
       }
       pdf_doc_add_to_page (" ]", 2);
       if (tmp2 -> type == PDF_NUMBER) {
-	len = sprintf (work_buffer, " %.2f d", pdf_number_value(tmp2));
+	len = sprintf (work_buffer, " %g d", ROUND(pdf_number_value(tmp2),0.01));
 	pdf_doc_add_to_page (work_buffer, len);
       }
     } else {
@@ -614,11 +623,11 @@ static void do_operator(char *token)
     break;
   case SETGRAY:
     if ((tmp1 = POP_STACK()) && tmp1->type == PDF_NUMBER) {
-      len = sprintf (work_buffer, " %.3f g",
-		     pdf_number_value (tmp1));
+      len = sprintf (work_buffer, " %g g",
+		     ROUND(pdf_number_value (tmp1),0.001));
       pdf_doc_add_to_page (work_buffer, len);
-      len = sprintf (work_buffer, " %.3f G",
-		     pdf_number_value (tmp1));
+      len = sprintf (work_buffer, " %g G",
+		     ROUND(pdf_number_value (tmp1),0.001));
       pdf_doc_add_to_page (work_buffer, len);
     } else {
       fprintf (stderr, "\nExpecting a number before \"setgray\"\n");
@@ -648,7 +657,7 @@ static void do_operator(char *token)
     break;
   case SETLINEWIDTH:
     if ((tmp1 = POP_STACK()) && tmp1->type == PDF_NUMBER) {
-      len = sprintf (work_buffer, " %g w", pdf_number_value (tmp1));
+      len = sprintf (work_buffer, " %g w", ROUND(pdf_number_value (tmp1),0.01));
       pdf_doc_add_to_page (work_buffer, len);
     } else {
       fprintf (stderr, "\nExpecting a number before \"setlinewidth\"\n");
@@ -658,7 +667,8 @@ static void do_operator(char *token)
     break;
   case SETMITERLIMIT:
     if ((tmp1 = POP_STACK()) && tmp1->type == PDF_NUMBER) {
-      len = sprintf (work_buffer, " %g M", pdf_number_value (tmp1));
+      len = sprintf (work_buffer, " %g M", ROUND(pdf_number_value
+						 (tmp1),0.01));
       pdf_doc_add_to_page (work_buffer, len);
     } else {
       fprintf (stderr, "\nExpecting a number before \"setmiterlimit\"\n");
@@ -671,12 +681,14 @@ static void do_operator(char *token)
 	(tmp2 = POP_STACK()) && tmp2->type == PDF_NUMBER &&
 	(tmp1 = POP_STACK()) && tmp1->type == PDF_NUMBER) {
       len = sprintf (work_buffer, " %g %g %g rg",
-		     pdf_number_value (tmp1), pdf_number_value (tmp2),
-		     pdf_number_value (tmp3));
+		     ROUND(pdf_number_value (tmp1),0.001),
+		     ROUND(pdf_number_value (tmp2),0.001),
+		     ROUND(pdf_number_value (tmp3),0.001));
       pdf_doc_add_to_page (work_buffer, len);
       len = sprintf (work_buffer, " %g %g %g RG",
-		     pdf_number_value (tmp1), pdf_number_value (tmp2),
-		     pdf_number_value (tmp3));
+		     ROUND(pdf_number_value (tmp1),0.001),
+		     ROUND(pdf_number_value (tmp2),0.001),
+		     ROUND(pdf_number_value (tmp3),0.001));
       pdf_doc_add_to_page (work_buffer, len);
     } else {
       fprintf (stderr, "\nExpecting three numbers before \"setrgbcolor\"\n");
@@ -709,8 +721,8 @@ static void do_operator(char *token)
     if ((tmp2 = POP_STACK()) &&  tmp2->type == PDF_NUMBER &&
 	(tmp1 = POP_STACK()) && tmp1->type == PDF_NUMBER) {
       len = sprintf (work_buffer, " 1 0 0 1 %g %g cm", 
-		     pdf_number_value (tmp1),
-		     pdf_number_value (tmp2));
+		     ROUND(pdf_number_value (tmp1),0.01),
+		     ROUND(pdf_number_value (tmp2),0.01));
       pdf_doc_add_to_page (work_buffer, len);
     }
     if (tmp1)
