@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tpic.c,v 1.13 1999/02/21 19:13:58 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tpic.c,v 1.14 1999/02/21 21:45:01 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -118,7 +118,7 @@ static void show_path (int hidden)
   int len;
   /* The semantics of a fill_color of 0.0 or 0.5 will be to use current
      painting color known to dvipdfm */
-  if (fill_shape && fill_color != 0.0 && fill_color != 0.5) {
+  if (fill_shape && fill_color != 0.0) {
     len = sprintf (work_buffer, " %.2f g", fill_color);
     pdf_doc_add_to_page (work_buffer, len);
   }
