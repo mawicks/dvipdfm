@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.93 1999/09/28 01:44:58 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.94 1999/09/28 02:43:43 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -355,6 +355,7 @@ struct font_record *get_font_record (const char *tex_name)
       break;
     }
   }
+  fprintf (stderr, "\nfont_record(%s) = %p\n", tex_name, result);
   return result;
 }
 
@@ -1314,7 +1315,7 @@ int type1_font (const char *tex_name, int tfm_font_id, char *resource_name)
   pdf_obj *font_resource, *tmp1, *font_encoding_ref;
   struct font_record *font_record;
   /* font_record should always result in non-null value with default
-     values filled in from pdffonts.map if any */
+     values filled in from map file if any */
   font_record = get_font_record (tex_name);
   /* Fill in default value for font_name and enc if not specified in map file */
   if (verbose>1){
