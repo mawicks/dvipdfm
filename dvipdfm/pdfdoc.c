@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.4 1998/11/30 20:38:25 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.5 1998/11/30 20:47:02 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -171,9 +171,15 @@ static void finish_name_tree (void)
 }
 
 
-
 static char *asn_date (void)
 {
+#ifndef HAVE_TIMEZONE
+  #ifdef TM_GM_TOFF
+     #define timezone (bdtime->gm_toff)
+  #else
+     #define timezone 0
+#endif /* TM_GM_TOFF */
+#endif /* HAVE_TIMEZONE */
   static char date_string[22];
   time_t current_time;
   struct tm *bd_time;

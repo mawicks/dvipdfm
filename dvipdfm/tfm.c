@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.3 1998/11/30 20:38:26 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.4 1998/11/30 20:47:03 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -26,7 +26,7 @@
 #include "pdflimits.h"
 #include "numbers.h"
 #include "error.h"
-#include "io.h"
+#include "mfileio.h"
 #include "mem.h"
 
 static tfm_verbose = 0;

@@ -1,7 +1,7 @@
 #include "system.h"
 #include "pdfobj.h"
 #include "pdfspecial.h"
-#include "io.h"
+#include "mfileio.h"
 #include "epdf.h"
 
 

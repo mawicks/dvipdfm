@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.5 1998/11/30 20:38:25 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.6 1998/11/30 20:47:03 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -37,7 +37,7 @@
 #include "numbers.h"
 #include "mem.h"
 #include "dvi.h"
-#include "io.h"
+#include "mfileio.h"
 #include "jpeg.h"
 #include "epdf.h"
 
