@@ -27,10 +27,16 @@ AC_MSG_ERROR([AFM, PS_HEADER, and/or VF formats not found in Kpathsea header fil
 This version of dvipdfm requires that kpathsea and its headers be installed.
 If you are sure they are installed and in a standard place, maybe you need a
 newer version of kpathsea?  You also might try setting the environment
-variable CFLAGS with -I point to the directory containing the headers
-before running configure.
+variable CPPFLAGS or CLFAGS with -I pointing to the directory containing
+the file "tex-file.h"
 
 ])])])
+#
+AC_DEFUN(AC_TEXMF_TREE,
+  [AC_MSG_CHECKING([location of your texmf tree using kpsewhich])
+TEXMF=`kpsxpand '$TEXMFMAIN'`
+AC_SUBST(TEXMF)
+AC_MSG_RESULT($TEXMF)])
 #
 # End of local tests
 #

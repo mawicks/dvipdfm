@@ -6,20 +6,25 @@ AC_DEFINE(PACKAGE,"dvipdfm")
 
 AC_CONFIG_HEADER(c-auto.h)
 
+AC_ARG_ENABLE(maint, [  --enable-maint          enable autoconf portions of Makefile],
+  [MAINT=''], [MAINT='#'])
+AC_SUBST(MAINT)  
+
 dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
 
-dnl Don't bother going further if we don't have kpse.
+dnl Don't bother going further if we don't have kpse installed.
 AC_HAS_KPSE_FORMATS
 AC_CHECK_LIB(kpathsea, kpse_find_file, [AC_DEFINE(KPATHSEA) LIBS="-lkpathsea $LIBS"],
   AC_MSG_ERROR([kpathsea library not found
+AC_TEXMF_TREE
   
 This version of dvipdfm requires the kpathsea library and its headers.  If
 you know where it is you might try setting the LDFLAGS environment variable
-with -L pointing to the library
+with -L pointing to the directory containing libkpathsea.a
 ]))
 dnl Check for functions
 dnl AC_CHECK_FUNCS(basename)
