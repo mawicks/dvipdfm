@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.h,v 1.32 2000/06/29 12:30:18 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.h,v 1.33 2000/08/04 02:37:51 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -29,24 +29,22 @@
 #include "numbers.h"
 #include "pdfobj.h"
 
-typedef signed long mpt_t;
+typedef signed long spt_t;
 
 extern void dev_init(double scale, double x_offset, double y_offset);
+extern double pdf_dev_scale (void);
 extern void dev_close (void);
-extern unsigned long dev_tell_xdpi(void);
-extern unsigned long dev_tell_ydpi(void);
-extern int dev_locate_font (char *name, mpt_t ptsize);
+extern int dev_locate_font (char *name, spt_t ptsize);
 extern int dev_font_tfm (int dev_font_id);
-extern double dev_font_size (int dev_font_id);
-extern mpt_t dev_font_mptsize (int dev_font_id);
+extern spt_t dev_font_sptsize (int dev_font_id);
 extern void dev_close_all_fonts (void);
 extern void dev_bop (void);
 extern void dev_eop (void);
 extern void dev_reselect_font (void);
-extern void dev_set_string (mpt_t xpos, mpt_t ypos, unsigned char *ch,
-			    int len, mpt_t width, int font_id);
+extern void dev_set_string (spt_t xpos, spt_t ypos, unsigned char *ch,
+			    int len, spt_t width, int font_id);
 extern void dev_set_page_size (double width, double height);
-extern void dev_rule (mpt_t xpos, mpt_t ypos, mpt_t width, mpt_t height);
+extern void dev_rule (spt_t xpos, spt_t ypos, spt_t width, spt_t height);
 extern double dev_phys_x (void);
 extern double dev_phys_y (void);
 extern void dev_begin_rgb_color (double r, double g, double b);
@@ -70,8 +68,8 @@ extern int  dev_xform_depth (void);
 extern void dev_close_all_xforms (int depth);
 
 extern void dev_add_comment (char *comment);
-extern void dev_do_special (void *buffer, UNSIGNED_QUAD size, double
-			    x_user, double y_user);
+extern void dev_do_special (void *buffer, UNSIGNED_QUAD size,
+			    spt_t x_user, spt_t y_user);
 extern double dev_page_height(void);
 extern double dev_page_width(void);
 /* graphics_mode() would normally be local, but it is needed by the
@@ -81,7 +79,7 @@ extern void dev_stack_depth (unsigned int depth);
 extern void dev_tag_depth (void);
 extern void dev_set_box (void);
 extern void dev_untag_depth (void);
-extern void dev_expand_box (mpt_t width, mpt_t height, mpt_t depth);
+extern void dev_expand_box (spt_t width, spt_t height, spt_t depth);
 extern void dev_link_annot (unsigned char flag);
 #endif /* PDFDEV_H */
 

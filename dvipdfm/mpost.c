@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.32 2000/06/30 02:09:20 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.33 2000/08/04 02:37:51 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -630,8 +630,8 @@ static int do_operator(char *token,
     break;
   case CURRENTPOINT:
     state = 0;
-    PUSH (pdf_new_number (dvi_dev_xpos()));
-    PUSH (pdf_new_number (dvi_dev_ypos()));
+    PUSH (pdf_new_number (x_user)); /* Remember that x_user and y_user */
+    PUSH (pdf_new_number (y_user)); /* are off by 0.02 % */
     break;
   case CURVETO:
     if (state <= 1) /* In path now */

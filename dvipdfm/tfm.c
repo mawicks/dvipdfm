@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.29 2000/07/30 16:40:15 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.30 2000/08/04 02:37:51 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -42,20 +42,14 @@ static char tfm_debug = 0;
 
 struct a_tfm
 {
-  UNSIGNED_QUAD wlenfile;
-  UNSIGNED_QUAD wlenheader;
-  UNSIGNED_QUAD bc;
-  UNSIGNED_QUAD ec;
-  UNSIGNED_QUAD nwidths;
-  UNSIGNED_QUAD nheights;
-  UNSIGNED_QUAD ndepths;
-  UNSIGNED_QUAD nitcor;
-  UNSIGNED_QUAD nlig;
-  UNSIGNED_QUAD nkern;
-  UNSIGNED_QUAD nextens;
+  UNSIGNED_QUAD wlenfile, wlenheader;
+  UNSIGNED_QUAD bc, ec;
+  UNSIGNED_QUAD nwidths, nheights, ndepths;
+  UNSIGNED_QUAD nitcor, nlig, nkern, nextens;
   UNSIGNED_QUAD nfonparm;
   UNSIGNED_QUAD font_direction;	/* Used only in OFMs.  TFMs don't have
 				 this field*/
+  UNSIGNED_QUAD nco, ncw, npc;
   SIGNED_QUAD *header;
   UNSIGNED_QUAD *char_info;
   UNSIGNED_PAIR *width_index;
@@ -180,13 +174,11 @@ static void get_sizes (FILE *tfm_file, SIGNED_QUAD tfm_file_size,
   return;
 }
 
-static void ofm_get_sizes (FILE *ofm_file,  UNSIGNED_QUAD ofm_file_size,
+static int ofm_get_sizes (FILE *ofm_file,  UNSIGNED_QUAD ofm_file_size,
 			   struct a_tfm *a_tfm)
 {
   SIGNED_QUAD level;
-  if ((level = get_signed_quad(ofm_file)) != 0) {
-    ERROR ("OFM Level > 0.  Can't handle this file");
-  }
+  level = get_signed_quad (ofm_file);
   a_tfm -> wlenfile = get_signed_quad (ofm_file);
   a_tfm -> wlenheader = get_signed_quad (ofm_file);
   a_tfm -> bc = get_signed_quad (ofm_file);
@@ -203,17 +195,26 @@ static void ofm_get_sizes (FILE *ofm_file,  UNSIGNED_QUAD ofm_file_size,
   a_tfm -> nfonparm = get_signed_quad (ofm_file);
   a_tfm -> font_direction = get_signed_quad (ofm_file);
   if (a_tfm->font_direction) {
-    fprintf (stderr, "Warning:  I am probably interpreting font direction incorrectly.\n");
+    fprintf (stderr, "Warning:  I may be interpreting a font direction incorrectly.\n");
   }
-  if ( a_tfm -> wlenfile != ofm_file_size/4 ||
-      sum_of_ofm_sizes (a_tfm) != a_tfm -> wlenfile)
-    invalid_ofm_file();
-  if (tfm_debug) {
-    fprintf (stderr, "Computed size (words)%ld\n", sum_of_ofm_sizes (a_tfm));
-    fprintf (stderr, "Stated size (words)%ld\n", a_tfm -> wlenfile);
-    fprintf (stderr, "Actual size (bytes)%ld\n", ofm_file_size);
+  if (level == 0) {
+    if (a_tfm -> wlenfile != ofm_file_size/4 ||
+	sum_of_ofm_sizes (a_tfm) != a_tfm -> wlenfile)
+      invalid_ofm_file();
+    if (level == 0 && tfm_debug) {
+      fprintf (stderr, "Computed size (words)%ld\n", sum_of_ofm_sizes (a_tfm));
+      fprintf (stderr, "Stated size (words)%ld\n", a_tfm -> wlenfile);
+      fprintf (stderr, "Actual size (bytes)%ld\n", ofm_file_size);
+    }
+  } else if (level == 1) {
+    a_tfm -> nco = get_signed_quad (ofm_file);
+    a_tfm -> ncw = get_signed_quad (ofm_file);
+    a_tfm -> npc = get_signed_quad (ofm_file);
+    seek_absolute (ofm_file, 4*(a_tfm -> nco));
+  } else {
+    ERROR ("Can't handle OFM files with level > 1");
   }
-  return;
+  return (int) (level);
 }
 
 static void dump_sizes (struct a_tfm *a_tfm)
@@ -347,10 +348,11 @@ static void get_arrays (FILE *tfm_file, struct a_tfm *a_tfm)
   return;
 }
 
-static void do_ofm_char_info (FILE *tfm_file, struct a_tfm *a_tfm,
-			      UNSIGNED_QUAD num_chars)
+static void do_ofm_zero_char_info (FILE *tfm_file, struct a_tfm *a_tfm)
 {
   unsigned i;
+  UNSIGNED_QUAD num_chars;
+  num_chars = a_tfm->ec - a_tfm->bc + 1;
   if (num_chars != 0) {
     a_tfm -> width_index = NEW (num_chars, UNSIGNED_PAIR);
     a_tfm -> height_index = NEW (num_chars, UNSIGNED_BYTE);
@@ -368,6 +370,59 @@ static void do_ofm_char_info (FILE *tfm_file, struct a_tfm *a_tfm,
   }
 }
 
+static void do_ofm_one_char_info (FILE *tfm_file, struct a_tfm *a_tfm)
+{
+  UNSIGNED_QUAD i;
+  UNSIGNED_QUAD num_char_infos, char_infos_read;
+  UNSIGNED_QUAD num_chars;
+  UNSIGNED_QUAD char_info_size;
+  char_info_size = 3 + (a_tfm->npc/2);
+  num_char_infos = (a_tfm -> ncw) / char_info_size;
+  num_chars = (a_tfm->ec - a_tfm ->bc) + 1;
+  if (tfm_debug)
+    fprintf (stderr, "\nReading %ld level 1 chars\n", num_chars);
+  if (num_chars != 0) {
+    a_tfm -> width_index = NEW (num_chars, UNSIGNED_PAIR);
+    a_tfm -> height_index = NEW (num_chars, UNSIGNED_BYTE);
+    a_tfm -> depth_index = NEW (num_chars, UNSIGNED_BYTE);
+    a_tfm -> unpacked_widths = NEW (a_tfm->bc+num_chars, fixword);
+    a_tfm -> unpacked_heights = NEW (a_tfm->bc+num_chars, fixword);
+    a_tfm -> unpacked_depths = NEW (a_tfm->bc+num_chars, fixword);
+  }
+  for (i=0, char_infos_read = 0; i<num_chars && char_infos_read < num_char_infos; i++) {
+    int repeats, j;
+    (a_tfm->width_index)[i] = get_unsigned_pair (tfm_file);
+    (a_tfm->height_index)[i] = get_unsigned_byte (tfm_file);
+    (a_tfm->depth_index)[i] = get_unsigned_byte (tfm_file);
+    /* Ignore next quad */
+    get_unsigned_quad (tfm_file);
+    repeats = get_unsigned_pair (tfm_file);
+    /* Skip params */
+    for (j=0; j<a_tfm->npc; j++) {
+      get_unsigned_pair (tfm_file);
+    }
+    /* Remove word padding if necessary */
+    if (ISEVEN (a_tfm->npc)){
+      get_unsigned_pair (tfm_file);
+    }
+    char_infos_read += 1;
+    if (i+repeats > num_chars)
+      ERROR ("repeats causes number of characters to be exceeded");
+    for (j=0; j<repeats; j++) {
+      a_tfm->width_index[i+j+1] = a_tfm->width_index[i];
+      a_tfm->height_index[i+j+1] = a_tfm->height_index[i];
+      a_tfm->depth_index[i+j+1] = a_tfm->depth_index[i];
+    }
+    /* Skip ahead because we have already handled repeats */
+    i += repeats;
+  }
+  if (tfm_debug) {
+    fprintf (stderr, "packets read = %ld/%ld\n", char_infos_read,
+	     num_char_infos);
+    fprintf (stderr, "characters defined = %ld/%ld\n", i, num_chars);
+  }
+}
+
 static void ofm_unpack_arrays (struct a_tfm *a_tfm, UNSIGNED_QUAD num_chars)
 {
   unsigned i;
@@ -378,15 +433,26 @@ static void ofm_unpack_arrays (struct a_tfm *a_tfm, UNSIGNED_QUAD num_chars)
   }
 }
 
-static void ofm_get_arrays (FILE *tfm_file, struct a_tfm *a_tfm)
+static void ofm_get_arrays (FILE *tfm_file, struct a_tfm *a_tfm, int level)
 {
-  if (tfm_debug) fprintf (stderr, "Reading %ld word header\n",
-			  a_tfm->wlenheader);
-  do_fix_word_array (tfm_file, &(a_tfm -> header), a_tfm ->
-		     wlenheader);
-  if (tfm_debug) fprintf (stderr, "Reading %ld char_infos\n",
-			  (a_tfm->ec)-(a_tfm->bc)+1);
-  do_ofm_char_info (tfm_file, a_tfm, (a_tfm->ec)-(a_tfm->bc)+1);
+  switch (level) {
+  case 0:
+    if (tfm_debug) fprintf (stderr, "Reading %ld word header\n",
+			    a_tfm->wlenheader);
+    do_fix_word_array (tfm_file, &(a_tfm -> header), a_tfm ->
+		       wlenheader);
+    if (tfm_debug) fprintf (stderr, "Reading %ld char_infos\n",
+			    (a_tfm->ec)-(a_tfm->bc)+1);
+    do_ofm_zero_char_info (tfm_file, a_tfm);
+    break;
+  case 1:
+    if (tfm_debug) fprintf (stderr, "Reading %ld char_infos words\n",
+			    a_tfm->ncw);
+    do_ofm_one_char_info (tfm_file, a_tfm);
+    break;
+  default:
+    ERROR ("level != 0 or 1 in ofm_get_arrays()");
+  }
   if (tfm_debug) fprintf (stderr, "Reading %ld widths\n",
 			  a_tfm -> nwidths);
   do_fix_word_array (tfm_file, &(a_tfm -> width), a_tfm -> nwidths);
@@ -396,7 +462,6 @@ static void ofm_get_arrays (FILE *tfm_file, struct a_tfm *a_tfm)
   if (tfm_debug) fprintf (stderr, "Reading %ld depths\n",
 			  a_tfm -> ndepths);
   do_fix_word_array (tfm_file, &(a_tfm -> depth), a_tfm -> ndepths);
-  
   ofm_unpack_arrays (a_tfm, (a_tfm->ec)-(a_tfm->bc)+1);
   return;
 }
@@ -404,8 +469,9 @@ static void ofm_get_arrays (FILE *tfm_file, struct a_tfm *a_tfm)
 static void get_ofm (FILE *ofm_file, UNSIGNED_QUAD ofm_file_size,
 		     struct a_tfm *a_tfm)
 {
-  ofm_get_sizes (ofm_file, ofm_file_size, a_tfm);
-  ofm_get_arrays (ofm_file, a_tfm);
+  int level;
+  level = ofm_get_sizes (ofm_file, ofm_file_size, a_tfm);
+  ofm_get_arrays (ofm_file, a_tfm, level);
   return;
 }
 
@@ -513,28 +579,28 @@ void tfm_close_all(void)
    as a (double) fraction of the design size */
 double tfm_get_width (int font_id, UNSIGNED_QUAD ch)
 {
-  if (tfm[font_id].unpacked_widths)
+  if (tfm[font_id].unpacked_widths && ch <= tfm[font_id].ec)
     return (double) (tfm[font_id].unpacked_widths)[ch] / FWBASE;
   else return 0.0;
 }
 
 double tfm_get_height (int font_id, UNSIGNED_QUAD ch)
 {
-  if (tfm[font_id].unpacked_heights)
+  if (tfm[font_id].unpacked_heights && ch <= tfm[font_id].ec)
     return (double) (tfm[font_id].unpacked_heights)[ch] / FWBASE;
   else return 0.0;
 }
 
 double tfm_get_depth (int font_id, UNSIGNED_QUAD ch)
 {
-  if (tfm[font_id].unpacked_depths)
+  if (tfm[font_id].unpacked_depths && ch <= tfm[font_id].ec)
     return (tfm[font_id].unpacked_depths)[ch]/FWBASE;
   else return 0.0;
 }
 
 fixword tfm_get_fw_width (int font_id, UNSIGNED_QUAD ch)
 {
-  if (tfm[font_id].unpacked_widths) {
+  if (tfm[font_id].unpacked_widths && ch <= tfm[font_id].ec) {
     return (tfm[font_id].unpacked_widths)[ch];
   }
   return 0;
@@ -542,14 +608,14 @@ fixword tfm_get_fw_width (int font_id, UNSIGNED_QUAD ch)
 
 fixword tfm_get_fw_height (int font_id, UNSIGNED_QUAD ch)
 {
-  if (tfm[font_id].unpacked_heights)
+  if (tfm[font_id].unpacked_heights && ch <= tfm[font_id].ec)
     return (tfm[font_id].unpacked_heights)[ch];
   return 0;
 }
 
 fixword tfm_get_fw_depth (int font_id, UNSIGNED_QUAD ch)
 {
-  if (tfm[font_id].unpacked_depths)
+  if (tfm[font_id].unpacked_depths && ch <= tfm[font_id].ec)
     return (tfm[font_id].unpacked_depths)[ch];
   return 0;
 }
@@ -560,7 +626,8 @@ fixword tfm_string_width (int font_id, unsigned char *s, unsigned len)
   unsigned i;
   if (tfm[font_id].unpacked_widths) 
     for (i=0; i<len; i++) {
-      result += tfm[font_id].unpacked_widths[s[i]];
+      if (s[i] <= tfm[font_id].ec)
+	result += tfm[font_id].unpacked_widths[s[i]];
     }
   return result;
 }
@@ -571,7 +638,8 @@ fixword tfm_string_depth (int font_id, unsigned char *s, unsigned len)
   unsigned i;
   if (tfm[font_id].unpacked_depths) 
     for (i=0; i<len; i++) {
-      result = MAX(result, tfm[font_id].unpacked_depths[s[i]]);
+      if (s[i] <= tfm[font_id].ec)
+	result = MAX(result, tfm[font_id].unpacked_depths[s[i]]);
     }
   return result;
 }
@@ -582,7 +650,8 @@ fixword tfm_string_height (int font_id, unsigned char *s, unsigned len)
   unsigned i;
   if (tfm[font_id].unpacked_heights) 
     for (i=0; i<len; i++) {
-      result = MAX(result, tfm[font_id].unpacked_heights[s[i]-tfm[font_id].bc]);
+      if (s[i] <= tfm[font_id].ec)
+	result = MAX(result, tfm[font_id].unpacked_heights[s[i]-tfm[font_id].bc]);
     }
   return result;
 }

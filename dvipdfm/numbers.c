@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/numbers.c,v 1.11 1999/09/08 16:51:46 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/numbers.c,v 1.12 2000/08/04 02:37:51 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -204,3 +204,97 @@ SIGNED_QUAD axboverc (SIGNED_QUAD n1, SIGNED_QUAD n2, SIGNED_QUAD div)
     result += 1;
   return (sign>0)?result:-result;
 }
+
+/* Create a  private_itoa to be used internally in the
+   hopes that a good optimizing compiler will use it inline */
+static int private_itoa (char *s, long int n, int mindigits)
+{
+   int j, nwhole;
+   char *p = s;
+   if (n<0) {
+      *(p++) = '-';
+      n = -n;
+   }
+   /* Generate at least one digit in reverse order */
+   nwhole = 0;
+   do {
+      p[nwhole++] = n%10 + '0';
+      n /= 10;
+   } while (n != 0 || nwhole < mindigits);
+   /* Reverse the digits */
+   for (j=0; j<nwhole/2; j++) {
+      char tmp = p[j];
+      p[j] = p[nwhole-j-1];
+      p[nwhole-j-1]=tmp;
+   }
+   p += nwhole;
+   *p = 0;
+   return (p-s);
+}
+
+int itoa (char *s, long int i)
+{
+  /* Call the private one */
+  return private_itoa (s, i, 0);
+}
+
+int centi_u_to_a (char *s, long int n)
+{
+  char *p = s;
+  unsigned long whole_part;
+  int frac_part;
+  if (n<0) {
+    *(p++) = '-';
+    n = -n;
+  }
+  whole_part = ((unsigned long) n) / 100;
+  frac_part = ((unsigned long) n) % 100;
+  /* Print the whole part */
+  p += private_itoa (p, whole_part, 0);
+  if (frac_part) {
+    int mindigits = 2;
+    *(p++) = '.';
+    while (!(frac_part % 10)) {
+      frac_part /= 10;
+      mindigits -= 1;
+    }
+    p += private_itoa (p, frac_part, mindigits);
+  }
+  return (p-s);
+}
+
+int fixnumtoa (char *s, long int n)
+{
+   int j, thresh;
+   char *p = s;
+   unsigned long whole_part, frac_part;
+   if (n<0) {
+      *(p++) = '-';
+      n = -n;
+   }
+   whole_part = ((unsigned long) n) / (65536l);
+   frac_part = ((unsigned long) n) % 65536l;
+   /* Print the whole part */
+   p += private_itoa (p, whole_part, 0);
+
+   #define BASE ((unsigned long)(256*65536l))
+   frac_part *= 256;
+   thresh = BASE / 10000;
+   /* Round last digit */
+   frac_part += thresh/2;
+   if (frac_part > thresh) {
+      *(p++) = '.';
+   }
+   for (j=0; j<4 && frac_part> thresh; j++) {
+      char next_digit;
+      next_digit = (10*frac_part)/BASE;
+      frac_part = (10*frac_part)%BASE;
+      *(p++) = next_digit + '0';
+      thresh *= 10;
+   }
+   *p = 0;
+   return (p-s);
+}
+
+
+

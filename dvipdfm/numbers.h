@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/numbers.h,v 1.10 1999/09/15 22:13:10 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/numbers.h,v 1.11 2000/08/04 02:37:51 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -60,11 +60,22 @@ extern UNSIGNED_QUAD get_unsigned_quad (FILE *);
   #define MIN(a,b) ((a)<(b)?(a):(b))
 #endif
 
+#define ISODD(n) (((n)/2)*2!=(n))
+#define ISEVEN(n) (((n)/2)*2==(n))
+
 typedef signed long fixword;
 
 extern SIGNED_QUAD sqxfw (SIGNED_QUAD sq, fixword fw);
 extern SIGNED_QUAD axboverc (SIGNED_QUAD n1, SIGNED_QUAD n2,
 			     SIGNED_QUAD div);
+
+int fixnumtoa (char *s, long int i);
+int itoa (char *s, long int i);
+int centi_u_to_a (char *s, long int i);
+
+#define IDIVRND(a,b) ((a)>0? ((a)+(b)/2)/(b): -((-(a)+(b)/2)/(b)))
+
+#define IDIV(a,b) ((a)>0? (a)/(b): -(-(a))/(b))
 
 #endif /* NUMBERS_H */
 
