@@ -43,10 +43,10 @@ static void release_dict (struct pdf_dict *data);
 static void write_stream (const struct pdf_stream *stream);
 static pdf_obj *release_stream (struct pdf_stream *stream);
 
-void pdf_out_init (char *filename)
+void pdf_out_init (const char *filename)
 {
   if (!(pdf_file = fopen (filename, "w"))) {
-    fprintf (stderr, "pdf_init: %s\n");
+    fprintf (stderr, "pdf_out_init: %s\n");
     ERROR ("pdf_init:  Could not open file");
   }
   pdf_out ("%PDF-1.2\n", 9);
@@ -270,7 +270,7 @@ void pdf_set_number (pdf_obj *object, double value)
    ((struct pdf_number *) (object -> data)) -> value = value;
 }
 
-pdf_obj *pdf_new_string (char *string, unsigned length)
+pdf_obj *pdf_new_string (const char *string, unsigned length)
 {
   pdf_obj *result;
   struct pdf_string *data;
@@ -345,7 +345,7 @@ void pdf_set_string (pdf_obj *object, char *string, unsigned length)
 }
 
 
-pdf_obj *pdf_new_name (char *name)  /* name does *not* include the / */ 
+pdf_obj *pdf_new_name (const char *name)  /* name does *not* include the / */ 
 {
   pdf_obj *result;
   unsigned length = strlen (name);

@@ -89,7 +89,7 @@ struct pdf_indirect
 
 struct pdf_obj *pdf_new_obj (pdf_obj_type type);
 
-void pdf_init (char *filename);
+void pdf_out_init (const char *filename);
 
 void pdf_out_flush (void);
 
@@ -101,10 +101,10 @@ void pdf_set_boolean (pdf_obj *object, char value);
 pdf_obj *pdf_new_number (double value);
 void pdf_set_number (pdf_obj *object, double value);
 
-pdf_obj *pdf_new_string (char *string, unsigned length);
+pdf_obj *pdf_new_string (const char *string, unsigned length);
 void pdf_set_string (pdf_obj *object, char *string, unsigned length);
 
-pdf_obj *pdf_new_name (char *name);  /* Name does not include the / */
+pdf_obj *pdf_new_name (const char *name);  /* Name does not include the / */
 pdf_obj *pdf_new_array (void);
 void pdf_add_array (pdf_obj *array, pdf_obj *object); /* Array is ended
 							 by a node with NULL

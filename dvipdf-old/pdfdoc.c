@@ -62,6 +62,15 @@ static start_current_page_resources (void)
   pdf_release_obj (tmp2);
 }
 
+void pdf_doc_add_to_page_resources (const char *name, pdf_obj *resource)
+{
+  pdf_obj *tmp1;
+  pdf_add_dict (current_page_resources,
+		tmp1 = pdf_new_name (name), 
+		resource);
+  pdf_release_obj(tmp1);
+}
+
 
 static finish_page_tree(void)
 {

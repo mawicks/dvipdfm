@@ -3,6 +3,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <math.h>
 #include "pdfobj.h"
 #include "mem.h"
 #include "error.h"
@@ -25,17 +26,20 @@ static unsigned long get_low_endian_quad (FILE *file)
   return result;
 }
 
+#define ASCII 1
+#define BINARY 2
 
 static unsigned long do_pfb_segment (FILE *file, int expected_type, pdf_obj *stream)
 {
   int i, ch;
+  int stream_type;
   static char buffer[256];
   unsigned long length;
   if ((ch = fgetc (file)) < 0 || ch != 128){
     fprintf (stderr, "Got %d, expecting 128\n", ch);
     ERROR ("type1_do_pfb_segment:  Are you sure this is a pfb?");
   }
-  if ((ch = fgetc (file)) < 0 || ch != expected_type ) {
+  if ((stream_type = fgetc (file)) < 0 || stream_type != expected_type ) {
     fprintf (stderr, "Got %d, expecting %d\n", ch, expected_type);
     ERROR ("type1_do_pfb_segment:  Are you sure this is a pfb?");
   }
@@ -47,7 +51,7 @@ static unsigned long do_pfb_segment (FILE *file, int expected_type, pdf_obj *str
       fprintf (stderr, "Found only %d bytes\n", i);
       ERROR ("type1_do_pfb_segment:  Are you sure this is a pfb?");
     }
-    if (ch == '\r')
+    if (ch == '\r' && stream_type == ASCII)
       ch = '\n';  /* May not be portable to non-Unix systems */
     buffer[0] = ch;
     pdf_add_stream (stream, buffer, 1);  /* Terribly slow */
@@ -55,7 +59,7 @@ static unsigned long do_pfb_segment (FILE *file, int expected_type, pdf_obj *str
   return length;
 }
 
-pdf_obj *type1_fontfile (char *tex_name)
+pdf_obj *type1_fontfile (const char *tex_name)
 {
   FILE *type1_binary_file;
   pdf_obj *stream, *stream_dict, *stream_label, *tmp1, *tmp2;
@@ -71,9 +75,9 @@ pdf_obj *type1_fontfile (char *tex_name)
   }
   stream = pdf_new_stream();
   /* Following line doesn't hide PDF stream structure very well */
-  length1 = do_pfb_segment (type1_binary_file, 1, stream);
-  length2 = do_pfb_segment (type1_binary_file, 2, stream);
-  length3 = do_pfb_segment (type1_binary_file, 1, stream);
+  length1 = do_pfb_segment (type1_binary_file, ASCII, stream);
+  length2 = do_pfb_segment (type1_binary_file, BINARY, stream);
+  length3 = do_pfb_segment (type1_binary_file, ASCII, stream);
   if ((ch = fgetc (type1_binary_file)) != 128 ||
       (ch = fgetc (type1_binary_file)) != 3)
     ERROR ("type1_fontfile:  Are you sure this is a pfb?");
@@ -93,8 +97,6 @@ pdf_obj *type1_fontfile (char *tex_name)
   pdf_release_obj (stream);
   return stream_label;
 }
-
-
 
 #define FONTNAME 1
 #define CAPHEIGHT 2
@@ -152,7 +154,7 @@ static double bbllx, bblly, bburx, bbury, xheight;
 static double capheight, italicangle;
 static int firstchar, lastchar;
 static int isfixed;
-static char *fontname[256];  /* Make as long as buffer */
+static char fontname[256];  /* Make as long as buffer */
 static double char_widths[256];
 
 static reset_afm_variables (void)
@@ -200,7 +202,7 @@ static scan_char_metrics (int num_expected)
   }
 }
 
-static void open_afm_file (char *tex_name)
+static void open_afm_file (const char *tex_name)
 {
   static char *afm_name;
   afm_name = NEW (strlen (tex_name) + 5, char);
@@ -212,12 +214,9 @@ static void open_afm_file (char *tex_name)
   }
 }
 
-pdf_obj *type1_font_descriptor (char *tex_name)
+static void scan_afm_file (void)
 {
-   pdf_obj *font_descriptor, *tmp1, *tmp2;
   int token, num_char_metrics;
-  open_afm_file (tex_name);
-  reset_afm_variables ();
   while ((token = get_afm_token()) >= 0) {
     switch (token) {
     case FONTNAME:
@@ -279,11 +278,129 @@ pdf_obj *type1_font_descriptor (char *tex_name)
   }
 }
 
+#define FIXED_WIDTH 1
+#define ITALIC 64
+#define SYMBOLIC 4   /* Fonts that don't have Adobe encodings (e.g.,
+			cmr, should be set to be symbolic */
+#define NOCLUE 20
 
+#define ROUND(a) (floor((a)+0.5)) 
 
+pdf_obj *type1_font_descriptor (const char *tex_name)
+{
+  pdf_obj *font_descriptor, *font_descriptor_ref, *tmp1, *tmp2;
+  int flags;
+  open_afm_file (tex_name);
+  reset_afm_variables ();
+  scan_afm_file();
+  font_descriptor = pdf_new_dict ();
+  pdf_add_dict (font_descriptor,
+		tmp1 = pdf_new_name ("Type"),
+		tmp2 = pdf_new_name ("FontDescriptor"));
+  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+  if (capheight == 0.0) {
+    ERROR ("type1_font_descriptor:  CapHeight is zero");
+  }
+  pdf_add_dict (font_descriptor,
+		tmp1 = pdf_new_name ("CapHeight"),
+		tmp2 = pdf_new_number (ROUND(capheight)));
+  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+  pdf_add_dict (font_descriptor,
+		tmp1 = pdf_new_name ("Ascent"),
+		tmp2 = pdf_new_number (ROUND(ascent)));
+  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+  pdf_add_dict (font_descriptor,
+		tmp1 = pdf_new_name ("Descent"),
+		tmp2 = pdf_new_number (ROUND(descent)));
+  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+  flags = 0;
+  if (italicangle != 0.0) flags += ITALIC;
+  if (isfixed) flags += FIXED_WIDTH;
+  flags += SYMBOLIC;
+  pdf_add_dict (font_descriptor,
+		tmp1 = pdf_new_name ("Flags"),
+		tmp2 = pdf_new_number (flags));
+  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+  tmp1 = pdf_new_array ();
+  pdf_add_array (tmp1, tmp2 = pdf_new_number (ROUND(bbllx))); pdf_release_obj (tmp2);
+  pdf_add_array (tmp1, tmp2 = pdf_new_number (ROUND(bblly))); pdf_release_obj (tmp2);
+  pdf_add_array (tmp1, tmp2 = pdf_new_number (ROUND(bburx))); pdf_release_obj (tmp2);
+  pdf_add_array (tmp1, tmp2 = pdf_new_number (ROUND(bbury))); pdf_release_obj (tmp2);
+  pdf_add_dict (font_descriptor,
+		tmp2 = pdf_new_name ("FontBBox"),
+		tmp1);
+  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+  pdf_add_dict (font_descriptor,
+		tmp1 = pdf_new_name ("FontName"),
+		tmp2 = pdf_new_name (fontname));
+  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+  pdf_add_dict (font_descriptor,
+		tmp1 = pdf_new_name ("ItalicAngle"),
+		tmp2 = pdf_new_number (ROUND(italicangle)));
+  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+  if (xheight != 0.0) {
+    pdf_add_dict (font_descriptor,
+		  tmp1 = pdf_new_name ("XHeight"),
+		  tmp2 = pdf_new_number (ROUND(xheight)));
+    pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+  }
+  pdf_add_dict (font_descriptor,
+		tmp1 = pdf_new_name ("StemV"),  /* This is required */
+		tmp2 = pdf_new_number (NOCLUE));
+  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+  pdf_add_dict (font_descriptor,
+		tmp1 = pdf_new_name ("FontFile"),
+		tmp2 = type1_fontfile (tex_name));
+  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+  font_descriptor_ref = pdf_ref_obj (font_descriptor);
+  pdf_release_obj (font_descriptor);
+  return font_descriptor_ref;
+}
 
-
-
-
-
-
+pdf_obj *type1_font_resource (const char *tex_name, const char *resource_name)
+{
+  int i;
+  pdf_obj *font_resource, *font_resource_ref, *tmp1, *tmp2;
+  font_resource = pdf_new_dict ();
+  pdf_add_dict (font_resource,
+		tmp1 = pdf_new_name ("Type"),
+		tmp2 = pdf_new_name ("Font"));
+  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+  pdf_add_dict (font_resource,
+		tmp1 = pdf_new_name ("Subtype"),
+		tmp2 = pdf_new_name ("Type1"));
+  pdf_add_dict (font_resource,
+		tmp1 = pdf_new_name ("Name"),
+		tmp2 = pdf_new_name (resource_name));
+  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+  pdf_add_dict (font_resource, 
+		tmp1 = pdf_new_name ("FontDescriptor"),
+		tmp2 = type1_font_descriptor (tex_name));
+  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+  pdf_add_dict (font_resource,
+		tmp1 = pdf_new_name ("BaseFont"),
+		tmp2 = pdf_new_name (fontname));  /* fontname is set
+						     by
+						     type1_font_descriptor() */
+  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+  pdf_add_dict (font_resource,
+		tmp1 = pdf_new_name ("FirstChar"),
+		tmp2 = pdf_new_number (firstchar));
+  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+  pdf_add_dict (font_resource,
+		tmp1 = pdf_new_name ("LastChar"),
+		tmp2 = pdf_new_number (lastchar));
+  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+  tmp1 = pdf_new_array ();
+  for (i=firstchar; i<=lastchar; i++) {
+    pdf_add_array (tmp1, tmp2 = pdf_new_number (ROUND(char_widths[i])));
+        pdf_release_obj (tmp2);
+  }
+  pdf_add_dict (font_resource,
+		tmp2 = pdf_new_name ("Widths"),
+		tmp1);
+  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+  font_resource_ref = pdf_ref_obj (font_resource);
+  pdf_release_obj (font_resource);
+  return font_resource_ref;
+}

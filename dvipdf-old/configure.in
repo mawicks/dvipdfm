@@ -9,6 +9,8 @@ AC_PREFIX_DEFAULT(/usr/local/texmf)
 
 CFLAGS="-g --pedantic --ansi"
 AC_SUBST(CFLAGS)
+LIBS="-lm"
+AC_SUBST(LIBS)
 dnl MAX_PAGES=4096
 dnl AC_DEFINE_UNQUOTED(MAX_PAGES, $MAX_PAGES)
 dnl MAX_FONTS=256
