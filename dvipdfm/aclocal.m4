@@ -34,7 +34,7 @@ the file "tex-file.h"
 #
 AC_DEFUN(AC_TEXMF_TREE,
   [AC_MSG_CHECKING([location of your texmf tree using kpsewhich])
-TEXMF=`kpsexpand '$TEXMFMAIN' 2>/dev/null`
+TEXMF=`kpsewhich --expand-var '$TEXMFMAIN' 2>/dev/null`
 if test "x$TEXMF" = "x" ; then
    TEXMF='${datadir}/texmf';
 fi

@@ -925,7 +925,7 @@ fi
 
 echo $ac_n "checking location of your texmf tree using kpsewhich""... $ac_c" 1>&6
 echo "configure:928: checking location of your texmf tree using kpsewhich" >&5
-TEXMF=`kpsexpand '$TEXMFMAIN' 2>/dev/null`
+TEXMF=`kpsewhich --expand-var '$TEXMFMAIN' 2>/dev/null`
 if test "x$TEXMF" = "x" ; then
    TEXMF='${datadir}/texmf';
 fi
