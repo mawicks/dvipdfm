@@ -233,5 +233,6 @@ pzcmi8r 8r pzcmi8a
 % ZapfDingbats
 pzdr none ZapfDingbats
 % LaTeX Fonts having short file names
-lcirclew10 none lcirclew
-lcircle10 none lcircle1
+lcirclew10 none lcirclew -r
+lcircle10 none lcircle1 -r
+line10 -r

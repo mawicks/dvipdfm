@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.81 1999/08/27 01:11:51 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.82 1999/08/30 17:57:51 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -614,7 +614,9 @@ MEM_START
     text_extend = 1.0;
   }
   bop_font_reset();
-  pdf_doc_add_to_page ("0 w", 3);
+  /* This shouldn't be necessary because line widths are now
+     explicitly set for each rule */
+  /*  pdf_doc_add_to_page ("0 w", 3); */
   dev_do_color();
 #ifdef MEM_DEBUG
 MEM_END
