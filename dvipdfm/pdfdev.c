@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.93 1999/09/19 04:56:40 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.94 1999/09/19 06:32:18 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -56,7 +56,7 @@ double hoffset = 72.0, voffset=72.0;
 
 static double dvi2pts = 0.0;
 static dvi_stack_depth = 0;
-static dvi_tagged_depth = -1;
+static int dvi_tagged_depth = -1;
 
  /* Acrobat doesn't seem to like coordinate systems
     that involve scalings around 0.01, so we use
@@ -991,11 +991,6 @@ void dev_do_special (void *buffer, UNSIGNED_QUAD size, double x_user,
 
 void dev_stack_depth (unsigned int depth)
 {
-  /* If increasing to tagged_depth */
-  if (dvi_stack_depth == dvi_tagged_depth-1 &&
-      depth == dvi_tagged_depth) {
-    pdf_doc_set_box();
-  }
   /* If decreasing below tagged_depth */
   if (dvi_stack_depth == dvi_tagged_depth &&
       depth == dvi_tagged_depth - 1) {
@@ -1028,12 +1023,15 @@ void dev_untag_depth (void)
 void dev_expand_box (mpt_t width, mpt_t height, mpt_t depth)
 {
   double phys_width, phys_height, phys_depth, scale;
-  scale = dvi2pts*dvi_tell_mag();
-  phys_width = scale*width;
-  phys_height = scale*height;
-  phys_depth = scale*depth;
-  pdf_doc_expand_box (dev_phys_x(), dev_phys_y()-phys_depth,
-		      dev_phys_x()+phys_width, dev_phys_y()+phys_height);
+  if (dvi_stack_depth >= dvi_tagged_depth) {
+    scale = dvi2pts*dvi_tell_mag();
+    phys_width = scale*width;
+    phys_height = scale*height;
+    phys_depth = scale*depth;
+    pdf_doc_expand_box (dev_phys_x(), dev_phys_y()-phys_depth,
+			dev_phys_x()+phys_width,
+			dev_phys_y()+phys_height);
+  }
 }
 
 

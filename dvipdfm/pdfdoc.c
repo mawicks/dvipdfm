@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.61 1999/09/19 04:56:41 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.62 1999/09/19 06:32:18 mwicks Exp $
  
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1212,8 +1212,9 @@ void finish_pending_xobjects (void)
 static struct
 {
   pdf_obj *annot_dict;
+  unsigned char dirty;
   double llx, lly, urx, ury;
-} breaking_state = {NULL};
+} breaking_state = {NULL, 0};
 
 void pdf_doc_set_box (void)
 {
@@ -1221,6 +1222,7 @@ void pdf_doc_set_box (void)
   breaking_state.urx = 0;
   breaking_state.lly = dev_page_height();
   breaking_state.ury = 0;
+  breaking_state.dirty = 0;
   return;
 }
 
@@ -1243,17 +1245,20 @@ void pdf_doc_end_annot (void)
 void pdf_doc_flush_annot (void)
 {
   pdf_obj *rectangle, *new_dict;
-  rectangle = pdf_new_array ();
-  pdf_add_array (rectangle, pdf_new_number(ROUND(breaking_state.llx, 0.01)));
-  pdf_add_array (rectangle, pdf_new_number(ROUND(breaking_state.lly, 0.01)));
-  pdf_add_array (rectangle, pdf_new_number(ROUND(breaking_state.urx, 0.01)));
-  pdf_add_array (rectangle, pdf_new_number(ROUND(breaking_state.ury, 0.01)));
-  new_dict = pdf_new_dict ();
-  pdf_add_dict (new_dict, pdf_new_name ("Rect"),
-		rectangle);
-  pdf_merge_dict (new_dict, breaking_state.annot_dict);
-  pdf_doc_add_to_page_annots (pdf_ref_obj (new_dict));
-  pdf_release_obj (new_dict);
+  if (breaking_state.dirty) {
+    rectangle = pdf_new_array ();
+    pdf_add_array (rectangle, pdf_new_number(ROUND(breaking_state.llx, 0.01)));
+    pdf_add_array (rectangle, pdf_new_number(ROUND(breaking_state.lly, 0.01)));
+    pdf_add_array (rectangle, pdf_new_number(ROUND(breaking_state.urx, 0.01)));
+    pdf_add_array (rectangle, pdf_new_number(ROUND(breaking_state.ury, 0.01)));
+    new_dict = pdf_new_dict ();
+    pdf_add_dict (new_dict, pdf_new_name ("Rect"),
+		  rectangle);
+    pdf_merge_dict (new_dict, breaking_state.annot_dict);
+    pdf_doc_add_to_page_annots (pdf_ref_obj (new_dict));
+    pdf_release_obj (new_dict);
+  }
+  pdf_doc_set_box();
   return;
 }
 
@@ -1264,11 +1269,6 @@ void pdf_doc_expand_box (double llx, double lly, double urx, double
   breaking_state.lly = MIN (breaking_state.lly, lly);
   breaking_state.urx = MAX (breaking_state.urx, urx);
   breaking_state.ury = MAX (breaking_state.ury, ury);
+  breaking_state.dirty = 1;
   return;
 }
-
-
-
-
-
-
