@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mem.h,v 1.48 1999/09/28 14:16:23 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mem.h,v 1.48.4.1 2000/07/11 18:45:03 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -24,7 +24,7 @@
 
 	
 #ifndef MEM_H
-#define MEM_H
+/* #define MEM_H */
 
 #include <stdlib.h>
 
