@@ -2,7 +2,8 @@
    warnings about unused variables named "rcs_id" and "version_id".
    Otherwise, it was used verbatim --- MAW */
 
-/* Functions to compute MD5 message digest of files or memory blocks
+/*
+ * Functions to compute MD5 message digest of files or memory blocks
  * according to the definition of MD5 in RFC 1321 from April 1992.
  * Copyright (C) 1995, 1996 Free Software Foundation, Inc.  NOTE: The
  * canonical source of this file is maintained with the GNU C Library.
@@ -26,7 +27,7 @@
  * Written by Ulrich Drepper <drepper@gnu.ai.mit.edu>, 1995.
  * Modified by Gray Watson <http://256.com/gray/>, 1997.
  *
- * $Id: md5.c,v 1.1 2001/04/17 03:15:00 mwicks Exp $
+ * $Id: md5.c,v 1.3 2001/04/17 03:26:00 mwicks Exp $
  */
 
 /*
@@ -57,7 +58,7 @@
 #include "md5_loc.h"
 
 /* Following line modifed from original distribution by MAW */
-/* "$Id: md5.c,v 1.1 2001/04/17 03:15:00 mwicks Exp $"; */
+/* "$Id: md5.c,v 1.3 2001/04/17 03:26:00 mwicks Exp $"; */
 
 /* version id for the library */
 /* "$MD5Version: 1.0.0 November-19-1997 $"; */
