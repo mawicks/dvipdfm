@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mem.h,v 1.1 1998/11/27 21:16:37 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mem.h,v 1.2 1998/11/29 19:04:49 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -28,12 +28,11 @@
 
 #include <stdlib.h>
 
-void *new (unsigned long size);
+void *new (size_t size);
 
 void release (void *mem);
 
-
-#define NEW(n,type) (type *)(new ((n)*sizeof(type)))
+#define NEW(n,type) (type *)(new (((size_t) (n))*sizeof(type)))
 #define RENEW(p,n,type) (type *)(renew ((p),(n)*sizeof(type)))
 
 #endif /* MEM_H */

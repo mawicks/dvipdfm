@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mem.c,v 1.1 1998/11/27 21:16:37 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mem.c,v 1.2 1998/11/29 19:04:49 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -22,11 +22,11 @@
 	mwicks@kettering.edu
 */
 
-	
-#include <stdio.h>
+#include <stdio.h>	
+#include <stdlib.h>
 #include "mem.h"
 
-void *new (unsigned long size)
+void *new (size_t size)
 {
   void *result;
   if ((result = malloc (size)) == NULL) {
@@ -36,7 +36,7 @@ void *new (unsigned long size)
   return result;
 }
 
-void *renew (void *mem, unsigned long size)
+void *renew (void *mem, size_t size)
 {
   void *result;
   if ((result = realloc (mem, size)) == NULL) {
