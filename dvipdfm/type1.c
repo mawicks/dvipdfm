@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.48 1998/12/31 19:30:12 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.49 1999/01/05 18:16:22 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -1071,7 +1071,7 @@ static void scan_afm_file (void)
 #define ITALIC 64
 #define SYMBOLIC 4   /* Fonts that don't have Adobe encodings (e.g.,
 			cmr, should be set to be symbolic */
-#define NOCLUE 20
+#define STEMV 80
 
 static pdf_obj *type1_font_descriptor (const char *pfb_name, int encoding_id,
 				int pfb_id)
@@ -1119,7 +1119,7 @@ static pdf_obj *type1_font_descriptor (const char *pfb_name, int encoding_id,
   }
   pdf_add_dict (font_descriptor,
 		pdf_new_name ("StemV"),  /* This is required */
-		pdf_new_number (NOCLUE));
+		pdf_new_number (STEMV));
   /* You don't need a fontfile for the standard fonts */
   if (pfb_id >= 0)
     pdf_add_dict (font_descriptor,
