@@ -29,7 +29,7 @@ objects=pdfdev.o pdfdoc.o dvi.o mfileio.o mem.o jpeg.o numbers.o pdfobj.o \
 	mpost.o psimage.o psspecial.o colorsp.o
 eobjects=ebb.o jpeg.o pdfobj.o mem.o mfileio.o numbers.o pdfparse.o \
 	pngimage.o
-encodings=ot1.enc ot1alt.enc
+encodings=ot1.enc ot1alt.enc ot1r.enc
 mapfiles=cmr.map psbase14.map lw35urw.map lw35urwa.map
 check default all: $(programs)
 ebb: $(eobjects) Makefile
