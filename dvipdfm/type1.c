@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.108 2000/07/11 21:14:16 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.109 2000/07/11 22:28:48 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -549,7 +549,10 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
 	break;
       default:
 	ident = parse_ident (&start, end);
-	if (state == 2 &&
+	if (state == 2 && !strcmp (ident, "def")) {
+	  /* Assume this is the end of the encoding */
+	  state = 0;
+	} else if (state == 2 &&
 	    !strcmp (ident, "dup")) {
 	  copy = 0;	/* Don't copy this to output buffer until we
 			   know if we want to keep it */  
@@ -593,11 +596,13 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
       /* Here we either decide to keep or remove the encoding entry */
       if (ident != NULL && !strcmp (ident, "put") && 
 	  (int) last_number < 256 && (int) last_number >= 0) {
+	skip_white(&start, end); /* Remove white space */
+	lead = start;  /* Remove this entry (it may or may not be
+			  replaced with a rewritten entry) */
 	copy = 0;
-	lead = start;  /* Either remove or replace this entry */
 	if ((pfbs[pfb_id].used_chars)[last_number]) {
 	  filtered_pointer += 
-	    sprintf((char *) filtered_pointer, "\ndup %d /%s put",
+	    sprintf((char *) filtered_pointer, "dup %d /%s put\n",
 		    pfbs[pfb_id].remap?twiddle(last_number):last_number,
 		    glyph);
 	}
@@ -615,6 +620,7 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
       state = 2;
       break;
     case 6:
+      fprintf (stderr, "\nstate=6\n");
       switch (*start) {
       case '[':
       case '{': 
@@ -626,6 +632,7 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
 	fprintf (stderr, "\nUnexpected token after FontBBox.  Struggling along\n");
       }
     case 7:
+      fprintf (stderr, "\nstate=7\n");
       switch (*start) {
       case '[':
       case '{':
@@ -641,7 +648,8 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
 	break;
       default:
 	ident = parse_ident (&start, end);
-	if (ident != NULL && is_a_number (ident)) {
+	fprintf (stderr, "\nbstate=7,ident=%s\n", ident);
+	if ((ident) && is_a_number (ident)) {
 	  pdf_obj *tmp = pdf_lookup_dict (pfbs[pfb_id].descriptor,
 					  "FontBBox");
 	  pdf_add_array (tmp, pdf_new_number (atof (ident)));
@@ -1265,7 +1273,6 @@ static void do_pfb (int pfb_id)
     fprintf (stderr, "Embedded size: %ld bytes\n", length1+length2+length3);
   return;
 }
-
 
 struct a_type1_font
 {
