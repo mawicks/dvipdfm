@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.91 1999/09/20 18:16:28 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.92 1999/09/20 19:16:33 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -89,7 +89,7 @@ int num_encodings = 0, max_encodings=0;
 void type1_set_mapfile (const char *name)
 {
   if (name) {
-    map_filename = NEW (strlen(name), char);
+    map_filename = NEW (strlen(name)+1, char);
     strcpy (map_filename, name);
   }
   return;
@@ -519,23 +519,23 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
       /* Here we either decide to keep or remove the encoding entry */
       if (ident != NULL && !strcmp (ident, "put") && 
 	  (int) last_number < 256 && (int) last_number >= 0) {
-	if (glyphs) {
-	  if (glyphs[last_number] != NULL) 
-	    RELEASE (glyphs[last_number]);
-	  glyphs[last_number] = glyph;
-	} else
-	  RELEASE (glyph);
 	if ((pfbs[pfb_id].used_chars)[last_number]) {
 	  filtered_pointer += 
 	    sprintf((char *) filtered_pointer, "dup %d /%s put\n",
 		    pfbs[pfb_id].remap?twiddle(last_number):last_number,
 		    glyph);
-	  /* lead = saved_lead; */
+	}
+	if (glyphs) {
+	  if (glyphs[last_number] != NULL) 
+	    RELEASE (glyphs[last_number]);
+	  glyphs[last_number] = glyph;
+	  glyph = NULL; /* Don't free glyph later */
 	}
       } else {
-	RELEASE (glyph);
 	lead = saved_lead;
       }
+      if (glyph)
+	RELEASE (glyph);
       if (ident != NULL)
 	RELEASE (ident);
       state = 2;
@@ -1467,8 +1467,8 @@ void type1_close_all (void)
 
   if (mapfile)
     FCLOSE (mapfile);
-  if (map_filename) {
-    RELEASE (map_filename);
+  if (map_filename) { 
+    RELEASE (map_filename); 
   }
 }
 

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.58 1999/09/20 18:16:27 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.59 1999/09/20 19:16:33 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -143,7 +143,6 @@ void set_landscape_mode (void)
 static void do_args (int argc, char *argv[])
 {
   char *flag;
-  int i;
   while (argc > 0 && *argv[0] == '-') {
     for (flag=argv[0]+1; *flag != 0; flag++) {
       switch (*flag) {
