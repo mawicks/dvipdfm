@@ -169,4 +169,9 @@ depend.make:
 @MAINT@	sed -e s/VERSION/@VERSION@/ dvipdfm.spec.in > /usr/src/redhat/SPECS/dvipdfm-@VERSION@.spec
 @MAINT@	cp -a ../dvipdfm-@VERSION@.tar.gz /usr/src/redhat/SOURCES/
 @MAINT@	rpm -ba /usr/src/redhat/SPECS/dvipdfm-@VERSION@.spec
+@MAINT@web-dist: rpm-dist tarball
+@MAINT@	cp -a ../dvipdfm-@VERSION@.tar.gz /usr/src/redhat/RPMS/dvipdfm-@VERSION@-1.i386.rpm /home/httpd/html/dvipdfm/
+@MAINT@ftp-dist: rpm-dist tarball
+@MAINT@	scp ../dvipdfm-@VERSION@.tar.gz ftp:pub/outgoing/mwicks/dvipdfm/dvipdfm-@VERSION@.tar.gz
+@MAINT@	scp /usr/src/redhat/RPMS/dvipdfm-@VERSION@-1.i386.rpm ftp:pub/outgoing/mwicks/dvipdfm/dvipdfm-@VERSION@-1.i386.rpm
 
