@@ -105,6 +105,8 @@ depend.make:
 @MAINT@configure: configure.in
 @MAINT@	autoconf
 @MAINT@dist: depend configure
+	set -- `grep VERSION config.h`
+	echo $@
 	tar -czf dvipdfm.tar.gz -T distribution-file-list
 @MAINT@dvipdfm-static:  $(objects) Makefile
 	$(CC) -o dvipdfm-static $(objects) --static $(LDFLAGS) $(LIBS)

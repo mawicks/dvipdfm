@@ -1,9 +1,39 @@
 #!/bin/sh
-TMP=/tmp
-if dvipdfm -e -z0 $@
+TMP=${TMP:-/tmp}
+# Process command line args
+# This script isn't very smart.  It assumes
+# the last thing is the file name and ignores
+# everything else.
+
+usage() {
+  echo No file name specified.
+  exit 1
+}
+
+# Must have at least one argumen (the DVI filename)
+if [ $# -eq 0 ]
 then
-   gs -r12 -dNOPAUSE -dBATCH -sDEVICE=png16 -sOutputFile=$TMP/$1.%d $1.pdf;
-   dvipdfm -t $@;
+  usage
+fi
+
+# Loop over all arguments except the last one
+USERARGS=$@
+ARGS=
+while [ $# -ne 1 ]
+do
+   ARGS="$ARGS $1"
+   shift
+done
+FILENAME=$1
+
+# Run dvipdfm with the fastest options for the first pass
+if dvipdfm $ARGS -e -z0 $FILENAME
+then
+   if gs -r12 -dNOPAUSE -dBATCH -sDEVICE=png16 -sOutputFile=$TMP/$FILENAME.%d $FILENAME.pdf
+   then
+#  Run dvipdfm with the users specified options for the last pass
+echo $@
+      dvipdfm -dt $USERARGS;
+   fi   
 fi   
-# gs -r12 -dNOPAUSE -dBATCH -sDEVICE=jpeg  -sOutputFile=$TMP/$1.%d $1.pdf
 

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/thumbnail.c,v 1.8 1999/08/15 04:54:56 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/thumbnail.c,v 1.9 1999/08/21 02:47:56 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -55,20 +55,27 @@ static char *guess_name (const char *thumb_filename)
   return tmpname;
 }
 
+static thumbnail_remove_opt = 0;
+void thumb_remove(void)
+{
+  thumbnail_remove_opt = 1;
+}
+
 static unsigned char sigbytes[4];
 
 pdf_obj *do_thumbnail (const char *thumb_filename) 
 {
   pdf_obj *image_stream = NULL, *image_ref = NULL;
+  int found_in_cwd = 0;
   FILE *thumb_file;
-  char *filename;
-  filename = guess_name (thumb_filename);
-  if (!(thumb_file = FOPEN (thumb_filename, FOPEN_RBIN_MODE)) &&
-      !(thumb_file = FOPEN (filename, FOPEN_RBIN_MODE))) {
+  char *guess_filename = NULL;
+  guess_filename = guess_name (thumb_filename);
+  if ((thumb_file = FOPEN (thumb_filename, FOPEN_RBIN_MODE))) {
+    found_in_cwd = 1;
+  } else if (!(thumb_file = FOPEN (guess_filename, FOPEN_RBIN_MODE))) {
     fprintf (stderr, "\nNo thumbnail file\n");
     return NULL;
   }
-  RELEASE (filename);
   if (fread (sigbytes, 1, sizeof(sigbytes), thumb_file) !=
       sizeof(sigbytes) ||
       (!png_check_sig (sigbytes, sizeof(sigbytes)))) {
@@ -83,6 +90,13 @@ pdf_obj *do_thumbnail (const char *thumb_filename)
   } else {
     image_ref = NULL;
   }
+  if (thumbnail_remove_opt && found_in_cwd) 
+    remove (thumb_filename);
+  else if (thumbnail_remove_opt)
+    remove (guess_filename);
+  if (guess_filename)
+    RELEASE (guess_filename);
+  FCLOSE (thumb_file);
   return image_ref;
 }
 

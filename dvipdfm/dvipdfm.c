@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.44 1999/08/13 14:14:38 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.45 1999/08/21 02:47:56 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -28,6 +28,7 @@
 #include <limits.h>
 #include "config.h"
 #include <ctype.h>
+#include "system.h"
 #include "dvi.h"
 #include "mem.h"
 #include "pdfdoc.h"
@@ -37,7 +38,7 @@
 #include "pdfparse.h"
 #include "vf.h"
 #include "pkfont.h"
-#include "system.h"
+#include "thumbnail.h"
 
 struct rect 
 {
@@ -95,16 +96,17 @@ static void usage (void)
    fprintf (stdout, "This is free software, and you are welcome to redistribute it\n");
    fprintf (stdout, "under certain conditions.  Details are distributed with the software.\n");
    fprintf (stdout, "\nUsage: dvipdfm [options] dvifile\n");
-   fprintf (stdout, "where [options] is one or more of\n\n");
-   fprintf (stdout, "-c      \tIgnore color specials (for printing on B&W printers)\n");
+   fprintf (stdout, "-c      \tIgnore color specials (for B&W printing)\n");
    fprintf (stdout, "-f filename\tSet font map file name [t1fonts.map]\n");
    fprintf (stdout, "-o filename\tSet output file name [dvifile.pdf]\n");
    fprintf (stdout, "-l \t\tLandscape mode\n");
    fprintf (stdout, "-m number\tSet additional magnification\n");
-   fprintf (stdout, "-p papersize\tSet papersize (letter, legal, ledger, tabloid, a4, or a3) [letter]\n");
+   fprintf (stdout, "-p papersize\tSet papersize (letter, legal,\n");
+   fprintf (stdout, "            \tledger, tabloid, a4, or a3) [letter]\n");
    fprintf (stdout, "-r resolution\tSet resolution (in DPI) for raster fonts [600]\n");
    fprintf (stdout, "-s pages\tSelect page ranges (-)\n");
    fprintf (stdout, "-t      \tEmbed thumbnail images\n");
+   fprintf (stdout, "-d      \tRemove thumbnail images when finished\n");
    fprintf (stdout, "-x dimension\tSet horizontal offset [1.0in]\n");
    fprintf (stdout, "-y dimension\tSet vertical offset [1.0in]\n");
    fprintf (stdout, "-e          \tDisable partial font embedding [default is enabled])\n");
@@ -301,6 +303,15 @@ static void do_args (int argc, char *argv[])
 	{
 #ifdef HAVE_LIBPNG
 	  pdf_doc_enable_thumbnails ();
+#else
+	  ERROR ("The thumbnail option requires libpng, which you apparently don't have");
+#endif	   
+	}
+	break;
+      case 'd':
+	{
+#ifdef HAVE_LIBPNG
+	  thumb_remove ();
 #else
 	  ERROR ("The thumbnail option requires libpng, which you apparently don't have");
 #endif	   
