@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/acconfig.h,v 1.1 1998/11/27 21:16:37 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/acconfig.h,v 1.1.1.1.2.1 1998/11/30 02:15:26 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -23,9 +23,7 @@
 */
 
 
-#define PACKAGE dvipdf
-#define VERSION 0
-
-
+#define PACKAGE "dvipdf"
+#define VERSION "0"
 
 
