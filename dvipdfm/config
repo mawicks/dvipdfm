@@ -16,7 +16,7 @@
 
 % The following line works with Sebastian Rahtz' GhostScript wrapper
 % script called epstopdf
-D "/usr/local/bin/epstopdf %i ; mv %b.pdf %o"
+D "cat %i | gs -q -sDEVICE=pdfwrite -dUseFlateCompression=false -sOutputFile=%o - -c quit"
 
 % The following line works with Adobe Acrobat Distiller
 % D "/usr/local/bin/distill -quiet -pairs %i %o"

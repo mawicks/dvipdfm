@@ -32,9 +32,16 @@ to include thumbnails and png images.
 
    5.  If all goes well, type "make install" in the dvipdfm directory.
 
-   6.  Run "mktexlsr" or its equivalent depending on your TeX distribution.
+   6.  Replace the dvipdfm.def in your LaTex distribution with the one
+       provided by the lateset dvipdfm distribution.  This is necessary for
+       .eps and .png file support.  The install script will not do this
+       for you because I do not believe it is healthy to overwrite a file
+       supplied by a different distribution.
+
+   7.  Run "mktexlsr" or its equivalent depending on your TeX distribution.
        Even if you installed dvipdfm on a Unix system as an ordinary user,
        you should run mktexlsr to hash your "local" tex files.
+       
 
    I have installed this cleanly myself on Solaris 2.5 and RedHat Linux 5.1
 (upgraded to tetex-0.9). It has been compiled on various platforms by
