@@ -1,22 +1,9 @@
 #include "system.h"
 #include "pdfobj.h"
+#include "pdfdoc.h"
 #include "pdfspecial.h"
 #include "mfileio.h"
 #include "epdf.h"
-
-
-static pdf_obj *build_scale_array (int a, int b, int c, int d, int e, int f)
-{
-  pdf_obj *result;
-  result = pdf_new_array();
-  pdf_add_array (result, pdf_new_number (a));
-  pdf_add_array (result, pdf_new_number (b));
-  pdf_add_array (result, pdf_new_number (c));
-  pdf_add_array (result, pdf_new_number (d));
-  pdf_add_array (result, pdf_new_number (e));
-  pdf_add_array (result, pdf_new_number (f));
-  return result;
-}
 
 double xscale, yscale;
 
@@ -50,32 +37,6 @@ void do_scaling(pdf_obj *media_box, struct xform_info *p)
     if (p->width == 0.0)
       xscale = yscale;
   }
-}
-
-int num_xobjects = 0;
-pdf_obj *make_xform (pdf_obj *this_form_contents, pdf_obj *media_box,  
-			    pdf_obj *resources)
-{
-  pdf_obj *contents_ref, *xobj_dict, *tmp1;
-  contents_ref = pdf_ref_obj (this_form_contents);  /* Give it a "new" reference */
-  xobj_dict = pdf_stream_dict (this_form_contents);
-  num_xobjects += 1;
-  sprintf (work_buffer, "Fm%d", num_xobjects);
-  pdf_doc_add_to_page_xobjects (work_buffer, pdf_link_obj(contents_ref));
-  pdf_add_dict (xobj_dict, pdf_new_name ("Name"),
-		pdf_new_name (work_buffer));
-  pdf_add_dict (xobj_dict, pdf_new_name ("Type"),
-		pdf_new_name ("XObject"));
-  pdf_add_dict (xobj_dict, pdf_new_name ("Subtype"),
-		pdf_new_name ("Form"));
-  pdf_add_dict (xobj_dict, pdf_new_name ("BBox"), media_box);
-  pdf_add_dict (xobj_dict, pdf_new_name ("FormType"), 
-		pdf_new_number(1.0));
-  tmp1 = build_scale_array (1, 0, 0, 1, 0, 0);
-  pdf_add_dict (xobj_dict, pdf_new_name ("Matrix"), tmp1);
-  pdf_add_dict (xobj_dict, pdf_new_name ("Resources"), resources);
-  pdf_release_obj(this_form_contents);
-  return contents_ref;
 }
 
 pdf_obj *pdf_include_page(pdf_obj *trailer, double x_user, double y_user,
@@ -150,10 +111,16 @@ pdf_obj *pdf_include_page(pdf_obj *trailer, double x_user, double y_user,
       add_xform_matrix (0.0, -p->depth, 1.0, 1.0, 0.0);
     while ((tmp1 = pdf_get_array (contents, i)) != NULL) {
       this_form_contents = pdf_deref_obj (tmp1);
-      contents_ref = make_xform (this_form_contents,
-				 pdf_link_obj(media_box),
-				 pdf_link_obj(resources));
-      sprintf (work_buffer, " /Fm%d Do ", num_xobjects);
+      doc_make_form_xobj (this_form_contents,
+		  pdf_link_obj(media_box),
+		  pdf_link_obj(resources));
+      pdf_doc_add_to_page_xobjects (pdf_name_value(pdf_lookup_dict (pdf_stream_dict
+						     (this_form_contents), "Name")),
+				    pdf_ref_obj(this_form_contents));
+      contents_ref = pdf_ref_obj (this_form_contents);
+      pdf_release_obj (this_form_contents);
+      sprintf (work_buffer, " /%s Do ",
+	       pdf_name_value(pdf_lookup_dict(pdf_stream_dict(contents), "Name")));
       pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
       i += 1;
     }
@@ -167,9 +134,17 @@ pdf_obj *pdf_include_page(pdf_obj *trailer, double x_user, double y_user,
     add_xform_matrix (x_user, y_user, xscale, yscale, p->rotate);
     if (p->depth != 0.0)
     add_xform_matrix (0.0, -p->depth, 1.0, 1.0, 0.0);
-    contents_ref = make_xform (contents, media_box, resources);
-    sprintf (work_buffer, " /Fm%d Do ", num_xobjects);
+    doc_make_form_xobj (contents, media_box, resources);
+    pdf_doc_add_to_page_xobjects (pdf_name_value(pdf_lookup_dict (pdf_stream_dict
+						   (contents), "Name")),
+				  pdf_ref_obj(contents));
+    contents_ref = pdf_ref_obj (contents);
+    sprintf (work_buffer, " /%s Do ",
+	     pdf_name_value(pdf_lookup_dict
+			      (pdf_stream_dict(contents), "Name")));
     pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
+    fprintf (stderr, "Check 3\n"); pdf_write_obj (stderr, contents);
+    pdf_release_obj (contents);
     pdf_doc_add_to_page (" Q ", 3);
   }
   return (contents_ref);
