@@ -242,6 +242,43 @@ static void do_ann(char **start, char *end)
   return;
 }
 
+static void do_bcolor(char **start, char *end)
+{
+  char *save = *start;
+  pdf_obj *color_array, *tmp;
+  double r, g, b;
+  skip_white(start, end);
+  if ((color_array = parse_pdf_object(start, end)) == NULL) {
+    fprintf (stderr, "\nSpecial: begincolor: Expecting color specified by an array\n");
+    return;
+  }
+  if (color_array -> type != PDF_ARRAY) {
+    fprintf (stderr, "\nSpecial: begincolor: Expecting color specified by an array\n");
+    *start = save;
+    return;
+  }
+  {
+    int i;
+    for (i=1; i<=4; i++) {
+      if (pdf_get_array (color_array, i) == NULL)
+	break;
+    }
+    if (i != 4) {
+      fprintf (stderr, "\nSpecial: begincolor: Expecting color array with three elements\n");
+      return;
+    }
+    r = pdf_number_value (pdf_get_array (color_array, 1));
+    g = pdf_number_value (pdf_get_array (color_array, 2));
+    b = pdf_number_value (pdf_get_array (color_array, 3));
+    dev_begin_color (r, g, b);
+    return;
+  }
+}
+
+static void do_ecolor(void)
+{
+  dev_end_color();
+}
 
 static void do_outline(char **start, char *end)
 {
@@ -596,6 +633,8 @@ static int is_pdf_special (char **start, char *end)
 #define BEAD 15
 #define EPDF 16
 #define IMAGE 17
+#define BCOLOR 18
+#define ECOLOR 19
 
 struct pdfmark
 {
@@ -623,7 +662,13 @@ struct pdfmark
   {"eop", EOP},
   {"epdf", EPDF},
   {"image", IMAGE},
-  {"img", IMAGE}
+  {"img", IMAGE},
+  {"bc", BCOLOR},
+  {"bcolor", BCOLOR},
+  {"begincolor", BCOLOR},
+  {"ec", ECOLOR},
+  {"ecolor", ECOLOR},
+  {"eegincolor", ECOLOR}
 };
 
 static int parse_pdfmark (char **start, char *end)
@@ -840,6 +885,13 @@ void pdf_parse_special(char *buffer, UNSIGNED_QUAD size, double
     break;
   case IMAGE:
     do_image(&start, end, x_user, y_user);
+    break;
+  case BCOLOR:
+    do_bcolor (&start, end);
+    break;
+  case ECOLOR:
+    do_ecolor ();
+    break;
   }
 }
 

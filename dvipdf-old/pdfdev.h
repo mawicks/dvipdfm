@@ -34,4 +34,7 @@ void dev_set_eop (char *s, unsigned length);
 double dev_tell_x (void);
 double dev_tell_y (void);
 
+void dev_begin_color (double r, double g, double b);
+void dev_end_color (void);
+
 #endif /* PDFDEV_H */

@@ -685,6 +685,7 @@ void pdf_doc_new_page (double page_width, double page_height)
 		pdf_link_obj (page_tree_label));
   tmp1 = pdf_new_array ();
   pdf_add_array (tmp1, pdf_ref_obj (page_bop));
+  /* start the contents stream for the new page */
   this_page_contents = pdf_new_stream();
   pdf_add_array (tmp1, pdf_ref_obj (this_page_contents));
   pdf_add_array (tmp1, pdf_ref_obj (page_eop));
@@ -709,7 +710,8 @@ void pdf_doc_new_page (double page_width, double page_height)
   pages[page_count].page_dict = NULL;
   /* Contents are still available as this_page_contents until next
      page is started */
-  /* Even though the page is gone, a Reference to this page is kept until program ends */
+  /* Even though the page is gone, a Reference to this page is kept
+     until program ends */
   page_count += 1;
 }
 

@@ -63,7 +63,7 @@ CPPFLAGS = -I./kpathsea/ -DTEXMFCNF=/usr/lib/texmf/texmf.cnf
 LN_S = ln -s
 MAKEINFO = makeinfo
 PACKAGE = dvipdf
-VERSION = 0.6dev
+VERSION = 0.7dev
 
 include_HEADERS = dvi.h error.h io.h tfm.h numbers.h pdfobj.h pdfdoc.h type1.h pdfdev.h pdfspecial.h pdfparse.h jpeg.h
 bin_PROGRAMS = dvipdf dvitest 

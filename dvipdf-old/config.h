@@ -7,7 +7,7 @@
 /* Define if your <sys/time.h> declares struct tm.  */
 /* #undef TM_IN_SYS_TIME */
 
-#define VERSION "0.6dev"
+#define VERSION "0.7dev"
 #define PACKAGE "dvipdf"
 
 /* Define if you have the strstr function.  */

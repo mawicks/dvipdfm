@@ -214,6 +214,55 @@ static void bop_font_reset(void)
   current_font = -1;
 }
 
+#define MAX_COLORS 16
+struct color {
+  double r, g, b;
+} colorstack[MAX_COLORS];
+static int num_colors;
+
+static void dev_clear_color_stack (void)
+{
+  num_colors = 0;
+  return;
+}
+
+void dev_begin_color (double r, double g, double b)
+{
+  if (num_colors >= MAX_COLORS) {
+    fprintf (stderr, "\ndev_set_color:  Exceeded depth of color stack\n");
+    return;
+  }
+  colorstack[num_colors].r = r;
+  colorstack[num_colors].g = g;
+  colorstack[num_colors].b = b;
+  sprintf (format_buffer, " %g %g %g rg ", r, g, b);
+  pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
+  num_colors+= 1;
+}
+
+static void dev_do_color (void) 
+{
+  if (num_colors == 0) {
+    pdf_doc_add_to_page (" 0 g ", 5);
+    return;
+  }
+  sprintf (format_buffer, " %g %g %g rg ",
+	   colorstack[num_colors-1].r,
+	   colorstack[num_colors-1].g,
+	   colorstack[num_colors-1].b);
+  pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
+}
+
+void dev_end_color (void)
+{
+  if (num_colors <= 0) {
+    fprintf (stderr, "\ndev_set_color:  End color with no corresponding begin color\n");
+    return;
+  }
+  num_colors -= 1;
+  dev_do_color();
+}
+
 void dev_bop (void)
 {
   if (debug) {
@@ -231,6 +280,7 @@ void dev_bop (void)
   this_page_fontlist_dict = pdf_new_dict ();
   bop_font_reset();
   pdf_doc_add_to_page (" 0 w ", 5);
+  dev_do_color();
 }
 
 void dev_eop (void)
