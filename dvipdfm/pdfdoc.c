@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.53 1999/08/21 02:47:56 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.54 1999/08/25 21:54:53 mwicks Exp $
  
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1116,10 +1116,9 @@ static xobject_pending = 0;
 
 pdf_obj *begin_form_xobj (double xpos, double ypos,
 			  double bbllx, double bblly,
-			  double bburx, double bbury)
+			  double bburx, double bbury, char *res_name)
 {
   pdf_obj *bbox;
-  static long int num_forms = 0;
   if (xobject_pending) {
     fprintf (stderr, "\nCannot nest form XObjects\n");
     return NULL;
@@ -1149,9 +1148,8 @@ pdf_obj *begin_form_xobj (double xpos, double ypos,
   /* Resource is already made, so call doc_make_form_xobj() */
   sprintf (work_buffer, "1 0 0 1 %.2f %.2f cm", -xpos, -ypos);
   pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
-  sprintf (work_buffer, "Fm%ld", ++num_forms);
   doc_make_form_xobj (this_page_contents, bbox,
-		      pdf_ref_obj(current_page_resources), work_buffer);
+		      pdf_ref_obj(current_page_resources), res_name);
   /* Make sure the object is self-contained by adding the
      current font to the object stream */
   dev_reselect_font();

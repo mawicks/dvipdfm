@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.3 1999/08/25 03:52:00 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.4 1999/08/25 21:54:53 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -34,6 +34,7 @@
 #include "pdflimits.h"
 #include "error.h"
 #include "pdfdev.h"
+#include "pdfdoc.h"
 
 int check_for_mp (FILE *image_file) 
 {
@@ -155,14 +156,35 @@ int mp_parse_headers (FILE *image_file)
   }
   return 1;
 }
-
+/* mp inclusion is a bit of a hack.  The routine
+ * starts a form at the lower left corner of
+ * the page and then calls begin_form_xobj telling
+ * it to record the image drawn there and bundle it
+ * up in an xojbect.  This allows us to use the coordinates
+ * in the MP file directly.  This appears to be the
+ * easiest way to be able to use the dev_set_string()
+ * command (with its scaled and extended fonts) without
+ * getting all confused about the coordinate system.
+ * After the xobject is created, the whole thing can
+ * be scaled any way the user wants */
+ 
 pdf_obj *mp_include (FILE *image_file,  struct xform_info *p,
-		     char *res_name) 
+		     char *res_name, double x_user, double y_user)
 {
-  rewind (image_file);
-  if (mp_parse_headers (image_file)) {
-  }
-  return NULL;
+   pdf_obj *xobj = NULL;
+   rewind (image_file);
+   if (mp_parse_headers (image_file)) {
+      /* Looks like an MP file.  Setup xobj "capture" */
+      xobj = begin_form_xobj (0.0, 0.0, bbllx, bblly, bburx, bbury, res_name);
+      if (!xobj)
+	return NULL;
+      res_name = pdf_name_value (pdf_lookup_dict (pdf_stream_dict(xobj), "Name"));
+      sprintf (work_buffer, " q 1 0 0 1 %.2f %.2f cm /%s Do Q", x_user, y_user, res_name);
+      pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
+      pdf_doc_add_to_page_xobjects (res_name, xobj);
+      end_form_xobj();
+   }
+   return NULL;
 }
 
 

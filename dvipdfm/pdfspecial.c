@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.51 1999/08/24 03:38:04 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.52 1999/08/25 21:54:54 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -873,7 +873,7 @@ MEM_START
 	result = pdf_include_page (image_file, p, res_name);
       }
       else if (check_for_mp (image_file)) {
-	result = mp_include (image_file, p, res_name);
+	result = mp_include (image_file, p, res_name, x_user, y_user);
       }
       else{
 	fprintf (stderr, "\nNot a supported image type.\n");
@@ -1533,6 +1533,7 @@ static void finish_image (pdf_obj *image_res, struct xform_info *p,
 static void do_bxobj (char **start, char *end, double x_user, double y_user)
 {
   char *objname = NULL;
+  static unsigned long num_forms = 0;
   pdf_obj *xobject = NULL;
   struct xform_info *p = NULL;
   int errors = 0;
@@ -1558,11 +1559,16 @@ static void do_bxobj (char **start, char *end, double x_user, double y_user)
     /* If there's an object name and valid dimension, add it to the
        tables */
     if (!errors) {
+      char *res_name;
+      sprintf (work_buffer, "Fm%ld", ++num_forms);
+      res_name = NEW (strlen(work_buffer)+1, char);
+      strcpy (res_name, work_buffer);
       xobject = begin_form_xobj (x_user, y_user,
 				 x_user, y_user-p->depth,
-				 x_user+p->width, y_user+p->height);
-      add_reference (objname, xobject,
-		     pdf_name_value(pdf_lookup_dict(pdf_stream_dict(xobject), "Name")));
+				 x_user+p->width, y_user+p->height,
+				 res_name);
+      add_reference (objname, xobject, res_name);
+      RELEASE (res_name);
     /* Next line has Same explanation as for do_ann. */
       release_reference (objname);
     }
