@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tpic.c,v 1.3 1999/01/25 06:01:36 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tpic.c,v 1.4 1999/01/25 06:44:41 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -70,7 +70,7 @@ static void set_fill_color (char **buffer, char *end)
 {
   char *number;
 MEM_START
-  fprintf (stderr, "set_fill_color\n");
+  fill_shape = 1;
   skip_white (buffer, end);
   if ((number = parse_number(buffer, end))) {
     fill_color = 1.0 - atof (number);
@@ -79,10 +79,6 @@ MEM_START
     if (fill_color < 0.0)
       fill_color = 0.0;
     RELEASE (number);
-    fill_shape = 1;
-  } else {
-    dump (*buffer, end);
-    fprintf (stderr, "tpic special: sh: Invalid shade\n");
   }
 MEM_END
 }
@@ -117,6 +113,11 @@ MEM_END
 
 static void show_path (int hidden) 
 {
+  int len;
+  if (fill_shape) {
+    len = sprintf (work_buffer, " %.2f g", fill_color);
+    pdf_doc_add_to_page (work_buffer, len);
+  }
   if (!hidden && fill_shape) {
     pdf_doc_add_to_page (" b", 2);
   }
@@ -127,6 +128,7 @@ static void show_path (int hidden)
     pdf_doc_add_to_page (" S", 2);
   if (fill_shape)
     fill_shape = 0;
+  fill_color = 0.0;
 }
 
 
@@ -146,10 +148,6 @@ MEM_START
 	len = sprintf (work_buffer, " [%.1f %.1f] 0 d 1 J", pen_size,
 		       -dash_dot);
       }
-      pdf_doc_add_to_page (work_buffer, len);
-    }
-    if (fill_shape) {
-      len = sprintf (work_buffer, " %.2f g", fill_color);
       pdf_doc_add_to_page (work_buffer, len);
     }
     len = sprintf (work_buffer, " %.2f %.2f m",
@@ -220,6 +218,10 @@ MEM_START
       ROTATE (cur_x, cur_y, c, s);
       ROTATE (cp1_x, cp1_y, c, s);
       ROTATE (cp2_x, cp2_y, c, s);
+    }
+    if (fill_shape) {
+      len = sprintf (work_buffer, " %.2f g", fill_color);
+      pdf_doc_add_to_page (work_buffer, len);
     }
     show_path (hidden);
     pdf_doc_add_to_page (" Q", 2);
@@ -340,7 +342,7 @@ int tpic_parse_special(char *buffer, UNSIGNED_QUAD size, double
       {
 	long num = 0, den = 0;
 	while (buffer++ < end) {
-	  switch (*buffer) {
+	  switch (*(buffer++)) {
 	  case '0':
 	    num += 0;
 	  case '1':
@@ -376,7 +378,7 @@ int tpic_parse_special(char *buffer, UNSIGNED_QUAD size, double
 	  den += 16;
 	}
 	if (den != 0)
-	  fill_color = (float) (num)/(den);
+	  fill_color = 1.0 - (float) (num)/(den);
 	else
 	  fill_color = 0.5;
       }
