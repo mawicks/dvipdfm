@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/jpeg.h,v 1.4 1998/11/20 20:15:12 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/jpeg.h,v 1.4.2.1 1998/11/26 07:14:39 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -27,6 +27,7 @@
 
 #define JPEG_H
 
+#include <stdio.h>
 #include "pdfobj.h"
 #include "pdfspecial.h"
 
@@ -39,9 +40,8 @@ struct jpeg
 };
 
 struct jpeg *jpeg_open (char *filename);
+int jpeg_headers (struct jpeg *jpeg);
 void jpeg_close (struct jpeg *jpeg);
-pdf_obj *jpeg_build_object(struct jpeg *jpeg,
-			   double x_user, double y_user,
-			   struct xform_info *p);
+int check_for_jpeg (FILE *file);
 
 #endif /* JPEG_H */

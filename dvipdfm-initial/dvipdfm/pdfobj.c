@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfobj.c,v 1.9.2.3 1998/11/26 04:11:35 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfobj.c,v 1.9.2.4 1998/11/26 07:14:39 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -1407,14 +1407,18 @@ pdf_obj *read_xref (void)
 
 static int num_xobjects = 0;
 
-pdf_obj *pdf_open (char *file)
+pdf_obj *pdf_open (char *filename)
 {
   int i;
   pdf_obj *tmp1, *tmp2;
   pdf_obj *trailer;
   char *parse_pointer;
-  if ((pdf_input_file = fopen (file, "r")) == NULL) {
-    fprintf (stderr, "Unable to open file name (%s)\n", file);
+  if ((pdf_input_file = fopen (filename, "r")) == NULL) {
+    fprintf (stderr, "Unable to open file name (%s)\n", filename);
+    return NULL;
+  }
+  if (!check_for_pdf (pdf_input_file)) {
+    fprintf (stderr, "pdf_open: %s: not a PDF 1.[1-2] file\n", filename);
     return NULL;
   }
   if ((trailer = read_xref()) == NULL) {
@@ -1459,5 +1463,15 @@ void pdf_close (void)
   if (debug) {
     fprintf (stderr, "\nexiting pdf_close:\n");
   }
+}
+
+int check_for_pdf (FILE *file) 
+{
+  rewind (file);
+  if (fread (work_buffer, sizeof(char), strlen("%PDF-1.2"), file) != 8 ||
+      strncmp(work_buffer, "%PDF-1.", 7) ||
+      work_buffer[7] < '0' || work_buffer[7] > '2')
+    return 0;
+  return 1;
 }
 

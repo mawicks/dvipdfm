@@ -15,19 +15,23 @@ SRC = pdfdev.c pdfdoc.c dvi.c io.c mem.c jpeg.c numbers.c pdfobj.c \
 OBJ = pdfdev.o pdfdoc.o dvi.o io.o mem.o jpeg.o numbers.o pdfobj.o \
         pdfparse.o pdfspecial.o tfm.o type1.o dvipdf.o epdf.o
 CONFIG = config.cache config.status Makefile config.h config.log
-PROGRAMS = dvipdfm
+PROGRAMS = dvipdfm ebb
 default: all
 all:	$(PROGRAMS)
 dvipdfm: $(OBJ)
 	$(CC) $(CFLAGS) -o dvipdfm $(OBJ) -lkpathsea -lm -L$(LIBDIR)
+ebb: ebb.o jpeg.o pdfobj.o mem.o io.o numbers.o pdfparse.o
+	$(CC) $(CFLAGS) -o ebb $+
 install: dvipdfm
 	$(INSTALL) dvipdfm $(BINDIR)
+	$(INSTALL) ebb $(BINDIR)
 distclean: clean
 	rm -f $(CONFIG)
 clean:
-	rm -f $(OBJ)
+	rm -f *.o
 	rm -f $(PROGRAMS)
-	rm -f ../doc/*.log ../doc/*.dvi ../doc/*.pdf
+	rm -f ../doc/*.log ../doc/*.dvi ../doc/dvipdfm.pdf
+	rm -f ../latex-support/*.log ../latex-support/*.dvi ../latex-support/readme.pdf
 	rm -f core
 $(OBJ): $(HEADERS)	
 
