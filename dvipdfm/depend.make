@@ -24,8 +24,9 @@ type1.o: type1.c system.h mem.h error.h mfileio.h numbers.h pdfobj.h \
  type1.h tfm.h pdfparse.h pdflimits.h t1crypt.h twiddle.h encodings.h \
  standardenc.h
 dvipdfm.o: dvipdfm.c config.h system.h mem.h mfileio.h numbers.h dvi.h \
- error.h pdfdev.h pdfobj.h pdfdoc.h encodings.h type1.h colorsp.h \
- pdfparse.h pdfspecial.h vf.h pkfont.h thumbnail.h psimage.h tfm.h
+ error.h pdfdev.h pdfobj.h pdfdoc.h encodings.h type1.h ttf.h \
+ colorsp.h pdfparse.h pdfspecial.h vf.h pkfont.h thumbnail.h psimage.h \
+ tfm.h
 epdf.o: epdf.c system.h mem.h mfileio.h numbers.h pdfobj.h pdfdoc.h \
  pdfspecial.h epdf.h
 vf.o: vf.c system.h mfileio.h numbers.h pdflimits.h mem.h error.h \
