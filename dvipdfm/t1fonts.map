@@ -12,10 +12,9 @@
 % The following entries are used to force an encoding to work around a bug
 % in Acrobat reader
 %
-cmr10 ot1
+cmr10 ot1 -r
 cmr12 ot1
 cmr17 ot1
-cmr5 ot1
 cmr6 ot1
 cmr7 ot1
 cmr8 ot1
@@ -23,7 +22,6 @@ cmr9 ot1
 % Bold
 cmbx10 ot1
 cmbx12 ot1
-cmbx5 ot1
 cmbx6 ot1
 cmbx7 ot1
 cmbx8 ot1

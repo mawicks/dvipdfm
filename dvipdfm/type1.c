@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.82 1999/08/17 23:44:24 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.83 1999/08/21 14:13:22 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -57,6 +57,7 @@ struct font_record
   char *font_name;
   char *enc_name;
   double slant, extend;
+  int remap;
 };
 
 static struct font_record * new_font_record (void) 
@@ -67,6 +68,7 @@ static struct font_record * new_font_record (void)
   result -> font_name = NULL;
   result -> slant = 0.0;
   result -> extend = 1.0;
+  result -> remap = 0.0;
   return result;
 }
 
@@ -293,6 +295,11 @@ struct font_record *get_font_record (const char *tex_name)
 		 tex_name);
       }
       break;
+    case 'r': /* Remap option */
+      start += 2;
+      skip_white (&start, end);
+      result -> remap = 1;
+      break;
     default: 
       fprintf (stderr, "\n\nWarning: Unrecognized option in map file %s: -->%s<--\n\n",
 	       tex_name, start);
@@ -330,7 +337,7 @@ struct a_pfb
   char *fontname;
   pdf_obj *direct, *indirect;
   char used_chars[256];
-  int encoding_id;
+  int encoding_id, remap;
 } *pfbs = NULL;
 
 static void clear_a_pfb (struct a_pfb *pfb)
@@ -369,6 +376,14 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
      and we should eliminate any built-in encoding (other than things
      like StandardEncoding) in the header to
      save space */
+
+  /* On second thought, that's the way it _should_ work, but the
+     reader doesn't seem to agree.  The reader is happy if you don't
+     specify an encoding as long as you actually change the locations
+     in the overriding encoding. The reader is unhappy if you don't
+     specify an encoding and don't change the location of the
+     characters in the overriding encoding.  Ghostscript doesn't
+     have a problem with it. */
 
   unsigned char *filtered_pointer;
   int state = 0;
@@ -494,12 +509,16 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
       break;
     case 5:
       ident = parse_ident (&start, end);
+      fprintf (stderr, "state=5,ident=%s,num=%d,glyphs=%p\n", ident,
+	       last_number,glyphs);
+      /* Here we either decide to keep or remove the encoding entry */
       if (ident != NULL && !strcmp (ident, "put") && 
 	  (int) last_number < 256 && (int) last_number >= 0 && glyphs) {
 	if (glyphs[last_number] != NULL) 
 	  RELEASE (glyphs[last_number]);
 	glyphs[last_number] = glyph;
 	if ((pfbs[pfb_id].used_chars)[last_number]) {
+	  fprintf (stderr, "USED\n");
 	  lead = saved_lead;
 	}
       } else {
@@ -675,6 +694,8 @@ static unsigned long do_pfb_header (FILE *file, int pfb_id,
 #ifdef MEM_DEBUG
 MEM_START
 #endif
+  fprintf (stderr, "pfb_header: pfb_id=%d,glyphs=%p\n", pfb_id,
+	   glyphs);
   buffer = get_pfb_segment (&length, file, ASCII);
   if (partial_enabled) {
     filtered = NEW (length+strlen(pfbs[pfb_id].fontname)+1, unsigned char);
@@ -953,7 +974,7 @@ static void mangle_fontname(char *fontname)
   fontname[6] = '+';
 }
 
-static int type1_pfb_id (const char *pfb_name, int encoding_id)
+static int type1_pfb_id (const char *pfb_name, int encoding_id, int remap)
 {
   int i;
   for (i=0; i<num_pfbs; i++) {
@@ -986,6 +1007,7 @@ static int type1_pfb_id (const char *pfb_name, int encoding_id)
       strcpy (pfbs[i].fontname, short_fontname);
       RELEASE (short_fontname);
       mangle_fontname(pfbs[i].fontname);
+      pfbs[i].remap = remap;
     }
     else {
       pfbs[i].fontname = NEW (strlen(short_fontname)+1, char);
@@ -1258,6 +1280,12 @@ int type1_font (const char *tex_name, int tfm_font_id, const char *resource_name
 	     font_record->font_name);
     if (font_record->enc_name)
       fprintf (stderr, "(%s)", font_record->enc_name);
+    if (font_record->slant)
+      fprintf (stderr, "[slant=%g]", font_record->slant);
+    if (font_record->extend != 1.0)
+      fprintf (stderr, "[extend=%g]", font_record->extend);
+    if (font_record->remap)
+      fprintf (stderr, "[remap]");
     fprintf (stderr, "\n");
   }
   if (font_record -> enc_name != NULL) {
@@ -1265,7 +1293,8 @@ int type1_font (const char *tex_name, int tfm_font_id, const char *resource_name
   }
   
   if (is_a_base_font(font_record->font_name) ||
-      (pfb_id = type1_pfb_id(font_record -> font_name, encoding_id)) >= 0) {
+      (pfb_id = type1_pfb_id(font_record -> font_name, encoding_id,
+			     font_record -> remap)) >= 0) {
     /* Looks like we have a physical font.  Allocate storage for it */
     /* Make sure there is enough room in type1_fonts for this entry */
     if (num_type1_fonts >= max_type1_fonts) {
