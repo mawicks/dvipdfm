@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.15 1998/12/07 01:45:36 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.16 1998/12/07 02:52:32 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -35,6 +35,7 @@
 #include "mfileio.h"
 #include "pdfspecial.h"
 #include "pdflimits.h"
+#include "tfm.h"
 
 /* Internal functions */
 static void dev_clear_color_stack (void);
@@ -125,6 +126,7 @@ struct dev_font {
 			   where xxx is number of largest font */
   char *tex_name;
   long tex_font_id;
+  int tfm_font_id;
   double ptsize;
   pdf_obj *font_resource;
 } dev_font[MAX_DEVICE_FONTS];
@@ -170,38 +172,33 @@ static void graphics_mode (void)
 
 static void string_mode (void)
 {
- switch (motion_state) {
- case NO_MODE:
- case GRAPHICS_MODE:
-   pdf_doc_add_to_page (" BT", 3); /* Fall through */
-   reset_text_state();
+  switch (motion_state) {
+  case NO_MODE:
+  case GRAPHICS_MODE:
+    pdf_doc_add_to_page (" BT", 3); /* Fall through */
+    reset_text_state();
     /* Following may be necessary after a rule (and also after
        specials) */
-   if (current_font != -1) {
-     sprintf (format_buffer, " /%s %g Tf", dev_font[current_font].short_name,
-	      ROUND(dev_font[current_font].ptsize*DPI/72,0.01));
-     pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
-   }
- case TEXT_MODE:
-   if (ROUND(dev_xpos-text_xorigin,0.01) == 0.0 &&
-       (ROUND(dev_ypos-text_yorigin-text_leading,0.01) == 0.0)) {
-     sprintf (format_buffer, " T*[");
-   }
-   else {
-     sprintf (format_buffer, " %g %g TD[",
-	      ROUND(dev_xpos-text_xorigin,0.01),
-	      ROUND(dev_ypos-text_yorigin,0.01));
-     text_leading = ROUND(dev_ypos-text_yorigin,0.01);
-   }
-   text_xorigin = dev_xpos;
-   text_yorigin = dev_ypos;
-   pdf_doc_add_to_page (format_buffer, strlen(format_buffer)); /* Fall
+  case TEXT_MODE:
+    if (ROUND(dev_xpos-text_xorigin,0.01) == 0.0 &&
+	(ROUND(dev_ypos-text_yorigin-text_leading,0.01) == 0.0)) {
+      sprintf (format_buffer, " T*[");
+    }
+    else {
+      sprintf (format_buffer, " %g %g TD[",
+	       ROUND(dev_xpos-text_xorigin,0.01),
+	       ROUND(dev_ypos-text_yorigin,0.01));
+      text_leading = ROUND(dev_ypos-text_yorigin,0.01);
+    }
+    text_xorigin = dev_xpos;
+    text_yorigin = dev_ypos;
+    pdf_doc_add_to_page (format_buffer, strlen(format_buffer)); /* Fall
 								  through */
- case LINE_MODE:
-   pdf_doc_add_to_page ("(", 1);
-   break;
- }
- motion_state = STRING_MODE;
+  case LINE_MODE:
+    pdf_doc_add_to_page ("(", 1);
+    break;
+  }
+  motion_state = STRING_MODE;
 }
 
 static void line_mode (void)
@@ -553,6 +550,7 @@ void dev_locate_font (char *tex_name,
     dev_font[n_dev_fonts].font_resource = pdf_link_obj (dev_font[i].font_resource);
   }
   dev_font[n_dev_fonts].tex_font_id = tex_font_id;
+  dev_font[n_dev_fonts].tfm_font_id = tfm_font_id;
   dev_font[n_dev_fonts].ptsize = ptsize;
   dev_font[n_dev_fonts].tex_name = NEW (strlen(tex_name)+1, char);
   strcpy (dev_font[n_dev_fonts].tex_name, tex_name);
@@ -585,10 +583,11 @@ void dev_select_font (long tex_font_id)
   if (i == n_dev_fonts) {
     ERROR ("dev_change_to_font: dvi wants a font that isn't loaded");
   }
-  text_mode();
   if (current_font != i) {
+    text_mode();
     sprintf (format_buffer, " /%s %g Tf", dev_font[i].short_name,
 	     ROUND(dev_font[i].ptsize*DPI/72, 0.01));
+    pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
     pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
     current_font = i;
     current_ptsize = dev_font[i].ptsize;
@@ -679,7 +678,8 @@ void dev_moveright (double x)
       motion_state == LINE_MODE ||
       motion_state == STRING_MODE) { 
     line_mode();
-    sprintf (format_buffer, "%g", -ROUND(72000.0/current_ptsize*x/DPI,1.0));
+    sprintf (format_buffer, "%g",
+	     -ROUND(72000.0/current_ptsize*x/DPI,1.0));
     pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
   }
   dev_xpos += x;

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.5 1998/12/05 11:47:25 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.6 1998/12/07 02:52:32 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -283,6 +283,12 @@ double tfm_get_width (int font_id, UNSIGNED_PAIR ch)
   width_index = (charinfo / 16777216ul);
   return (double) (tfm[font_id].width)[width_index] / 1048576.0;
 }
+
+double tfm_get_space (int font_id)
+{
+  return (double) (tfm[font_id].param)[1] / 1048576.0;
+}
+
 
 UNSIGNED_PAIR tfm_get_firstchar (int font_id)
 {
