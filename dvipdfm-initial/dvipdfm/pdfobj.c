@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfobj.c,v 1.3 1998/11/18 02:31:34 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfobj.c,v 1.4 1998/11/19 15:28:35 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -1003,16 +1003,20 @@ static long find_xref(void)
 {
   long currentpos, pdf_input_file_xref_pos;
   int length;
+  int tries = 0;
   char *start, *end, *number;
   if (debug)
     fprintf (stderr, "(find_xref)");
   seek_end (pdf_input_file);
   do {
+    tries ++;
     backup_line();
     currentpos = tell_position(pdf_input_file);
     fread (work_buffer, sizeof(char), strlen("startxref"), pdf_input_file);
     seek_absolute(pdf_input_file, currentpos);
-  } while (strncmp (work_buffer, "startxref", strlen ("startxref")));
+  } while (tries < 5 && strncmp (work_buffer, "startxref", strlen ("startxref")));
+  if (tries >= 5)
+    return 0;
   while (fgetc (pdf_input_file) != '\n');
   fgets (work_buffer, WORK_BUFFER_SIZE, pdf_input_file);
   start = work_buffer;
@@ -1209,18 +1213,21 @@ pdf_obj *pdf_deref_obj (pdf_obj *obj)
   return result;
 }
 
-void parse_xref (void)
+int parse_xref (void)
 {
   long first_obj;
   int i, length;
   char *start, *end;
-  pdf_input_file_xref_pos = find_xref();
+  if ((pdf_input_file_xref_pos = find_xref()) == 0) {
+    fprintf (stderr, "No xref.  Are you sure this is a PDF file?\n");
+    return 0;
+  }
   seek_absolute (pdf_input_file, pdf_input_file_xref_pos);
   /* Now at beginning of actual xref table */
   fgets (work_buffer, WORK_BUFFER_SIZE, pdf_input_file);
   if (strncmp (work_buffer, "xref", strlen("xref"))) {
     fprintf (stderr, "No xref.  Are you sure this is a PDF file?\n");
-    return;
+    return 0;
   }
   fgets (work_buffer, WORK_BUFFER_SIZE, pdf_input_file);
   sscanf (work_buffer, "%ld %d", &first_obj, &num_input_objects);
@@ -1233,7 +1240,7 @@ void parse_xref (void)
     if (work_buffer[17] != 'n' && work_buffer[17] != 'f') {
       fprintf (stderr, "PDF file is corrupt\n");
       fprintf (stderr, "[%s]\n", work_buffer);
-      return;
+      return 0;
     }
     if (work_buffer[17] == 'n')
       xref_table[i].used = 1;
@@ -1242,6 +1249,7 @@ void parse_xref (void)
     xref_table[i].direct = NULL;
     xref_table[i].indirect = NULL;
   }
+  return 1;
 }
 
 static int num_xobjects = 0;
@@ -1259,7 +1267,10 @@ pdf_obj *pdf_open (char *file)
   }
   seek_end(pdf_input_file);
   eof_pos = tell_position (pdf_input_file);
-  parse_xref();
+  if (!parse_xref()) {
+    fprintf (stderr, "\nProbably not a PDF file\n");
+    return NULL;
+  }
   trailer_pos = find_trailer();
   seek_absolute (pdf_input_file, trailer_pos);
   /* Let's go ahead and try to read the rest of the file into

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/jpeg.c,v 1.3 1998/11/18 02:31:33 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/jpeg.c,v 1.4 1998/11/19 15:28:35 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -32,6 +32,8 @@
 #include "pdfobj.h"
 #include "dvi.h"
 #include "pdfspecial.h"
+
+#define verbose 0
 
 #define SOF0	0xc0
 #define SOF1	0xc1
@@ -90,6 +92,11 @@ static int jpeg_headers (struct jpeg *jpeg)
       jpeg -> height = get_unsigned_pair (jpeg -> file);
       jpeg -> width = get_unsigned_pair (jpeg -> file);
       jpeg -> colors = get_unsigned_byte (jpeg -> file);
+      if (verbose) {
+	fprintf (stderr, "ht=%d,wd=%d,co=%d,bpc=%d\n",
+		 jpeg->height,jpeg->width,jpeg->colors,jpeg->bits_per_color);
+      }
+      
       done = 1;
       return 1;
     default:
@@ -104,6 +111,9 @@ struct jpeg *jpeg_open (char *filename)
 {
   struct jpeg *jpeg;
   FILE *file;
+  if (verbose) {
+    fprintf (stderr, "Opening image file %s\n", filename);
+  }
   if ((file = fopen (filename, "r")) == NULL) {
     fprintf (stderr, "\nUnable to open file named %s\n", filename);
     return NULL;

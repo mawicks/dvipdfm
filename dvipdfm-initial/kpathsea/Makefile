@@ -54,7 +54,7 @@ mandir = ${prefix}/man/man$(manext)
 # corresponding changes to texmf.in or texmf.cnf yourself.
 
 # The root of the main tree.
-texmf = /usr/share/texmf
+texmf = /usr/lib/texmf
 
 # The directory used by varfonts.
 vartexfonts = /var/tmp/texfonts
@@ -137,7 +137,7 @@ top_srcdir = .
 srcdir = .
 
 CC = gcc
-CFLAGS = -O3 $(XCFLAGS)
+CFLAGS = -g -O2 $(XCFLAGS)
 CPPFLAGS =  $(XCPPFLAGS)
 DEFS =  -DMAKE_TEX_MF_BY_DEFAULT=1 -DMAKE_TEX_PK_BY_DEFAULT=1 -DMAKE_TEX_TFM_BY_DEFAULT=1 -DMAKE_OMEGA_OCP_BY_DEFAULT=1 -DMAKE_OMEGA_OFM_BY_DEFAULT=1  $(XDEFS)
 

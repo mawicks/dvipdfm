@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfdev.c,v 1.2 1998/11/18 02:31:33 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfdev.c,v 1.3 1998/11/19 15:28:35 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -257,6 +257,24 @@ static void dev_clear_color_stack (void)
   return;
 }
 
+static void dev_do_color (void) 
+{
+  if (num_colors == 0) {
+    pdf_doc_add_to_page (" 0 g 0 G ", 9);
+    return;
+  }
+  sprintf (format_buffer, " %g %g %g rg ",
+	   colorstack[num_colors-1].r,
+	   colorstack[num_colors-1].g,
+	   colorstack[num_colors-1].b);
+  pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
+  sprintf (format_buffer, " %g %g %g RG ",
+	   colorstack[num_colors-1].r,
+	   colorstack[num_colors-1].g,
+	   colorstack[num_colors-1].b);
+  pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
+}
+
 void dev_begin_color (double r, double g, double b)
 {
   if (num_colors >= MAX_COLORS) {
@@ -266,22 +284,8 @@ void dev_begin_color (double r, double g, double b)
   colorstack[num_colors].r = r;
   colorstack[num_colors].g = g;
   colorstack[num_colors].b = b;
-  sprintf (format_buffer, " %g %g %g rg ", r, g, b);
-  pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
   num_colors+= 1;
-}
-
-static void dev_do_color (void) 
-{
-  if (num_colors == 0) {
-    pdf_doc_add_to_page (" 0 g ", 5);
-    return;
-  }
-  sprintf (format_buffer, " %g %g %g rg ",
-	   colorstack[num_colors-1].r,
-	   colorstack[num_colors-1].g,
-	   colorstack[num_colors-1].b);
-  pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
+  dev_do_color();
 }
 
 void dev_end_color (void)

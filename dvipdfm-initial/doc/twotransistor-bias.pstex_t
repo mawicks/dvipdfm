@@ -1,5 +1,5 @@
 \begin{picture}(0,0)%
-\special{psfile=twotransistor-bias.pstex}%
+\special{pdf:pdf (twotransistor-bias.pdf)}%
 \end{picture}%
 \setlength{\unitlength}{1973sp}%
 %
