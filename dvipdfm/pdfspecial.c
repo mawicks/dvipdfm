@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.74 2000/01/16 23:05:38 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.75 2000/05/14 16:52:34 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -981,20 +981,24 @@ pdf_obj *embed_image (char *filename, struct xform_info *p,
     }
 #ifdef HAVE_LIBPNG
     else if (check_for_png(image_file)) {
+      fprintf (stderr, "<PNG>");
       result = start_png_image (image_file, NULL);
       if (result)
 	finish_image (result, p, res_name);
     }
 #endif
     else if (check_for_pdf (image_file)) {
+      fprintf (stderr, "<PDF>");
       result = pdf_include_page (image_file, p, res_name);
     }
     else if (check_for_mp (image_file)) {
+      fprintf (stderr, "<MPOST>");
       result = mp_include (image_file, p, res_name, x_user, y_user);
     }
     /* Make sure we check for PS *after* checking for MP since
        MP is a special case of PS */
     else if (check_for_ps (image_file)) {
+      fprintf (stderr, "<PS>");
       result = ps_include (kpse_file_name, p,
 			   res_name, x_user, y_user);
     }

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.63 1999/09/22 02:26:17 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.64 2000/05/14 16:52:34 mwicks Exp $
  
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1007,7 +1007,7 @@ void pdf_doc_init (char *filename)
 #ifdef HAVE_LIBPNG
   /* Create a default name for thumbnail image files */
   if (thumbnail_opt) {
-    if (!strncmp (".pdf", filename+strlen(filename)-4,4)) {
+    if (strlen(filename)>4 && !strncmp (".pdf", filename+strlen(filename)-4,4)) {
       thumb_basename = NEW (strlen(filename)+1-4, char);
       strncpy (thumb_basename, filename, strlen(filename)-4);
       thumb_basename[strlen(filename)-4] = 0;

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.27 2000/01/24 03:06:10 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.28 2000/05/14 16:52:33 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -49,12 +49,10 @@ int check_for_mp (FILE *image_file)
   if (strncmp (work_buffer, "%!PS", 4))
     return 0;
   mfgets (work_buffer, WORK_BUFFER_SIZE, image_file);
-  if (strlen(work_buffer)>=strlen("%%BoundingBox") &&
-      strncmp (work_buffer, "%%BoundingBox", strlen("%%BoundingBox")))
+  if (strncmp (work_buffer, "%%BoundingBox", strlen("%%BoundingBox")))
     return 0;
   mfgets (work_buffer, WORK_BUFFER_SIZE, image_file);
-  if (strlen(work_buffer) >= strlen("%%Creator: MetaPost") &&
-      strncmp (work_buffer, "%%Creator: MetaPost", strlen("%%Creator: MetaPost")))
+  if (strncmp (work_buffer, "%%Creator: MetaPost", strlen("%%Creator: MetaPost")))
     return 0;
   return 1;
 }
@@ -154,24 +152,34 @@ static int mp_parse_headers (FILE *image_file, struct xform_info *p)
 #ifdef MEM_DEBUG
   MEM_START
 #endif
-  mfgets (work_buffer, WORK_BUFFER_SIZE, image_file);
-  /* Presumably already checked file, so press on */
-  mfgets (work_buffer, WORK_BUFFER_SIZE, image_file);
-  if (strncmp (work_buffer, "%%BoundingBox:", strlen("%%BoundingBox")))
-    return 0;
-  start = work_buffer + strlen("%%BoundingBox:");
-  end = start+strlen(start);
-  skip_white (&start, end);
-  /* Expect 4 numbers or fail */
-  if ((llx = parse_number (&start, end)) &&
-      (lly = parse_number (&start, end)) &&
-      (urx = parse_number (&start, end)) &&
-      (ury = parse_number (&start, end))) {
-    p->llx = atof (llx);
-    p->lly = atof (lly);
-    p->urx = atof (urx);
-    p->ury = atof (ury);
-  } else{
+ /* Scan for bounding box record */
+  for (;;) {
+    mfgets (work_buffer, WORK_BUFFER_SIZE, image_file);
+    if (work_buffer[0] != '%' ||
+	!strncmp (work_buffer, "%%BoundingBox:",
+		 strlen("%%BoundingBox")))
+      break;
+  }
+  if (work_buffer[0] == '%') { /* Found %%BoundingBox */
+    start = work_buffer + strlen("%%BoundingBox:");
+    end = start+strlen(start);
+    skip_white (&start, end);
+    /* Expect 4 numbers or fail */
+    if ((llx = parse_number (&start, end)) &&
+	(lly = parse_number (&start, end)) &&
+	(urx = parse_number (&start, end)) &&
+	(ury = parse_number (&start, end))) {
+      p->llx = atof (llx);
+      p->lly = atof (lly);
+      p->urx = atof (urx);
+      p->ury = atof (ury);
+    } else{
+      fprintf (stderr, "\nMissing expected number in bounding box specification:\n");
+      dump (start, end);
+      error = 1;
+    }
+  } else {	/* Didn't find Bounding box */
+    fprintf (stderr, "\nFailed to find an expected BoundingBox record.\n");
     error = 1;
   }
   if (llx) RELEASE(llx);
@@ -197,6 +205,8 @@ static int mp_parse_headers (FILE *image_file, struct xform_info *p)
       if ((name = parse_ident (&start, end))) {
 	skip_white (&start, end);
       } else {
+	fprintf (stderr, "\nMissing expected font name:\n");
+	dump (start, end);
 	error = 1;
 	break;
       }
@@ -204,6 +214,8 @@ static int mp_parse_headers (FILE *image_file, struct xform_info *p)
 	ps_ptsize = atof (token);
 	RELEASE (token);
       } else {
+	fprintf (stderr, "\nMissing expected font point size specification:\n");
+	dump (start, end);
 	error = 1;
 	break;
       }
@@ -1269,6 +1281,8 @@ pdf_obj *mp_include (FILE *image_file,  struct xform_info *p,
      }
      /* Finish off the form */
      end_form_xobj();
+   } else {
+     fprintf (stderr, "\nErrors occured while scanning MetaPost file headers.\n");
    }
    mp_cleanup(0);
    return xobj;
