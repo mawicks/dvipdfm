@@ -199,10 +199,10 @@ pplbu8r 8r pplbi8a -s -0.1763
 pplr8r 8r pplr8a
 % Palatino-Italic
 pplri8r 8r pplri8a
-pplro8r pplr8a -s 0.167
-pplrre8r pplr8a -e 1.2
-pplrrn8r pplr8a -e 0.82
-pplru8r pplri8a -s -0.1763
+pplro8r 8r pplr8a -s 0.167
+pplrre8r 8r pplr8a -e 1.2
+pplrrn8r 8r pplr8a -e 0.82
+pplru8r 8r pplri8a -s -0.1763
 % Symbol
 psyr none Symbol
 psyro none Symbol -s 0.167

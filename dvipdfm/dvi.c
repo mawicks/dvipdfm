@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.55 1999/08/15 04:54:55 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.55.2.1 1999/08/24 02:23:11 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -367,7 +367,7 @@ int dvi_locate_font (char *tex_name, mpt_t ptsize)
     loaded_fonts[thisfont].type = PHYSICAL;
     loaded_fonts[thisfont].font_id = dev_locate_font (tex_name, ptsize);
     if (loaded_fonts[thisfont].font_id < 0) {
-      fprintf (stderr, "%s: Can't locate an AFM or VF file\n", tex_name);
+      fprintf (stderr, "%s: Can't locate a Type 1 font, PK font or VF file\n", tex_name);
       ERROR ("Not sure how to proceed.  For now this is fatal\n\
 Maybe in the future, I'll substitute some other font.");
     }
