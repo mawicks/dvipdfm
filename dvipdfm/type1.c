@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.94 1999/09/28 02:43:43 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.95 1999/09/28 04:09:08 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -355,6 +355,13 @@ struct font_record *get_font_record (const char *tex_name)
       break;
     }
   }
+  if (result == NULL) {
+    result = NEW (1, struct font_record);
+    init_font_record(result);
+    result -> tex_name = NEW (strlen(tex_name)+1, char);
+    strcpy (result->tex_name, tex_name);
+    fill_in_defaults (result);
+  }
   fprintf (stderr, "\nfont_record(%s) = %p\n", tex_name, result);
   return result;
 }
@@ -638,7 +645,7 @@ static unsigned char *get_pfb_segment (unsigned long *length,
     }
     new_length = get_low_endian_quad (file);
     if (verbose > 3) {
-      fprintf (stderr, "Length of next binary segment: %ld\n",
+      fprintf (stderr, "Length of next PFB segment: %ld\n",
 	       new_length);
     }
     buffer = RENEW (buffer, (*length)+new_length, unsigned char);
@@ -675,7 +682,7 @@ static unsigned int glyph_length (char **glyphs)
 static char *pfb_find_name (FILE *pfb_file) 
 {
   unsigned char *buffer;
-  unsigned long length;
+  unsigned long length = 0;
   char *start, *end, *fontname;
   int state = 0;
 #ifdef MEM_DEBUG
@@ -1314,29 +1321,32 @@ int type1_font (const char *tex_name, int tfm_font_id, char *resource_name)
   int pfb_id = -1;
   pdf_obj *font_resource, *tmp1, *font_encoding_ref;
   struct font_record *font_record;
-  /* font_record should always result in non-null value with default
-     values filled in from map file if any */
   font_record = get_font_record (tex_name);
   /* Fill in default value for font_name and enc if not specified in map file */
   if (verbose>1){
-    fprintf (stderr, "\nfontmap: %s -> %s", tex_name,
-	     font_record->font_name);
-    if (font_record->enc_name)
-      fprintf (stderr, "(%s)", font_record->enc_name);
-    if (font_record->slant)
-      fprintf (stderr, "[slant=%g]", font_record->slant);
-    if (font_record->extend != 1.0)
-      fprintf (stderr, "[extend=%g]", font_record->extend);
-    if (font_record->remap)
-      fprintf (stderr, "[remap]");
-    fprintf (stderr, "\n");
+    if (font_record) {
+      fprintf (stderr, "\nfontmap: %s -> %s", tex_name,
+	       font_record->font_name);
+      if (font_record->enc_name)
+	fprintf (stderr, "(%s)", font_record->enc_name);
+      if (font_record->slant)
+	fprintf (stderr, "[slant=%g]", font_record->slant);
+      if (font_record->extend != 1.0)
+	fprintf (stderr, "[extend=%g]", font_record->extend);
+      if (font_record->remap)
+	fprintf (stderr, "[remap]");
+      fprintf (stderr, "\n");
+    } else {
+      fprintf (stderr, "\nfontmap: %s (no map)\n", tex_name);
+    }
   }
-  if (font_record -> enc_name != NULL) {
+  if (font_record && font_record -> enc_name != NULL) {
     encoding_id = get_encoding (font_record -> enc_name);
   }
-  if (is_a_base_font(font_record->font_name) ||
-      (pfb_id = type1_pfb_id(font_record -> font_name, encoding_id,
-			     font_record -> remap)) >= 0) {
+  if ((font_record && is_a_base_font(font_record->font_name)) ||
+      (pfb_id = type1_pfb_id(font_record? font_record -> font_name: tex_name,
+			     encoding_id,
+			     font_record? font_record -> remap: 0)) >= 0) {
     /* Looks like we have a physical font (either a reader font or a
        Type 1 font binary file).  Allocate storage for it.
        and make sure there is enough room in type1_fonts for this entry */
@@ -1345,10 +1355,9 @@ int type1_font (const char *tex_name, int tfm_font_id, char *resource_name)
       type1_fonts = RENEW (type1_fonts, max_type1_fonts, struct a_type1_font);
     }
     type1_fonts[num_type1_fonts].pfb_id = pfb_id;
-    type1_fonts[num_type1_fonts].extend = font_record -> extend;
-    type1_fonts[num_type1_fonts].slant = font_record -> slant;
-    type1_fonts[num_type1_fonts].remap = font_record -> remap;
-    
+    type1_fonts[num_type1_fonts].extend = font_record? font_record -> extend: 1.0;
+    type1_fonts[num_type1_fonts].slant = font_record? font_record -> slant: 0.0;
+    type1_fonts[num_type1_fonts].remap = font_record? font_record -> remap: 0;
     /* Allocate a dictionary for the physical font */
     font_resource = pdf_new_dict ();
     if (encoding_id >= 0) {
@@ -1386,10 +1395,9 @@ int type1_font (const char *tex_name, int tfm_font_id, char *resource_name)
     } else {
       pdf_add_dict (font_resource,
 		    pdf_new_name ("BaseFont"),
-		    pdf_new_name (font_record->font_name));  /* fontname is global and set
-								 by scan_afm_file() */
+		    pdf_new_name (font_record?font_record->font_name:tex_name));
     }
-    if (!is_a_base_font (font_record->font_name)) {
+    if (!is_a_base_font (font_record?font_record->font_name: tex_name)) {
       tfm_firstchar = tfm_get_firstchar(tfm_font_id);
       tfm_lastchar = tfm_get_lastchar(tfm_font_id);
       if (partial_enabled && type1_fonts[num_type1_fonts].remap) {
@@ -1486,6 +1494,7 @@ void type1_close_all (void)
     if (font_map[i].font_name)
       RELEASE (font_map[i].font_name);
   }
-  RELEASE (font_map);
+  if (font_map)
+    RELEASE (font_map);
 }
 
