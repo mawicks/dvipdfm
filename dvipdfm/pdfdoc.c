@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.29 1998/12/24 23:19:24 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.30 1998/12/25 00:00:48 mwicks Exp $
  
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -71,7 +71,6 @@ static void create_catalog (void);
 static void start_current_page_resources (void);
 static void finish_page_tree(void);
 static void start_name_tree(void);
-static void start_dests_tree(void);
 static void finish_dests_tree(void);
 static void finish_pending_xobjects(void);
 static void start_articles(void);
@@ -100,6 +99,44 @@ static void resize_pages (unsigned long newsize)
     }
     max_pages = newsize;
   }
+}
+
+static pdf_obj *type_name, *page_name, *pages_name, *contents_name, *annots_name,
+  *resources_name, *bead_name, *count_name, *kids_name, *parent_name,
+  *mediabox_name, *limits_name;
+
+static void make_short_cuts(void) 
+{
+  /* Define some shorthand for names that will conserve memory (and time)
+     (similar to the latex \@ne trick */
+  type_name = pdf_new_name("Type");
+  page_name = pdf_new_name("Page");
+  pages_name = pdf_new_name("Pages");
+  count_name = pdf_new_name("Count");
+  kids_name = pdf_new_name("Kids");
+  parent_name = pdf_new_name("Parent");
+  contents_name = pdf_new_name("Contents");
+  annots_name = pdf_new_name("Annots");
+  resources_name = pdf_new_name ("Resources");
+  bead_name = pdf_new_name ("B");
+  mediabox_name = pdf_new_name ("MediaBox");
+  limits_name = pdf_new_name ("Limits");
+}
+static void release_short_cuts(void)
+{
+  /* Release those shorthand name we created */
+  pdf_release_obj (type_name);
+  pdf_release_obj (page_name);
+  pdf_release_obj (pages_name);
+  pdf_release_obj (count_name);
+  pdf_release_obj (kids_name);
+  pdf_release_obj (parent_name);
+  pdf_release_obj (contents_name);
+  pdf_release_obj (annots_name);
+  pdf_release_obj (resources_name);
+  pdf_release_obj (bead_name);
+  pdf_release_obj (mediabox_name);
+  pdf_release_obj (limits_name);
 }
 
 static void start_page_tree (void)
@@ -240,7 +277,7 @@ static void create_catalog (void)
   pdf_set_root (catalog);
   /* Create /Type attribute */
   pdf_add_dict (catalog,
-		pdf_new_name ("Type"),
+		pdf_link_obj (type_name),
 		pdf_new_name("Catalog"));
  /* Create only those parts of the page tree required for the catalog.
     That way, the rest of the page tree can be finished at any time */
@@ -248,7 +285,6 @@ static void create_catalog (void)
   /* Likewise for outline tree */
   start_outline_tree ();
   start_name_tree();
-  start_dests_tree();
   start_articles();
   return;
 }
@@ -340,22 +376,22 @@ static pdf_obj *page_subtree (struct pages *pages, unsigned long npages,
     self_ref = pdf_ref_obj (page_tree);
   else
     self_ref = pdf_ref_obj (self);
-  pdf_add_dict (self, pdf_new_name("Type"),
-		pdf_new_name("Pages"));
-  pdf_add_dict (self, pdf_new_name("Count"), 
+  pdf_add_dict (self, pdf_link_obj (type_name),
+		pdf_link_obj (pages_name));
+  pdf_add_dict (self, pdf_link_obj (count_name),
 		pdf_new_number((double) npages));
   kid_array = pdf_new_array();
-  pdf_add_dict (self, pdf_new_name("Kids"),
+  pdf_add_dict (self, pdf_link_obj (kids_name), 
 		kid_array);
   if (parent_ref != NULL) {
-    pdf_add_dict (self, pdf_new_name("Parent"),
+    pdf_add_dict (self, pdf_link_obj(parent_name),
 		  parent_ref);
   }
   if (npages > 0 && npages <= PAGE_CLUSTER) {
     int i;
     for (i=0; i<npages; i++) {
       pdf_add_array (kid_array, pdf_link_obj(pages[i].page_ref));
-      pdf_add_dict (pages[i].page_dict, pdf_new_name("Parent"),
+      pdf_add_dict (pages[i].page_dict, pdf_link_obj (parent_name),
 		    pdf_link_obj(self_ref));
       pdf_release_obj (pages[i].page_dict);
       pdf_release_obj (pages[i].page_ref);
@@ -378,20 +414,19 @@ static pdf_obj *page_subtree (struct pages *pages, unsigned long npages,
   return self;
 }
 
-
 static void finish_page_tree(void)
 {
   pdf_obj *subtree;
-  /* Back to work on that page tree */
   if (debug) {
-    fprintf (stderr, "(finish_bulding_page_tree)");
+    fprintf (stderr, "(finish_page_tree)");
   }
+  
   subtree = page_subtree (pages, page_count, NULL);
   pdf_merge_dict (page_tree, subtree);
   pdf_release_obj (subtree);
   pdf_release_obj (page_tree);
   pdf_add_dict (catalog,
-		pdf_new_name ("Pages"),
+		pdf_link_obj (pages_name),
 		pdf_link_obj (page_tree_ref));
   pdf_release_obj (page_tree_ref);
   RELEASE (pages);
@@ -424,7 +459,7 @@ void pdf_doc_change_outline_depth(int new_depth)
       tmp1 = pdf_new_number (outline[i].kid_count);
 
     pdf_add_dict (outline[i].entry,
-		  pdf_new_name ("Count"),
+		  pdf_link_obj (count_name),
 		  tmp1);
   }
   /* Flush out all entries above this depth */
@@ -463,7 +498,7 @@ void pdf_doc_add_outline (pdf_obj *dict)
   pdf_release_obj (dict);
   /* Tell it where its parent is */
   pdf_add_dict (new_entry,
-		pdf_new_name ("Parent"),
+		pdf_link_obj (parent_name),
 		pdf_ref_obj (outline[outline_depth-1].entry));
   /* Give mom and dad the good news */
   outline[outline_depth-1].kid_count += 1;
@@ -502,21 +537,6 @@ typedef struct dests dest_entry;
 static dest_entry *dests = NULL;
 unsigned long max_dests = 0;
 
-static number_dests = 0;
-
-static pdf_obj *dests_dict;
-
-static void start_dests_tree (void)
-{
-  if (debug) {
-    fprintf (stderr, "(start_dests_tree)");
-  }
-  dests_dict = pdf_new_dict();
-  pdf_add_dict (names_dict,
-		pdf_new_name ("Dests"),
-		pdf_ref_obj (dests_dict));
-}
-
 
 #define MIN(a,b) ((a)<(b)? (a): (b))
 
@@ -541,7 +561,7 @@ static pdf_obj *name_subtree (dest_entry *dests, unsigned long ndests)
   pdf_obj *result, *name_array, *limit_array, *kid_array;
   result = pdf_new_dict();
   limit_array = pdf_new_array();
-  pdf_add_dict (result, pdf_new_name ("Limits"), limit_array);
+  pdf_add_dict (result, pdf_link_obj(limits_name), limit_array);
   pdf_add_array (limit_array, pdf_new_string(dests[0].name,
 					     dests[0].length)); 
   pdf_add_array (limit_array, pdf_new_string(dests[ndests-1].name,
@@ -560,7 +580,7 @@ static pdf_obj *name_subtree (dest_entry *dests, unsigned long ndests)
   } else if (ndests > 0) {
     int i;
     kid_array = pdf_new_array();
-    pdf_add_dict (result, pdf_new_name ("Kids"), kid_array);
+    pdf_add_dict (result, pdf_link_obj (kids_name), kid_array);
     for (i=0; i<CLUSTER; i++) {
       pdf_obj *subtree;
       unsigned long start, end;
@@ -574,6 +594,8 @@ static pdf_obj *name_subtree (dest_entry *dests, unsigned long ndests)
   return result;
 }
 
+static number_dests = 0;
+
 static void finish_dests_tree (void)
 {
   pdf_obj *kid, *name_array;
@@ -585,19 +607,11 @@ static void finish_dests_tree (void)
     /* Each entry in dests has been assigned to another object, so
        we can free the entire array without freeing the entries. */
     RELEASE (dests);
-    pdf_merge_dict (dests_dict, kid);
-    
-    /* Point /Dests dictionary to the kid */  
-    /*  tmp1 = pdf_new_array();
-	pdf_add_array (tmp1, pdf_ref_obj (kid));
-	pdf_add_dict (dests_dict,
-	pdf_new_name ("Kids"),
-	tmp1); */
-    /* Done with kid.  We only need the reference */
+    pdf_add_dict (names_dict,
+		  pdf_new_name ("Dests"),
+		  pdf_ref_obj (kid));
     pdf_release_obj (kid);
   }
-  /* Done with dests */
-  pdf_release_obj (dests_dict);
 }
 
 void pdf_doc_add_dest (char *name, unsigned length, pdf_obj *array_ref)
@@ -755,8 +769,7 @@ MEM_START
 		   (ROUND(dev_page_width(),1.0)));
     pdf_add_array (tmp1, pdf_new_number (ROUND(dev_page_height(),1.0)));
     pdf_add_dict (pages[page_count-1].page_dict,
-		  pdf_new_name ("MediaBox"),
-		  tmp1);
+		  pdf_link_obj (mediabox_name), tmp1);
     /* We keep .page_dict open because we don't know the parent yet */
   }
   if (debug) {
@@ -899,8 +912,7 @@ MEM_START
     pages[page_count].page_ref = pdf_ref_obj(pages[page_count].page_dict);
   }
   pdf_add_dict (pages[page_count].page_dict,
-		pdf_new_name ("Type"),
-		pdf_new_name ("Page"));
+		pdf_link_obj(type_name), pdf_link_obj(page_name));
   tmp1 = pdf_new_array ();
   pdf_add_array (tmp1, pdf_ref_obj (glob_page_bop));
   pdf_add_array (tmp1, pdf_ref_obj (this_page_bop));
@@ -910,20 +922,18 @@ MEM_START
   pdf_add_array (tmp1, pdf_ref_obj (this_page_eop));
   pdf_add_array (tmp1, pdf_ref_obj (glob_page_eop));
   pdf_add_dict (pages[page_count].page_dict,
-		pdf_new_name ("Contents"),
-		tmp1);
-
+		pdf_link_obj(contents_name), tmp1);
   this_page_annots = pdf_new_array ();
   pdf_add_dict (pages[page_count].page_dict,
-		pdf_new_name ("Annots"),
+		pdf_link_obj(annots_name),
 		pdf_ref_obj (this_page_annots));
   start_current_page_resources();
   pdf_add_dict (pages[page_count].page_dict,
-		pdf_new_name ("Resources"),
+		pdf_link_obj (resources_name),
 		pdf_ref_obj (current_page_resources));
   this_page_beads = pdf_new_array();
   pdf_add_dict (pages[page_count].page_dict,
-		pdf_new_name ("B"),
+		pdf_link_obj (bead_name),
 		pdf_ref_obj (this_page_beads));
   /* Contents are still available as this_page_contents until next
      page is started */
@@ -944,6 +954,7 @@ void pdf_doc_init (char *filename)
 {
   if (debug) fprintf (stderr, "pdf_doc_init:\n");
   pdf_out_init (filename);
+  make_short_cuts();
   create_docinfo ();
   create_catalog ();
 }
@@ -965,24 +976,24 @@ void pdf_doc_close ()
      items */
   finish_docinfo();
   finish_page_tree();
+  pdf_release_obj (glob_page_bop);
+  pdf_release_obj (glob_page_eop);
   /* Add names dict to catalog */
+  finish_outline();
+  finish_dests_tree();
+  finish_articles();
   pdf_add_dict (catalog,
 		pdf_new_name ("Names"),
 		pdf_ref_obj (names_dict));
   pdf_release_obj (names_dict);
-  pdf_release_obj (glob_page_bop);
-  pdf_release_obj (glob_page_eop);
-  pdf_finish_specials();
-  finish_outline();
-  finish_dests_tree();
-  finish_articles();
   pdf_release_obj (catalog);
-
   /* Do consistency check on forward references to pages */
   if (highest_page_ref > page_count) {
     fprintf (stderr, "\nWarning:  Nonexistent page(s) referenced\n");
     fprintf (stderr, "          (PDF file may not work right)\n");
   }
+  pdf_finish_specials();
+  release_short_cuts();
   pdf_out_flush ();
 }
 
@@ -1013,7 +1024,7 @@ void doc_make_form_xobj (pdf_obj *this_form_contents, pdf_obj *bbox,
   sprintf (work_buffer, "Fm%d", num_xobjects);
   pdf_add_dict (xobj_dict, pdf_new_name ("Name"),
 		pdf_new_name (work_buffer));
-  pdf_add_dict (xobj_dict, pdf_new_name ("Type"),
+  pdf_add_dict (xobj_dict, pdf_link_obj (type_name),
 		pdf_new_name ("XObject"));
   pdf_add_dict (xobj_dict, pdf_new_name ("Subtype"),
 		pdf_new_name ("Form"));
@@ -1022,7 +1033,7 @@ void doc_make_form_xobj (pdf_obj *this_form_contents, pdf_obj *bbox,
 		pdf_new_number(1.0));
   tmp1 = build_scale_array (1, 0, 0, 1, 0, 0);
   pdf_add_dict (xobj_dict, pdf_new_name ("Matrix"), tmp1);
-  pdf_add_dict (xobj_dict, pdf_new_name ("Resources"), resources);
+  pdf_add_dict (xobj_dict, pdf_link_obj (resources_name), resources);
   return;
 }
 
