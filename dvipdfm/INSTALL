@@ -9,19 +9,17 @@ Similar remarks hold for "libz" and its headers; however, dvipdfm will
 configure and compile without libz--you just won't have any compression.  It
 *requires* kpath, however.
 
-
    1.  Unbundle the gzip'ed tar file.
-   2.  Set the CPPFLAGS, CFLAGS, and LDFLAGS environment variables
-       with any options you want and also any -I or -L options
-       required to locate kpathsea.  CPPFLAGS should probably contain
-       -I pointing at the directory containing tex-file.h  LDFLAGS
-       should probably contain -L pointing at the directory containing
-       libkpathsea.a
-   3.  Type "./configure" in the dvipdfm directory along with 
-       any necessary options, e.g., "--prefix=PATH".
-   4.  Type "make" in the dvipdfm directory.
-   5.  If all goes well, type "make install" in the dvipdfm directory.
-   
+   2.  Before compiling, set the CPPFLAGS, CFLAGS, and LDFLAGS environment
+       variables with any options you want and also any -I or -L options
+       required to locate kpathsea.  CPPFLAGS should probably contain -I
+       pointing at the directory containing tex-file.h LDFLAGS should
+       probably contain -L pointing at the directory containing
+       libkpathsea.a 3.  Type "./configure" in the dvipdfm directory along
+       with any necessary options, e.g., "--prefix=PATH". 4.  Type "make" in
+       the dvipdfm directory. 5.  If all goes well, type "make install" in
+       the dvipdfm directory.
+
    I have installed this cleanly on Solaris 2.5 and RedHat Linux 5.1
 (upgraded to tetex-0.9). I have been using it primarily under Linux.
 

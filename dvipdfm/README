@@ -45,10 +45,7 @@ or if you prefer FTP:
 
    Limitations (at present):
 
-      - /Contents streams consisting of multiple parts cannot be embedded.
-	
-      - This code is in its infancy.  It has worked flawlessly
-        for me, but YMMV.
+      - Contents streams consisting of multiple parts cannot be embedded.
 	
    Mark A. Wicks
    Kettering University

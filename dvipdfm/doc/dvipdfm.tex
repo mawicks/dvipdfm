@@ -1,4 +1,4 @@
-% $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/doc/dvipdfm.tex,v 1.14 1998/12/30 19:36:11 mwicks Exp $
+% $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/doc/dvipdfm.tex,v 1.15 1999/04/01 03:55:37 mwicks Exp $
 \special{ pdf: pagesize width 8.5truein height 11.0truein}
 \special{  pdf:  docview <</PageMode /UseOutlines>>}%
 \catcode`\ =11\def\space{ }\catcode`\ =10
@@ -147,8 +147,8 @@
 %
 \title{Dvipdfm User's Manual}
 \author{Mark A. Wicks}
-\version{Version 0.9.0}
-\date{December 30, 1998}
+\version{Version 0.10.4}
+\date{March 31, 1999}
 \maketitle
 \section{Introduction}
 This package is a DVI (\TeX) to PDF conversion utility,
@@ -269,7 +269,7 @@ dvipdfm -ecz 9 test.dvi
 recognized by |dvipdfm|}}
 \bigskip\nobreak
 \centerline{\vbox{\halign{{\tt #}\hskip
-1em\strut&\vtop{\leftskip0pt\rightskip0pt\hsize=3.0in\noindent #}\cr
+1em\strut&\vtop{\leftskip0pt\rightskip0pt\hsize=3.5in\noindent #}\cr
 \omit\hfil\it Option\hfil&\omit\hfil \it Description \hfil\cr
 \noalign{\smallskip\begincolor\red\hrule\endcolor\smallskip}
 -c&{\it Disable color specials}  Specifying this option
@@ -296,6 +296,13 @@ which is the recommended method.\cr
 \noalign{\smallskip}
 -l&{\it Landscape the document.}  This is only
 meaningful for paper sizes specified on the command line.\cr
+\noalign{\smallskip}
+-s {\it page\_ranges}&{\it Select a subset of pages from the DVI file.}
+The {\it page\_ranges} specifier is a set of comma-separated page
+ranges---e.g., |dvipdfm -s 10-12,10-20|.  If the first
+page in a range is empty (e.g., |dvipdfm -s -10|), it represents
+the beginning of the document.  If
+the last page in a range is empty (e.g., |dvipdfm -s 10-|), it selects the end of the document.\cr
 \noalign{\smallskip}
 -x {\it number}&{\it Specify the horizontal offset
 for the document.}  The default is 1.0in.\cr
@@ -974,7 +981,7 @@ resource was embedded along with the content stream.
 \dest{fontmap}\section{Font Mapping}
 \TeX\ font names can be
 mapped into arbitrary physical (PostScript) font names via
-the map file named |pdffonts.map|.  The file is
+the map file named |t1fonts.map|.  The file is
 similar to the |psfonts.map| file used by |dvips|
 and other drivers.  Each line in the
 file consists of four fields delimited

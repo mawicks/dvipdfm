@@ -1,13 +1,13 @@
 Installation:
 
-   If you are trying to install a binary version of this package,
-you will have to install one to three files manually.
+   If you are trying to manually install a pre-compiled binary version of this package,
+you will have to install one to three files.
 
    1.  Copy the executables dvipdfm and ebb (optional) to a directory in your
 path.
 
-   2.  Copy the pdffonts.map (optional) file to a subdirectory of the dvips directory
-under your texmf tree, e.g., /usr/share/texmf/dvips/dvipdfm/pdffonts.map
+   2.  Copy the t1fonts.map (optional) file to a dvipdfm subdirectory of
+your texmf tree, e.g., /usr/share/texmf/dvipdfm/t1fonts.map
 
    If dvipdfm doesn't work (probably because kpathsea can't find your
 texmf.cnf file), try one of the following remedies using environment variables:
