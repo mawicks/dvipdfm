@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.45 1998/12/15 01:43:28 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.46 1998/12/15 21:31:24 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -42,8 +42,7 @@
 static void dev_clear_color_stack (void);
 static void dev_clear_xform_stack (void);
 
-#define HOFFSET 72
-#define VOFFSET 72
+double hoffset = 72.0, voffset=72.0;
 #define DPI 72u 
 
 static double dvi2pts = 0.0;
@@ -152,8 +151,8 @@ static void text_mode (void)
   switch (motion_state) {
   case STRING_MODE:
     pdf_doc_add_to_page (")]TJ", 4);
-    break;
   case TEXT_MODE:
+    text_offset = 0;
     break;
   case GRAPHICS_MODE:
     pdf_doc_add_to_page (" BT", 3);
@@ -175,13 +174,14 @@ static void graphics_mode (void)
   case TEXT_MODE:
     len += sprintf (format_buffer+len, " ET");
     pdf_doc_add_to_page (format_buffer, len);
+    reset_text_state();
     break;
   }
   motion_state = GRAPHICS_MODE;
   return;
 }
 
-static void string_mode (double xpos, double ypos)
+static void string_mode (mpt_t xpos, mpt_t ypos)
 {
   mpt_t delx, dely;
   int len = 0;
@@ -248,18 +248,21 @@ void dev_set_char (mpt_t xpos, mpt_t ypos, unsigned char ch, mpt_t
   int len = 0;
   long kern;
   kern =
-    (1000l*(text_xorigin+text_offset-xpos))/dev_font[font_id].mptsize;
+    (1000.0*(text_xorigin+text_offset-xpos))/dev_font[font_id].mptsize;
+  
   if (font_id != current_font)
     dev_set_font(font_id); /* Force a Tf since we are actually trying
 			      to write a character */
   else if (ypos != text_yorigin ||
-	   abs(text_xorigin+text_offset-xpos) > dev_font[font_id].mptsize)
+	   abs(kern) > 32000) {
     text_mode();
+    kern = 0;
+  }
   if (motion_state != STRING_MODE)
     string_mode(xpos, ypos);
   else if (kern != 0) {
-    text_offset -= kern*dev_font[font_id].mptsize/1000l;
-    len += sprintf (format_buffer+len, ")%d(", (int) kern);
+    text_offset -= (double) kern*dev_font[font_id].mptsize/1000l;
+    len += sprintf (format_buffer+len, ")%ld(", kern);
   }
   len += pdfobj_escape_str (format_buffer+len, FORMAT_BUF_SIZE-len,
 			    &ch, 1);
@@ -273,28 +276,31 @@ void dev_set_string (mpt_t xpos, mpt_t ypos, unsigned char *s, int
   int len = 0;
   long kern;
   kern =
-    (1000l*(text_xorigin+text_offset-xpos))/dev_font[font_id].mptsize;
+    (1000.0*(text_xorigin+text_offset-xpos))/dev_font[font_id].mptsize;
   if (font_id != current_font)
     dev_set_font(font_id); /* Force a Tf since we are actually trying
 			       to write a character */
   else if (ypos != text_yorigin ||
-      kern > 32000)
+	   abs(kern) > 32000) {
     text_mode();
+    kern = 0;
+  }
   if (motion_state != STRING_MODE)
     string_mode(xpos, ypos);
   else if (kern != 0) {
-    text_offset -= kern*dev_font[font_id].mptsize/1000l;
-    /*    text_offset = xpos-text_xorigin; */
-    len += sprintf (format_buffer+len, ")%d(", (int) kern);
+    text_offset -= (double)kern*dev_font[font_id].mptsize/1000l;
+    len += sprintf (format_buffer+len, ")%ld(", kern);
   }
   len += pdfobj_escape_str (format_buffer+len, FORMAT_BUF_SIZE-len, s, length);
   pdf_doc_add_to_page (format_buffer, len);
   text_offset += width;
 }
 
-void dev_init (double scale)
+void dev_init (double scale, double x_offset, double y_offset)
 {
   dvi2pts = scale;
+  hoffset = x_offset;
+  voffset = y_offset;
   if (debug) fprintf (stderr, "dev_init:\n");
   graphics_mode();
   dev_clear_color_stack();
@@ -584,7 +590,7 @@ MEM_START
   /* Set page size now that we know user had last chance to change
      it */
   sprintf (format_buffer, "1 0 0 1 %.2f %.2f cm ",
-	   (double) HOFFSET, (double) dev_page_height()-VOFFSET);
+	   (double) hoffset, (double) dev_page_height()-voffset);
   pdf_doc_this_bop (format_buffer, strlen(format_buffer));
   graphics_mode();
   dev_close_all_xforms();
@@ -700,12 +706,12 @@ void dev_rule (mpt_t xpos, mpt_t ypos, mpt_t width, mpt_t height)
 
 double dev_phys_x (void)
 {
-  return dvi_dev_xpos()+HOFFSET;
+  return dvi_dev_xpos()+hoffset;
 }
 
 double dev_phys_y (void)
 {
-  return dev_page_height()+dvi_dev_ypos()-VOFFSET;
+  return dev_page_height()+dvi_dev_ypos()-voffset;
 }
 
 

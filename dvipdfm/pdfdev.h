@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.h,v 1.20 1998/12/14 16:25:33 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.h,v 1.21 1998/12/15 21:31:24 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -30,7 +30,7 @@
 
 typedef signed long mpt_t;
 
-extern void dev_init(double scale);
+extern void dev_init(double scale, double x_offset, double y_offset);
 
 extern void dev_close (void);
 

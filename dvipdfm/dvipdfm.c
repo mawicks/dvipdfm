@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.11 1998/12/15 02:53:02 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.12 1998/12/15 21:31:24 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -37,6 +37,8 @@
 #include "pdfdoc.h"
 #include "pdfdev.h"
 #include "type1.h"
+#include "pdfspecial.h"
+#include "pdfparse.h"
 
 #ifndef HAVE_BASENAME /* If system doesn't have basename, kpath library does */
 const char *basename (const char *s);
@@ -101,21 +103,115 @@ static void usage (void)
    fprintf (stderr, "under certain conditions.  Details are distributed with the software.\n");
    fprintf (stderr, "\nUsage: dvipdf [options] dvifile\n");
    fprintf (stderr, "where [options] is one or more of\n\n");
+   fprintf (stderr, "\t-c      \tIgnore color specials (for printing on B&W printers)\n");
+   fprintf (stderr, "\t-f filename\tFont map file name [pdffonts.map]\n");
    fprintf (stderr, "\t-o filename\tOutput file name\n");
-   fprintf (stderr, "\t-p papersize\tpapersize is letter, legal, ledger, tabloid, a4, or a3\n");
    fprintf (stderr, "\t-l \t\tlandscape mode\n");
-   fprintf (stderr, "\t-m filename\tFont map file name [pdffonts.map]\n");
+   fprintf (stderr, "\t-m number\tAdditional magnification\n");
+   fprintf (stderr, "\t-p papersize\tpapersize is [letter], legal, ledger, tabloid, a4, or a3\n");
+   fprintf (stderr, "\t-x dimension\tHorizontal offset [1.0in]\n");
+   fprintf (stderr, "\t-y dimension\tVertical offset [1.0in]\n");
+   fprintf (stderr, "\nAll dimensions are \"true\" when specified on the command line\n");
    exit(1);
 }
 
 static double paper_width = 612.0, paper_height = 792.0;
 static landscape_mode = 0;
+static ignore_colors = 0;
+static double mag = 1.0, x_offset=72.0, y_offset=72.0;
 
 static void do_args (int argc, char *argv[])
 {
   while (argc > 0) {
     if (*argv[0] == '-') {
       switch (*(argv[0]+1)) {
+      case 'm':
+	if (argc < 2) {
+	  fprintf (stderr, "Magnification specification missing a number\n");
+	  usage();
+	}
+	{
+	  char *result, *end, *start = argv[1];
+	  end = start + strlen(argv[1]);
+	  result = parse_number (&start, end);
+	  if (result != NULL && start == end) {
+	    mag = atof (result);
+	  }
+	  else {
+	    fprintf (stderr, "Error in number following magnification specification\n");
+	    usage();
+	  }
+	  if (result != NULL) {
+	    RELEASE (result);
+	  }
+	}
+	argv += 2;
+	argc -= 2;
+	break;
+      case 'x':
+	if (argc < 2) {
+	  fprintf (stderr, "Magnification specification missing a number\n");
+	  usage();
+	}
+	{
+	  char *result, *end, *start = argv[1];
+	  double unit;
+	  end = start + strlen(argv[1]);
+	  result = parse_number (&start, end);
+	  if (result != NULL) {
+	    x_offset = atof (result);
+	  }
+	  else {
+	    fprintf (stderr, "Error in number following xoffset specification\n");
+	    usage();
+	  }
+	  if (result != NULL) {
+	    RELEASE (result);
+	  }
+	  unit = parse_one_unit(&start, end);
+	  if (unit > 0.0) {
+	    x_offset *= unit;
+	  }
+	  else {
+	    fprintf (stderr, "Error in dimension specification following xoffset");
+	    usage();
+	  }
+	}
+	argv += 2;
+	argc -= 2;
+	break;
+      case 'y':
+	if (argc < 2) {
+	  fprintf (stderr, "Magnification specification missing a number\n");
+	  usage();
+	}
+	{
+	  char *result, *end, *start = argv[1];
+	  double unit;
+	  end = start + strlen(argv[1]);
+	  result = parse_number (&start, end);
+	  if (result != NULL) {
+	    y_offset = atof (result);
+	  }
+	  else {
+	    fprintf (stderr, "Error in number following yoffset specification\n");
+	    usage();
+	  }
+	  if (result != NULL) {
+	    RELEASE (result);
+	  }
+	  unit = parse_one_unit(&start, end);
+	  if (unit > 0.0) {
+	    y_offset *= unit;
+	  }
+	  else {
+	    fprintf (stderr, "Error in dimension specification following yoffset");
+	    usage();
+	  }
+	}
+	argv += 2;
+	argc -= 2;
+	break;
       case 'o':  
 	if (argc < 2)
 	  ERROR ("Missing output file name");
@@ -135,12 +231,17 @@ static void do_args (int argc, char *argv[])
 	  argc -= 2;
 	}
 	break;
+      case 'c':
+	ignore_colors = 1;
+	argv += 1;
+	argc -= 1;
+	break;
       case 'l':
 	landscape_mode = 1;
 	argv += 1;
 	argc -= 1;
 	break;
-      case 'm':
+      case 'f':
 	type1_set_mapfile (argv[1]);
 	argv += 2;
 	argc -= 2;
@@ -200,7 +301,9 @@ int CDECL main (int argc, char *argv[])
   if (!really_quiet)
     fprintf (stdout, "%s -> %s\n", dvi_filename, pdf_filename);
   pdf_doc_init (pdf_filename);
-  dvi_init (dvi_filename);
+  dvi_init (dvi_filename, mag, x_offset, y_offset);
+  if (ignore_colors)
+    pdf_special_ignore_colors();
   if (landscape_mode)
     dev_set_page_size (paper_height, paper_width);
   else

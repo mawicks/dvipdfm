@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.31 1998/12/15 01:43:27 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.32 1998/12/15 21:31:23 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -157,18 +157,19 @@ static void get_page_info (void)
 }
 
 /* Following are computed "constants" used for unit conversion */
-static double dvi2pts = 0.0;
+static double dvi2pts = 0.0, total_mag = 1.0;
 
 double dvi_tell_mag (void)
 {
-  return (dvi_mag/1000.0);
+  return total_mag;
 }
 
-static void do_scales (void)
+static void do_scales (double mag)
 {
+  total_mag = (double) dvi_mag / 1000.0 * mag;
   dvi2pts = (double) dvi_unit_num / (double) dvi_unit_den;
   dvi2pts *= (72.0)/(254000.0);
-  dvi2pts *= (double) dvi_mag / 1000.0;
+  dvi2pts *= total_mag;
 }
 
 
@@ -1068,7 +1069,8 @@ void dvi_do_page(int n)  /* Most of the work of actually interpreting
   }
 }
 
-error_t dvi_init (char * filename)
+error_t dvi_init (char * filename, double mag, double x_offset, double
+		  y_offset)
 {
   if (!(dvi_file = fopen (filename, FOPEN_RBIN_MODE))) {
     ERROR ("dvi_init:  Specified DVI file doesn't exist");
@@ -1078,8 +1080,8 @@ error_t dvi_init (char * filename)
      for post_post and then post opcode */
   find_post ();
   get_dvi_info();
-  do_scales();
-  dev_init(dvi2pts);
+  do_scales(mag);
+  dev_init(dvi2pts, x_offset, y_offset);
   get_page_info();
   get_dvi_fonts();
   get_comment();

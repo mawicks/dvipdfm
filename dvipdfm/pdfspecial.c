@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.30 1998/12/14 16:25:33 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.31 1998/12/15 21:31:24 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -59,7 +59,17 @@ static pdf_obj *jpeg_build_object(struct jpeg *jpeg,
 static void do_bxobj (char **start, char *end,
 		      double x_user, double y_user);
 static void do_exobj (void);
-static void do_uxobj (char **start, char *end, double x_user, double y_user);
+static void do_uxobj (char **start, char *end, double x_user, double
+		      y_user);
+
+static ignore_colors = 0;
+
+void pdf_special_ignore_colors(void)
+{
+  ignore_colors = 1;
+}
+
+
 
 static void do_bop(char **start, char *end)
 {
@@ -1404,13 +1414,16 @@ MEM_START
     do_image(&start, end, x_user, y_user);
     break;
   case BGCOLOR:
-    do_bgcolor (&start, end);
+    if (!ignore_colors)
+      do_bgcolor (&start, end);
     break;
   case BCOLOR:
-    do_bcolor (&start, end);
+    if (!ignore_colors)
+      do_bcolor (&start, end);
     break;
   case ECOLOR:
-    do_ecolor ();
+    if (!ignore_colors)
+      do_ecolor ();
     break;
   case BGRAY:
     do_bgray (&start, end);
