@@ -1,14 +1,17 @@
 % original config -- Made by MAW on 8/31/99
 % Distiller template examples.  Uncomment
-% the appropriate one, or create your own
+% the appropriate one, or (preferably) create your own
+%
+% Note that it's probably a good idea to fully qualify
+% the paths so you can be sure what you are running
 
 % The following line works with Frank Siegert's pstill
-% D pstill -c -o %o %i
+% D /usr/local/bin/pstill -c -o %o %i
 
 % The following line works with Sebastian Rahtz' GhostScript wrapper
 % script called epstopdf
-D epstopdf %i ; mv %b.pdf %o
+D /usr/local/bin/epstopdf %i ; mv %b.pdf %o
 
 % The following line works with Adobe Acrobat Distiller
-% D distill -quiet -pairs %i %o
+% D /usr/local/bin/distill -quiet -pairs %i %o
 

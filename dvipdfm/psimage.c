@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/psimage.c,v 1.2 1999/09/01 01:00:31 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/psimage.c,v 1.3 1999/09/01 02:38:21 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -44,6 +44,18 @@ void set_distiller_template (char *s)
                      max_size += k+128; \
                      result=RENEW(result,max_size,char); \
                        }}
+
+static char *last_dot (char *s)
+{
+  char *end;
+  end = s+strlen(s);
+  while (--end > s) {
+    if (*end == '.')
+      return end;
+  }
+  return NULL;
+}
+
  
 static char *build_command_line (char *psname, char *pdfname)
 {
@@ -64,6 +76,18 @@ static char *build_command_line (char *psname, char *pdfname)
 	  strcat (result, psname);
 	  size+=strlen(psname);
 	  break;
+	case 'b': 
+	  {
+	    char *last;
+	    need(strlen(psname));
+	    if ((last = last_dot (psname))) {
+	      strncpy (result+size, psname, last-psname);
+	      size += last-psname;
+	    } else {
+	      strcat (result, psname);
+	      size += strlen(psname);
+	    }
+	  }
 	case 0:
 	  break;
 	case '%':
