@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.32 1999/02/09 03:24:06 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.33 1999/02/19 21:39:49 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -37,10 +37,6 @@
 #include "vf.h"
 #include "pkfont.h"
 #include "system.h"
-
-#ifndef HAVE_BASENAME /* If system doesn't have basename, kpath library does */
-const char *basename (const char *s);
-#endif /* HAVE_BASENAME */
 
 struct rect 
 {

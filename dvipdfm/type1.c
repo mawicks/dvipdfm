@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.57 1999/02/09 03:24:09 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.58 1999/02/19 21:39:50 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -746,9 +746,9 @@ static unsigned long do_pfb_body (FILE *file, int pfb_id,
   if (partial_enabled && glyphs != NULL) {
     /* For partial font embedding we need to decrypt the binary
        portion of the pfb */
-    crypt_init(EEKEY);
+    t1_crypt_init(EEKEY);
     for (i=0; i<length; i++) {
-      buffer[i] = decrypt(buffer[i]);
+      buffer[i] = t1_decrypt(buffer[i]);
     }
     /* Now we do the partial embedding */
     filtered = NEW (length, unsigned char);
@@ -756,9 +756,9 @@ static unsigned long do_pfb_body (FILE *file, int pfb_id,
 			      pfbs[pfb_id].used_chars,
 			      glyphs);
     /* And reencrypt the whole thing */
-    crypt_init (EEKEY);
+    t1_crypt_init (EEKEY);
     for (i=0; i<length; i++) {
-      buffer[i] = encrypt(filtered[i]);
+      buffer[i] = t1_encrypt(filtered[i]);
     }
     RELEASE (filtered);
   }

@@ -1,7 +1,7 @@
 #define EEKEY 55665u
 #define CHARKEY 4330u
 
-unsigned char encrypt(unsigned char plain);
-void crypt_init (unsigned short int key);
-unsigned char decrypt(unsigned char cipher);
+unsigned char t1_encrypt(unsigned char plain);
+void t1_crypt_init (unsigned short int key);
+unsigned char t1_decrypt(unsigned char cipher);
 
