@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.27 1998/12/22 05:24:49 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.28 1998/12/22 18:38:41 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -26,6 +26,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 #include <kpathsea/tex-file.h>
 #include "system.h"
@@ -95,6 +96,12 @@ pdf_obj *find_encoding_differences (pdf_obj *encoding)
   return result;
 }
 
+int CDECL cmp_glyph(const void *g1, const void *g2) 
+{
+  return strcmp(((struct glyph *) g1) -> name, ((struct glyph *) g2) ->
+		name);
+}
+
 static void save_glyphs (struct glyph *glyph, pdf_obj *encoding)
 {
   int i;
@@ -105,6 +112,7 @@ static void save_glyphs (struct glyph *glyph, pdf_obj *encoding)
     strcpy (glyph[i].name, glyph_name);
     glyph[i].position = i;
   }
+  qsort (glyph, 256, sizeof(struct glyph), cmp_glyph);
   return;
 }
 
@@ -823,7 +831,7 @@ void type1_close_all (void)
     /* Release glyph names for this encoding */
     for (j=0; j<256; j++) {
       fprintf (stderr, "(%s)[%d]", 
-	       (encodings[i].glyphs)[j].name, j);
+	       (encodings[i].glyphs)[j].name, (encodings[i].glyphs)[j].position);
       RELEASE ((encodings[i].glyphs)[j].name);
     }
     fprintf (stderr, "\n");
