@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.7 1998/12/02 16:28:56 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.8 1998/12/03 02:40:39 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -232,10 +232,16 @@ static int parse_one_dim_word (char **start, char *end)
 struct {
   char *s;
   double units;
+  int true;
 } units[] = {
-  {"pt", (72.0/72.27)},
-  {"in", (72.0)},
-  {"cm", (72.0/2.54)}
+  {"pt", (72.0/72.27), 0},
+  {"in", (72.0), 0},
+  {"cm", (72.0/2.54), 0},
+  {"mm", (72.0/25.4), 0},
+  {"truept", (72.0/72.27), 1},
+  {"truein", (72.0), 1},
+  {"truecm", (72.0/2.54), 1},
+  {"truemm", (72.0/25.4), 1}
 };
   
 double parse_one_unit (char **start, char *end)
@@ -244,7 +250,7 @@ double parse_one_unit (char **start, char *end)
   char *unit_string, *save = *start;
   skip_white(start, end);
   if ((unit_string = parse_ident(start, end)) == NULL) {
-    fprintf (stderr, "\nExpecting a unit here\n");
+    fprintf (stderr, "\nExpecting a unit here (e.g., in, cm, pt)\n");
     dump(*start, end);
   }
   for (i=0; i<sizeof(units)/sizeof(units[0]); i++) {
@@ -252,14 +258,17 @@ double parse_one_unit (char **start, char *end)
       break;
   }
   if (i == sizeof(units)/sizeof(units[0])) {
-    fprintf (stderr, "\n%s: Invalid unit of measurement\n", unit_string);
+    fprintf (stderr, "\n%s: Invalid unit of measurement (should be in, cm, pt, etc.)\n", unit_string);
     *start = save; 
     dump (*start, end);
     release (unit_string);
     return -1.0;
   }
   release (unit_string);
-  return units[i].units*dvi_tell_mag();
+  if (units[i].true)
+    return units[i].units;
+  else 
+    return units[i].units*dvi_tell_mag();
 }
 
 static int parse_dimension (char **start, char *end,
@@ -327,6 +336,36 @@ static int parse_dimension (char **start, char *end,
   skip_white(start, end);
   return 1;
 }
+
+
+static void do_pagesize(char **start, char *end)
+{
+  pdf_obj *rectangle;
+  struct xform_info *p;
+  p = new_xform_info();
+  skip_white(start, end);
+  while ((*start) < end && isalpha (**start)) {
+    skip_white(start, end);
+    if (!parse_dimension(start, end, p)) {
+      fprintf (stderr, "\nFailed to find a valid set of dimensions here\n");
+      dump (*start, end);
+      return;
+    }
+  }
+  if (p->scale != 0.0 || p->xscale != 0.0 || p->yscale != 0.0) {;
+  fprintf (stderr, "\nScale meaningless for pagesize\n");
+  return;
+  }
+  if (p->width == 0.0 || p->depth + p->height == 0.0) {
+    fprintf (stderr, "\nPage cannot have a zero dimension\n");
+    return;
+  }
+  dev_set_page_size (p->width, p->depth + p->height);
+  release_xform_info (p);
+  parse_crap(start, end);
+  return;
+}
+
 
 static void do_ann(char **start, char *end)
 {
@@ -591,7 +630,8 @@ static void do_article(char **start, char *end)
     fprintf (stderr, "Ignoring invalid dictionary\n");  
     return;
   }
-  add_reference (name, pdf_doc_add_article (name, info_dict));
+  pdf_doc_start_article (name, pdf_link_obj(info_dict));
+  add_reference (name, info_dict);
   release (name);
   parse_crap(start, end);
   return;
@@ -599,7 +639,7 @@ static void do_article(char **start, char *end)
 
 static void do_bead(char **start, char *end)
 {
-  pdf_obj *bead_dict, *rectangle;
+  pdf_obj *bead_dict, *rectangle, *article, *info_dict;
   char *name, *save = *start;
   struct xform_info *p;
   skip_white(start, end);
@@ -626,6 +666,19 @@ static void do_bead(char **start, char *end)
     fprintf (stderr, "Special bead: Rectangle has a zero dimension\n");
     return;
   }
+  skip_white (start, end);
+  if (**start == '<')
+    info_dict = parse_pdf_dict (start, end);
+  else
+    info_dict = pdf_new_dict();
+  /* Does this article exist yet */
+  if ((article = lookup_object (name)) == NULL) {
+    pdf_doc_start_article (name, pdf_link_obj (info_dict));
+    add_reference (name, info_dict);
+  } else {
+    pdf_merge_dict (article, info_dict);
+    pdf_release_obj (info_dict);
+  }
   bead_dict = pdf_new_dict ();
   rectangle = pdf_new_array();
   pdf_add_array (rectangle, pdf_new_number(ROUND(dev_tell_x(),0.1)));
@@ -636,13 +689,11 @@ static void do_bead(char **start, char *end)
   pdf_add_dict (bead_dict, pdf_new_name ("R"),
 		rectangle);
   pdf_add_dict (bead_dict, pdf_new_name ("P"),
-		pdf_doc_this_page());
+		pdf_doc_this_page_ref());
   pdf_doc_add_bead (name, bead_dict);
   if (name != NULL) {
     release (name);
   }
-  pdf_release_obj (bead_dict);
-  parse_crap(start, end);
   return;
 }
 
@@ -894,6 +945,7 @@ static int is_pdf_special (char **start, char *end)
 #define BGCOLOR 22
 #define BXFORM 23
 #define EXFORM 24
+#define PAGESIZE 25
 
 struct pdfmark
 {
@@ -909,6 +961,7 @@ struct pdfmark
   {"art", ARTICLE},
   {"article", ARTICLE},
   {"bead", BEAD},
+  {"thread", BEAD},
   {"dest", DEST},
   {"docinfo", DOCINFO},
   {"docview", DOCVIEW},
@@ -938,6 +991,7 @@ struct pdfmark
   {"bgc", BGCOLOR},
   {"bbc", BGCOLOR},
   {"bbg", BGCOLOR},
+  {"pagesize", PAGESIZE},
   {"begintransform", BXFORM},
   {"begintrans", BXFORM},
   {"btrans", BXFORM},
@@ -1009,21 +1063,27 @@ static void add_reference (char *name, pdf_obj *object)
 static pdf_obj *lookup_reference(char *name)
 {
   int i;
-  /* First check for builtin */
-  if (!strcmp (name, "thispage")) {
-    return pdf_doc_this_page();
-  }
-  if (!strcmp (name, "prevpage")) {
-    return pdf_doc_prev_page();
-  }
-  if (!strcmp (name, "nextpage")) {
-    return pdf_doc_prev_page();
-  }
+  /* First check for builtins first */
   if (!strcmp (name, "ypos")) {
     return pdf_new_number(ROUND(dev_tell_y(),0.1));
   }
   if (!strcmp (name, "xpos")) {
     return pdf_new_number(ROUND(dev_tell_x(),0.1));
+  }
+  if (!strcmp (name, "thispage")) {
+    return pdf_doc_this_page_ref();
+  }
+  if (!strcmp (name, "prevpage")) {
+    return pdf_doc_prev_page_ref();
+  }
+  if (!strcmp (name, "nextpage")) {
+    return pdf_doc_prev_page_ref();
+  }
+  if (!strcmp (name, "pages")) {
+    return pdf_ref_obj (pdf_doc_page_tree());
+  }
+  if (!strcmp (name, "names")) {
+    return pdf_ref_obj (pdf_doc_names());
   }
   if (!strcmp (name, "resources")) {
     return pdf_ref_obj (pdf_doc_current_page_resources());
@@ -1046,9 +1106,22 @@ static pdf_obj *lookup_reference(char *name)
 static pdf_obj *lookup_object(char *name)
 {
   int i;
+  if (!strcmp (name, "thispage")) {
+    return pdf_doc_this_page();
+  }
+  if (!strcmp (name, "pages")) {
+    return pdf_doc_page_tree();
+  }
+  if (!strcmp (name, "names")) {
+    return pdf_doc_names();
+  }
   if (!strcmp (name, "resources")) {
     return pdf_doc_current_page_resources();
   }
+  if (!strcmp (name, "")) {
+    return pdf_doc_current_page_resources();
+  }
+
   for (i=0; i<number_named_references; i++) {
     if (!strcmp (named_references[i].name, name)) {
       break;
@@ -1092,13 +1165,14 @@ void pdf_finish_specials (void)
     pdf_release_obj (named_references[i].object_ref);
     if (named_references[i].object != NULL) {
       pdf_release_obj (named_references[i].object);
+      named_references[i].object = NULL;
     }
     release (named_references[i].name);
   }
 }
 
 void pdf_parse_special(char *buffer, UNSIGNED_QUAD size, double
-		       x_user, double y_user, double x_media, double y_media)
+		       x_user, double y_user)
 {
   int pdfmark;
   char *start = buffer, *end;
@@ -1183,6 +1257,9 @@ void pdf_parse_special(char *buffer, UNSIGNED_QUAD size, double
     break;
   case EXFORM:
     do_exform ();
+    break;
+  case PAGESIZE:
+    do_pagesize(&start, end);
     break;
   }
 }

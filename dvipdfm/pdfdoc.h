@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.h,v 1.2 1998/12/01 05:19:42 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.h,v 1.3 1998/12/03 02:40:39 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -27,11 +27,13 @@
 #define PDFDOC_H
 
 #include "pdfobj.h"
-void pdf_doc_new_page (double width, double height);
-
+void pdf_doc_new_page (void);
+pdf_obj *pdf_doc_this_page_ref (void);
 pdf_obj *pdf_doc_this_page (void);
-pdf_obj *pdf_doc_next_page (void);
-pdf_obj *pdf_doc_prev_page (void);
+pdf_obj *pdf_doc_page_tree (void);
+pdf_obj *pdf_doc_names (void);
+pdf_obj *pdf_doc_next_page_ref (void);
+pdf_obj *pdf_doc_prev_page_ref (void);
 pdf_obj *pdf_doc_ref_page (unsigned page_no);
 
 void pdf_doc_add_to_page_resources (const char *name, pdf_obj
@@ -42,7 +44,7 @@ void pdf_doc_add_to_page_annots (pdf_obj *annot);
 
 void pdf_doc_add_dest (char *name, unsigned length, pdf_obj *array);
 
-pdf_obj *pdf_doc_add_article (char *name, pdf_obj *info);
+void pdf_doc_start_article (char *name, pdf_obj *info);
 void pdf_doc_add_bead (char *name, pdf_obj *partial_dict);
 
 void pdf_doc_merge_with_docinfo (pdf_obj *dictionary);

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.6 1998/12/01 05:19:42 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.7 1998/12/03 02:40:39 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -33,7 +33,7 @@
 #include "error.h"
 #include "mem.h"
 #include "pdfdoc.h"
-#include "numbers.h"
+#include "pdfdev.h"
 #include "numbers.h"
 
 static pdf_obj *catalog = NULL;
@@ -66,11 +66,8 @@ static struct {
 static void start_page_tree (void);
 static void create_catalog (void);
 static void start_current_page_resources (void);
-static void finish_page_tree(void);
-
+static void finish_building_page_tree(void);
 static void start_name_tree(void);
-static void finish_name_tree(void);
-
 static void start_dests_tree(void);
 static void finish_dests_tree(void);
 
@@ -165,13 +162,6 @@ static void start_name_tree (void)
 		pdf_ref_obj (names_dict));
 }
 
-static void finish_name_tree (void)
-{
-  pdf_release_obj (names_dict);
-  return;
-}
-
-
 static char *asn_date (void)
 {
 #ifndef HAVE_TIMEZONE
@@ -249,7 +239,6 @@ static void create_catalog (void)
   start_outline_tree ();
   start_name_tree();
   start_dests_tree();
-  finish_name_tree();
   start_articles();
   return;
 }
@@ -306,12 +295,11 @@ void pdf_doc_add_to_page_annots (pdf_obj *annot)
 		 annot);
 }
 
-
-static void finish_page_tree(void)
+static void finish_building_page_tree(void)
 {
   /* Back to work on that page tree */
   if (debug) {
-    fprintf (stderr, "(finish_page_tree)");
+    fprintf (stderr, "(finish_bulding_page_tree)");
   }
   pdf_add_dict (page_tree,
 		pdf_new_name ("Type"),
@@ -324,8 +312,6 @@ static void finish_page_tree(void)
   pdf_add_dict (page_tree,
 		pdf_new_name ("Kids"),
 		pdf_ref_obj (pages_kids));
-  /* Page_Tree is done.  */
-  pdf_release_obj (page_tree);
   return;
 }
 
@@ -528,23 +514,21 @@ static void start_articles (void)
 		pdf_ref_obj (articles_array));
 }
 
-pdf_obj *pdf_doc_add_article (char *name, pdf_obj *info)
+void pdf_doc_start_article (char *name, pdf_obj *info)
 {
-  pdf_obj *result;
   if (number_articles >= MAX_ARTICLES) {
     ERROR ("pdf_doc_add_article:  Too many articles\n");
   }
   articles[number_articles].name = NEW (strlen(name)+1, char);
   strcpy (articles[number_articles].name, name);
-  articles[number_articles].info = pdf_link_obj (info);
+  articles[number_articles].info = info;
   articles[number_articles].first = NULL;
   articles[number_articles].last = NULL;
   /* Start dictionary for this article even though we can't finish it
      until we get the first bead */
-  result = pdf_new_dict();
-  articles[number_articles].this = pdf_link_obj(result);
+  articles[number_articles].this = pdf_new_dict();
   number_articles++;
-  return result;
+  return;
 }
 
 void pdf_doc_add_bead (char *article_name, pdf_obj *partial_dict)
@@ -570,7 +554,7 @@ void pdf_doc_add_bead (char *article_name, pdf_obj *partial_dict)
     /* Next add pointer to its Info dictionary */
     pdf_add_dict (articles[i].this,
 		  pdf_new_name ("I"),
-		  articles[i].info);
+		  pdf_ref_obj (articles[i].info));
     /* Point first bead to parent article */
     pdf_add_dict (partial_dict,
 		  pdf_new_name ("T"),
@@ -579,8 +563,6 @@ void pdf_doc_add_bead (char *article_name, pdf_obj *partial_dict)
     pdf_add_array (articles_array, pdf_ref_obj (articles[i].this));
     pdf_release_obj (articles[i].this);
     articles[i].this = NULL;
-    pdf_release_obj (articles[i].info);
-    articles[i].info = NULL;
   } else {
     /* Link it in... */
     /* Point last object to this one */
@@ -593,7 +575,7 @@ void pdf_doc_add_bead (char *article_name, pdf_obj *partial_dict)
 		  pdf_ref_obj (articles[i].last));
     pdf_release_obj (articles[i].last);
   }
-  articles[i].last = pdf_link_obj (partial_dict);
+  articles[i].last = partial_dict;
   pdf_add_array (this_page_beads,
 		 pdf_ref_obj (partial_dict));
 }
@@ -616,12 +598,30 @@ void finish_articles(void)
 		  pdf_ref_obj (articles[i].last));
     pdf_release_obj (articles[i].first);
     pdf_release_obj (articles[i].last);
+    pdf_release_obj (articles[i].info);
   }
 }
 
 
 static void finish_last_page ()
 {
+  /* Flush this page */
+  /* Page_count is the index of the current page, starting at 1 */
+  if (page_count > 0) {
+    /* Write out MediaBox as the very last thing we do on the
+       previous page */
+    tmp1 = pdf_new_array ();
+    pdf_add_array (tmp1, pdf_new_number (0));
+    pdf_add_array (tmp1, pdf_new_number (0));
+    pdf_add_array (tmp1, pdf_new_number
+		   (ROUND(dev_page_width(),1.0)));
+    pdf_add_array (tmp1, pdf_new_number (ROUND(dev_page_height(),1.0)));
+    pdf_add_dict (pages[page_count-1].page_dict,
+		  pdf_new_name ("MediaBox"),
+		  tmp1);
+    pdf_release_obj (pages[page_count-1].page_dict);
+    pages[page_count-1].page_dict = NULL;
+  }
   if (debug) {
     fprintf (stderr, "(finish_last_page)");
   }
@@ -678,7 +678,28 @@ pdf_obj *pdf_doc_ref_page (unsigned page_no)
   return pdf_link_obj (pages[page_no-1].page_ref);
 }
 
+pdf_obj *pdf_doc_names (void)
+{
+  return names_dict;
+}
+
+pdf_obj *pdf_doc_page_tree (void)
+{
+  return page_tree;
+}
+
+
 pdf_obj *pdf_doc_this_page (void)
+{
+  if (page_count <= 0) {
+    ERROR ("Reference to current page, but no pages have been started yet");
+  }
+  fprintf (stderr, "pdf_doc_this_page: page_count = %d, ref=%p\n",
+	   page_count, pages[page_count-1].page_dict);
+  return pages[page_count-1].page_dict;
+}
+
+pdf_obj *pdf_doc_this_page_ref (void)
 {
   if (page_count <= 0) {
     ERROR ("Reference to current page, but no pages have been started yet");
@@ -686,7 +707,7 @@ pdf_obj *pdf_doc_this_page (void)
   return pdf_doc_ref_page(page_count);
 }
 
-pdf_obj *pdf_doc_prev_page (void)
+pdf_obj *pdf_doc_prev_page_ref (void)
 {
   if (page_count <= 0) {
     ERROR ("Reference to previous page, but no pages have been started yet");
@@ -694,7 +715,7 @@ pdf_obj *pdf_doc_prev_page (void)
   return pdf_doc_ref_page(page_count>1?page_count-1:1);
 }
 
-pdf_obj *pdf_doc_next_page (void)
+pdf_obj *pdf_doc_next_page_ref (void)
 {
   if (page_count <= 0) {
     ERROR ("Reference to previous page, but no pages have been started yet");
@@ -702,7 +723,7 @@ pdf_obj *pdf_doc_next_page (void)
   return pdf_doc_ref_page(page_count+1);
 }
 
-void pdf_doc_new_page (double page_width, double page_height)
+void pdf_doc_new_page (void)
 {
   if (debug) {
     fprintf (stderr, "(pdf_doc_new_page)");
@@ -728,14 +749,6 @@ void pdf_doc_new_page (double page_width, double page_height)
   pdf_add_dict (pages[page_count].page_dict,
 		pdf_new_name ("Type"),
 		pdf_new_name ("Page"));
-  tmp1 = pdf_new_array ();
-  pdf_add_array (tmp1, pdf_new_number (0));
-  pdf_add_array (tmp1, pdf_new_number (0));
-  pdf_add_array (tmp1, pdf_new_number (ROUND(page_width,1.0)));
-  pdf_add_array (tmp1, pdf_new_number (ROUND(page_height,1.0)));
-  pdf_add_dict (pages[page_count].page_dict,
-		pdf_new_name ("MediaBox"),
-		tmp1);
   pdf_add_dict (pages[page_count].page_dict,
 		pdf_new_name ("Parent"),
 		pdf_link_obj (page_tree_label));
@@ -763,9 +776,6 @@ void pdf_doc_new_page (double page_width, double page_height)
   pdf_add_dict (pages[page_count].page_dict,
 		pdf_new_name ("B"),
 		pdf_ref_obj (this_page_beads));
-  /* Flush this page */
-  pdf_release_obj (pages[page_count].page_dict);
-  pages[page_count].page_dict = NULL;
   /* Contents are still available as this_page_contents until next
      page is started */
   /* Even though the page is gone, a Reference to this page is kept
@@ -787,7 +797,7 @@ void pdf_doc_init (char *filename)
   pdf_out_init (filename);
   create_docinfo ();
   create_catalog ();
-  finish_page_tree();	/* start_page_tree was called by create_catalog */
+  finish_building_page_tree();	/* start_page_tree was called by create_catalog */
 }
 
 void pdf_doc_creator (char *s)
@@ -795,7 +805,6 @@ void pdf_doc_creator (char *s)
   pdf_add_dict (docinfo, pdf_new_name ("Creator"),
 		pdf_new_string (s, strlen(s)));
 }
-
 
 void pdf_doc_finish ()
 {
@@ -808,9 +817,12 @@ void pdf_doc_finish ()
   pdf_release_obj (pages_kids);
   pdf_set_number (page_count_obj, page_count);
   pdf_release_obj (page_count_obj);
-
+  /* Following things were kept around so user can add dictionary
+     items */
   pdf_release_obj (catalog);
   pdf_release_obj (docinfo);
+  pdf_release_obj (page_tree);
+  pdf_release_obj (names_dict);
   pdf_release_obj (glob_page_bop);
   pdf_release_obj (glob_page_eop);
   finish_outline();
@@ -824,8 +836,7 @@ void pdf_doc_finish ()
   }
   if (highest_page_ref > page_count) {
     fprintf (stderr, "\nWarning:  Nonexistent page(s) referenced\n");
-    fprintf (stderr, "          (PDF file may cause trouble)\n");
+    fprintf (stderr, "          (PDF file may not work right)\n");
   }
   pdf_out_flush ();
 }
-

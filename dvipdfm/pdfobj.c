@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.7 1998/12/01 05:19:42 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.8 1998/12/03 02:40:39 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -272,8 +272,10 @@ pdf_obj *pdf_ref_obj(pdf_obj *object)
   if (object == NULL)
     ERROR ("pdf_ref_obj passed null pointer");
   
-  if (object -> type == 0) {
-    ERROR ("pdf_ref_obj:  Called with invalid object");
+  if (object -> refcount == 0) {
+    fprintf (stderr, "\npdf_ref_obj:  Called with already released object");
+    pdf_write_obj (stderr, object);
+    ERROR ("Fatal Error\n");
   }
   result = pdf_new_obj (PDF_INDIRECT);
   indirect = NEW (1, pdf_indirect);
@@ -902,6 +904,7 @@ void pdf_write_obj (FILE *file, const pdf_obj *object)
     ERROR ("pdf_write_obj passed null pointer");
   }
   if (object -> type > PDF_INDIRECT) {
+    fprintf (stderr, "Object type = %d\n", object -> type);
     ERROR ("pdf_write_obj:  Called with invalid object");
   }
   if (file == stderr)
@@ -957,10 +960,10 @@ void pdf_release_obj (pdf_obj *object)
   if (object == NULL)
     return;
   if (object -> type > PDF_INDIRECT ||
-      object -> refcount == 0) {
+      object -> refcount <= 0) {
     fprintf (stderr, "pdf_release_obj: object = %p, type = %d\n", object, object ->
 	     type);
-    
+    pdf_write_obj (stderr, object);
     ERROR ("pdf_release_obj:  Called with invalid object");
   }
   object -> refcount -= 1;
@@ -999,7 +1002,8 @@ void pdf_release_obj (pdf_obj *object)
       release_indirect (object -> data);
       break;
     }
-    object -> type = -1;  /* This might help detect freeing already freed objects */
+  /* This might help detect freeing already freed objects */
+    /*  object -> type = -1;*/
     free (object);
   }
 }

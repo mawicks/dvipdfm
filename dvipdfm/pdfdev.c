@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.5 1998/12/01 05:19:42 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.6 1998/12/03 02:40:39 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -21,7 +21,6 @@
 
 	mwicks@kettering.edu
 */
-
 	
 #include <math.h>
 #include <string.h>
@@ -51,13 +50,29 @@ static void dev_clear_xform_stack (void);
 which are points */
 
 static double page_width=612.0, page_height=792.0;
+int page_size_readonly = 0;
 
 void dev_set_page_size (double width, double height)
 {
-  page_width = width;
-  page_height = height;
+  if (page_size_readonly) {
+    fprintf (stderr, "\nSorry.  Too late to change page size\n");
+  } else {
+    page_width = width;
+    page_height = height;
+  }
 }
 
+double dev_page_width(void)
+{
+  page_size_readonly = 1;
+  return page_width;
+}
+
+double dev_page_height(void)
+{
+  page_size_readonly = 1;
+  return page_height;
+}
 
 static int debug = 0, verbose = 0;
 
@@ -263,15 +278,16 @@ static void fill_page (void)
 	     background.c1, background.c2, background.c3);
     break;
   case CMYK:
-    sprintf (format_buffer, " q 0 w %g %g %g %g k %g %g %g %g K",
+    sprintf (format_buffer, " q 0 w %g %g %g %g k %g %g %g %g K ",
 	     background.c1, background.c2, background.c3, background.c4,
 	     background.c1, background.c2, background.c3, background.c4);
     break;
   }
   pdf_doc_this_bop (format_buffer, strlen(format_buffer));
   sprintf (format_buffer,
-	   " 0 0 m %g 0 l %g %g l 0 %g l b Q",
-	   page_width, page_width, page_height, page_height);
+	   " 0 0 m %g 0 l %g %g l 0 %g l b Q ",
+	   dev_page_width(), dev_page_width(), dev_page_height(),
+	   dev_page_height());
   pdf_doc_this_bop (format_buffer, strlen(format_buffer));
   return;
 }
@@ -459,16 +475,11 @@ void dev_bop (void)
   if (debug) {
     fprintf (stderr, "dev_bop:\n");
   }
-    
-  pdf_doc_new_page (page_width, page_height);
+  pdf_doc_new_page ();
   fill_page();
   graphics_mode();
   dev_xpos = 0.0;
   dev_ypos = 0.0;
-  sprintf (format_buffer, "%g 0 0 %g 0 0 cm ", ROUND(72.0/DPI,0.001), ROUND(72.0/DPI,0.001));
-  pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
-  sprintf (format_buffer, "1 0 0 1 0 %ld cm ", (long) page_height);
-  pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
   this_page_fontlist_dict = pdf_new_dict ();
   bop_font_reset();
   pdf_doc_add_to_page (" 0 w ", 5);
@@ -480,6 +491,12 @@ void dev_eop (void)
   if (debug) {
     fprintf (stderr, "dev_eop:\n");
   }
+  /* Set page size now that we know user had last chance to change
+     it */
+  sprintf (format_buffer, "%g 0 0 %g 0 0 cm ", ROUND(72.0/DPI,0.001), ROUND(72.0/DPI,0.001));
+  pdf_doc_this_bop (format_buffer, strlen(format_buffer));
+  sprintf (format_buffer, "1 0 0 1 0 %ld cm ", (long) dev_page_height());
+  pdf_doc_this_bop (format_buffer, strlen(format_buffer));
   graphics_mode();
   dev_close_all_xforms();
   pdf_doc_add_to_page_resources ("Font", this_page_fontlist_dict);
@@ -640,12 +657,12 @@ double dev_tell_x (void)
 
 double dev_tell_y (void)
 {
-  return page_height+dev_ypos;
+  return dev_page_height()+dev_ypos;
 }
 
 
 void dev_do_special (void *buffer, UNSIGNED_QUAD size)
 {
   graphics_mode();
-  pdf_parse_special (buffer, size, dev_xpos, dev_ypos, dev_xpos, page_height+dev_ypos);
+  pdf_parse_special (buffer, size, dev_xpos, dev_ypos);
 }

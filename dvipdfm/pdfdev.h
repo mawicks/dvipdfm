@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.h,v 1.3 1998/12/01 05:19:42 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.h,v 1.4 1998/12/03 02:40:39 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -74,6 +74,9 @@ void dev_end_xform (void);
 
 void dev_add_comment (char *comment);
 void dev_do_special (void *buffer, UNSIGNED_QUAD size);
+
+double dev_page_height(void);
+double dev_page_width(void);
 
 #endif /* PDFDEV_H */
 
