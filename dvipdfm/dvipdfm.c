@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.50 1999/09/04 13:40:23 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.51 1999/09/05 01:57:11 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -494,6 +494,12 @@ int CDECL main (int argc, char *argv[])
   argv+=1;
   argc-=1;
 
+#ifdef KPATHSEA
+  kpse_init_prog ("", font_dpi, NULL, NULL);
+  pk_set_dpi (font_dpi);
+  kpse_set_program_enabled (kpse_pk_format, 1, kpse_src_texmf_cnf);
+#endif
+
   /* Process config file, if any */
   read_config_file();
 
@@ -504,28 +510,23 @@ int CDECL main (int argc, char *argv[])
     usage();
   }
 
-
-#ifdef KPATHSEA
-  kpse_init_prog ("", font_dpi, NULL, NULL);
-  pk_set_dpi (font_dpi);
-  kpse_set_program_enabled (kpse_pk_format, 1, kpse_src_texmf_cnf);
-#endif
-
   /* Check for ".dvi" at end of argument name */
   if (pdf_filename == NULL)
     set_default_pdf_filename();
   
   if (!really_quiet)
     fprintf (stdout, "%s -> %s\n", dvi_filename, pdf_filename);
+
   dvi_init (dvi_filename, pdf_filename, mag, x_offset, y_offset);
+
   if (ignore_colors)
     pdf_special_ignore_colors();
+
   if (landscape_mode)
     dev_set_page_size (paper_height, paper_width);
   else
     dev_set_page_size (paper_width, paper_height);
-  if (paper_specified)
-    dev_page_height();
+
   if ((num_page_ranges))
     for (i=0; i<num_page_ranges; i++) {
       unsigned j;
