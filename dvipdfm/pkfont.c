@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pkfont.c,v 1.16 1999/09/28 01:44:58 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pkfont.c,v 1.17 2000/01/11 02:30:40 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -87,14 +87,15 @@ struct a_pk_font
   pdf_obj *direct, *indirect;
   char *tex_name, *pk_file_name;
   double ptsize;
-  char chars_used[256];
+  char *used_chars;
 } *pk_fonts;
 
 void init_pk_record (struct a_pk_font *p)
 {
   int i;
+  p->used_chars = NEW (256, char);
   for (i=0; i<256; i++) {
-    (p->chars_used)[i] = 0;
+    (p->used_chars)[i] = 0;
   }
   p->tex_name = NULL;
   p->pk_file_name = NULL;
@@ -214,7 +215,7 @@ pdf_obj *pk_font_resource (int pk_id)
 char *pk_font_used (int pk_id)
 {
   if (pk_id >= 0 && pk_id < num_pk_fonts) 
-    return pk_fonts[pk_id].chars_used;
+    return pk_fonts[pk_id].used_chars;
   else {
     fprintf (stderr, "pk_id = %d\n", pk_id);
     ERROR ("pk_font_used:  Invalid pk_id\n");
@@ -439,7 +440,7 @@ static void do_character (unsigned char flag, int pk_id, pdf_obj *char_procs)
     fprintf (stderr, "\npk_do_character: code=%lu, packet_length=%lu\n",
 	     code, packet_length);
   }
-  if ((pk_fonts[pk_id].chars_used)[code%256]) {
+  if ((pk_fonts[pk_id].used_chars)[code%256]) {
     int dyn_f;
     unsigned long tfm_width = 0;
     long dm=0, w=0, h=0;
@@ -591,6 +592,7 @@ void pk_close_all (void)
     pdf_release_obj (pk_fonts[i].indirect);
     RELEASE (pk_fonts[i].tex_name);
     RELEASE (pk_fonts[i].pk_file_name);
+    RELEASE (pk_fonts[i].used_chars);
   }
   if (pk_fonts)
     RELEASE (pk_fonts);

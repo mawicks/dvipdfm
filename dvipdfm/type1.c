@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.99 1999/10/08 17:26:19 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.100 2000/01/11 02:30:40 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -796,7 +796,7 @@ int glyph_match (const void *key, const void *v)
 
 static unsigned long do_partial_body (unsigned char *filtered, unsigned char
 				      *unfiltered, unsigned long length, 
-				      char *chars_used, char **glyphs)
+				      char *used_chars, char **glyphs)
 {
   char *start, *end, *tail, *ident;
   unsigned char *filtered_pointer;
@@ -871,7 +871,7 @@ static unsigned long do_partial_body (unsigned char *filtered, unsigned char
     /* Build an array containing only those glyphs we need to embed */
     for (i=0; i<256; i++) {
       /* Don't add any glyph twice */
-      if (chars_used[i] &&
+      if (used_chars[i] &&
 	  (nused == 0 || /* Calling bsearch is unecessary if nused==0 */
 	  !bsearch (glyphs[i], used_glyphs, nused, sizeof (char *), glyph_match))) {
 	used_glyphs[nused] = glyphs[i];
