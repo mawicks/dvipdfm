@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.c,v 1.34 2000/07/12 00:05:07 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.c,v 1.35 2000/07/12 01:42:33 mwicks Exp $
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
 
@@ -40,14 +40,15 @@
 #define verbose 0
 #define debug 0
 
+#define DUMP_LIMIT 50
 void dump(char *start, char *end)
 {
   char *p = start;
   fprintf (stderr, "\nCurrent input buffer is ");
   fprintf (stderr, "-->");
-  while (p < end && p < start+60)
+  while (p < end && p < start+DUMP_LIMIT)
     fprintf (stderr, "%c", *(p++));
-  if (p == start+50)
+  if (p == start+DUMP_LIMIT)
     fprintf (stderr, "...\n");
   fprintf (stderr, "<--\n");
 }
