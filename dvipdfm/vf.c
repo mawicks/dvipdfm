@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/vf.c,v 1.22 2000/07/30 16:40:15 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/vf.c,v 1.22.2.1 2000/08/02 03:28:00 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -67,7 +67,7 @@ typedef struct font_def dev_font;
 struct vf 
 {
   char *tex_name;
-  mpt_t ptsize;
+  spt_t ptsize;
   unsigned long design_size; /* A fixword-pts quantity */
   int num_dev_fonts, max_dev_fonts;
   dev_font *dev_fonts;
@@ -266,7 +266,7 @@ void process_vf_file (FILE *vf_file, int thisfont)
    the PDF file will never repeat a physical font name */
 /* Note: This code needs to be reentrant since it could recurse */
 /* Global variables such as num_vf_fonts require careful attention */
-int vf_locate_font (char *tex_name, mpt_t ptsize)
+int vf_locate_font (char *tex_name, spt_t ptsize)
 {
   int thisfont = -1;
   char *full_vf_file_name;
@@ -441,7 +441,7 @@ static void vf_set2(unsigned char **start, unsigned char *end)
   return;
 }
 
-static void vf_putrule(unsigned char **start, unsigned char *end, mpt_t ptsize)
+static void vf_putrule(unsigned char **start, unsigned char *end, spt_t ptsize)
 {
   SIGNED_QUAD width, height;
   height = signed_quad (start, end);
@@ -452,7 +452,7 @@ static void vf_putrule(unsigned char **start, unsigned char *end, mpt_t ptsize)
   return;
 }
 
-static void vf_setrule(unsigned char **start, unsigned char *end, mpt_t ptsize)
+static void vf_setrule(unsigned char **start, unsigned char *end, spt_t ptsize)
 {
   SIGNED_QUAD width, height, s_width;
   height = signed_quad (start, end);
@@ -489,32 +489,32 @@ static void vf_pop(void)
   return;
 }
 
-static void vf_right (SIGNED_QUAD x, mpt_t ptsize)
+static void vf_right (SIGNED_QUAD x, spt_t ptsize)
 {
   dvi_right ((SIGNED_QUAD) (sqxfw(ptsize, x)));
   return;
 }
 
 
-static void vf_right1(unsigned char **start, unsigned char *end, mpt_t ptsize)
+static void vf_right1(unsigned char **start, unsigned char *end, spt_t ptsize)
 {
   vf_right (signed_byte (start, end), ptsize);
   return;
 }
 
-static void vf_right2(unsigned char **start, unsigned char *end, mpt_t ptsize)
+static void vf_right2(unsigned char **start, unsigned char *end, spt_t ptsize)
 {
   vf_right (signed_pair (start, end), ptsize);
   return;
 }
 
-static void vf_right3(unsigned char **start, unsigned char *end, mpt_t ptsize)
+static void vf_right3(unsigned char **start, unsigned char *end, spt_t ptsize)
 {
   vf_right (signed_triple (start, end), ptsize);
   return;
 }
 
-static void vf_right4(unsigned char **start, unsigned char *end, mpt_t ptsize)
+static void vf_right4(unsigned char **start, unsigned char *end, spt_t ptsize)
 {
   vf_right (signed_quad (start, end), ptsize);
   return;
@@ -526,31 +526,31 @@ static void vf_w0(void)
   return;
 }
 
-static void vf_w (SIGNED_QUAD w, mpt_t ptsize)
+static void vf_w (SIGNED_QUAD w, spt_t ptsize)
 {
   dvi_w ((SIGNED_QUAD) (sqxfw(ptsize, w)));
   return;
 }
 
-static void vf_w1(unsigned char **start, unsigned char *end, mpt_t ptsize)
+static void vf_w1(unsigned char **start, unsigned char *end, spt_t ptsize)
 {
   vf_w (signed_byte(start, end), ptsize);
   return;
 }
 
-static void vf_w2(unsigned char **start, unsigned char *end, mpt_t ptsize)
+static void vf_w2(unsigned char **start, unsigned char *end, spt_t ptsize)
 {
   vf_w (signed_pair(start, end), ptsize);
   return;
 }
 
-static void vf_w3(unsigned char **start, unsigned char *end, mpt_t ptsize)
+static void vf_w3(unsigned char **start, unsigned char *end, spt_t ptsize)
 {
   vf_w (signed_triple(start, end), ptsize);
   return;
 }
 
-static void vf_w4(unsigned char **start, unsigned char *end, mpt_t ptsize)
+static void vf_w4(unsigned char **start, unsigned char *end, spt_t ptsize)
 {
   vf_w (signed_quad(start, end), ptsize);
   return;
@@ -562,61 +562,61 @@ static void vf_x0(void)
   return;
 }
 
-static void vf_x (SIGNED_QUAD x, mpt_t ptsize)
+static void vf_x (SIGNED_QUAD x, spt_t ptsize)
 {
   dvi_x ((SIGNED_QUAD) (sqxfw(ptsize, x)));
   return;
 }
 
-static void vf_x1(unsigned char **start, unsigned char *end, mpt_t ptsize)
+static void vf_x1(unsigned char **start, unsigned char *end, spt_t ptsize)
 {
   vf_x (signed_byte(start, end), ptsize);
   return;
 }
 
-static void vf_x2(unsigned char **start, unsigned char *end, mpt_t ptsize)
+static void vf_x2(unsigned char **start, unsigned char *end, spt_t ptsize)
 {
   vf_x (signed_pair(start, end), ptsize);
   return;
 }
 
-static void vf_x3(unsigned char **start, unsigned char *end, mpt_t ptsize)
+static void vf_x3(unsigned char **start, unsigned char *end, spt_t ptsize)
 {
   vf_x (signed_triple(start, end), ptsize);
   return;
 }
 
-static void vf_x4(unsigned char **start, unsigned char *end, mpt_t ptsize)
+static void vf_x4(unsigned char **start, unsigned char *end, spt_t ptsize)
 {
   vf_x (signed_quad(start, end), ptsize);
   return;
 }
 
-static void vf_down (SIGNED_QUAD y, mpt_t ptsize)
+static void vf_down (SIGNED_QUAD y, spt_t ptsize)
 {
   dvi_down ((SIGNED_QUAD) (sqxfw(ptsize, y)));
   return;
 }
 
-static void vf_down1(unsigned char **start, unsigned char *end, mpt_t ptsize)
+static void vf_down1(unsigned char **start, unsigned char *end, spt_t ptsize)
 {
   vf_down (signed_byte(start, end), ptsize);
   return;
 }
 
-static void vf_down2(unsigned char **start, unsigned char *end, mpt_t ptsize)
+static void vf_down2(unsigned char **start, unsigned char *end, spt_t ptsize)
 {
   vf_down (signed_pair(start, end), ptsize);
   return;
 }
 
-static void vf_down3(unsigned char **start, unsigned char *end, mpt_t ptsize)
+static void vf_down3(unsigned char **start, unsigned char *end, spt_t ptsize)
 {
   vf_down (signed_triple(start, end), ptsize);
   return;
 }
 
-static void vf_down4(unsigned char **start, unsigned char *end, mpt_t ptsize)
+static void vf_down4(unsigned char **start, unsigned char *end, spt_t ptsize)
 {
   vf_down (signed_quad(start, end), ptsize);
   return;
@@ -628,32 +628,32 @@ static void vf_y0(void)
   return;
 }
 
-static void vf_y (SIGNED_QUAD y, mpt_t ptsize)
+static void vf_y (SIGNED_QUAD y, spt_t ptsize)
 {
   dvi_y ((SIGNED_QUAD) (sqxfw(ptsize, y)));
   return;
 }
 
 
-static void vf_y1(unsigned char **start, unsigned char *end, mpt_t ptsize)
+static void vf_y1(unsigned char **start, unsigned char *end, spt_t ptsize)
 {
   vf_y (signed_byte(start, end), ptsize);
   return;
 }
 
-static void vf_y2(unsigned char **start, unsigned char *end, mpt_t ptsize)
+static void vf_y2(unsigned char **start, unsigned char *end, spt_t ptsize)
 {
   vf_y (signed_pair(start, end), ptsize);
   return;
 }
 
-static void vf_y3(unsigned char **start, unsigned char *end, mpt_t ptsize)
+static void vf_y3(unsigned char **start, unsigned char *end, spt_t ptsize)
 {
   vf_y (signed_triple(start, end), ptsize);
   return;
 }
 
-static void vf_y4(unsigned char **start, unsigned char *end, mpt_t ptsize)
+static void vf_y4(unsigned char **start, unsigned char *end, spt_t ptsize)
 {
   vf_y (signed_quad(start, end), ptsize);
   return;
@@ -665,31 +665,31 @@ static void vf_z0(void)
   return;
 }
 
-static void vf_z (SIGNED_QUAD z, mpt_t ptsize)
+static void vf_z (SIGNED_QUAD z, spt_t ptsize)
 {
   dvi_z ((SIGNED_QUAD) (sqxfw(ptsize, z)));
   return;
 }
 
-static void vf_z1(unsigned char **start, unsigned char *end, mpt_t ptsize)
+static void vf_z1(unsigned char **start, unsigned char *end, spt_t ptsize)
 {
   vf_z (signed_byte(start, end), ptsize);
   return;
 }
 
-static void vf_z2(unsigned char **start, unsigned char *end, mpt_t ptsize)
+static void vf_z2(unsigned char **start, unsigned char *end, spt_t ptsize)
 {
   vf_z (signed_pair(start, end), ptsize);
   return;
 }
 
-static void vf_z3(unsigned char **start, unsigned char *end, mpt_t ptsize)
+static void vf_z3(unsigned char **start, unsigned char *end, spt_t ptsize)
 {
   vf_z (signed_triple(start, end), ptsize);
   return;
 }
 
-static void vf_z4(unsigned char **start, unsigned char *end, mpt_t ptsize)
+static void vf_z4(unsigned char **start, unsigned char *end, spt_t ptsize)
 {
   vf_z (signed_quad(start, end), ptsize);
   return;
@@ -778,7 +778,7 @@ void vf_set_char(unsigned ch, int vf_font)
 {
   unsigned char opcode;
   unsigned char *start, *end;
-  mpt_t ptsize;
+  spt_t ptsize;
   int default_font = -1;
   if (vf_font < num_vf_fonts) {
     /* Initialize to the first font or -1 if undefined */

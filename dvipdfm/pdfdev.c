@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.102.4.1 2000/07/31 06:41:33 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.102.4.2 2000/08/02 03:27:59 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -53,7 +53,6 @@ static void dev_clear_color_stack (void);
 static void dev_clear_xform_stack (void);
 
 double hoffset = 72.0, voffset=72.0;
-#define DPI 72u 
 
 static double dvi2pts = 0.0;
 
@@ -99,16 +98,6 @@ void dev_set_debug (void)
   debug = 1;
 }
 
-unsigned long dev_tell_xdpi(void)
-{
-  return DPI;
-}
-
-unsigned long dev_tell_ydpi(void)
-{
-  return DPI;
-}
-
 #define GRAPHICS_MODE 1
 #define TEXT_MODE 2
 #define STRING_MODE 3
@@ -118,14 +107,24 @@ int motion_state = GRAPHICS_MODE; /* Start in graphics mode */
 #define FORMAT_BUF_SIZE 4096
 static char format_buffer[FORMAT_BUF_SIZE];
 
+/* Coordinate system in the pdf file is setup so that 1 unit in the
+   PDF content stream's coordinate system represents 65,800 spt (DVI units).
+   Relative motions in the PDF file are printed in decimal
+   with no more than two digits after the decimal point.  A
+   PDF user coordinate of 0.01 represents 658 DVI units.
+   Here are some constants to that effect */
+
+#define PDF_U 65800L
+#define CENTI_PDF_U 658
+
  /* Device coordinates are relative to upper left of page.  One of the
     first things appearing in the page stream is a coordinate transformation
     matrix that forces this to be true.  This coordinate
     transformation is the only place where the paper size is required.
     Unfortunately, positive is up, which doesn't agree with TeX's convention.  */
 
-static mpt_t text_xorigin = 0, text_yorigin = 0,
-  text_offset = 0, text_leading = 0, pts2dvi = 0;
+static spt_t text_xorigin = 0, text_yorigin = 0,
+  text_offset = 0, text_leading = 0;
 double text_slant = 0.0, text_extend = 1.0;
 double text_xerror = 0.0, text_yerror = 0.0;
 
@@ -146,7 +145,7 @@ static struct dev_font {
   char *tex_name;
   int tfm_font_id;
   double ptsize;
-  mpt_t mptsize;
+  spt_t sptsize;
   pdf_obj *font_resource;
   char *used_chars;
   double extend, slant;
@@ -184,11 +183,16 @@ static void reset_text_state(void)
   len = sprintf (format_buffer, " BT");
   if (current_font >= 0 && /* If not at top of page */
       (dev_font[current_font].slant != 0.0 ||
-      dev_font[current_font].extend != 1.0)) {
-    len += sprintf (format_buffer+len, " %.7g 0 %.3g 1 %.7g %.7g Tm",
-		   dev_font[current_font].extend,
-		   dev_font[current_font].slant, ROUND(text_xorigin*dvi2pts,0.01),
-		   ROUND(text_yorigin*dvi2pts,0.01));
+       dev_font[current_font].extend != 1.0)) {
+    len += sprintf (format_buffer+len, " %.7g 0 %.3g 1 ",
+		    dev_font[current_font].extend,
+		    dev_font[current_font].slant);
+    len += centi_u_to_a (format_buffer+len, IDIV (text_xorigin, CENTI_PDF_U));
+    format_buffer[len++] = ' ';
+    len += centi_u_to_a (format_buffer+len, IDIV (text_yorigin, CENTI_PDF_U));
+    format_buffer[len++] = ' ';
+    format_buffer[len++] = 'T';
+    format_buffer[len++] = 'm';
   }
   pdf_doc_add_to_page (format_buffer, len);
 }
@@ -224,9 +228,9 @@ void graphics_mode (void)
   return;
 }
 
-static void string_mode (mpt_t xpos, mpt_t ypos, double slant, double extend)
+static void string_mode (spt_t xpos, spt_t ypos, double slant, double extend)
 {
-  mpt_t delx, dely;
+  spt_t delx, dely;
   int len = 0;
   switch (motion_state) {
   case STRING_MODE:
@@ -239,24 +243,23 @@ static void string_mode (mpt_t xpos, mpt_t ypos, double slant, double extend)
   case TEXT_MODE:
     delx = xpos - text_xorigin;
     {
-      double rounded_delx, desired_delx;
-      double rounded_dely, desired_dely;
+      spt_t rounded_delx, desired_delx;
+      spt_t rounded_dely, desired_dely;
 
       /* First round dely (it is needed for delx) */
       dely = ypos - text_yorigin;
-      desired_dely = (dely+text_yerror)*dvi2pts;
-      rounded_dely = ROUND(desired_dely,0.01);
+      desired_dely = (dely+text_yerror);
+      rounded_dely = IDIV(desired_dely, CENTI_PDF_U) * CENTI_PDF_U;
       /* Next round delx, precompensating for line transformation matrix */
-      desired_delx = ((delx+text_xerror)*dvi2pts-desired_dely*slant)/extend;
-      rounded_delx = ROUND(desired_delx,0.01);
+      desired_delx = ((delx+text_xerror)-desired_dely*slant)/extend;
+      rounded_delx = IDIV (desired_delx, CENTI_PDF_U) * CENTI_PDF_U;
       /* Estimate errors in DVI units */
-      text_yerror = (desired_dely - rounded_dely)/dvi2pts;
-      text_xerror = (extend/dvi2pts*(desired_delx -
-				     rounded_delx)+slant*text_yerror);
+      text_yerror = (desired_dely - rounded_dely);
+      text_xerror = (extend*(desired_delx - rounded_delx)+slant*text_yerror);
       format_buffer[len++] = ' ';
-      len += fixnumtoa (format_buffer+len, (long)(rounded_delx*65536));
+      len += centi_u_to_a (format_buffer+len, IDIV (rounded_delx, CENTI_PDF_U));
       format_buffer[len++] = ' ';
-      len += fixnumtoa (format_buffer+len, (long)(rounded_dely*65536));
+      len += centi_u_to_a (format_buffer+len, IDIV (rounded_dely, CENTI_PDF_U));
       pdf_doc_add_to_page (format_buffer, len);
       len = 0;
       pdf_doc_add_to_page (" TD[(", 5);
@@ -286,17 +289,21 @@ static void dev_set_font (int font_id)
   int len = 0;
   text_mode();
   len = sprintf (format_buffer, "/%s ", dev_font[font_id].short_name);
-  len += fixnumtoa (format_buffer+len, (long)
-		    (ROUND(dev_font[font_id].ptsize,0.01)*65526));
+  len += centi_u_to_a (format_buffer+len, IDIV(dev_font[font_id].sptsize, CENTI_PDF_U));
   format_buffer[len++] = ' ';
   format_buffer[len++] = 'T';
   format_buffer[len++] = 'f';
   if (dev_font[font_id].slant != text_slant ||
       dev_font[font_id].extend != text_extend) {
-    len += sprintf (format_buffer+len, " %.7g 0 %.3g 1 %.7g %.7g Tm",
+    len += sprintf (format_buffer+len, " %.7g 0 %.3g 1 ",
 		    dev_font[font_id].extend,
-		    dev_font[font_id].slant, ROUND(text_xorigin*dvi2pts,0.01),
-		    ROUND(text_yorigin*dvi2pts,0.01));
+		    dev_font[font_id].slant);
+    len += centi_u_to_a (format_buffer+len, IDIV(text_xorigin, CENTI_PDF_U));
+    format_buffer[len++] = ' ';
+    len += centi_u_to_a (format_buffer+len, IDIV(text_yorigin, CENTI_PDF_U));
+    format_buffer[len++] = ' ';
+    format_buffer[len++] = 'T';
+    format_buffer[len++] = 'm';
      /* There's no longer any uncertainty about where we are */
     text_xerror = 0.0; text_yerror = 0.0;
     text_slant = dev_font[font_id].slant;
@@ -313,18 +320,25 @@ static void dev_set_font (int font_id)
   return;
 }
 
-void dev_set_string (mpt_t xpos, mpt_t ypos, unsigned char *s, int
-		     length, mpt_t width, int font_id)
+void dev_set_string (spt_t xpos, spt_t ypos, unsigned char *s, int
+		     length, spt_t width, int font_id)
 {
   int len = 0;
   long kern;
   if (font_id != current_font)
     dev_set_font(font_id); /* Force a Tf since we are actually trying
 			       to write a character */
+  /* Kern is in units of character units, i.e., 1000 = 1 em. */
+  /* The following formula is of the form a*x/b where a, x, and b are
+     long integers.  Since in integer arithmetic (a*x) could overflow
+     and a*(x/b) would not be accurate, we use floating point
+     arithmetic rather than trying to do this all with integer
+     arithmetic. */
   kern =
-    (1000.0/dev_font[font_id].extend*(text_xorigin+text_offset-xpos))/dev_font[font_id].mptsize;
-  if (labs(ypos-text_yorigin)> pts2dvi/100 ||
-	   abs(kern) > 32000) {
+    (1000.0/dev_font[font_id].extend*(text_xorigin+text_offset-xpos))/dev_font[font_id].sptsize;
+  
+  if (labs(ypos-text_yorigin) > CENTI_PDF_U || /* CENTI_PDF_U is smallest resolvable dimension */
+      abs(kern) > 10000) { /* Some PDF Readers fail on large kerns */
     text_mode();
     kern = 0;
   }
@@ -332,8 +346,10 @@ void dev_set_string (mpt_t xpos, mpt_t ypos, unsigned char *s, int
     string_mode(xpos, ypos, dev_font[font_id].slant, dev_font[font_id].extend);
   else if (kern != 0) {
     text_offset -=
-      kern*dev_font[font_id].extend*(dev_font[font_id].mptsize/1000.0);
-    /* This routine needs to be fast */
+      kern*dev_font[font_id].extend*(dev_font[font_id].sptsize/1000.0);
+    /* Same issues as earlier.  Use floating point for simplicity */
+    /* This routine needs to be fast, so we don't call sprintf() or
+       strcpy() */
     format_buffer[len++] = ')';
     len += itoa (format_buffer+len, kern);
     format_buffer[len++] = '(';
@@ -365,11 +381,6 @@ void dev_set_string (mpt_t xpos, mpt_t ypos, unsigned char *s, int
 void dev_init (double scale, double x_offset, double y_offset)
 {
   dvi2pts = scale;
-  /* Presumably there are many dvi units in one point, so
-     an integer representation is probably okay.  This is
-     only used for some relatively insensitive threshhold tests that
-     need to be fast. */
-  pts2dvi = (long) 1.0/dvi2pts;
   hoffset = x_offset;
   voffset = y_offset;
   if (debug) fprintf (stderr, "dev_init:\n");
@@ -797,7 +808,7 @@ MEM_END
 #endif
 }
 
-static int locate_type1_font (char *tex_name, mpt_t ptsize)
+static int locate_type1_font (char *tex_name, spt_t ptsize)
      /* Here, the ptsize is in device units, currently millipts */
 {
   /* Since Postscript fonts are scaleable, this font may have already
@@ -863,8 +874,7 @@ static int locate_type1_font (char *tex_name, mpt_t ptsize)
 
   if (thisfont >=0) {
     dev_font[thisfont].format = TYPE1; /* We added one */
-    dev_font[thisfont].mptsize = ptsize;
-    dev_font[thisfont].ptsize = ROUND(ptsize*dvi2pts,0.01);
+    dev_font[thisfont].sptsize = ptsize;
     dev_font[thisfont].tex_name = NEW (strlen(tex_name)+1, char);
     strcpy (dev_font[thisfont].tex_name, tex_name);
     /* The value in used_on_this_page is incorrect if the font has
@@ -879,7 +889,7 @@ static int locate_type1_font (char *tex_name, mpt_t ptsize)
   return (thisfont);
 }
 
-static int locate_pk_font (char *tex_name, mpt_t ptsize)
+static int locate_pk_font (char *tex_name, spt_t ptsize)
      /* Here, the ptsize is in device units, currently millipts */
 {
   /* This routine is different than that for Type 1 fonts.  PK fonts
@@ -898,7 +908,7 @@ static int locate_pk_font (char *tex_name, mpt_t ptsize)
     if (dev_font[i].format == PK &&
 	dev_font[i].tex_name && strcmp (tex_name,
 					dev_font[i].tex_name) == 0 &&
-	dev_font[i].mptsize == ptsize) {
+	dev_font[i].sptsize == ptsize) {
       break;
     }
   }
@@ -921,8 +931,7 @@ static int locate_pk_font (char *tex_name, mpt_t ptsize)
       dev_font[thisfont].slant = 0.0;
       dev_font[thisfont].extend = 1.0;
       dev_font[thisfont].remap = 0;
-      dev_font[thisfont].mptsize = ptsize;
-      dev_font[thisfont].ptsize = ROUND(ptsize*dvi2pts,0.01);
+      dev_font[thisfont].sptsize = ptsize;
       dev_font[thisfont].tex_name = NEW (strlen(tex_name)+1, char);
       dev_font[thisfont].used_on_this_page = 0;
       strcpy (dev_font[thisfont].tex_name, tex_name);
@@ -939,7 +948,7 @@ static int locate_pk_font (char *tex_name, mpt_t ptsize)
   return (thisfont);
 }
 
-int dev_locate_font (char *tex_name, mpt_t ptsize)
+int dev_locate_font (char *tex_name, spt_t ptsize)
 {
   int result;
   /* If there's a type1 font with this name use it */
@@ -962,14 +971,9 @@ int dev_font_tfm (int dev_font_id)
   return dev_font[dev_font_id].tfm_font_id;
 }
 
-double dev_font_size (int dev_font_id)
+spt_t dev_font_sptsize (int dev_font_id)
 {
-  return dev_font[dev_font_id].ptsize;
-}
-
-mpt_t dev_font_mptsize (int dev_font_id)
-{
-  return dev_font[dev_font_id].mptsize;
+  return dev_font[dev_font_id].sptsize;
 }
 
 void dev_close_all_fonts(void)
@@ -985,7 +989,7 @@ void dev_close_all_fonts(void)
   pk_close_all();
 }
 
-void dev_rule (mpt_t xpos, mpt_t ypos, mpt_t width, mpt_t height)
+void dev_rule (spt_t xpos, spt_t ypos, spt_t width, spt_t height)
 {
   int len = 0;
   long w, p1, p2, p3, p4;
@@ -994,36 +998,36 @@ void dev_rule (mpt_t xpos, mpt_t ypos, mpt_t width, mpt_t height)
       the logical meaning of a "rule" as opposed to a filled rectangle.
       I am assume the reader can more intelligently render a rule than a filled rectangle */
   if (width> height) {  /* Horizontal stroke? */
-    mpt_t half_height = height/2;
-    w = (long) (ROUND(height*dvi2pts,0.01)*65536);
-    p1 = (long) (ROUND(xpos*dvi2pts,0.01)*65536);
-    p2 = (long) (ROUND((ypos+half_height)*dvi2pts,0.01)*65536);
-    p3 = (long) (ROUND((xpos+width)*dvi2pts,0.01)*65536);
-    p4 = (long) (ROUND((ypos+half_height)*dvi2pts,0.01)*65536);
+    spt_t half_height = height/2;
+    w = height / CENTI_PDF_U;
+    p1 = xpos / CENTI_PDF_U;
+    p2 = (ypos+half_height) / CENTI_PDF_U;
+    p3 = (xpos+width) / CENTI_PDF_U;
+    p4 = (ypos+half_height) / CENTI_PDF_U;
   } else { /* Vertical stroke */
-    mpt_t half_width = width/2;
-    w = (long) (ROUND(width*dvi2pts,0.01)*65536);
-    p1 = (long) (ROUND((xpos+half_width)*dvi2pts,0.01)*65536);
-    p2 = (long) (ROUND(ypos*dvi2pts,0.01)*65536);
-    p3 = (long) (ROUND((xpos+half_width)*dvi2pts,0.01)*65536);
-    p4 = (long) (ROUND((ypos+height)*dvi2pts,0.01)*65536);
+    spt_t half_width = width/2;
+    w = width / CENTI_PDF_U;
+    p1 = (xpos+half_width) / CENTI_PDF_U;
+    p2 = ypos / CENTI_PDF_U;
+    p3 = (xpos+half_width) / CENTI_PDF_U;
+    p4 = (ypos+height) / CENTI_PDF_U;
   }
   /* This needs to be quick */
   {
     format_buffer[len++] = ' ';
-    len += fixnumtoa (format_buffer+len, w);
+    len += centi_u_to_a (format_buffer+len, w);
     format_buffer[len++] = ' ';
     format_buffer[len++] = 'w';
     format_buffer[len++] = ' ';
-    len += fixnumtoa (format_buffer+len, p1);
+    len += centi_u_to_a (format_buffer+len, p1);
     format_buffer[len++] = ' ';
-    len += fixnumtoa (format_buffer+len, p2);
+    len += centi_u_to_a (format_buffer+len, p2);
     format_buffer[len++] = ' ';
     format_buffer[len++] = 'm';
     format_buffer[len++] = ' ';
-    len += fixnumtoa (format_buffer+len, p3);
+    len += centi_u_to_a (format_buffer+len, p3);
     format_buffer[len++] = ' ';
-    len += fixnumtoa (format_buffer+len, p4);
+    len += centi_u_to_a (format_buffer+len, p4);
     format_buffer[len++] = ' ';
     format_buffer[len++] = 'l';
     format_buffer[len++] = ' ';
@@ -1100,7 +1104,7 @@ void dev_untag_depth (void)
   return;
 }
 
-void dev_expand_box (mpt_t width, mpt_t height, mpt_t depth)
+void dev_expand_box (spt_t width, spt_t height, spt_t depth)
 {
   double phys_width, phys_height, phys_depth, scale;
   if (link_annot && dvi_stack_depth >= dvi_tagged_depth) {

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/numbers.h,v 1.10.10.1 2000/07/31 06:41:33 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/numbers.h,v 1.10.10.2 2000/08/02 03:27:59 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -68,6 +68,9 @@ extern SIGNED_QUAD axboverc (SIGNED_QUAD n1, SIGNED_QUAD n2,
 
 int fixnumtoa (char *s, long int i);
 int itoa (char *s, long int i);
+int centi_u_to_a (char *s, long int i);
+
+#define IDIV(a,b) ((a)>0? (a)/(b): -(-(a)/(b)))
 
 #endif /* NUMBERS_H */
 

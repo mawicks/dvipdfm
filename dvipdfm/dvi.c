@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.68 2000/07/30 16:40:15 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.68.2.1 2000/08/02 03:27:59 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -62,7 +62,7 @@ struct loaded_font {
   int font_id;  /* id returned by dev (for PHYSICAL fonts)
 		   or by vf module for (VIRTUAL fonts) */
   int tfm_id;
-  mpt_t size;
+  spt_t size;
   int source;  /* Source is either DVI or VF */
 } *loaded_fonts = NULL;
 
@@ -77,7 +77,7 @@ static void need_more_fonts (unsigned n)
 
 struct font_def
 {
-  mpt_t size;
+  spt_t size;
   char *name;
   signed long tex_id;
   int font_id; /* index of _loaded_ font in loaded_fonts array */
@@ -353,7 +353,7 @@ double dvi_unit_size(void)
   return dvi2pts;
 }
 
-int dvi_locate_font (char *tex_name, mpt_t ptsize)
+int dvi_locate_font (char *tex_name, spt_t ptsize)
 {
   int thisfont;
   if (debug) {
@@ -418,7 +418,7 @@ void dvi_down (SIGNED_QUAD y)
 
 static void do_string (unsigned char *s, int len)
 {
-  mpt_t width = 0, height = 0, depth = 0;
+  spt_t width = 0, height = 0, depth = 0;
   int i;
   struct loaded_font *p;
   if (debug) {
@@ -458,7 +458,7 @@ static void do_string (unsigned char *s, int len)
 
 void dvi_set (SIGNED_QUAD ch)
 {
-  mpt_t width, height = 0, depth = 0;
+  spt_t width, height = 0, depth = 0;
   struct loaded_font *p;
   unsigned char lch;
   if (current_font < 0) {
@@ -499,7 +499,7 @@ void dvi_set (SIGNED_QUAD ch)
 
 void dvi_put (SIGNED_QUAD ch)
 {
-  mpt_t width, height = 0, depth = 0;
+  spt_t width, height = 0, depth = 0;
   struct loaded_font *p;
   unsigned char lch;
   if (current_font < 0) {
