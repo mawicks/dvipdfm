@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mem.c,v 1.8 1998/12/08 05:33:35 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mem.c,v 1.9 1998/12/12 17:22:13 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -72,7 +72,7 @@ void *renew (void *mem, size_t size, char *function, int line)
     mem_debug_init();
     event += 1;
     if (mem != NULL)
-      fprintf (debugfile, "%p %010ld fre %s:%d\n", mem,
+      fprintf (debugfile, "%p %07ld [fre] %s:%d\n", mem,
 	       event, function, line);
     fprintf (debugfile, "%p %07ld [new] %s:%d\n", result, event, function, line);
 #endif /* MEM_DEBUG */

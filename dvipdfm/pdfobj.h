@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.h,v 1.14 1998/12/12 17:02:18 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.h,v 1.15 1998/12/12 17:22:13 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -160,7 +160,7 @@ extern pdf_obj *pdf_new_array (void);
 extern void pdf_add_array (pdf_obj *array, pdf_obj *object); /* Array is ended
 							 by a node with NULL
 							 this pointer */
-extern pdf_obj *pdf_get_array (pdf_obj *array, int index);
+extern pdf_obj *pdf_get_array (pdf_obj *array, unsigned long index);
 extern pdf_obj *pdf_new_dict (void);
 extern void pdf_add_dict (pdf_obj *dict, pdf_obj *key, pdf_obj *value);  /* Array is ended
 								     by a node with NULL

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.22 1998/12/12 17:02:18 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.23 1998/12/12 17:22:13 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -646,7 +646,7 @@ pdf_obj *pdf_new_array (void)
 static void write_array (FILE *file, const pdf_array *array)
 {
   if (array -> size > 0) {
-    int i;
+    unsigned long i;
     pdf_out_char (file, '[');
     for (i=0; i<array->size; i++) {
       if (i != 0)
@@ -659,7 +659,7 @@ static void write_array (FILE *file, const pdf_array *array)
   }
 }
 
-pdf_obj *pdf_get_array (pdf_obj *array, int index)
+pdf_obj *pdf_get_array (pdf_obj *array, unsigned long index)
 {
   pdf_array *data;
   pdf_obj *result = NULL;;
@@ -683,6 +683,8 @@ static void release_array (pdf_array *data)
   for (i=0; i<data->size; i++) {
     pdf_release_obj ((data ->values)[i]);
   }
+  if (data->size > 0)
+    RELEASE (data->values);
   RELEASE (data);
 }
 
@@ -833,7 +835,7 @@ char *pdf_get_dict (const pdf_obj *dict, int index)
     ERROR ("pdf_get_dict: passed non array object");
   }
   data = dict -> data;
-  while (--index > 0 && data -> next != NULL)
+  while (index-- > 0 && data -> next != NULL)
     data = data -> next;
   if (data -> next == NULL)
     return NULL;
@@ -887,7 +889,8 @@ static void release_stream (pdf_stream *stream)
   pdf_release_obj (stream -> dict);
   pdf_release_obj (stream -> length);
 /*  fclose (stream -> tmpfile); */
-  RELEASE (stream -> stream);
+  if (stream -> stream_length > 0)
+    RELEASE (stream -> stream);
   RELEASE (stream);
 }
 
