@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.53 1999/01/11 02:10:30 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.54 1999/01/22 04:04:53 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -696,14 +696,13 @@ static unsigned long do_partial_body (unsigned char *filtered, unsigned char
       }
       RELEASE (glyph);
     }
-    if (start >= end) {
-      ERROR ("Premature end of glyph definitions in font file");
-    }
     if (nleft != 0)
       ERROR ("Didn't find all the required glyphs in the font.\nPossibly the encoding is incorrect.");
     /* Include the rest of the file verbatim */
-    memcpy (filtered_pointer, start, end-start);
-    filtered_pointer += end-start;
+    if (start < end){
+      memcpy (filtered_pointer, start, end-start);
+      filtered_pointer += end-start;
+    }
   }
   if (verbose>1) {
     fprintf (stderr, " (eliminated %ld bytes)\n", length-(filtered_pointer-filtered));

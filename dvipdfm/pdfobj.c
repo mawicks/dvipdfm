@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.42 1999/01/19 03:36:58 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.43 1999/01/22 04:04:53 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -528,10 +528,19 @@ int pdfobj_escape_str (char *buffer, int bufsize, unsigned char *s, int len)
 static void write_string (FILE *file, const pdf_string *string)
 {
   unsigned char *s = string -> string;
-  int count;
+  int count, i;
   pdf_out_char (file, '(');
-  count = pdfobj_escape_str (format_buffer, FORMAT_BUF_SIZE, s, string ->length);
-  pdf_out (file, format_buffer, count);
+    /* This section of code probably isn't speed critical.  Escaping the
+     characters in the string one at a time may seem slow, but it's
+     safe if the formatted string length exceeds FORMAT_BUF_SIZE.
+     Occasionally you see some long strings in PDF.  pdfobj_escape_str
+     is also used for strings of text with no kerning.  These must be
+     handled as quickly as possible since there are so many of them.  */ 
+  for (i=0; i<string->length; i++) {
+    count = pdfobj_escape_str (format_buffer, FORMAT_BUF_SIZE, s+i,
+			       1);
+    pdf_out (file, format_buffer, count);
+  }
   pdf_out_char (file, ')');
 }
 
