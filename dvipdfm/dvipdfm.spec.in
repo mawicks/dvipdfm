@@ -35,6 +35,7 @@ make install prefix=${RPM_BUILD_ROOT}/usr datadir=${RPM_BUILD_ROOT}/usr/share
 /usr/bin/dvipdfm
 /usr/bin/ebb
 /usr/bin/dvipdft
+/usr/man/man1/dvipdfm.1.gz
 %doc README
 %doc COPYING
 %doc doc/dvipdfm.tex

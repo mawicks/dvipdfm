@@ -9,6 +9,7 @@ prefix=@prefix@
 exec_prefix=@exec_prefix@
 bindir=@bindir@
 datadir=@datadir@
+mandir=@mandir@
 texmf=@TEXMF@
 dvipdfmdir=$(texmf)/dvipdfm
 psheaderdir=$(texmf)/dvips
@@ -25,6 +26,7 @@ objects=pdfdev.o pdfdoc.o dvi.o mfileio.o mem.o jpeg.o numbers.o pdfobj.o \
         pdfparse.o pdfspecial.o tfm.o type1.o dvipdfm.o epdf.o vf.o \
 	t1crypt.o pkfont.o tpic.o thumbnail.o pngimage.o htex.o \
 	mpost.o psimage.o psspecial.o colorsp.o encodings.o @TTF_OPT@ ttf.o
+manpages=dvipdfm.1
 
 eobjects=ebb.o jpeg.o pdfobj.o mem.o mfileio.o numbers.o pdfparse.o \
 	pngimage.o
@@ -39,7 +41,7 @@ include depend.make
 #
 # Install/uninstall
 #
-install: install-exec install-data
+install: install-exec install-data install-man
 uninstall: uninstall-exec uninstall-data
 install-exec: all
 	$(mkinstalldirs) $(bindir) 2> /dev/null || true;
@@ -47,6 +49,11 @@ install-exec: all
 	  do $(INSTALL) $$i $(bindir); \
 	done
 # t1fonts.map.
+install-man:
+	$(mkinstalldirs) $(mandir)/man1 2> /dev/null || true;
+	for i in $(manpages); \
+  	   do $(INSTALL) -m 644 $$i $(mandir)/man1; \
+	done
 install-data:
 	$(mkinstalldirs) $(dvipdfmdir) 2> /dev/null || true;
 	$(mkinstalldirs) $(dvipdfmdir)/base 2> /dev/null || true;
