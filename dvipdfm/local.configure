@@ -1,6 +1,0 @@
-#!/bin/sh
-# export CFLAGS='-DMEM_DEBUG -ggdb -O3 --pedantic -Wall'
-export CFLAGS='-O3 --pedantic -Wall'
-# ./configure --prefix=/usr --enable-maint
-./configure --prefix=/home/mwicks --datadir=/home/mwicks --enable-maint
-# ./configure --prefix=/home/mwicks --enable-maint
