@@ -1253,7 +1253,7 @@ pdf_obj *pdf_open (char *file)
   pdf_obj *trailer;
   char *parse_pointer;
   if ((pdf_input_file = fopen (file, "r")) == NULL) {
-    fprintf (stderr, "Unable to open file name %s\n", file);
+    fprintf (stderr, "Unable to open file name (%s)\n", file);
     return NULL;
   }
   seek_end(pdf_input_file);

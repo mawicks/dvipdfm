@@ -27,6 +27,7 @@
 #define JPEG_H
 
 #include "pdfobj.h"
+#include "pdfspecial.h"
 
 struct jpeg 
 {
@@ -40,6 +41,6 @@ struct jpeg *jpeg_open (char *filename);
 void jpeg_close (struct jpeg *jpeg);
 pdf_obj *jpeg_build_object(struct jpeg *jpeg,
 			   double x_user, double y_user,
-			   double width, double height);
+			   struct dimension_info *p);
 
 #endif /* JPEG_H */

@@ -126,23 +126,71 @@ static void do_put(char **start, char *end)
   }
 }
 
+/* The following must be consecutive and
+   starting at 0.  Order must match
+   dimensions array below */
 
-
-#define WIDTH 1
-#define HEIGHT 2
-#define DEPTH 3
+#define WIDTH 0
+#define HEIGHT 1
+#define DEPTH 2
+#define SCALE 3
+#define XSCALE 4
+#define YSCALE 5
 
 struct {
   char *s;
-  int dimension;
+  int key;
+  int hasdimension;
 } dimensions[] = {
-  {"width", WIDTH},
-  {"height", HEIGHT},
-  {"depth", DEPTH}
+  {"width", WIDTH, 1},
+  {"height", HEIGHT, 1},
+  {"depth", DEPTH, 1},
+  {"scale", SCALE, 0},
+  {"xscale", XSCALE, 0},
+  {"yscale", YSCALE, 0}
 };
 
 
-int parse_dimension (char **start, char *end)
+static struct dimension_info *new_dimension_info (void)
+{
+  struct dimension_info *result;
+  result = NEW (1, struct dimension_info);
+  result -> width = 0.0;
+  result -> height = 0.0;
+  result -> depth = 0.0;
+  result -> scale = 0.0;
+  result -> xscale = 0.0;
+  result -> yscale = 0.0;
+  return result;
+}
+
+static void release_dimension_info (struct dimension_info *p)
+{
+  release (p);
+  return;
+}
+
+static int validate_image_dimension_info (struct dimension_info *p)
+{
+  if (p->width != 0.0)
+    if (p->scale !=0.0 || p->xscale != 0.0) {
+      fprintf (stderr, "\nCan't supply both width and scale\n");
+      return 0;
+    }
+  if (p->height != 0.0) 
+    if (p->scale !=0.0 || p->yscale != 0.0) {
+      fprintf (stderr, "\nCan't supply both height and scale\n");
+      return 0;
+    }
+  if (p->scale != 0.0)
+    if (p->xscale != 0.0 || p->yscale != 0.0) {
+      fprintf (stderr, "\nCan't supply overall scale along with axis scales");
+      return 0;
+    }
+  return 1;
+}
+
+static int parse_one_dim_word (char **start, char *end)
 {
   int i;
   char *dimension_string;
@@ -152,18 +200,18 @@ int parse_dimension (char **start, char *end)
     fprintf (stderr, "\nExpecting a dimension here\n");
     dump(*start, end);
   }
-  for (i=0; i<3; i++) {
+  for (i=0; i<sizeof(dimensions)/sizeof(dimensions[0]); i++) {
     if (!strcmp (dimensions[i].s, dimension_string))
       break;
   }
-  if (i == 3) {
+  if (i == sizeof(dimensions)/sizeof(dimensions[0])) {
     fprintf (stderr, "\n%s: Invalid dimension\n", dimension_string);
     release (dimension_string);
     *start = save;
     return -1;
   }
   release (dimension_string);
-  return dimensions[i].dimension;
+  return dimensions[i].key;
 }
 
 struct {
@@ -175,7 +223,7 @@ struct {
   {"cm", (72.0/2.54)}
 };
   
-double parse_units (char **start, char *end)
+double parse_one_unit (char **start, char *end)
 {
   int i;
   char *unit_string;
@@ -184,11 +232,11 @@ double parse_units (char **start, char *end)
     fprintf (stderr, "\nExpecting a unit here\n");
     dump(*start, end);
   }
-  for (i=0; i<3; i++) {
+  for (i=0; i<sizeof(dimensions)/sizeof(dimensions[0]); i++) {
     if (!strcmp (units[i].s, unit_string))
       break;
   }
-  if (i == 3) {
+  if (i == sizeof(dimensions)/sizeof(dimensions[0])) {
     fprintf (stderr, "%s: Invalid dimension\n", unit_string);
     release (unit_string);
     return -1.0;
@@ -197,53 +245,98 @@ double parse_units (char **start, char *end)
   return units[i].units*dvi_tell_mag();
 }
 
+static int parse_dimension (char **start, char *end, struct
+				  dimension_info *p)
+{
+  double dimension;
+  char *number_string, *save = *start;
+  double units;
+  int key;
+  skip_white(start, end);
+  if ((key = parse_one_dim_word(start, end)) < 0 ||
+      (number_string = parse_number(start, end)) == NULL) {
+    *start = save;
+    fprintf (stderr, "\nExpecting a dimension keyword and a number here\n");
+    dump (*start, end);
+    return 0;
+  }
+  if (dimensions[key].hasdimension &&
+      (units = parse_one_unit(start, end)) < 0.0) {
+    release (number_string);
+    fprintf (stderr, "\nExpecting a units here\n");
+    return 0;
+  }
+  switch (key) {
+  case WIDTH:
+    if (p->width != 0.0)
+      fprintf (stderr, "\nDuplicate width specified\n");
+    p->width = atof (number_string)*units;
+    break;
+  case HEIGHT:
+    if (p->height != 0.0)
+      fprintf (stderr, "\nDuplicate height specified\n");
+    p->height = atof (number_string)*units;
+    break;
+  case DEPTH:
+    if (p->depth != 0.0)
+      fprintf (stderr, "\nDuplicate depth specified\n");
+    p->depth = atof (number_string)*units;
+    break;
+  case SCALE:
+    if (p->scale != 0.0)
+      fprintf (stderr, "\nDuplicate depth specified\n");
+    p->scale = atof (number_string);
+    break;
+  case XSCALE:
+    if (p->xscale != 0.0)
+      fprintf (stderr, "\nDuplicate xscale specified\n");
+    p->xscale = atof (number_string);
+    break;
+  case YSCALE:
+    if (p->yscale != 0.0)
+      fprintf (stderr, "\nDuplicate yscale specified\n");
+    p->yscale = atof (number_string);
+    break;
+  }
+  release(number_string);
+  skip_white(start, end);
+}
+
 static void do_ann(char **start, char *end)
 {
   pdf_obj *result, *rectangle, *tmp1, *tmp2;
   char *name, *number_string;
   int dimension;
-  double value, units;
-  double height=0.0, width=0.0, depth=0.0;
+  struct dimension_info *p;
+  p = new_dimension_info();
   skip_white(start, end);
   name = parse_opt_ident(start, end);
   skip_white(start, end);
   while ((*start) < end && isalpha (**start)) {
     skip_white(start, end);
-    if ((dimension = parse_dimension(start, end)) < 0 ||
-	(number_string = parse_number(start, end)) == NULL ||
-	(units = parse_units(start, end)) < 0.0) {
-      fprintf (stderr, "\nExpecting dimensions for annotation\n");
-      dump (*start, end);
+    if (!parse_dimension(start, end, p)) {
+      fprintf (stderr, "\nFailed to find a dimension keyword\n");
       return;
     }
-    switch (dimension) {
-    case WIDTH:
-      width = atof (number_string)*units;
-      break;
-    case HEIGHT:
-      height = atof (number_string)*units;
-      break;
-    case DEPTH:
-      depth = atof (number_string)*units;
-      break;
-    }
-    release(number_string);
-    skip_white(start, end);
   }
-  if (width == 0.0 || depth + height == 0.0) {
+  if (p->scale != 0.0 || p->xscale != 0.0 || p->yscale != 0.0) {;
+  fprintf (stderr, "\nScale meaningless for annotations\n");
+  return;
+  }
+  if (p->width == 0.0 || p->depth + p->height == 0.0) {
     fprintf (stderr, "Special ann: Rectangle has a zero dimension\n");
     return;
   }
-
   if ((result = parse_pdf_dict(start, end)) == NULL) {
     fprintf (stderr, "Ignoring invalid dictionary\n");
     return;
   };
   rectangle = pdf_new_array();
   pdf_add_array (rectangle, pdf_new_number(ROUND(dev_tell_x(),0.1)));
-  pdf_add_array (rectangle, pdf_new_number(ROUND(dev_tell_y()-depth,0.1)));
-  pdf_add_array (rectangle, pdf_new_number(ROUND(dev_tell_x()+width,0.1)));
-  pdf_add_array (rectangle, pdf_new_number(ROUND(dev_tell_y()+height,0.1)));
+  pdf_add_array (rectangle, pdf_new_number(ROUND(dev_tell_y()-p->depth,0.1)));
+  pdf_add_array (rectangle, pdf_new_number(ROUND(dev_tell_x()+p->width,0.1)));
+  pdf_add_array (rectangle, pdf_new_number(ROUND(dev_tell_y()+p->height,0.1)));
+  release_dimension_info (p);
   pdf_add_dict (result, pdf_new_name ("Rect"),
 		rectangle);
   pdf_doc_add_to_page_annots (pdf_ref_obj (result));
@@ -352,52 +445,43 @@ static void do_bead(char **start, char *end)
 {
   pdf_obj *bead_dict, *rectangle, *tmp1, *tmp2;
   char *name, *number_string, *save = *start;
-  int dimension;
-  double value, units;
-  double height=0.0, width=0.0, depth=0.0;
+  int key;
+  struct dimension_info *p;
   skip_white(start, end);
-  name = parse_opt_ident(start, end);
+  if (*((*start)++) != '@' || (name = parse_ident(start, end)) == NULL) {
+    fprintf (stderr, "Article reference expected.\nWhich article does this go with?\n");
+    *start = save;
+    dump(*start, end);
+  }
   skip_white(start, end);
-  while (*start < end && isalpha (**start)) {
+  p = new_dimension_info();
+  while ((*start) < end && isalpha (**start)) {
     skip_white(start, end);
-    if ((dimension = parse_dimension(start, end)) < 0 ||
-	(number_string = parse_number(start, end)) == NULL ||
-	(units = parse_units(start, end)) < 0.0) {
-      fprintf (stderr, "\nExpecting dimensions for bead\n");
-      dump (*start, end);
+    if (!parse_dimension(start, end, p)) {
+      fprintf (stderr, "\nFailed to find a dimension for this bead\n");
       return;
     }
-    switch (dimension) {
-    case WIDTH:
-      width = atof (number_string)*units;
-      break;
-    case HEIGHT:
-      height = atof (number_string)*units;
-      break;
-    case DEPTH:
-      depth = atof (number_string)*units;
-      break;
-    }
-    release(number_string);
-    skip_white(start, end);
   }
-  if (width == 0.0 || depth + height == 0.0) {
+  if (p->scale != 0.0 || p->xscale != 0.0 || p->yscale != 0.0) {
+    fprintf (stderr, "\nScale meaningless for annotations\n");
+    return;
+  }
+  if (p->width == 0.0 || p->depth + p->height == 0.0) {
     fprintf (stderr, "Special bead: Rectangle has a zero dimension\n");
     return;
   }
-
   bead_dict = pdf_new_dict ();
   rectangle = pdf_new_array();
   pdf_add_array (rectangle, pdf_new_number(ROUND(dev_tell_x(),0.1)));
-  pdf_add_array (rectangle, pdf_new_number(ROUND(dev_tell_y()-depth,0.1)));
-  pdf_add_array (rectangle, pdf_new_number(ROUND(dev_tell_x()+width,0.1)));
-  pdf_add_array (rectangle, pdf_new_number(ROUND(dev_tell_y()+height,0.1)));
+  pdf_add_array (rectangle, pdf_new_number(ROUND(dev_tell_y()-p->depth,0.1)));
+  pdf_add_array (rectangle, pdf_new_number(ROUND(dev_tell_x()+p->width,0.1)));
+  pdf_add_array (rectangle, pdf_new_number(ROUND(dev_tell_y()+p->height,0.1)));
+  release_dimension_info(p);
   pdf_add_dict (bead_dict, pdf_new_name ("R"),
 		rectangle);
   pdf_add_dict (bead_dict, pdf_new_name ("P"),
 		pdf_doc_this_page());
   pdf_doc_add_bead (name, bead_dict);
-
   if (name != NULL) {
     release (name);
   }
@@ -412,35 +496,22 @@ static void do_epdf (char **start, char *end, double x_user, double y_user)
   char *filename, *objname, *number_string;
   pdf_obj *filestring;
   pdf_obj *trailer, *result;
-  int dimension;
-  double width=0.0, height=0.0, depth=0.0, units=0.0;
-  
+  struct dimension_info *p;
   skip_white(start, end);
   objname = parse_opt_ident(start, end);
+  p = new_dimension_info ();
   skip_white(start, end);
-
   while ((*start) < end && isalpha (**start)) {
     skip_white(start, end);
-    if ((dimension = parse_dimension(start, end)) < 0 ||
-	(number_string = parse_number(start, end)) == NULL ||
-	(units = parse_units(start, end)) < 0.0) {
-      fprintf (stderr, "\nExpecting dimensions for encapsulated figure\n");
-      dump (*start, end);
+    if (!parse_dimension(start, end, p)) {
+      fprintf (stderr, "\nFailed to find dimensions for encapsulated figure\n");
       return;
     }
-    switch (dimension) {
-    case WIDTH:
-      width = atof (number_string)*units;
-      break;
-    case HEIGHT:
-      height = atof (number_string)*units;
-      break;
-    case DEPTH:
-      depth = atof (number_string)*units;
-      break;
-    }
-    release(number_string);
-    skip_white(start, end);
+  }
+  if (!validate_image_dimension_info (p)) {
+    fprintf (stderr, "\nSpecified dimensions are inconsistent\n");
+    fprintf (stderr, "\nSpecial will be ignored\n");
+    return;
   }
   if (*start < end && (filestring = parse_pdf_string(start, end)) !=
       NULL) {
@@ -452,7 +523,8 @@ static void do_epdf (char **start, char *end, double x_user, double y_user)
       return;
     };
     pdf_release_obj (filestring);
-    result = pdf_include_page(trailer, x_user, y_user, width, height+depth);
+    result = pdf_include_page(trailer, x_user, y_user, p);
+    release_dimension_info(p);
     pdf_release_obj (trailer);
     pdf_close ();
   } else
@@ -486,36 +558,24 @@ static void do_image (char **start, char *end, double x_user, double y_user)
 {
   char *filename, *number_string, *objname;
   pdf_obj *filestring, *result;
-  int dimension;
   struct jpeg *jpeg;
-  double width=0.0, height=0.0, depth=0.0, units=0.0;
-  
+  struct dimension_info *p;
+  p = new_dimension_info();
   skip_white(start, end);
   objname = parse_opt_ident(start, end);
   skip_white(start, end);
 
   while ((*start) < end && isalpha (**start)) {
     skip_white(start, end);
-    if ((dimension = parse_dimension(start, end)) < 0 ||
-	(number_string = parse_number(start, end)) == NULL ||
-	(units = parse_units(start, end)) < 0.0) {
-      fprintf (stderr, "\nExpecting dimensions for encapsulated image\n");
-      dump (*start, end);
+    if (!parse_dimension(start, end, p)) {
+      fprintf (stderr, "\nFailed to find dimensions for encapsulated image\n");
       return;
     }
-    switch (dimension) {
-    case WIDTH:
-      width = atof (number_string)*units;
-      break;
-    case HEIGHT:
-      height = atof (number_string)*units;
-      break;
-    case DEPTH:
-      depth = atof (number_string)*units;
-      break;
-    }
-    release(number_string);
-    skip_white(start, end);
+  }
+  if (!validate_image_dimension_info (p)) {
+    fprintf (stderr, "\nSpecified dimensions are inconsistent\n");
+    fprintf (stderr, "\nSpecial will be ignored\n");
+    return;
   }
   if (*start < end && (filestring = parse_pdf_string(start, end)) !=
       NULL) {
@@ -527,7 +587,8 @@ static void do_image (char **start, char *end, double x_user, double y_user)
       return;
     };
     pdf_release_obj (filestring);
-    result = jpeg_build_object(jpeg, x_user, y_user, width, height+depth);
+    result = jpeg_build_object(jpeg, x_user, y_user, p);
+    release_dimension_info (p);
     jpeg_close (jpeg);
   } else
     {
@@ -610,7 +671,6 @@ static void do_obj(char **start, char *end)
   char *name;
   skip_white(start, end);
   name = parse_opt_ident(start, end);
-
   if ((result = parse_pdf_object(start, end)) == NULL) {
     fprintf (stderr, "Special object: Ignored.\n");
     return;
@@ -834,10 +894,11 @@ static void release_reference (char *name)
 void pdf_finish_specials (void)
 {
   int i;
+  /* Flush out any pending objects that weren't properly closeed.
+     Threads never get closed.  Is this a bug? */
   for (i=0; i<number_named_references; i++) {
     pdf_release_obj (named_references[i].object_ref);
     if (named_references[i].object != NULL) {
-      fprintf(stderr, "\nWarning: Named Object %s never closed\n", named_references[i].name);
       pdf_release_obj (named_references[i].object);
     }
     release (named_references[i].name);
@@ -934,8 +995,8 @@ static pdf_obj *build_scale_array (int a, int b, int c, int d, int e, int f)
 
 int num_xobjects = 0;
 
-pdf_obj *pdf_include_page(pdf_obj *trailer, double x_user, double
-			  y_user, double width, double height)
+pdf_obj *pdf_include_page(pdf_obj *trailer, double x_user, double y_user,
+			  struct dimension_info *p)
 {
   pdf_obj *catalog, *page_tree,
     *kids_ref, *kids;
@@ -997,14 +1058,24 @@ pdf_obj *pdf_include_page(pdf_obj *trailer, double x_user, double
     bbury = pdf_number_value (pdf_get_array (media_box, 4));
     xscale = 1.0;
     yscale = 1.0;
-    if (width != 0.0 && bbllx != bburx) {
-      xscale = width / (bburx - bbllx);
-      if (height == 0.0)
+    if (p->scale != 0.0) {
+      xscale = p->scale;
+      yscale = p->scale;
+    }
+    if (p->xscale != 0.0) {
+      xscale = p->xscale;
+    }
+    if (p->yscale != 0.0) {
+      yscale = p->yscale;
+    }
+    if (p-> width != 0.0 && bbllx != bburx) {
+      xscale = p->width / (bburx - bbllx);
+      if (p->height == 0.0)
 	yscale = xscale;
     }
-    if (height != 0.0 && bblly != bbury) {
-      yscale = height / (bbury - bblly);
-      if (width == 0.0)
+    if (p->height != 0.0 && bblly != bbury) {
+      yscale = p->height / (bbury - bblly);
+      if (p->width == 0.0)
 	xscale = yscale;
     }
   }
@@ -1013,7 +1084,6 @@ pdf_obj *pdf_include_page(pdf_obj *trailer, double x_user, double
   contents = pdf_deref_obj (contents_ref);
   pdf_release_obj(contents_ref);  /* Remove "old" reference */
   contents_ref = pdf_ref_obj (contents);  /* Give it a "new" reference */
-
   xobj_dict = pdf_stream_dict (contents);
   num_xobjects += 1;
   sprintf (work_buffer, "Fm%d", num_xobjects);
@@ -1043,10 +1113,8 @@ pdf_obj *pdf_include_page(pdf_obj *trailer, double x_user, double
   pdf_release_obj (new_resources);
   pdf_release_obj (resources);
   sprintf (work_buffer, " q %g 0 0 %g  %g %g cm /Fm%d Do Q ", xscale,
-	   yscale, x_user, y_user, num_xobjects);
+	   yscale, x_user, y_user-p->depth, num_xobjects);
   pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
   return (contents);
   /* pdf_release_obj(contents); */
 }
-
-

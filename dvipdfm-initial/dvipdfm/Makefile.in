@@ -13,7 +13,7 @@ SRC = pdfdev.c pdfdoc.c dvi.c io.c mem.c jpeg.c numbers.c pdfobj.c \
 	pdfparse.c pdfspecial.c tfm.c type1.c dvipdf.c
 OBJ = pdfdev.o pdfdoc.o dvi.o io.o mem.o jpeg.o numbers.o pdfobj.o \
         pdfparse.o pdfspecial.o tfm.o type1.o dvipdf.o
-CONFIG = config.status Makefile config.h
+CONFIG = config.cache config.status Makefile config.h config.log
 PROGRAMS = dvipdfm
 default: all
 all:	$(PROGRAMS)

@@ -30,6 +30,7 @@
 #include "jpeg.h"
 #include "pdfobj.h"
 #include "dvi.h"
+#include "pdfspecial.h"
 
 #define SOF0	0xc0
 #define SOF1	0xc1
@@ -134,7 +135,7 @@ void jpeg_close (struct jpeg *jpeg)
 
 static num_images = 0;
 pdf_obj *jpeg_build_object(struct jpeg *jpeg, double x_user, double
-			   y_user, double width, double height) 
+			   y_user, struct dimension_info *p)
 {
   pdf_obj *xobject, *xobj_dict;
   double xscale, yscale;
@@ -174,20 +175,30 @@ pdf_obj *jpeg_build_object(struct jpeg *jpeg, double x_user, double
   {
     xscale = jpeg -> width * dvi_tell_mag() * (72.0 / 100.0);
     yscale = jpeg -> height * dvi_tell_mag() * (72.0 / 100.0);
-    if (width != 0.0) {
-      xscale = width;
-      if (height == 0.0)
+    if (p->scale != 0) {
+      xscale *= p->scale;
+      yscale *= p->scale;;
+    }
+    if (p->xscale != 0) {
+      xscale *= p->xscale;
+    }
+    if (p->yscale != 0) {
+      yscale *= p->yscale;
+    }
+    if (p->width != 0.0) {
+      xscale = p->width;
+      if (p->height == 0.0)
 	yscale = xscale;
     }
-    if (height != 0.0) {
-      yscale = height;
-      if (width = 0.0)
-	xscale = yscale;
+    if (p->height != 0.0) {
+      yscale = p->height;
+      if (p->width = 0.0)
+	xscale = p->yscale;
     }
   }
   
   sprintf (work_buffer, " q %g 0 0 %g  %g %g cm /Im%d Do Q ", xscale,
-	   yscale, x_user, y_user, num_images);
+	   yscale, x_user, y_user-p->depth, num_images);
   pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
   return (xobject);
 }
