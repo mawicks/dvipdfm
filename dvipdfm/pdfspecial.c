@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.11 1998/12/03 20:19:48 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.12 1998/12/03 21:41:24 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -47,6 +47,7 @@
 static void add_reference (char *name, pdf_obj *object, char *res_name);
 static void release_reference (char *name);
 static pdf_obj *lookup_reference(char *name);
+static char *lookup_ref_res_name (char *name);
 static pdf_obj *lookup_object(char *name);
 static void do_content ();
 static void do_epdf();
@@ -1143,6 +1144,21 @@ static pdf_obj *lookup_object(char *name)
   if (named_references[i].object == NULL)
     fprintf (stderr, "lookup_object: Referenced object not defined or already closed\n");
   return (named_references[i].object);
+}
+
+char *lookup_ref_res_name(char *name)
+{
+  int i;
+  for (i=0; i<number_named_references; i++) {
+    if (!strcmp (named_references[i].name, name)) {
+      break;
+    }
+  }
+  if (i == number_named_references)
+    return NULL;
+  if (named_references[i].res_name == NULL)
+    fprintf (stderr, "lookup_object: Referenced object not useable as a form!\n");
+  return (named_references[i].res_name);
 }
 
 static void release_reference (char *name)
