@@ -1,87 +1,97 @@
 % original pdffonts.map -- Constructed by M. Wicks, 11/29/98
+%
+% Format is as follows:
+% TeX-name encoding AFM-name PFB-name
+% The default behavior is to use the font's built-in
+% encoding, to use the TeX-name as the AFM-name, and
+% to use the AFM-name as the PFB-name.
+% The word "default" may be used in any field to
+% specify the default behavior.  You can
+% also say "none", in the PFB field, for example
+% to say that no PFB should be loaded 
 % CharterBT-Bold
-bchb8r bbchb8a 8r.enc bchb8a.pfb
+bchb8r 8r bbchb8a
 % CharterBT-BoldItalic
-bchbi8r bbchbi8a 8r.enc bchbi8a.pfb
+bchbi8r 8r bbchbi8a
 % CharterBT-Roman
-bchr8r bchr8a 8r.enc bchr8a.pfb
+bchr8r 8r bchr8a
 % CharterBT-Italic
-bchri8r bchri8a 8r.enc bchri8a.pfb
+bchri8r 8r bchri8a
 % AvantGarde-Demi
-pagd8r pagd8a 8r.enc pagd8a
+pagd8r 8r pagd8a
 % AvantGarde-DemiOblique
-pagdo8r pagdo8a 8r.enc pagdo8a
+pagdo8r 8r pagdo8a
 % AvantGarde-Book
-pagk8r pagk8a 8r.enc pagk8a
+pagk8r 8r pagk8a
 % AvantGarde-BookOblique
-pagko8r pagko8a 8r.enc pagko8a
+pagko8r 8r pagko8a
 % Bookman-Demi
-pbkd8r pbkd8a 8r.enc pbkd8a
+pbkd8r 8r pbkd8a
 % Bookman-DemiItalic
-pbkdi8r pbkdi8a 8r.enc pbkdi8a
+pbkdi8r 8r pbkdi8a
 % Bookman-Light
-pbkl8r pbkl8a 8r.enc pbkl8a
+pbkl8r 8r pbkl8a
 % Bookman-LightItalic
-pbkli8r pbkli8a 8r.enc pbkli8a
+pbkli8r 8r pbkli8a
 % Courier-Bold
-pcrb8r pcrb8a 8r.enc
+pcrb8r 8r pcrb8a
 % Courier-BoldOblique
-pcrbo8r pcrbo8a 8r.enc
+pcrbo8r 8r pcrbo8a
 % Courier
-pcrr8r pcrr8a 8r.enc
+pcrr8r 8r pcrr8a
 % Courier-Oblique
-pcrro8r pcrro8a 8r.enc
+pcrro8r 8r pcrro8a
 % Helvetica-Bold
-phvb8r phvb8a 8r.enc
+phvb8r 8r phvb8a
 % Helvetica-Narrow-Bold
-phvb8rn phvb8an 8r.enc
+phvb8rn 8r phvb8an
 % Helvetica-BoldOblique
-phvbo8r phvbo8a 8r.enc
+phvbo8r 8r phvbo8a
 % Helvetica-Narrow-BoldOblique
-phvbo8rn phvbo8an 8r.enc
+phvbo8rn 8r phvbo8an
 % Helvetica
-phvr8r phvr8a 8r.enc
+phvr8r 8r phvr8a
 % Helvetica-Narrow
-phvr8rn phvr8an 8r.enc
+phvr8rn 8r phvr8an
 % Helvetica-Oblique
-phvro8r phbro8a 8r.enc
+phvro8r 8r phbro8a
 % Helvetica-Narrow-Oblique
-phvro8rn phvro8an 8r.enc
+phvro8rn 8r phvro8an
 % NewCenturySchlbk-Bold
-pncb8r pncb8a 8r.enc pncb8a
+pncb8r 8r pncb8a
 % NewCenturySchlbk-BoldItalic
-pncbi8r pncbi8a 8r.enc pncbi8a
+pncbi8r 8r pncbi8a
 % NewCenturySchlbk-Roman
-pncr8r pncr8a 8r.enc pncr8a
+pncr8r 8r pncr8a
 % NewCenturySchlbk-Italic
-pncri8r pncri8a 8r.enc
+pncri8r 8r pncri8a
 % Palatino-Bold
-pplb8r pplb8a 8r.enc pplb8a
+pplb8r 8r pplb8a
 % Palatino-BoldItalic
-pplbi8r pplbi8a 8r.enc pplbi8a
+pplbi8r 8r pplbi8a
 % Palatino-Roman
-pplr8r pplr8a 8r.enc pplr8a
+pplr8r 8r pplr8a
 % Palatino-Italic
-pplri8r pplri8a 8r.enc pplri8a
+pplri8r 8r pplri8a
 % Symbol
-psyr psyr
+psyr none psyr
 % Times-Bold
-ptmb8r ptmb8a 8r.enc
+ptmb8r 8r ptmb8a
 % Times-BoldItalic
-ptmbi8r ptmbi8a 8r.enc
+ptmbi8r 8r ptmbi8a
 % Times-Roman
-ptmr8r ptmr8a 8r.enc
+ptmr8r 8r ptmr8a
 % Times-Italic
-ptmri8r ptmri8a 8r.enc
+ptmri8r 8r ptmri8a
 % Utopia-Bold
-putb8r putb8a 8r.enc putb8a
+putb8r 8r putb8a
 % Utopia-BoldItalic
-putbi8r putbi8a 8r.enc putbi8a
+putbi8r 8r putbi8a
 % Utopia-Regular
-putr8r putr8a 8r.enc putr8a
+putr8r 8r putr8a
 % Utopia-Italic
-putri8r putri8a 8r.enc putri8a.pfb
+putri8r 8r putri8a
 % ZapfChancery-MediumItalic
-pzcmi8r pzcmi8a 8r.enc pzcmi8a
+pzcmi8r 8r pzcmi8a
 % ZapfDingbats
-pzdr ZapfDingbats
+pzdr none ZapfDingbats

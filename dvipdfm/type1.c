@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.4 1998/11/29 21:37:16 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.5 1998/11/30 01:27:28 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -89,8 +89,8 @@ pdf_obj *find_encoding_differences (pdf_obj *encoding)
 
 pdf_obj *get_encoding (const char *enc_name)
 {
-  FILE *encfile;
-  char *full_enc_filename;
+  FILE *encfile = NULL;
+  char *full_enc_filename, *tmp;
   pdf_obj *result, *result_ref;
   long filesize;
   int i;
@@ -99,15 +99,25 @@ pdf_obj *get_encoding (const char *enc_name)
     if (!strcmp (enc_name, encodings[i].enc_name))
       return pdf_link_obj (encodings[i].encoding_ref);
   /* Guess not.. */
+  /* Try base name before adding .enc.  Someday maybe kpse will do
+     this */
   if ((full_enc_filename = kpse_find_file (enc_name,
 					   kpse_tex_ps_header_format,
-					   1)) == NULL ||
+					   1)) == NULL) {
+    strcpy (tmp = NEW (strlen(enc_name)+5, char), enc_name);
+    strcat (tmp, ".enc");
+    full_enc_filename = kpse_find_file (tmp,
+					kpse_tex_ps_header_format,
+					1);
+    release (tmp);
+  }
+  if (full_enc_filename == NULL ||
       (encfile = fopen (full_enc_filename, "r")) == NULL ||
       (filesize = file_size (encfile)) == 0) {
     if (encfile)
       fclose (encfile);
-    fprintf (stderr, "%s: ", enc_name) ;
-    ERROR ("Can't find or open encoding file\n");
+    sprintf (work_buffer, "Can't find or open encoding file: %s", enc_name) ;
+    ERROR (work_buffer);
   }
   /* Got one and opened it */
   {
@@ -158,7 +168,12 @@ struct font_record *get_font_record (const char *tex_name)
   struct font_record *result;
   static first = 1;
   static FILE *mapfile;
-  char *full_map_filename, *start, *end, *record_name, *afm_name;
+  char *full_map_filename, *start, *end, *record_name;
+  result = NEW (1, struct font_record);
+  result -> enc_name = NULL;
+  result -> afm_name = NULL;
+  result -> pfb_name = NULL;
+  
   if (first) {
     first = 0;
     full_map_filename = kpse_find_file (map_filename, kpse_tex_ps_header_format,
@@ -166,11 +181,11 @@ struct font_record *get_font_record (const char *tex_name)
     if (full_map_filename == NULL || 
 	(mapfile = fopen (full_map_filename, "r")) == NULL) {
       fprintf (stderr, "Warning:  No font map file\n");
-      return NULL;
+      mapfile = NULL;
     }
   }
   if (mapfile == NULL) 
-    return NULL;
+    return result;
   rewind (mapfile);
   while ((start = mfgets (work_buffer, WORK_BUFFER_SIZE, mapfile)) !=
 	 NULL) {
@@ -188,25 +203,16 @@ struct font_record *get_font_record (const char *tex_name)
   }
   if (start == NULL)
     return NULL;
-  skip_white (&start, end);
-  /* Check for AFM name otherwise the record is senseless */
-  if ((afm_name = parse_ident (&start, end)) == NULL) {
-    fprintf (stderr, "No afm field\n");
-    return NULL;
-  }
   result = NEW (1, struct font_record);
-  result -> afm_name = afm_name;
   skip_white (&start, end);
   result -> enc_name = parse_ident (&start, end); /* May be null */  
   skip_white (&start, end);
+  result -> afm_name = parse_ident (&start, end); /* May be null */
+  skip_white (&start, end);
   result -> pfb_name = parse_ident (&start, end); /* May be null */
-  if (result -> enc_name != NULL &&
-      !strcmp (result->enc_name, "default")) {
-    release(result->enc_name);
-    result -> enc_name = NULL;
-  }
   return result;
 }
+
 
 
 static is_a_base_font (char *name)
@@ -530,6 +536,41 @@ pdf_obj *type1_font_descriptor (const char *pfb_name)
   return font_descriptor_ref;
 }
 
+static void fill_in_defaults (struct font_record *font_record, const
+			      char *tex_name )
+{
+  if (font_record -> enc_name != NULL && 
+      (!strcmp (font_record->enc_name, "default") ||
+       !strcmp (font_record->enc_name, "none"))) {
+    release(font_record->enc_name);
+    font_record -> enc_name = NULL;
+  }
+  if (font_record -> afm_name != NULL && 
+      (!strcmp (font_record->afm_name, "default") ||
+       !strcmp (font_record->afm_name, "none"))) {
+    release(font_record->afm_name);
+    font_record -> afm_name = NULL;
+  }
+  /* We *must* fill in an afm_name either explicitly or by default */
+  if (font_record -> afm_name == NULL) {
+    font_record -> afm_name = NEW (strlen(tex_name)+1, char);
+    strcpy (font_record->afm_name, tex_name);
+  }
+  /* If a pfb_name wasn't specified, default to afm_name */
+  if (font_record -> pfb_name == NULL) {
+    font_record -> pfb_name = NEW (strlen(font_record->afm_name)+1, char);
+    strcpy (font_record->pfb_name, font_record->afm_name);
+  }
+  /* If a "none" pfb name was specified, set name to null */
+  if (font_record -> pfb_name != NULL && 
+      !strcmp (font_record->pfb_name, "none")) {
+    release(font_record->pfb_name);
+    font_record -> pfb_name = NULL;
+  }
+  return;
+}
+
+
 pdf_obj *type1_font_resource (const char *tex_name, int tfm_font_id, const char *resource_name)
 {
   int i;
@@ -538,7 +579,6 @@ pdf_obj *type1_font_resource (const char *tex_name, int tfm_font_id, const char 
     *tmp2;
   pdf_obj *font_encoding_ref;
   struct font_record *font_record;
-  const char *afm_name, *pfb_name;
   font_resource = pdf_new_dict ();
   pdf_add_dict (font_resource,
 		pdf_new_name ("Type"),
@@ -549,27 +589,23 @@ pdf_obj *type1_font_resource (const char *tex_name, int tfm_font_id, const char 
   pdf_add_dict (font_resource,
 		pdf_new_name ("Name"),
 		pdf_new_name (resource_name));
+  /* font_record should always result non-null value with default
+     values filled in */
   font_record = get_font_record (tex_name);
-  if (font_record != NULL && font_record -> afm_name != NULL) {
-    afm_name = font_record -> afm_name;
-  }
-  else
-    afm_name = tex_name;
-  open_afm_file (afm_name);
-  scan_afm_file();
-  close_afm_file ();
-  if (font_record != NULL && font_record -> afm_name != NULL)
+  fill_in_defaults (font_record, tex_name);
+  {
+    open_afm_file (font_record ->afm_name);
+    scan_afm_file();
+    close_afm_file ();
     release (font_record -> afm_name);
-  if (font_record != NULL && font_record -> pfb_name != NULL)
-    pfb_name = font_record -> pfb_name;
-  else
-    pfb_name = tex_name;
-  if (!is_a_base_font (fontname))
-    pdf_add_dict (font_resource, 
-		  pdf_new_name ("FontDescriptor"),
-		  type1_font_descriptor(pfb_name));
-  if (font_record != NULL && font_record -> pfb_name != NULL)
+  }
+  if (font_record -> pfb_name != NULL) {
+    if (!is_a_base_font (fontname))
+      pdf_add_dict (font_resource, 
+		    pdf_new_name ("FontDescriptor"),
+		    type1_font_descriptor(font_record -> pfb_name));
     release (font_record -> pfb_name);
+  }
   pdf_add_dict (font_resource,
 		pdf_new_name ("BaseFont"),
 		pdf_new_name (fontname));  /* fontname is set
@@ -587,18 +623,18 @@ pdf_obj *type1_font_resource (const char *tex_name, int tfm_font_id, const char 
   for (i=firstchar; i<=lastchar; i++) {
     pdf_add_array (tmp1,
 		   pdf_new_number(ROUND(tfm_get_width (tfm_font_id, i)*1000.0,0.01)));
-    /*  pdf_new_number (ROUND(char_widths[i],0.01))); */
   }
   pdf_add_dict (font_resource,
 		pdf_new_name ("Widths"),
 		tmp1);
-  if (font_record != NULL && 
-      font_record -> enc_name != NULL) {
+  if (font_record -> enc_name != NULL) {
     font_encoding_ref = get_encoding (font_record -> enc_name);
     pdf_add_dict (font_resource,
 		  pdf_new_name ("Encoding"),
 		  font_encoding_ref);
+    release (font_record -> enc_name);
   }
+  release (font_record);
   font_resource_ref = pdf_ref_obj (font_resource);
   pdf_release_obj (font_resource);
   return font_resource_ref;
