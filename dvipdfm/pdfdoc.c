@@ -1,5 +1,5 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.23 1998/12/07 20:32:50 mwicks Exp $
-
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.24 1998/12/11 03:34:30 mwicks Exp $
+ 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
 
@@ -22,7 +22,6 @@
 	mwicks@kettering.edu
 */
 
-	
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -873,9 +872,6 @@ MEM_END
 
 void pdf_doc_add_to_page (char *buffer, unsigned length)
 {
-  if (debug) {
-    fprintf (stderr, "(pdf_doc_add_to_page)");
-  }
   pdf_add_stream (this_page_contents, buffer, length);
 }
 

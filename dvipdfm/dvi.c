@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.19 1998/12/10 23:04:28 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.20 1998/12/11 03:34:29 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -445,7 +445,7 @@ static int processing_page = 0;
 /* Following are computed "constants" used for unit conversion */
 
 static double dvi2pts = 0.0;
-static fixword mpts2dvi = 0;
+static fixword mpts2dvi = 0, dvi2mpts = 0;
 
 static void clear_state (void)
 {
@@ -462,6 +462,8 @@ static void do_scales (void)
   dvi2pts *= (double) dvi_mag / 1000.0;
   mpts2dvi = ((double) dvi_unit_den / (double) (dvi_unit_num))*
     (254000.0/72.0)/dvi_mag*(1<<20);
+  dvi2mpts = ((double) dvi_unit_num / (double) (dvi_unit_den))*
+    (72.0/254000.0)*dvi_mag*(1<<20);
 }
 
 double dvi_unit_size(void)
@@ -520,14 +522,16 @@ double dvi_dev_ypos (void)
   return -(dvi_state.v*dvi2pts+VOFFSET);
 }
 
-static mpt_unit dvi_dev_mptxpos (void)
+#define HOFFSET_MPT 72000
+#define VOFFSET_MPT 72000
+static mpt_t dvi_dev_xpos_mpt (void)
 {
-  return (mpt_unit) ((dvi_state.h*dvi2pts+HOFFSET)*1000.0);
+  return (mpt_t) sqxfw (dvi_state.h,dvi2mpts) + HOFFSET_MPT;
 }
 
-static mpt_unit dvi_dev_mptypos (void)
+static mpt_t dvi_dev_ypos_mpt (void)
 {
-  return (mpt_unit) (-(dvi_state.v*dvi2pts+VOFFSET)*1000.0);
+  return (mpt_t) -(sqxfw (dvi_state.v,dvi2mpts)+VOFFSET_MPT);
 }
 
 static void do_moveto (SIGNED_QUAD x, SIGNED_QUAD y)
@@ -549,7 +553,7 @@ void dvi_down (SIGNED_QUAD y)
 
 void dvi_set (SIGNED_QUAD ch)
 {
-  double width;
+  mpt_t width;
   if (current_font < 0) {
     ERROR ("dvi_set:  No font selected");
   }
@@ -559,10 +563,10 @@ void dvi_set (SIGNED_QUAD ch)
      The problem comes from fonts defined in VF files where we don't know the DVI
      size.  It's keeping me sane to keep *point sizes* of *all* fonts in
      the dev.c file and convert them back if necessary */ 
-  width =
-    dev_font_size(current_font)*tfm_get_width(dev_font_tfm(current_font), ch);
-  dev_set_char (dvi_dev_xpos(), dvi_dev_ypos(), ch, width);
-  dvi_state.h += width/dvi2pts;
+  width = sqxfw (dev_font_mptsize(current_font),
+		 tfm_get_fw_width(dev_font_tfm(current_font), ch));
+  dev_set_char (dvi_dev_xpos_mpt(), dvi_dev_ypos_mpt(), ch, width);
+  dvi_state.h += sqxfw(width,mpts2dvi);
 }
 
 void dvi_put (SIGNED_QUAD ch)
@@ -571,8 +575,9 @@ void dvi_put (SIGNED_QUAD ch)
   if (current_font < 0) {
     ERROR ("dvi_put:  No font selected");
   }
-  width = dev_font_size(current_font)*tfm_get_width(dev_font_tfm(current_font), ch)*1000.0;
-  dev_set_char (dvi_dev_mptxpos(), dvi_dev_mptypos(), ch, width);
+  width = sqxfw (dev_font_mptsize(current_font),
+		 tfm_get_fw_width(dev_font_tfm(current_font), ch));
+  dev_set_char (dvi_dev_xpos_mpt(), dvi_dev_ypos_mpt(), ch, width);
   return;
 }
 
@@ -848,9 +853,7 @@ static void do_fnt (SIGNED_QUAD font_id)
     fprintf (stderr, "fontid: %ld\n", font_id);
     ERROR ("dvi_do_fnt:  Tried to select a font that hasn't been defined");
   }
-  /*  current_font = i; */
   current_font = font_def[i].dev_id;
-  /*  dev_select_font (font_def[current_font].dev_id); */
   dev_select_font (current_font);
 }
 

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/numbers.c,v 1.5 1998/12/10 22:29:32 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/numbers.c,v 1.6 1998/12/11 03:34:29 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -150,3 +150,18 @@ SIGNED_QUAD sqxfw (SIGNED_QUAD sq, fixword fw)
   result += j << 28u;
   return (sign>0)?result:-result;
 }
+
+SIGNED_QUAD _sqxfw (SIGNED_QUAD sq, fixword fw)
+{
+  int sign=1;
+  if (sq < 0) {
+    sign = -sign;
+    sq = -sq;
+  }
+  if (fw < 0) {
+    sign = -sign;
+    fw = -fw;
+  }
+  return sign*(long)(sq* ( ((double) fw)/(1<<20)+0.5  ));
+}
+

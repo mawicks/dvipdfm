@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.19 1998/12/10 23:06:23 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.20 1998/12/11 03:34:30 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -872,7 +872,7 @@ static void write_stream (FILE *file, pdf_stream *stream)
   pdf_out (file, "\nstream\n", 8);
   if (stream -> stream_length > 0) {
     pdf_out (file, stream -> stream, stream -> stream_length);
-/* If stream doesn't have an eol, put one there */
+    /* If stream doesn't have an eol, put one there */
     if ((stream->stream)[stream->stream_length] != '\n') {
       pdf_out (file, "\n", 1);
       stream->stream_length +=1;
@@ -880,8 +880,8 @@ static void write_stream (FILE *file, pdf_stream *stream)
   }
   pdf_set_number (stream -> length, stream->stream_length);
   pdf_out (file, "endstream", 9);
+  return;
 }
-
 
 static void release_stream (pdf_stream *stream)
 {

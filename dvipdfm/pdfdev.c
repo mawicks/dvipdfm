@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.32 1998/12/10 22:29:32 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.33 1998/12/11 03:34:30 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -112,15 +112,15 @@ static char format_buffer[256];
     transformation is the only place where the paper size is required.
     Unfortunately, positive is up, which doesn't agree with TeX's convention.  */
 
-static double text_xorigin = 0.0, text_yorigin = 0.0,
-  text_offset = 0.0, text_leading = 0.0;
+static mpt_t text_xorigin = 0, text_yorigin = 0,
+  text_offset = 0, text_leading = 0;
 
 int n_dev_fonts = 0;
 int n_phys_fonts = 0;
 int current_font = -1;
 int current_phys_font = -1;
 double current_ptsize = 1.0;
-mpt_unit current_mptsize = 1.0;
+mpt_t current_mptsize = 1.0;
 
 #define MAX_DEVICE_FONTS 256
 
@@ -134,7 +134,7 @@ static struct dev_font {
   char *tex_name;
   int tfm_font_id;
   double ptsize;
-  mpt_unit mptsize;
+  mpt_t mptsize;
   pdf_obj *font_resource;
   int type;
   int vf_font_id; /* Only used for type = VIRTUAL */
@@ -152,14 +152,14 @@ static void reset_text_state(void)
 static void text_mode (void)
 {
   switch (motion_state) {
+  case STRING_MODE:
+    pdf_doc_add_to_page (")]TJ", 4);
+    break;
   case TEXT_MODE:
     break;
   case GRAPHICS_MODE:
     pdf_doc_add_to_page (" BT", 3);
     reset_text_state();
-    break;
-  case STRING_MODE:
-    pdf_doc_add_to_page (")]TJ", 4);  /*  Fall through */
     break;
   }
   motion_state = TEXT_MODE;
@@ -168,13 +168,15 @@ static void text_mode (void)
 
 static void graphics_mode (void)
 {
+  int len = 0;
   switch (motion_state) {
   case GRAPHICS_MODE:
     break;
   case STRING_MODE:
-    pdf_doc_add_to_page (")]TJ", 4); /* Fall through */
+    len += sprintf (format_buffer+len, ")]TJ"); /* Fall through */
   case TEXT_MODE:
-    pdf_doc_add_to_page (" ET", 3);
+    len += sprintf (format_buffer+len, " ET");
+    pdf_doc_add_to_page (format_buffer, len);
     break;
   }
   motion_state = GRAPHICS_MODE;
@@ -183,32 +185,33 @@ static void graphics_mode (void)
 
 static void string_mode (double xpos, double ypos)
 {
-  double delx, dely;
+  mpt_t delx, dely;
+  int len = 0;
   switch (motion_state) {
   case STRING_MODE:
     break;
   case GRAPHICS_MODE:
-    pdf_doc_add_to_page (" BT", 3); /* Fall through */
+    len += sprintf (format_buffer+len, " BT"); /* Fall through */
     reset_text_state();
     /* Following may be necessary after a rule (and also after
        specials) */
   case TEXT_MODE:
     delx = xpos - text_xorigin;
     if (delx == 0 &&
-	(fabs (ypos-text_yorigin-text_leading) < 0.01)) {
-      sprintf (format_buffer, " T*[");
+	(abs (ypos-text_yorigin-text_leading) < 10)) {
+      len += sprintf (format_buffer+len, " T*[(");
       text_yorigin += text_leading;
     }
     else {
       dely = ypos - text_yorigin;
-      sprintf (format_buffer, " %g %g TD[", ROUND(delx,0.01), ROUND(dely,0.01));
+      len += sprintf (format_buffer+len, " %g %g TD[(",
+		      (delx/10)/100.0, (dely/10)/100.0);
       text_leading = dely;
       text_xorigin = xpos;
       text_yorigin = ypos;
     }
-    text_offset = 0.0;
-    pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
-    pdf_doc_add_to_page ("(", 1);
+    text_offset = 0;
+    pdf_doc_add_to_page (format_buffer, len);
     break;
   }
   motion_state = STRING_MODE;
@@ -244,12 +247,8 @@ void dev_close (void)
 
 static void bop_font_reset(void)
 {
-  int i;
   current_font = -1;
   current_phys_font = -1;
-  for (i=0; i<n_dev_fonts; i++) {
-    dev_font[i].used_on_this_page = 0;
-  }
 }
 
 #define GRAY 1
@@ -327,37 +326,38 @@ static void dev_clear_color_stack (void)
 
 void dev_do_color (void) 
 {
+  int len = 0;
   if (num_colors == 0) {
     pdf_doc_add_to_page (" 0 g 0 G", 8);
     return;
   }
   switch (colorstack[num_colors-1].colortype) {
   case RGB:
-    sprintf (format_buffer, " %g %g %g",
-	     colorstack[num_colors-1].c1,
-	     colorstack[num_colors-1].c2,
-	     colorstack[num_colors-1].c3);
-    pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
+    len = sprintf (format_buffer, " %g %g %g",
+		   colorstack[num_colors-1].c1,
+		   colorstack[num_colors-1].c2,
+		   colorstack[num_colors-1].c3);
+    pdf_doc_add_to_page (format_buffer, len);
     pdf_doc_add_to_page (" rg", 3);
-    pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
+    pdf_doc_add_to_page (format_buffer, len);
     pdf_doc_add_to_page (" RG", 3);
     break;
   case CMYK:
-    sprintf (format_buffer, " %g %g %g %g",
-	     colorstack[num_colors-1].c1,
-	     colorstack[num_colors-1].c2,
-	     colorstack[num_colors-1].c3,
-	     colorstack[num_colors-1].c4);
-    pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
+    len = sprintf (format_buffer, " %g %g %g %g",
+		   colorstack[num_colors-1].c1,
+		   colorstack[num_colors-1].c2,
+		   colorstack[num_colors-1].c3,
+		   colorstack[num_colors-1].c4);
+    pdf_doc_add_to_page (format_buffer, len);
     pdf_doc_add_to_page (" k", 2);
-    pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
+    pdf_doc_add_to_page (format_buffer, len);
     pdf_doc_add_to_page (" K ", 3);
     break;
   case GRAY:
-    sprintf (format_buffer, " %g", colorstack[num_colors-1].c1);
-    pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
+    len = sprintf (format_buffer, " %g", colorstack[num_colors-1].c1);
+    pdf_doc_add_to_page (format_buffer, len);
     pdf_doc_add_to_page (" g", 2);
-    pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
+    pdf_doc_add_to_page (format_buffer, len);
     pdf_doc_add_to_page (" G", 2);
     break;
   default:
@@ -577,7 +577,7 @@ Maybe in the future, I'll substitute some other font.");
      effort for the slight increase in storage requirements. */
 
   dev_font[thisfont].ptsize = ptsize;
-  dev_font[thisfont].mptsize = (mpt_unit) (ptsize*1000);
+  dev_font[thisfont].mptsize = (mpt_t) (ptsize*1000);
   dev_font[thisfont].tex_name = NEW (strlen(tex_name)+1, char);
   strcpy (dev_font[thisfont].tex_name, tex_name);
   return (thisfont);
@@ -593,7 +593,7 @@ double dev_font_size (int dev_font_id)
   return dev_font[dev_font_id].ptsize;
 }
 
-mpt_unit dev_font_mptsize (int dev_font_id)
+mpt_t dev_font_mptsize (int dev_font_id)
 {
   return dev_font[dev_font_id].mptsize;
 }
@@ -641,13 +641,13 @@ void dev_select_font (int dev_font_id)
 
 static void dev_need_phys_font (void)
 {
+  int len = 0;
   if (current_phys_font != current_font &&
-      current_font >= 0 &&
-      dev_font[current_font].type == PHYSICAL) {
+      current_font >= 0) {
     text_mode();
-    sprintf (format_buffer, " /%s %g Tf", dev_font[current_font].short_name,
+    len = sprintf (format_buffer, " /%s %g Tf", dev_font[current_font].short_name,
 	     dev_font[current_font].mptsize/1000.0);
-    pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
+    pdf_doc_add_to_page (format_buffer, len);
     /* Add to Font list in Resource dictionary for this page */
     if (!dev_font[current_font].used_on_this_page) { 
       pdf_doc_add_to_page_fonts (dev_font[current_font].short_name,
@@ -669,35 +669,32 @@ static void dev_need_phys_font (void)
 
 void dev_reselect_font(void)
 {
+  int i;
   current_phys_font = -1;
+  for (i=0; i<n_dev_fonts; i++) {
+    dev_font[i].used_on_this_page = 0;
+  }
 }
 
-void dev_set_char (double xpos, double ypos, unsigned ch, double width)
+void dev_set_char (mpt_t xpos, mpt_t ypos, unsigned ch, mpt_t width)
 {
-  int len;
-  if (0) {
-    fprintf (stderr, "(dev_set_char x=%g, y=%g,width=%g)\n", xpos, ypos,width);
-    fprintf (stderr, "(dev_set_char xorg=%g, x_off=%g, ptsize=%g\n",
-	     text_xorigin, text_offset, current_ptsize);
-    if (isprint (ch))
-      fprintf (stderr, "(%c)", ch);
-    fprintf (stderr, ")");
-  }
+  int len = 0;
   switch (dev_font[current_font].type) {
   case PHYSICAL:
     dev_need_phys_font(); /* Force a Tf since we are actually trying
 			     to write a character */
     if (ypos != text_yorigin ||
-	fabs(xpos-text_xorigin-text_offset) > current_ptsize)
+	abs(xpos-text_xorigin-text_offset) > current_mptsize)
       text_mode();
-    string_mode(xpos, ypos);
-    if (fabs (xpos-text_xorigin-text_offset) > 0.01) {
-      sprintf (format_buffer, ")%g(",
-	       ROUND(1000.0*(text_xorigin+text_offset-xpos)/current_ptsize,1.0));
+    if (motion_state != STRING_MODE)
+      string_mode(xpos, ypos);
+    if (abs (xpos-text_xorigin-text_offset) > 10) {
+      len += sprintf (format_buffer+len, ")%d(",
+	       (int)((text_xorigin+text_offset-xpos)/current_ptsize));
       pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
       text_offset = xpos-text_xorigin;
     }
-    len = pdfobj_escape_c (format_buffer, ch);
+    len += pdfobj_escape_c (format_buffer+len, ch);
     pdf_doc_add_to_page (format_buffer, len);
     text_offset += width;
     break;
@@ -708,16 +705,17 @@ void dev_set_char (double xpos, double ypos, unsigned ch, double width)
 
 void dev_rule (double xpos, double ypos, double width, double height)
 {
+  int len = 0;
   if (debug) {
     fprintf (stderr, "(dev_rule)");
   }
   graphics_mode();
-  sprintf (format_buffer, " %g %g m %g %g l %g %g l %g %g l b",
-	   ROUND(xpos,0.01), ROUND(ypos,0.01),
-	   ROUND(xpos+width,0.01), ROUND(ypos,0.01),
-	   ROUND(xpos+width,0.01), ROUND(ypos+height,0.01),
-	   ROUND(xpos,0.01), ROUND(ypos+height,0.01));
-  pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
+  len = sprintf (format_buffer, " %g %g m %g %g l %g %g l %g %g l b",
+		 ROUND(xpos,0.01), ROUND(ypos,0.01),
+		 ROUND(xpos+width,0.01), ROUND(ypos,0.01),
+		 ROUND(xpos+width,0.01), ROUND(ypos+height,0.01),
+		 ROUND(xpos,0.01), ROUND(ypos+height,0.01));
+  pdf_doc_add_to_page (format_buffer, len);
 }
 
 /* The following routines tell the coordinates in physical PDF style
