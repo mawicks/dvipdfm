@@ -4,8 +4,8 @@ datadir=@datadir@
 bindir=@bindir@
 CONFIG=config.h config.cache config.log config.status Makefile
 default:
-	cd kpathsea && $(MAKE)
-	cd dvipdfm && $(MAKE) XMAKEARGS=kpsewhich
+	cd kpathsea && $(MAKE) XMAKEARGS=kpsewhich
+	cd dvipdfm && $(MAKE)
 distclean clean: this-distclean
 	for d in $(directories); do \
 	  (cd $$d && $(MAKE) $@) ; done;
