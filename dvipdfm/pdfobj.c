@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.68 2000/05/14 15:58:00 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.69 2000/07/12 04:17:40 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -730,7 +730,10 @@ static void write_array (FILE *file, const pdf_array *array)
     unsigned long i;
     pdf_out_char (file, '[');
     for (i=0; i<array->size; i++) {
-      if (i != 0)
+      if (i != 0 &&
+	  ((array->values)[i]->type) != PDF_STRING &&
+	  ((array->values)[i]->type) != PDF_NAME &&
+	  ((array->values)[i]->type) != PDF_ARRAY)
 	pdf_out_white (file);
       pdf_write_obj (file, (array->values)[i]);
     }
@@ -791,7 +794,11 @@ static void write_dict (FILE *file, const pdf_dict *dict)
   pdf_out (file, "<<\n", 3);
   while (dict -> key != NULL) {
     pdf_write_obj (file, dict -> key);
-    pdf_out_white (file);
+    if (((dict -> value) -> type) == PDF_BOOLEAN ||
+	((dict -> value) -> type) == PDF_NUMBER ||
+	((dict -> value) -> type) == PDF_INDIRECT ||
+	((dict -> value) -> type) == PDF_NULL)
+	pdf_out_white (file);
     pdf_write_obj (file, dict -> value);
     dict = dict -> next;
     pdf_out_char (file, '\n');
