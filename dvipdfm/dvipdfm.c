@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.10 1998/12/15 01:43:28 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.11 1998/12/15 02:53:02 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -26,6 +26,9 @@
 #include <stdio.h>
 #include <string.h>
 #include "c-auto.h"
+#ifdef HAVE_BASENAME
+#include <libgen.h>
+#endif
 #include "dvi.h"
 #ifdef KPATHSEA
 #include <kpathsea/progname.h>

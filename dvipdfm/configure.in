@@ -22,7 +22,8 @@ you know where it is you might try setting the LDFLAGS environment variable
 with -L pointing to the library
 ]))
 dnl Check for functions
-AC_CHECK_FUNCS(basename)
+dnl AC_CHECK_FUNCS(basename)
+AC_HAVE_BASENAME
 
 
 dnl Checks for libraries.
