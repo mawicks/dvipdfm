@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.28 1998/12/22 18:38:41 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.29 1998/12/22 18:45:34 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -284,7 +284,7 @@ static unsigned long get_low_endian_quad (FILE *file)
 #define ASCII 1
 #define BINARY 2
 
-static unsigned long do_pfb_segment (FILE *file, int expected_type, pdf_obj *stream)
+static unsigned long do_pfb_header (FILE *file, pdf_obj *stream)
 {
   int i, ch;
   int stream_type;
@@ -294,38 +294,89 @@ static unsigned long do_pfb_segment (FILE *file, int expected_type, pdf_obj *str
     fprintf (stderr, "Got %d, expecting 128\n", ch);
     ERROR ("type1_do_pfb_segment:  Are you sure this is a pfb?");
   }
-  if ((stream_type = fgetc (file)) < 0 || stream_type != expected_type ) {
-    fprintf (stderr, "Got %d, expecting %d\n", ch, expected_type);
+  if ((stream_type = fgetc (file)) < 0 || stream_type != ASCII) {
+    fprintf (stderr, "Got %d, expecting %d\n", ch, ASCII);
     ERROR ("type1_do_pfb_segment:  Are you sure this is a pfb?");
   }
   length = get_low_endian_quad (file);
   buffer = NEW (length, unsigned char);
   if ((nread = fread(buffer, sizeof(unsigned char), length, file)) ==
       length) {
-    switch (stream_type) {
-    case ASCII:
-      for (i=0; i<nread; i++) {
-	if (buffer[i] == '\r')
-	  buffer[i] = '\n';  /* May not be portable to non-Unix
-				systems */
-      }
-      break;
-    case BINARY:
-      crypt_init(EEKEY);
-      for (i=0; i<nread; i++) {
-	buffer[i] = decrypt(buffer[i]);
-      }
-      break;
+    for (i=0; i<nread; i++) {
+      if (buffer[i] == '\r')
+	buffer[i] = '\n';  /* May not be portable to non-Unix
+			      systems */
     }
-    if (stream_type == BINARY) {
-      crypt_init (EEKEY);
-      for (i=0; i<nread; i++) {
-	buffer[i] = encrypt(buffer[i]);
-      }
+    pdf_add_stream (stream, (char *) buffer, nread);
+  } else {
+    fprintf (stderr, "Found only %ld out of %ld bytes\n", nread, length);
+    ERROR ("type1_do_pfb_segment:  Are you sure this is a pfb?");
+  }
+  RELEASE (buffer);
+  return length;
+}
+
+static unsigned long do_pfb_body (FILE *file, pdf_obj *stream)
+{
+  int i, ch;
+  int stream_type;
+  unsigned char *buffer;
+  unsigned long length, nread;
+  if ((ch = fgetc (file)) < 0 || ch != 128){
+    fprintf (stderr, "Got %d, expecting 128\n", ch);
+    ERROR ("type1_do_pfb_segment:  Are you sure this is a pfb?");
+  }
+  if ((stream_type = fgetc (file)) < 0 || stream_type != BINARY) {
+    fprintf (stderr, "Got %d, expecting %d\n", ch, BINARY);
+    ERROR ("type1_do_pfb_segment:  Are you sure this is a pfb?");
+  }
+  length = get_low_endian_quad (file);
+  buffer = NEW (length, unsigned char);
+  if ((nread = fread(buffer, sizeof(unsigned char), length, file)) ==
+      length) {
+    crypt_init(EEKEY);
+    for (i=0; i<nread; i++) {
+      buffer[i] = decrypt(buffer[i]);
+    }
+    crypt_init (EEKEY);
+    for (i=0; i<nread; i++) {
+      buffer[i] = encrypt(buffer[i]);
     }
     pdf_add_stream (stream, (char *) buffer, nread);
   } else {
     fprintf (stderr, "Found only %ld/%ld bytes\n", nread, length);
+    ERROR ("type1_do_pfb_segment:  Are you sure this is a pfb?");
+  }
+  RELEASE (buffer);
+  return length;
+}
+
+static unsigned long do_pfb_trailer (FILE *file, pdf_obj *stream)
+{
+  int i, ch;
+  int stream_type;
+  unsigned char *buffer;
+  unsigned long length, nread;
+  if ((ch = fgetc (file)) < 0 || ch != 128){
+    fprintf (stderr, "Got %d, expecting 128\n", ch);
+    ERROR ("type1_do_pfb_segment:  Are you sure this is a pfb?");
+  }
+  if ((stream_type = fgetc (file)) < 0 || stream_type != ASCII) {
+    fprintf (stderr, "Got %d, expecting %d\n", ch, ASCII);
+    ERROR ("type1_do_pfb_segment:  Are you sure this is a pfb?");
+  }
+  length = get_low_endian_quad (file);
+  buffer = NEW (length, unsigned char);
+  if ((nread = fread(buffer, sizeof(unsigned char), length, file)) ==
+      length) {
+    for (i=0; i<nread; i++) {
+      if (buffer[i] == '\r')
+	buffer[i] = '\n';  /* May not be portable to non-Unix
+			      systems */
+    }
+    pdf_add_stream (stream, (char *) buffer, nread);
+  } else {
+    fprintf (stderr, "Found only %ld out of %ld bytes\n", nread, length);
     ERROR ("type1_do_pfb_segment:  Are you sure this is a pfb?");
   }
   RELEASE (buffer);
@@ -405,9 +456,9 @@ static void do_pfb (const char *pfb_name, pdf_obj *stream)
     return;
   }
   /* Following line doesn't hide PDF stream structure very well */
-  length1 = do_pfb_segment (type1_binary_file, ASCII, stream);
-  length2 = do_pfb_segment (type1_binary_file, BINARY, stream);
-  length3 = do_pfb_segment (type1_binary_file, ASCII, stream);
+  length1 = do_pfb_header (type1_binary_file, stream);
+  length2 = do_pfb_body (type1_binary_file, stream);
+  length3 = do_pfb_trailer (type1_binary_file, stream);
   if ((ch = fgetc (type1_binary_file)) != 128 ||
       (ch = fgetc (type1_binary_file)) != 3)
     ERROR ("type1_fontfile:  Are you sure this is a pfb?");
