@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.67 1999/07/15 23:17:52 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.68 1999/07/15 23:21:27 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -128,32 +128,31 @@ int get_encoding (const char *enc_name)
   /* Guess not.. */
   /* Try base name before adding .enc.  Someday maybe kpse will do
      this */
+  strcpy (tmp = NEW (strlen(enc_name)+5, char), enc_name);
+  strcat (tmp, ".enc");
   if ((full_enc_filename = kpse_find_file (enc_name,
 					   kpse_tex_ps_header_format,
 					   1)) == NULL &&
       (full_enc_filename = kpse_find_file (enc_name,
 					   kpse_program_text_format,
+					   1)) == NULL &&
+      (full_enc_filename = kpse_find_file (tmp,
+					   kpse_tex_ps_header_format,
+					   1)) == NULL &&
+      (full_enc_filename = kpse_find_file (tmp,
+					   kpse_program_text_format,
 					   1)) == NULL) {
-    strcpy (tmp = NEW (strlen(enc_name)+5, char), enc_name);
-    strcat (tmp, ".enc");
-    if ((full_enc_filename = kpse_find_file (tmp,
-					     kpse_tex_ps_header_format,
-					     1)) == NULL)
-      full_enc_filename = kpse_find_file (tmp,
-					  kpse_program_text_format,
-					  1);
-    RELEASE (tmp);
+    sprintf (work_buffer, "Can't find encoding file: %s", enc_name) ;
+    ERROR (work_buffer);
   }
-  if (full_enc_filename == NULL ||
-      (encfile = fopen (full_enc_filename, FOPEN_R_MODE)) == NULL ||
+  RELEASE (tmp);
+  if ((encfile = fopen (full_enc_filename, FOPEN_R_MODE)) == NULL ||
       (filesize = file_size (encfile)) == 0) {
-    if (encfile)
-      fclose (encfile);
-    sprintf (work_buffer, "Can't locate and/or open encoding file: %s", enc_name) ;
+    sprintf (work_buffer, "Error opening encoding file: %s", enc_name) ;
     ERROR (work_buffer);
   }
   if (verbose) {
-    fprintf (stderr, "(%s)", full_enc_filename);
+    fprintf (stderr, "(%s", full_enc_filename);
   }
   {  /* Got one and opened it */
     char *buffer, *start, *end, *junk_ident;
@@ -178,6 +177,10 @@ int get_encoding (const char *enc_name)
       ERROR ("Can't find an encoding in this file!\n");
     }
     RELEASE (buffer);
+    /* Done reading file */
+    if (verbose) {
+      fprintf (stderr, ")");
+    }
     differences = find_encoding_differences (encoding);
     /* Put the glyph names into a conventional array */
     if (num_encodings >= max_encodings) {
