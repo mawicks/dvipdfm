@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.98 1999/09/26 01:18:30 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.99 1999/09/28 14:15:54 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -893,9 +893,10 @@ static int locate_pk_font (char *tex_name, mpt_t ptsize)
       dev_font[thisfont].format = PK;
       dev_font[thisfont].font_resource = pk_font_resource (pk_id);
       dev_font[thisfont].used_chars = pk_font_used (pk_id);
-      /* Don't set extend or slant for PK fonts for now... */
+      /* Don't set extend, slant, or remap for PK fonts for now... */
       dev_font[thisfont].slant = 0.0;
       dev_font[thisfont].extend = 1.0;
+      dev_font[thisfont].remap = 0;
       dev_font[thisfont].mptsize = ptsize;
       dev_font[thisfont].ptsize = ROUND(ptsize*dvi2pts,0.01);
       dev_font[thisfont].tex_name = NEW (strlen(tex_name)+1, char);
