@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.76 2000/06/26 04:13:04 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.77 2000/06/28 02:53:17 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1684,7 +1684,23 @@ pdf_obj *jpeg_start_image(FILE *file)
 
 void pdf_scale_image (struct xform_info *p)
 {
-  double xscale = 1.0, yscale = 1.0;
+  double xscale = 1.0, yscale = 1.0, nat_width, nat_height;
+  if (p->user_bbox) {  /* Did user override natural bounding box */
+    nat_width  = p->u_urx - p->u_llx;
+    nat_height = p->u_ury - p->u_lly;
+  } else { 	       /* If not, use media width and height */
+    nat_width  = p->c_urx - p->c_llx;
+    nat_height = p->c_ury - p->c_lly;
+    p->u_llx = 0.0;    /* Initialize u_llx and u_lly because they
+    p->u_lly = 0.0;       are used to set the origin within the crop
+			  area */
+  }
+  if (p->clip && p->user_bbox) {  /* Clip to user specified bbox? */
+    p->c_urx = p->u_urx;
+    p->c_ury = p->u_ury;
+    p->c_llx = p->u_llx;
+    p->c_lly = p->u_lly;
+  }
   if (p->scale != 0) {
     xscale = p->scale;
     yscale = p->scale;
@@ -1735,6 +1751,11 @@ static void finish_image (pdf_obj *image_res, struct xform_info *p,
     p->c_lly = 0;
     p->c_urx = width*(72.0/100.0);
     p->c_ury = height*(72.0/100.0);
+    if (p->user_bbox) {
+      fprintf (stderr,
+	       "\nWarning:  Ignoring user specified bounding box for raster image.\n");
+      p->user_bbox = 0;
+    }
     pdf_scale_image (p);
     /* Since bitmapped images are always 1x1 in PDF, we must rescale
        again */
