@@ -532,10 +532,10 @@ fi
 
 
 
-VERSION="0.13.2b"
+VERSION="0.13.2c"
 
 cat >> confdefs.h <<\EOF
-#define VERSION "0.13.2b"
+#define VERSION "0.13.2c"
 EOF
 
 cat >> confdefs.h <<\EOF

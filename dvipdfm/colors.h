@@ -26,7 +26,7 @@ struct color_by_name {
   {"Magenta", {CMYK, 0, 1, 0, 0}},
   {"VioletRed", {CMYK, 0, 0.81, 0, 0}},
   {"Rhodamine", {CMYK, 0, 0.82, 0, 0}},
-  {"Mulberry ", {CMYK, 0.34, 0.90, 0, 0.02}},
+  {"Mulberry", {CMYK, 0.34, 0.90, 0, 0.02}},
   {"RedViolet", {CMYK, 0.07, 0.90, 0, 0.34}},
   {"Fuchsia", {CMYK, 0.47, 0.91, 0, 0.08}},
   {"Lavender", {CMYK, 0, 0.48, 0, 0}},

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ttf.c,v 1.8 2001/04/14 03:25:00 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ttf.c,v 1.9 2001/07/27 02:35:00 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -873,7 +873,7 @@ char *ttf_font_used (int ttf_id)
 
 
 int ttf_font (const char *map_name, int tfm_font_id, char
-	      *resource_name, int encoding_id, int remap) 
+	      *resource_name, int encoding_id, int remap, double extend)
 {
   int i, result = -1;
   int tfm_firstchar, tfm_lastchar;
@@ -958,14 +958,14 @@ int ttf_font (const char *map_name, int tfm_font_id, char
 	if ((t=untwiddle(i)) <= tfm_lastchar && t>=tfm_firstchar)
 	  pdf_add_array (tmp1,
 			 pdf_new_number(ROUND(tfm_get_width
-					      (tfm_font_id,t)*1000.0,0.1)));
+					      (tfm_font_id,t)*1000.0/extend,0.1)));
 	else
 	  pdf_add_array (tmp1,
 			 pdf_new_number(0.0));
       } else
 	pdf_add_array (tmp1,
 		       pdf_new_number(ROUND(tfm_get_width
-					    (tfm_font_id, i)*1000.0,0.1)));
+					    (tfm_font_id, i)*1000.0/extend,0.1)));
     }
     pdf_add_dict (font_resource,
 		  pdf_new_name ("Widths"),
