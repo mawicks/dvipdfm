@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.25 1999/12/08 17:56:57 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.26 2000/01/13 01:33:21 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -749,6 +749,12 @@ static int do_operator(char *token)
       if (num_saves > 0) {
 	num_saves -= 1;
 	pdf_doc_add_to_page (" Q", 2);
+	/* Unfortunately, the following two lines are necessary in case of a font or color
+	   change inside of the save/restore pair.  Anything that was done
+	   there must be redone, so in effect, we make no assumptions about
+	   what fonts are active.  We act like we are starting a new page */
+	dev_reselect_font();
+	dev_do_color();
       }
       else {
 	fprintf (stderr, "PS special: \"grestore\" ignored.  More restores than saves on a page.\n");
