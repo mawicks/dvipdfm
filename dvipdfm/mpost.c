@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.36 2000/10/31 01:49:00 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.38 2001/04/14 03:25:00 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -319,7 +319,7 @@ static void flush_path (void)
       {
 	struct point *p;
 	p = path[i].element;
-	len = sprintf (work_buffer, " %g %g %c", 
+	len = sprintf (work_buffer, "\n%g %g %c",
 		       ROUND(p->x, 0.001), ROUND(p->y, 0.001),
 		       path[i].type);
 	pdf_doc_add_to_page (work_buffer, len);
@@ -330,7 +330,7 @@ static void flush_path (void)
       {
 	struct curve *p;
 	p = path[i].element;
-	len = sprintf (work_buffer, " %g %g %g %g %g %g c", 
+	len = sprintf (work_buffer, "\n%g %g %g %g %g %g c",
 		       ROUND((p->x)[0], 0.001), ROUND((p->y)[0], 0.001),
 		       ROUND((p->x)[1], 0.001), ROUND((p->y)[1], 0.001),
 		       ROUND((p->x)[2], 0.001), ROUND((p->y)[2], 0.001));
@@ -572,7 +572,7 @@ static int do_operator(char *token,
   pdf_obj *tmp5=NULL, *tmp6=NULL;
   int len;
   /* PS to PDF conversion is not so simple.  We maintain
-     tate so we can change "gsave fill grestore stroke" to "B".
+     state so we can change "gsave fill grestore stroke" to "B".
      We need to keep track of what we have seen.   This code is not
      too smart and could be easily fooled by real postscript. 
      It makes some assumptions since it is only looking at MetaPost
@@ -610,7 +610,11 @@ static int do_operator(char *token,
       for (i=0; i<6; i++) {
 	if (!(tmp2 = pdf_get_array(tmp1, i)))
 	  break;
-	len += sprintf (work_buffer+len, " %g",
+	if (i == 0)
+	   len += sprintf (work_buffer+len, "\n");
+	else 
+	   len += sprintf (work_buffer+len, " ");
+	len += sprintf (work_buffer+len, "%g",
 			ROUND(pdf_number_value(tmp2),0.0001));
       }
       len += sprintf (work_buffer+len, " cm");
@@ -752,7 +756,7 @@ static int do_operator(char *token,
   case GSAVE:
     switch (state) {
     case 0:
-      pdf_doc_add_to_page (" q", 2);
+      pdf_doc_add_to_page ("\nq", 2);
       num_saves += 1;
       break;
     case 1:
@@ -771,13 +775,14 @@ static int do_operator(char *token,
     case 0:
       if (num_saves > 0) {
 	num_saves -= 1;
-	pdf_doc_add_to_page (" Q", 2);
+	pdf_doc_add_to_page ("\nQ", 2);
 	/* Unfortunately, the following two lines are necessary in case of a font or color
 	   change inside of the save/restore pair.  Anything that was done
 	   there must be redone, so in effect, we make no assumptions about
 	   what fonts are active.  We act like we are starting a new page */
 	dev_reselect_font();
-	dev_do_color();
+	/* The following line was causing trouble - 1/30/01 */
+	/*	dev_do_color(); */
       }
       else {
 	fprintf (stderr, "PS special: \"grestore\" ignored.  More restores than saves on a page.\n");
@@ -869,7 +874,7 @@ static int do_operator(char *token,
     break;
   case NEWPATH:
     flush_path ();
-    pdf_doc_add_to_page (" n", 2);
+    pdf_doc_add_to_page ("\nn", 2);
     break;
   case POP:
     tmp1 = POP_STACK();
@@ -896,7 +901,7 @@ static int do_operator(char *token,
   case SCALE: 
     if ((tmp2 = POP_STACK()) &&  tmp2->type == PDF_NUMBER &&
 	(tmp1 = POP_STACK()) && tmp1->type == PDF_NUMBER) {
-      len = sprintf (work_buffer, " %g 0 0 %g 0 0 cm", 
+      len = sprintf (work_buffer, "\n%g 0 0 %g 0 0 cm",
 		     ROUND(pdf_number_value (tmp1),0.01),
 		     ROUND(pdf_number_value (tmp2),0.01));
       transform_path (pdf_number_value(tmp1), 0.0,
@@ -913,13 +918,13 @@ static int do_operator(char *token,
 	(tmp3 = POP_STACK()) && tmp3->type == PDF_NUMBER &&
 	(tmp2 = POP_STACK()) && tmp2->type == PDF_NUMBER &&
 	(tmp1 = POP_STACK()) && tmp1->type == PDF_NUMBER) {
-      len = sprintf (work_buffer, " %g %g %g %g k",
+      len = sprintf (work_buffer, "\n%g %g %g %g k",
 		     ROUND(pdf_number_value (tmp1),0.001),
 		     ROUND(pdf_number_value (tmp2),0.001),
 		     ROUND(pdf_number_value (tmp3),0.001),
 		     ROUND(pdf_number_value (tmp4),0.001));
       pdf_doc_add_to_page (work_buffer, len);
-      len = sprintf (work_buffer, " %g %g %g %g K",
+      len = sprintf (work_buffer, "\n%g %g %g %g K",
 		     ROUND(pdf_number_value (tmp1),0.001),
 		     ROUND(pdf_number_value (tmp2),0.001),
 		     ROUND(pdf_number_value (tmp3),0.001),
@@ -941,7 +946,7 @@ static int do_operator(char *token,
     if ((tmp2 = POP_STACK()) && tmp2->type == PDF_NUMBER &&
 	(tmp1 = POP_STACK()) && tmp1->type == PDF_ARRAY) {
       int i;
-      pdf_doc_add_to_page (" [", 2);
+      pdf_doc_add_to_page ("\n[", 2);
       for (i=0;; i++) {
 	if ((tmp3 = pdf_get_array (tmp1, i)) &&
 	    tmp3 -> type == PDF_NUMBER) {
@@ -965,7 +970,7 @@ static int do_operator(char *token,
     break;
   case SETGRAY:
     if ((tmp1 = POP_STACK()) && tmp1->type == PDF_NUMBER) {
-      len = sprintf (work_buffer, " %g g",
+      len = sprintf (work_buffer, "\n%g g",
 		     ROUND(pdf_number_value (tmp1),0.001));
       pdf_doc_add_to_page (work_buffer, len);
       len = sprintf (work_buffer, " %g G",
@@ -979,7 +984,7 @@ static int do_operator(char *token,
     break;
   case SETLINECAP:
     if ((tmp1 = POP_STACK()) && tmp1->type == PDF_NUMBER) {
-      len = sprintf (work_buffer, " %g J", pdf_number_value (tmp1));
+      len = sprintf (work_buffer, "\n%g J", pdf_number_value (tmp1));
       pdf_doc_add_to_page (work_buffer, len);
     } else {
       fprintf (stderr, "\nExpecting a number before \"setlinecap\"\n");
@@ -989,7 +994,7 @@ static int do_operator(char *token,
     break;
   case SETLINEJOIN:
     if ((tmp1 = POP_STACK()) && tmp1->type == PDF_NUMBER) {
-      len = sprintf (work_buffer, " %g j", pdf_number_value (tmp1));
+      len = sprintf (work_buffer, "\n%g j", pdf_number_value (tmp1));
       pdf_doc_add_to_page (work_buffer, len);
     } else {
       fprintf (stderr, "\nExpecting a number before \"setlinejoin\"\n");
@@ -999,7 +1004,7 @@ static int do_operator(char *token,
     break;
   case SETLINEWIDTH:
     if ((tmp1 = POP_STACK()) && tmp1->type == PDF_NUMBER) {
-      len = sprintf (work_buffer, " %g w", ROUND(pdf_number_value (tmp1),0.01));
+      len = sprintf (work_buffer, "\n%g w", ROUND(pdf_number_value (tmp1),0.01));
       pdf_doc_add_to_page (work_buffer, len);
     } else {
       fprintf (stderr, "\nExpecting a number before \"setlinewidth\"\n");
@@ -1009,7 +1014,7 @@ static int do_operator(char *token,
     break;
   case SETMITERLIMIT:
     if ((tmp1 = POP_STACK()) && tmp1->type == PDF_NUMBER) {
-      len = sprintf (work_buffer, " %g M", ROUND(pdf_number_value
+      len = sprintf (work_buffer, "\n%g M", ROUND(pdf_number_value
 						 (tmp1),0.01));
       pdf_doc_add_to_page (work_buffer, len);
     } else {
@@ -1022,12 +1027,12 @@ static int do_operator(char *token,
     if ((tmp3 = POP_STACK()) && tmp3->type == PDF_NUMBER &&
 	(tmp2 = POP_STACK()) && tmp2->type == PDF_NUMBER &&
 	(tmp1 = POP_STACK()) && tmp1->type == PDF_NUMBER) {
-      len = sprintf (work_buffer, " %g %g %g rg",
+      len = sprintf (work_buffer, "\n%g %g %g rg",
 		     ROUND(pdf_number_value (tmp1),0.001),
 		     ROUND(pdf_number_value (tmp2),0.001),
 		     ROUND(pdf_number_value (tmp3),0.001));
       pdf_doc_add_to_page (work_buffer, len);
-      len = sprintf (work_buffer, " %g %g %g RG",
+      len = sprintf (work_buffer, "\n%g %g %g RG",
 		     ROUND(pdf_number_value (tmp1),0.001),
 		     ROUND(pdf_number_value (tmp2),0.001),
 		     ROUND(pdf_number_value (tmp3),0.001));
@@ -1083,7 +1088,7 @@ static int do_operator(char *token,
   case ROTATE:
     if ((tmp1 = POP_STACK()) && (tmp1 -> type == PDF_NUMBER)) {
       double theta = pdf_number_value(tmp1)*M_PI/180.0;
-      len = sprintf (work_buffer, " %.4f %.4f %.4f %.4f 0 0 cm",
+      len = sprintf (work_buffer, "\n%.4f %.4f %.4f %.4f 0 0 cm",
 		     cos(theta), -sin(theta),
 		     sin(theta), cos(theta));
       pdf_doc_add_to_page (work_buffer, len);
@@ -1125,7 +1130,7 @@ static int do_operator(char *token,
       pdf_doc_add_to_page_xobjects (fig_res_name, pdf_ref_obj(fig_xobj));
       pdf_release_obj (fig_xobj);
       fig_xobj = NULL;
-      pdf_doc_add_to_page (" q", 2);
+      pdf_doc_add_to_page ("\nq", 2);
       add_xform_matrix (x_user, y_user, fig_p->xscale, -fig_p->yscale, fig_p->rotate);
       if (fig_p->depth != 0.0)
 	add_xform_matrix (0.0, -fig_p->depth, 1.0, -1.0, 0.0);
@@ -1140,7 +1145,7 @@ static int do_operator(char *token,
   case TRANSLATE:
     if ((tmp2 = POP_STACK()) &&  tmp2->type == PDF_NUMBER &&
 	(tmp1 = POP_STACK()) && tmp1->type == PDF_NUMBER) {
-      len = sprintf (work_buffer, " 1 0 0 1 %g %g cm", 
+      len = sprintf (work_buffer, "\n1 0 0 1 %g %g cm", 
 		     ROUND(pdf_number_value (tmp1),0.01),
 		     ROUND(pdf_number_value (tmp2),0.01));
       pdf_doc_add_to_page (work_buffer, len);

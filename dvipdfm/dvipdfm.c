@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.73 2000/12/01 22:48:06 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.74 2001/01/31 04:09:00 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -364,9 +364,10 @@ static void do_args (int argc, char *argv[])
 	break;
       case 'p':
 	{
+	  struct rect paper_size;
 	  if (argc < 2)
 	    ERROR ("Missing paper size");
-	  rect paper_size = get_paper_size (argv[1]);
+	  paper_size = get_paper_size (argv[1]);
 	  paper_width = paper_size.width;
 	  paper_height = paper_size.height;
 	  pop_arg();
