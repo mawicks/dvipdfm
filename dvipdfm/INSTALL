@@ -33,11 +33,15 @@ Installation:
        libkpathsea.a
 
    3.  Type "./configure" in the dvipdfm directory along with any necessary
-       options, e.g., "--prefix=PATH".  Make sure you specify the path
-       to the directory containing your TeX tree root using --datadir=PATH,
-       e.g., if your TeX tree in contained in /usr/share/texmf, you
-       should supply the option --datadir=/usr/share to the configure
-       script.
+       options, e.g., "--prefix=PATH".  Make sure you specify the path to
+       the directory containing your TeX tree root using --datadir=PATH,
+       e.g., if your TeX tree in contained in /usr/share/texmf, you should
+       supply the option --datadir=/usr/share to the configure script.  Note
+       that the prefix and datadir cannot be set independently. They must
+       belong to the same tree.  For example, you could be in trouble if you
+       say something like --datadir=/usr/local/share/tetex and
+       --prefix=/usr/local. The kpathsea library uses the path containing
+       the executable as a hint to locating the temf texmf.cnf file.
 
    4.  Type "make" in the dvipdfm directory.
 
@@ -94,11 +98,12 @@ Notes/Possible Problems:
        These fonts need to be installed in a location where the kpathsea
        library can find them.
 
-   3.  If "dvipdfm" complains that it can't find fonts, read the "kpathsea"
-       documentation about debugging path searching.  If you can't get
-       kpathsea to find your texmf tree, it can always locate the fonts
-       using environment variables.  If "kpathsea" can't find your
+   3.  If "dvipdfm" complains that it can't find fonts or its font map file,
+       read the "kpathsea" documentation about debugging path searching.  If
+       you can't get kpathsea to find your texmf tree, it can always locate
+       the fonts using environment variables.  If "kpathsea" can't find your
        texmf.cnf, try setting the environment variable TEXMFCNF to point to
-       the directory containing texmf.cnf.  As a last resort, you can set
+       the directory containing texmf.cnf As a last resort, you can set
        T1FONTS to point to your ".pfb" files, and set TFMFONTS to point to
-       your ".tfm" files. 
+       your ".tfm" files. Use two trailing //s on the path name if you want
+       that path recursively searched). 
