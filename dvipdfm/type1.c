@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.61 1999/03/02 04:08:53 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.62 1999/03/08 04:37:22 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1051,7 +1051,8 @@ static void scan_afm_file (void)
 	ERROR ("Can't read value for IsFixedPitch");
       break;
     case FONTBBOX:
-      if (sscanf (start, " %lf %lf %lf %lf ", &bbllx, &bblly, &bburx, &bbury) != 4)
+      if (sscanf (start, " %lf %lf %lf %lf ", &bbllx, &bblly, &bburx, &bbury) != 4 &&
+          sscanf (start, " %lf, %lf, %lf, %lf ", &bbllx, &bblly, &bburx, &bbury) != 4)
 	ERROR ("afm: Error reading FontBBox");
       break;
     case ITALICANGLE:
