@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.67 2000/05/14 15:58:00 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.67.8.1 2000/07/25 03:29:17 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -535,6 +535,11 @@ static void do_set1(void)
   dvi_set (get_unsigned_byte(dvi_file));
 }
 
+static void do_set2(void)
+{
+  dvi_set (get_unsigned_pair(dvi_file));
+}
+
 static void do_setrule(void)
 {
   SIGNED_QUAD width, height;
@@ -559,6 +564,11 @@ static void do_putrule(void)
 static void do_put1(void)
 {
   dvi_put (get_unsigned_byte(dvi_file));
+}
+
+static void do_put2(void)
+{
+  dvi_put (get_unsigned_pair(dvi_file));
 }
 
 void dvi_push (void) 
@@ -956,9 +966,11 @@ void dvi_do_page(unsigned n)  /* Most of the work of actually interpreting
 	do_set1();
 	break;
       case SET2:
+	do_set2();
+	break;
       case SET3:
       case SET4:
-	ERROR ("dvi_do_page: Multibyte character in DVI file.  I can't handle this!");
+	ERROR ("Multibyte (>16 bits) character in DVI file.  I can't handle this!");
 	break;
       case SET_RULE:
 	do_setrule();
@@ -967,9 +979,11 @@ void dvi_do_page(unsigned n)  /* Most of the work of actually interpreting
 	do_put1();
 	break;
       case PUT2:
+	do_put2();
+	break;
       case PUT3:
       case PUT4:
-	ERROR ("dvi_do_page: Multibyte character in DVI file.  I can't handle this!");
+	ERROR ("Multibyte character (>16 bits) in DVI file.  I can't handle this!");
 	break;
       case PUT_RULE:
 	do_putrule();

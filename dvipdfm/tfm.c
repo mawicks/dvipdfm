@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.28.8.2 2000/07/25 00:16:47 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.28.8.3 2000/07/25 03:29:17 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -29,6 +29,7 @@
 #include "mfileio.h"
 #include "pdflimits.h"
 #include "numbers.h"
+#include "tfm.h"
 
 #define FWBASE ((double) (1<<20))
 
@@ -70,6 +71,7 @@ struct a_tfm
 
 void a_tfm_init (struct a_tfm *a_tfm) 
 {
+  a_tfm->char_info = NULL;
   a_tfm->width_index = NULL;
   a_tfm->height_index = NULL;
   a_tfm->depth_index = NULL;
@@ -349,9 +351,9 @@ static void do_ofm_char_info (FILE *tfm_file, struct a_tfm *a_tfm,
     a_tfm -> width_index = NEW (num_chars, UNSIGNED_PAIR);
     a_tfm -> height_index = NEW (num_chars, UNSIGNED_BYTE);
     a_tfm -> depth_index = NEW (num_chars, UNSIGNED_BYTE);
-    a_tfm -> unpacked_widths = NEW (num_chars, fixword);
-    a_tfm -> unpacked_heights = NEW (num_chars, fixword);
-    a_tfm -> unpacked_depths = NEW (num_chars, fixword);
+    a_tfm -> unpacked_widths = NEW (a_tfm->bc+num_chars, fixword);
+    a_tfm -> unpacked_heights = NEW (a_tfm->bc+num_chars, fixword);
+    a_tfm -> unpacked_depths = NEW (a_tfm->bc+num_chars, fixword);
   }
   for (i=0; i<num_chars; i++) {
     (a_tfm->width_index)[i] = get_unsigned_pair (tfm_file);
@@ -366,16 +368,18 @@ static void ofm_unpack_arrays (struct a_tfm *a_tfm, UNSIGNED_QUAD num_chars)
 {
   unsigned i;
   for (i=0; i<num_chars; i++) {
-    (a_tfm->unpacked_widths)[i] = (a_tfm->width)[(a_tfm->width_index)[i]];
-    (a_tfm->unpacked_heights)[i] = (a_tfm->height)[(a_tfm->height_index)[i]];
-    (a_tfm->unpacked_depths)[i] = (a_tfm->depth)[(a_tfm->depth_index)[i]];
+    (a_tfm->unpacked_widths)[a_tfm->bc+i] = (a_tfm->width)[(a_tfm->width_index)[i]];
+    (a_tfm->unpacked_heights)[a_tfm->bc+i] = (a_tfm->height)[(a_tfm->height_index)[i]];
+    (a_tfm->unpacked_depths)[a_tfm->bc+i] = (a_tfm->depth)[(a_tfm->depth_index)[i]];
   }
 }
+
 static void ofm_get_arrays (FILE *tfm_file, struct a_tfm *a_tfm)
 {
   if (tfm_debug) fprintf (stderr, "Reading %ld word header\n",
 			  a_tfm->wlenheader);
-  do_fix_word_array (tfm_file, &(a_tfm -> header), a_tfm -> wlenheader);
+  do_fix_word_array (tfm_file, &(a_tfm -> header), a_tfm ->
+		     wlenheader);
   if (tfm_debug) fprintf (stderr, "Reading %ld char_infos\n",
 			  (a_tfm->ec)-(a_tfm->bc)+1);
   do_ofm_char_info (tfm_file, a_tfm, (a_tfm->ec)-(a_tfm->bc)+1);
@@ -497,42 +501,43 @@ void tfm_close_all(void)
 
 /* tfm_get_width returns the width of the font
    as a (double) fraction of the design size */
-double tfm_get_width (int font_id, UNSIGNED_BYTE ch)
+double tfm_get_width (int font_id, UNSIGNED_QUAD ch)
 {
   if (tfm[font_id].unpacked_widths)
     return (double) (tfm[font_id].unpacked_widths)[ch] / FWBASE;
   else return 0.0;
 }
 
-double tfm_get_height (int font_id, UNSIGNED_BYTE ch)
+double tfm_get_height (int font_id, UNSIGNED_QUAD ch)
 {
   if (tfm[font_id].unpacked_heights)
     return (double) (tfm[font_id].unpacked_heights)[ch] / FWBASE;
   else return 0.0;
 }
 
-double tfm_get_depth (int font_id, UNSIGNED_BYTE ch)
+double tfm_get_depth (int font_id, UNSIGNED_QUAD ch)
 {
   if (tfm[font_id].unpacked_depths)
     return (tfm[font_id].unpacked_depths)[ch]/FWBASE;
   else return 0.0;
 }
 
-fixword tfm_get_fw_width (int font_id, UNSIGNED_BYTE ch)
+fixword tfm_get_fw_width (int font_id, UNSIGNED_QUAD ch)
 {
-  if (tfm[font_id].unpacked_widths)
+  if (tfm[font_id].unpacked_widths) {
     return (tfm[font_id].unpacked_widths)[ch];
+  }
   return 0;
 }
 
-fixword tfm_get_fw_height (int font_id, UNSIGNED_BYTE ch)
+fixword tfm_get_fw_height (int font_id, UNSIGNED_QUAD ch)
 {
   if (tfm[font_id].unpacked_heights)
     return (tfm[font_id].unpacked_heights)[ch];
   return 0;
 }
 
-fixword tfm_get_fw_depth (int font_id, UNSIGNED_BYTE ch)
+fixword tfm_get_fw_depth (int font_id, UNSIGNED_QUAD ch)
 {
   if (tfm[font_id].unpacked_depths)
     return (tfm[font_id].unpacked_depths)[ch];
@@ -567,7 +572,7 @@ fixword tfm_string_height (int font_id, unsigned char *s, unsigned len)
   unsigned i;
   if (tfm[font_id].unpacked_heights) 
     for (i=0; i<len; i++) {
-      result = MAX(result, tfm[font_id].unpacked_heights[s[i]]);
+      result = MAX(result, tfm[font_id].unpacked_heights[s[i]-tfm[font_id].bc]);
     }
   return result;
 }
