@@ -1,0 +1,9 @@
+#!/bin/sh
+sort malloc.log > malloc.sort.log
+grep -F [fre] malloc.sort.log > malloc.fre
+grep -F [new] malloc.sort.log > malloc.new
+paste malloc.new malloc.fre > malloc.paste
+echo "Mallocs:" `wc -l malloc.new`
+echo "Frees:" `wc -l malloc.fre`
+
+awk -f diff.awk < malloc.paste  | head
