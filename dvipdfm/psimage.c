@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/psimage.c,v 1.1 1999/09/01 00:55:11 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/psimage.c,v 1.2 1999/09/01 01:00:31 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -86,7 +86,7 @@ pdf_obj *ps_include (char *file_name,
 {
   pdf_obj *result = NULL;
   char *tmp, *cmd;
-  FILE *pdf_file;
+  FILE *pdf_file = NULL;
   /* Get a full qualified tmp name */
   tmp = tmpnam (NULL);
   if ((cmd = build_command_line (file_name, tmp))) {
@@ -94,6 +94,10 @@ pdf_obj *ps_include (char *file_name,
       result = pdf_include_page (pdf_file, p, res_name);
     } else {
       fprintf (stderr, "\nConversion failed.\n");
+    }
+    if (pdf_file) {
+      FCLOSE (pdf_file);
+      remove (tmp);
     }
     RELEASE (cmd);
   }
