@@ -3,8 +3,8 @@ pdfdev.o: pdfdev.c pdfdev.h numbers.h pdfdoc.h pdfobj.h error.h \
  htex.h pdflimits.h tfm.h dvi.h
 pdfdoc.o: pdfdoc.c config.h system.h pdflimits.h pdfobj.h error.h \
  mem.h pdfdoc.h pdfspecial.h numbers.h pdfdev.h mfileio.h thumbnail.h
-dvi.o: dvi.c error.h numbers.h mfileio.h pdflimits.h pdfdev.h pdfdoc.h \
- pdfobj.h tfm.h mem.h dvi.h vf.h dvicodes.h system.h
+dvi.o: dvi.c system.h error.h numbers.h mfileio.h pdflimits.h pdfdev.h \
+ pdfdoc.h pdfobj.h tfm.h mem.h dvi.h vf.h dvicodes.h
 mfileio.o: mfileio.c mfileio.h numbers.h error.h
 mem.o: mem.c mem.h
 jpeg.o: jpeg.c system.h mfileio.h numbers.h mem.h jpeg.h pdfobj.h \
@@ -16,7 +16,7 @@ pdfparse.o: pdfparse.c system.h pdfparse.h numbers.h pdfobj.h \
  pdfspecial.h pdfdoc.h pdfdev.h mem.h dvi.h error.h mfileio.h
 pdfspecial.o: pdfspecial.c system.h pdflimits.h pdfspecial.h numbers.h \
  pdfobj.h pdfdoc.h pdfdev.h pdfparse.h mem.h dvi.h error.h mfileio.h \
- jpeg.h epdf.h config.h pngimage.h
+ jpeg.h epdf.h mpost.h config.h pngimage.h
 tfm.o: tfm.c system.h pdflimits.h numbers.h error.h mfileio.h mem.h
 type1.o: type1.c system.h pdfobj.h mem.h error.h mfileio.h numbers.h \
  type1.h tfm.h pdfparse.h pdflimits.h t1crypt.h twiddle.h winansi.h \
@@ -40,4 +40,5 @@ ebb.o: ebb.c system.h mfileio.h numbers.h pdfobj.h jpeg.h pdfspecial.h \
  mem.h pdfparse.h config.h pngimage.h
 htex.o: htex.c htex.h numbers.h pdfparse.h pdfobj.h mem.h mfileio.h \
  pdfdoc.h dvi.h error.h pdfdev.h /usr/include/ctype.h
-mpost.o: mpost.c pdfobj.h pdfspecial.h numbers.h mpost.h
+mpost.o: mpost.c system.h mfileio.h numbers.h pdfobj.h pdfspecial.h \
+ pdfparse.h mpost.h mem.h pdflimits.h error.h pdfdev.h pdfdoc.h
