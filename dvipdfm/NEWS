@@ -1,25 +1,36 @@
+March 30, 1999.
+
+   NOTE: VERSION 0.10.4 CHANGES THE NAME/LOCATION OF ITS CONFIGURATION FILES!
+
+   It also fixes a bug that prevents nested virtual fonts and fixes a couple of other
+   fairly insignificant bugs.
+
+   Version 0.10.0 introduced PK fonts support and support
+   for TPIC special commands to allow some native graphics
+   support (don't you hate distilling those .eps files).
+
 December 30, 1998.
    Version 0.9.0 supports partial font embedding and Flate compression. The
-page tree and destination tree are shipped out as balanced trees.
+   page tree and destination tree are shipped out as balanced trees.
 
 December 14, 1998.
    Version 0.8.3 fixes a memory leak in the vf code found by Akiro Kakuto.
-Another change hopefully makes running ./configure a bit easier.
+   Another change hopefully makes running ./configure a bit easier.
 
    Version 0.8.1 and 0.8.2 fix an overflow in the kerning code
-which occurs for large horizontal motions.
+   which occurs for large horizontal motions.
 
    Version 0.8 supports virtual fonts.  Much of the code has been
-reorganized and rewritten.  It is nearly an order of magnitude faster than
-earlier versions.  Version 0.8 no longer requires the kpath source
-tree.  Instead it uses an installed version of libkpathsea and its
-headers.
+   reorganized and rewritten.  It is nearly an order of magnitude faster than
+   earlier versions.  Version 0.8 no longer requires the kpath source
+   tree.  Instead it uses an installed version of libkpathsea and its
+   headers.
 
 Nov. 28, 1998
-   Encoding support now works.  There is a font map file for
-the more common PostScript fonts.
+   Specifying font encoding now supported.  There is a font map file for
+   the more common PostScript fonts.
 
 Nov. 26, 1998
 
    LaTeX Graphics and hyperref support is now available. See the directory
-latex-support for information and drivers.
+   latex-support for information and drivers.
