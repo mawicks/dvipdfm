@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.64 2000/01/16 23:05:38 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.65 2000/01/17 14:27:53 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -226,7 +226,8 @@ void pdf_error_cleanup (void)
 {
   /* This routine is the cleanup required for an abnormal exit.
      For now, simply close the file. */
-  FCLOSE (pdf_output_file);
+  if (pdf_output_file)
+    FCLOSE (pdf_output_file);
 }
 
 
