@@ -58,14 +58,16 @@ install-data:
 	if test ! -r $(dvipdfmdir)/t1fonts.map \
 	   || grep 'original t1fonts.map --' $(dvipdfmdir)/t1fonts.map \
 	   >/dev/null; then  \
-	   $(INSTALL) ./t1fonts.map $(dvipdfmdir)/t1fonts.map; \
+	   $(INSTALL) -m 644 ./t1fonts.map $(dvipdfmdir)/t1fonts.map; \
 	else true; fi
 	if test ! -r $(dvipdfmdir)/config \
 	   || grep 'original config --' $(dvipdfmdir)/config \
 	   >/dev/null; then  \
-	   $(INSTALL) ./config $(dvipdfmdir)/config; \
+	   $(INSTALL) -m 644 ./config $(dvipdfmdir)/config; \
 	else true; fi
-	cp $(encodings) $(dvipdfmdir)/
+	for i in $(encodings); \
+	   do $(INSTALL) -m 644 $$i $(dvipdfmdir); \
+	done
 uninstall-exec:
 	rm -f $(bindir)/$(programs) $(bindir)/$(scripts)
 uninstall-data:

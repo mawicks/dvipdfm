@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.55 1999/09/01 00:55:11 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.56 1999/09/04 23:23:40 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -205,6 +205,7 @@ static void do_put(char **start, char *end)
 #define XSCALE 4
 #define YSCALE 5
 #define ROTATE 6
+#define BBOX 7
 
 struct {
   char *s;
@@ -217,7 +218,8 @@ struct {
   {"scale", SCALE, 0},
   {"xscale", XSCALE, 0},
   {"yscale", YSCALE, 0},
-  {"rotate", ROTATE, 0}
+  {"rotate", ROTATE, 0},
+  {"bbox", BBOX, 0}
 };
 
 static struct xform_info *new_xform_info (void)
@@ -231,6 +233,7 @@ static struct xform_info *new_xform_info (void)
   result -> xscale = 0.0;
   result -> yscale = 0.0;
   result -> rotate = 0.0;
+  result -> user_bbox = 0;
   return result;
 }
 
@@ -267,7 +270,6 @@ static int parse_one_dim_word (char **start, char *end)
   char *dimension_string;
   char *save = *start;
   int result = -1;
-
   skip_white(start, end);
   if ((dimension_string = parse_ident(start, end)) != NULL) {
     for (i=0; i<sizeof(dimensions)/sizeof(dimensions[0]); i++) {
@@ -322,10 +324,12 @@ double parse_one_unit (char **start, char *end)
 	       "\n%s: Invalid unit of measurement (should be in, cm, pt, etc.)\n", unit_string);
       errors = 1;
     }
-    if (i != sizeof(units)/sizeof(units[0]) && units[i].true)
-      result = units[i].units;
     if (i != sizeof(units)/sizeof(units[0]) && !units[i].true)
-      result = units[i].units*dvi_tell_mag();
+      result = units[i].units;
+    /* If these are "true" units, we must pre-shrink since the entire
+       document is magnified */
+    if (i != sizeof(units)/sizeof(units[0]) && units[i].true)
+      result = units[i].units/dvi_tell_mag();
     RELEASE (unit_string);
   }
   if (errors) {
@@ -346,70 +350,94 @@ static int parse_dimension (char **start, char *end,
   while (*start < end && isalpha (**start)) {
     if ((key = parse_one_dim_word(start, end)) >= 0) {
       skip_white(start, end);
-      number_string = parse_number(start, end);
     } else {
       fprintf (stderr,
-	       "\nExpecting a dimension or transformation keyword\nfollowed by a number here:\n");
+	       "\nExpecting a dimension/transformation keyword (e.g., width, height) here:\n");
       error = 1;
       break;
     }
-    if (key >= 0 && number_string == NULL) {
-      fprintf (stderr, "Expecting a number and didn't find one\n");
-      error = 1;
-      break;
-    }
-    /* If we got a key and a number, see if we need a dimension also */
-    if (key >= 0 && number_string != NULL && dimensions[key].hasunits) {
-      skip_white(start, end);
-      if ((units = parse_one_unit(start, end)) < 0.0) {
-	fprintf (stderr, "\nExpecting a dimension unit here\n");
+    if (key != BBOX) { /* BBOX is handled somewhat differently than
+			  all the others  */
+      number_string = parse_number(start, end);
+      if (key >= 0 && number_string == NULL) {
+	fprintf (stderr, "Expecting a number following dimension/transformation keyword\n");
 	error = 1;
+	break;
       }
-    }
-    if (!error && key >= 0 && number_string != NULL) {
-      switch (key) {
-      case WIDTH:
-	if (p->width != 0.0)
-	  fprintf (stderr, "\nDuplicate width specified: %s\n", number_string);
-	p->width = atof (number_string)*units;
-	break;
-      case HEIGHT:
-	if (p->height != 0.0)
-	  fprintf (stderr, "\nDuplicate height specified: %s\n", number_string);
-	p->height = atof (number_string)*units;
-	break;
-      case DEPTH:
-	if (p->depth != 0.0)
-	  fprintf (stderr, "\nDuplicate depth specified: %s\n", number_string);
-	p->depth = atof (number_string)*units;
-	break;
-      case SCALE:
-	if (p->scale != 0.0)
-	  fprintf (stderr, "\nDuplicate depth specified: %s\n", number_string);
-	p->scale = atof (number_string);
-	break;
-      case XSCALE:
-	if (p->xscale != 0.0)
-	  fprintf (stderr, "\nDuplicate xscale specified: %s\n", number_string);
-	p->xscale = atof (number_string);
-	break;
-      case YSCALE:
-	if (p->yscale != 0.0)
-	  fprintf (stderr, "\nDuplicate yscale specified: %s\n", number_string);
-	p->yscale = atof (number_string);
-	break;
-      case ROTATE:
-	if (p->rotate != 0)
-	  fprintf (stderr, "\nDuplicate rotation specified: %s\n", number_string);
-	p->rotate = atof (number_string) * M_PI / 180.0;
-	break;
-      default:
-	ERROR ("parse_dimension: Invalid key");
+      /* If we got a key and a number, see if we need a dimension also */
+      if (key >= 0 && number_string != NULL && dimensions[key].hasunits) {
+	skip_white(start, end);
+	if ((units = parse_one_unit(start, end)) < 0.0) {
+	  fprintf (stderr, "\nExpecting a dimension unit here\n");
+	  error = 1;
+	}
       }
-      if (number_string != NULL) {
-	RELEASE (number_string);
-	number_string = NULL;
+      if (!error && key >= 0 && number_string != NULL) {
+	switch (key) {
+	case WIDTH:
+	  if (p->width != 0.0)
+	    fprintf (stderr, "\nDuplicate width specified: %s\n", number_string);
+	  p->width = atof (number_string)*units;
+	  break;
+	case HEIGHT:
+	  if (p->height != 0.0)
+	    fprintf (stderr, "\nDuplicate height specified: %s\n", number_string);
+	  p->height = atof (number_string)*units;
+	  break;
+	case DEPTH:
+	  if (p->depth != 0.0)
+	    fprintf (stderr, "\nDuplicate depth specified: %s\n", number_string);
+	  p->depth = atof (number_string)*units;
+	  break;
+	case SCALE:
+	  if (p->scale != 0.0)
+	    fprintf (stderr, "\nDuplicate depth specified: %s\n", number_string);
+	  p->scale = atof (number_string);
+	  break;
+	case XSCALE:
+	  if (p->xscale != 0.0)
+	    fprintf (stderr, "\nDuplicate xscale specified: %s\n", number_string);
+	  p->xscale = atof (number_string);
+	  break;
+	case YSCALE:
+	  if (p->yscale != 0.0)
+	    fprintf (stderr, "\nDuplicate yscale specified: %s\n", number_string);
+	  p->yscale = atof (number_string);
+	  break;
+	case ROTATE:
+	  if (p->rotate != 0)
+	    fprintf (stderr, "\nDuplicate rotation specified: %s\n", number_string);
+	  p->rotate = atof (number_string) * M_PI / 180.0;
+	  break;
+	default:
+	  ERROR ("parse_dimension: Invalid key");
+	}
+	if (number_string != NULL) {
+	  RELEASE (number_string);
+	  number_string = NULL;
+	}
       }
+    } else { /* BBox case handled here */
+      char *llx = NULL, *lly = NULL, *urx = NULL, *ury = NULL;
+      if ((llx = parse_number (start, end)) &&
+	  (lly = parse_number (start, end)) &&
+	  (urx = parse_number (start, end)) &&
+	  (ury = parse_number (start, end))) {
+	p->llx = atof (llx);
+	p->lly = atof (lly);
+	p->urx = atof (urx);
+	p->ury = atof (ury);
+	p->user_bbox = 1; /* Flag to indicate that this was specified */
+      } else {
+	fprintf (stderr, "\nExpecting four numbers following \"bbox\" specification.\n");
+	error = 1; /* Flag error, but don't break until we get a
+		      chance to free structures */
+      }
+      if (llx) RELEASE (llx);
+      if (lly) RELEASE (lly);
+      if (urx) RELEASE (urx);
+      if (ury) RELEASE (ury);
+      if (error) break;
     }
     skip_white(start, end);
   }

@@ -29,9 +29,11 @@ you know where it is you might try setting the LDFLAGS environment variable
 with -L pointing to the directory containing libkpathsea.a
 ]))
 
-AC_TEXMF_TREE
-AC_HAS_ZLIB
+TEXMF='${datadir}/texmf'
+AC_SUBST(TEXMF)
+
 AC_HAS_LIBPNG
+AC_HAS_ZLIB
   
 dnl Check for functions
 

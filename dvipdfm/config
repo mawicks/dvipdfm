@@ -21,4 +21,5 @@ D "/usr/local/bin/epstopdf %i ; mv %b.pdf %o"
 % The following line works with Adobe Acrobat Distiller
 % D "/usr/local/bin/distill -quiet -pairs %i %o"
 
-p a4    
+% Set default paper size here
+p letter

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.54 1999/08/25 21:54:53 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.55 1999/09/04 23:23:40 mwicks Exp $
  
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1100,11 +1100,13 @@ void doc_make_form_xobj (pdf_obj *this_form_contents, pdf_obj *bbox,
   pdf_add_dict (xobj_dict, pdf_new_name ("BBox"), bbox);
   pdf_add_dict (xobj_dict, pdf_new_name ("FormType"), 
 		pdf_new_number(1.0));
-  /* The reference point is where we want it because of the bounding
-     box, so we simply use an identity coordinate transformation.
-     (Would it be better to draw form in page coordinates and translate
-     here? Maybe this should be revisited some time. */
-  tmp1 = build_scale_array (1, 0, 0, 1, 0, 0);
+  /* The reference point should be where the lower left corner of the
+     bounding box is.  We use an identity scaling matrix,
+     and translate the lower left corner of the bounding box to the
+     origin */
+  tmp1 = build_scale_array (1, 0, 0, 1, 
+			    -pdf_number_value (pdf_get_array (bbox, 0)),
+			    -pdf_number_value (pdf_get_array (bbox, 1)));
   pdf_add_dict (xobj_dict, pdf_new_name ("Matrix"), tmp1);
   pdf_add_dict (xobj_dict, pdf_link_obj (resources_name), resources);
   return;

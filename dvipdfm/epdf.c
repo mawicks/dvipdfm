@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/epdf.c,v 1.16 1999/08/26 21:48:39 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/epdf.c,v 1.17 1999/09/04 23:23:40 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -103,6 +103,20 @@ MEM_START
       pdf_release_obj (media_box);
       media_box = crop_box;
       crop_box = NULL;
+    }
+    /* If the user specified a bounding box, use override both
+       mediabox and cropbox.  At this point, "media_box"
+       should probably be called "bounding_box" as that
+       is how it is going to be used.  It's just that the
+       default bounding box is the media box, so that's the
+       name of the variable. */
+    if (p->user_bbox) {
+      pdf_release_obj (media_box);
+      media_box = pdf_new_array ();
+      pdf_add_array (media_box, pdf_new_number (p->llx));
+      pdf_add_array (media_box, pdf_new_number (p->lly));
+      pdf_add_array (media_box, pdf_new_number (p->urx));
+      pdf_add_array (media_box, pdf_new_number (p->ury));
     }
     /* Adjust scaling information as necessary */
     {
