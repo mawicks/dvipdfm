@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.96 1999/09/28 04:43:52 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.97 1999/09/28 11:01:52 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -355,14 +355,6 @@ struct font_record *get_font_record (const char *tex_name)
       break;
     }
   }
-  if (result == NULL) {
-    result = NEW (1, struct font_record);
-    init_font_record(result);
-    result -> tex_name = NEW (strlen(tex_name)+1, char);
-    strcpy (result->tex_name, tex_name);
-    fill_in_defaults (result);
-  }
-  fprintf (stderr, "\nfont_record(%s) = %p\n", tex_name, result);
   return result;
 }
 
@@ -758,15 +750,9 @@ MEM_START
 #endif
   buffer = get_pfb_segment (&length, file, ASCII);
   if (partial_enabled) {
-    fprintf (stderr, "\npfbs[pfb_id].fontname = %s\n",
-	     pfbs[pfb_id].fontname);
-    filtered = NEW (length+strlen(pfbs[pfb_id].fontname)+1, unsigned
+    filtered = NEW (length+strlen(pfbs[pfb_id].fontname)+1+1024, unsigned
 		    char);
-    fprintf (stderr, "\nbefore parse_header, length=%ld, namelen=%d\n",
-	     length, strlen(pfbs[pfb_id].fontname));
     length = parse_header (filtered, buffer, length, pfb_id, glyphs);
-    fprintf (stderr, "\nafter parse_header, length=%ld\n",
-	     length);
     pdf_add_stream (pfbs[pfb_id].direct, (char *) filtered, length);
     RELEASE (filtered);
   } else {
