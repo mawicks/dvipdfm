@@ -1,0 +1,40 @@
+   This is dvipdfm, a DVI to PDF translator.  
+   
+   Features:
+      - TeX \special's that approximate the functionality 
+        of the PostScript pdfmarks used by Adobe's
+	Acrobat Distiller.  Links, outlines, articles, and named
+	destinations are supported, for example.
+	
+      - Ability to include PDF files and JPEG files
+        as embedded images.
+
+      - Beginning of page (BOP) and end of page (EOP)
+        \special's for placing arbitrary PDF stream
+	graphics on every page.
+
+      - A color stack accessible via specials (this
+        should help people wanting to write packages for
+	this driver).
+	
+      - Works great on plain old DVI files.
+
+   Limitations:
+
+      - No Virtual font support in this version. This means that the
+	"times", "palatino", and similar packages that require virtual
+	fonts will not work correctly.  Work is in progress and
+	this should be supported soon. 
+
+      - No output PDF stream compression.  Input PDF files
+        may be contain compressed streams, however.
+        Flate compression of PDF output streams will be
+	supported in a future version.
+	
+      - No package support yet.  Graphics can be included
+        via \special's, but there is no \includegraphics
+	support, for example.
+	
+   Mark A. Wicks
+   Kettering University
+   mwicks@kettering.edu

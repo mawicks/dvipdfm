@@ -1,0 +1,823 @@
+This is Info file kpathsea.info, produced by Makeinfo version 1.68 from
+the input file kpathsea.texi.
+
+INFO-DIR-SECTION TeX
+START-INFO-DIR-ENTRY
+* Kpathsea: (kpathsea).                       File lookup along search paths.
+* kpsewhich: (kpathsea)Invoking kpsewhich.    TeX file searching.
+* mktexmf: (kpathsea)mktex scripts.           MF source generation.
+* mktexpk: (kpathsea)mktex scripts.           PK bitmap generation.
+* mktextex: (kpathsea)mktex scripts.          TeX source generation.
+* mktextfm: (kpathsea)mktex scripts.          TeX font metric generation.
+* mktexlsr: (kpathsea)Filename database.      Update ls-R.
+END-INFO-DIR-ENTRY
+
+  This file documents the Kpathsea library for path searching.
+
+  Copyright (C) 1993, 94, 95, 96, 97 K. Berry & O. Weber.
+
+  Permission is granted to make and distribute verbatim copies of this
+manual provided the copyright notice and this permission notice are
+preserved on all copies.
+
+  Permission is granted to copy and distribute modified versions of this
+manual under the conditions for verbatim copying, provided that the
+entire resulting derived work is distributed under the terms of a
+permission notice identical to this one.
+
+  Permission is granted to copy and distribute translations of this
+manual into another language, under the above conditions for modified
+versions, except that this permission notice may be stated in a
+translation approved by the Free Software Foundation.
+
+
+File: kpathsea.info,  Node: Index,  Prev: Programming,  Up: Top
+
+Index
+*****
+
+* Menu:
+
+* !! in path specifications:             ls-R.
+* $ expansion:                           Variable expansion.
+* --color=tty:                           ls-R.
+* --debug=NUM:                           Auxiliary tasks.
+* --disable-static:                      configure options.
+* --dpi=NUM:                             Path searching options.
+* --enable options:                      configure options.
+* --enable-maintainer-mode:              configure options.
+* --enable-shared <1>:                   Shared library.
+* --enable-shared:                       configure options.
+* --expand-braces=STRING:                Auxiliary tasks.
+* --expand-path=STRING:                  Auxiliary tasks.
+* --expand-var=STRING:                   Auxiliary tasks.
+* --format=NAME:                         Path searching options.
+* --help:                                Standard options.
+* --interactive:                         Path searching options.
+* --mode=STRING:                         Path searching options.
+* --must-exist:                          Path searching options.
+* --path=STRING:                         Path searching options.
+* --progname=NAME:                       Path searching options.
+* --show-path=NAME:                      Auxiliary tasks.
+* --srcdir, for building multiple architectures: configure scenarios.
+* --version:                             Standard options.
+* --with options:                        configure options.
+* --with-mktextex-default:               mktex configuration.
+* --without-mktexmf-default:             mktex configuration.
+* --without-mktexpk-default:             mktex configuration.
+* --without-mktextfm-default:            mktex configuration.
+* -1 debugging value:                    Debugging.
+* -A option to ls:                       ls-R.
+* -Bdynamic:                             ShellWidgetClass.
+* -Bstatic:                              ShellWidgetClass.
+* -D NUM:                                Path searching options.
+* -dynamic:                              ShellWidgetClass.
+* -g, compiling without:                 configure scenarios.
+* -L option to ls:                       ls-R.
+* -mktex=FILETYPE:                       Path searching options.
+* -no-mktex=FILETYPE:                    Path searching options.
+* -O, compiling with:                    configure scenarios.
+* -static:                               ShellWidgetClass.
+* . directories, ignored:                ls-R.
+* . files:                               ls-R.
+* .2602gf:                               Unable to generate fonts.
+* .afm:                                  Supported file formats.
+* .base:                                 Supported file formats.
+* .bib:                                  Supported file formats.
+* .bst:                                  Supported file formats.
+* .cnf:                                  Supported file formats.
+* .eps:                                  Supported file formats.
+* .epsi:                                 Supported file formats.
+* .fmt:                                  Supported file formats.
+* .ist:                                  Supported file formats.
+* .map:                                  Supported file formats.
+* .mem:                                  Supported file formats.
+* .mf:                                   Supported file formats.
+* .mft:                                  Supported file formats.
+* .mp:                                   Supported file formats.
+* .ocp:                                  Supported file formats.
+* .ofm:                                  Supported file formats.
+* .opl:                                  Supported file formats.
+* .otp:                                  Supported file formats.
+* .ovf:                                  Supported file formats.
+* .ovp:                                  Supported file formats.
+* .pfa:                                  Supported file formats.
+* .pfb:                                  Supported file formats.
+* .pk:                                   Supported file formats.
+* .pool:                                 Supported file formats.
+* .pro:                                  Supported file formats.
+* .rhosts, writable by TeX:              Security.
+* .tex:                                  Supported file formats.
+* .tex file, included in ls-R:           ls-R.
+* .tfm:                                  Supported file formats.
+* .ttc:                                  Supported file formats.
+* .ttf:                                  Supported file formats.
+* .vf:                                   Supported file formats.
+* / may not be /:                        Searching overview.
+* /, trailing in home directory:         Tilde expansion.
+* //:                                    Subdirectory expansion.
+* /afs/... , installing into:            Installing files.
+* /etc/profile:                          Unable to find files.
+* /etc/profile and aliases:              ls-R.
+* /var/tmp/texfonts:                     mktex configuration.
+* 2602gf:                                Unable to generate fonts.
+* 4allTeX Live CD-ROM:                   CD-ROM distribution.
+* 8.3 filenames, using:                  mktex configuration.
+* : may not be ::                        Searching overview.
+* :: expansion:                          Default expansion.
+* @VAR@ substitutions:                   Running configure.
+* \, line continuation in texmf.cnf:     Config files.
+* \openin:                               Searching overview.
+* \special, suppressing warnings about:  Suppressing warnings.
+* absolute filenames:                    Searching overview.
+* ac_include, Autoconf extension:        Running configure.
+* access warnings:                       Searching overview.
+* Acorn TeX implementations:             Other TeX packages.
+* AFMFONTS:                              Supported file formats.
+* AFS:                                   Installing files.
+* AIX 4.1 configure error:               Empty Makefiles.
+* AIX shells and configure:              configure shells.
+* aliases for fonts:                     Fontmap.
+* aliases, for filenames:                Filename aliases.
+* all:                                   Suppressing warnings.
+* alphabetical order, not:               Subdirectory expansion.
+* Amiga support:                         Custom installation.
+* Amiga TeX implementations:             Other TeX packages.
+* Andrew File System, installing with:   Installing files.
+* announcement mailing list:             Mailing lists.
+* ANSI C:                                TeX or Metafont failing.
+* append-only directories and mktexpk:   Security.
+* appendonlydir:                         mktex configuration.
+* architecture-(in)dependent files, installing only: Installing files.
+* architectures, compiling multiple:     configure scenarios.
+* arguments to mktex:                    mktex script arguments.
+* argv[0]:                               Calling sequence.
+* ash, losing with configure:            configure shells.
+* autoconf, recommended:                 Calling sequence.
+* automounter, and configuration:        configure scenarios.
+* automounter, and ls-R:                 ls-R.
+* auxiliary tasks:                       Auxiliary tasks.
+* Babel <1>:                             Running make.
+* Babel:                                 Kpathsea application distributions.
+* Bach, Johann Sebastian:                Default expansion.
+* backbone of CTAN:                      Electronic distribution.
+* backslash-newline:                     Config files.
+* bash, recommended for running configure: configure shells.
+* basic glyph lookup:                    Basic glyph lookup.
+* Berry, Karl:                           History.
+* BIBINPUTS:                             Supported file formats.
+* binary mode, for file transfers:       Electronic distribution.
+* blank lines, in texmf.cnf:             Config files.
+* brace expansion:                       Brace expansion.
+* BSD universe:                          Running make.
+* bsh, ok with configure:                configure shells.
+* BSTINPUTS:                             Supported file formats.
+* bug address:                           Reporting bugs.
+* bug checklist:                         Bug checklist.
+* bug mailing list:                      Mailing lists.
+* bugs, reporting:                       Reporting bugs.
+* c-*.h:                                 Calling sequence.
+* c-auto.in:                             Running configure.
+* cache of fonts, local:                 Security.
+* calling sequence:                      Calling sequence.
+* CC:                                    configure environment.
+* cc warnings:                           Pointer combination warnings.
+* cc, compiling with:                    configure environment.
+* CD-ROM distributions:                  CD-ROM distribution.
+* CFLAGS:                                configure environment.
+* ChangeLog entry:                       Bug checklist.
+* checklist for bug reports:             Bug checklist.
+* checksum:                              Suppressing warnings.
+* circle fonts:                          Fontmap.
+* clean Make target:                     Cleaning up.
+* client_path in kpse_format_info:       Calling sequence.
+* cmr10, as fallback font:               Fallback font.
+* cmr10.vf:                              Searching overview.
+* cnf.c:                                 Config files.
+* cnf.h:                                 Programming with config files.
+* code sharing:                          Shared library.
+* color printers, configuring:           Simple installation.
+* comments, in fontmap files:            Fontmap.
+* comments, in texmf.cnf:                Config files.
+* comments, making:                      Introduction.
+* common features in glyph lookup:       Basic glyph lookup.
+* common problems:                       Common problems.
+* comp.sys.sun.admin FAQ:                ShellWidgetClass.
+* comp.text.tex:                         Mailing lists.
+* compilation:                           Installation.
+* compilation value, source for path:    Path sources.
+* compiler bugs:                         TeX or Metafont failing.
+* compiler bugs, finding:                TeX or Metafont failing.
+* compiler options, additional:          Running make.
+* compiler options, specifying:          configure environment.
+* compiler, changing:                    Running make.
+* compiling on HP-UX:                    TeX or Metafont failing.
+* conditions for use:                    Introduction.
+* config files:                          Config files.
+* config files, for Kpathsea-using programs: Calling sequence.
+* config files, programming with:        Programming with config files.
+* config.log:                            Bug checklist.
+* config.ps, search path for:            Supported file formats.
+* config.status:                         Bug checklist.
+* configuration:                         Installation.
+* configuration bugs:                    Bug checklist.
+* configuration compiler options:        configure environment.
+* configuration file, source for path:   Path sources.
+* configuration files as shell scripts.: Config files.
+* configuration of mktex scripts:        mktex configuration.
+* configuration of optional features:    configure options.
+* configure error from sed:              Empty Makefiles.
+* configure options:                     configure options.
+* configure options for mktex scripts:   mktex configuration.
+* configure, running:                    Running configure.
+* context diff:                          Bug checklist.
+* continuation character:                Config files.
+* core dumps, reporting:                 Bug checklist.
+* CPPFLAGS:                              configure environment.
+* crashes, reporting:                    Bug checklist.
+* CTAN, defined:                         Electronic distribution.
+* CTAN.sites:                            Electronic distribution.
+* custom installation:                   Custom installation.
+* Dante TeX CD-ROM:                      CD-ROM distribution.
+* database search:                       Searching overview.
+* database, for filenames:               Filename database.
+* database, format of:                   Database format.
+* debug.h:                               Debugging.
+* debugger:                              Bug checklist.
+* debugging:                             Debugging.
+* debugging options, in Kpathsea-using program: Calling sequence.
+* debugging output:                      Debugging.
+* debugging with -g, disabling:          configure scenarios.
+* DEC shells and configure:              configure shells.
+* default expansion:                     Default expansion.
+* default path features:                 Default path features.
+* default paths, changing:               Default path generation.
+* default paths, how they're made:       Default path generation.
+* default_texsizes:                      Fallback font.
+* DEFS:                                  configure environment.
+* depot:                                 configure scenarios.
+* directories, changing default installation: Default path generation.
+* directories, making append-only:       mktex configuration.
+* directory permissions:                 Security.
+* directory structure, for TeX files:    TeX directory structure.
+* disabling mktex scripts:               mktex configuration.
+* disk search:                           Searching overview.
+* disk searching, avoiding:              ls-R.
+* disk space, needed:                    Disk space.
+* disk usage, reducing:                  Logging.
+* distclean Make target:                 Cleaning up.
+* distributions, compiling simultaneously: Kpathsea application distributions.
+* distributions, not compiling:          Kpathsea application distributions.
+* distributions, on CD-ROM:              CD-ROM distribution.
+* distributions, on tape:                Tape distribution.
+* distributions, via ftp:                Electronic distribution.
+* dlclose:                               dlopen.
+* dlopen:                                dlopen.
+* dlsym:                                 dlopen.
+* dlsym.c:                               dlopen.
+* doc files:                             Supported file formats.
+* DOS compatible names:                  mktex configuration.
+* DOS support:                           Custom installation.
+* DOS TeX implementations:               Other TeX packages.
+* dosnames:                              mktex configuration.
+* dot files:                             ls-R.
+* doubled colons:                        Default expansion.
+* dpiNNN directories:                    mktex configuration.
+* DVI drivers:                           Kpathsea application distributions.
+* DVILJMAKEPK:                           mktex script names.
+* DVILJSIZES:                            Fallback font.
+* DVIPSFONTS:                            Supported file formats.
+* DVIPSHEADERS:                          Supported file formats.
+* DVIPSMAKEPK:                           mktex script names.
+* DVIPSSIZES:                            Fallback font.
+* dynamic creation of files:             mktex scripts.
+* dynamic linking problems with OpenWin libraries: ShellWidgetClass.
+* EC fonts, and dynamic source creation: mktex scripts.
+* elt-dirs.c:                            Subdirectory expansion.
+* email CTAN access:                     Electronic distribution.
+* enabling mktex scripts:                mktex configuration.
+* environment variable, source for path: Path sources.
+* environment variables for TeX:         Supported file formats.
+* environment variables in paths:        Variable expansion.
+* environment variables, old:            Unable to find files.
+* epoch, seconds since:                  Logging.
+* error message macros:                  Calling sequence.
+* excessive startup time:                Slow path searching.
+* expand.c:                              Brace expansion.
+* expanding symlinks:                    Calling sequence.
+* expansion, default:                    Default expansion.
+* expansion, path element:               Searching overview.
+* expansion, search path:                Path expansion.
+* expansion, subdirectory:               Subdirectory expansion.
+* expansion, tilde:                      Tilde expansion.
+* expansion, variable:                   Variable expansion.
+* explicitly relative filenames:         Searching overview.
+* externally-built filename database:    Filename database.
+* extra colons:                          Default expansion.
+* extraclean Make target:                Cleaning up.
+* failed mktex... script invocation:     mktex script names.
+* fallback font:                         Fallback font.
+* fallback resolutions:                  Fallback font.
+* fallback resolutions, overriding:      Running make.
+* FAQ, comp.sys.sun.admin:               ShellWidgetClass.
+* FAQ, Kpathsea:                         Common problems.
+* Farwell, Matthew:                      Subdirectory expansion.
+* features, of default paths:            Default path features.
+* file formats, supported:               Supported file formats.
+* file lookup:                           File lookup.
+* file permissions:                      Security.
+* file types, registering new:           Programming overview.
+* filename aliases:                      Filename aliases.
+* filename database:                     Filename database.
+* filename database generation:          Filename database generation.
+* filenames, absolute or explicitly relative: Searching overview.
+* files, unable to find:                 Unable to find files.
+* filesystem search:                     Searching overview.
+* floating directories:                  Searching overview.
+* font alias files:                      Fontmap.
+* font generation failures:              Unable to generate fonts.
+* font of last resort:                   Fallback font.
+* font set, infinite:                    mktex scripts.
+* fontmap files:                         Fontmap.
+* fontmaps:                              mktex configuration.
+* fontname:                              mktex configuration.
+* fontnames, arbitrary length:           Fontmap.
+* fonts, being created:                  Simple installation.
+* FOOINPUTS:                             Supported file formats.
+* fopen, redefined:                      Debugging.
+* format of external database:           Database format.
+* Free Software Foundation:              CD-ROM distribution.
+* FreeBSD configure error:               Empty Makefiles.
+* FreeBSD shells and configure:          configure shells.
+* FSF Source Code CD-ROM:                CD-ROM distribution.
+* ftp retrieval:                         Electronic distribution.
+* ftp.tug.org:                           unixtex.ftp.
+* fundamental purpose of Kpathsea:       Introduction.
+* gcc, compiling with:                   configure environment.
+* gdb, recommended:                      Bug checklist.
+* generation of filename database:       Filename database generation.
+* German TeX CD info:                    CD-ROM distribution.
+* get_applicationShellWidgetClass:       ShellWidgetClass.
+* get_wmShellWidgetClass:                ShellWidgetClass.
+* gf:                                    Supported file formats.
+* GFFONTS:                               Supported file formats.
+* globally writable directories:         Security.
+* glyph lookup:                          Glyph lookup.
+* glyph lookup bitmap tolerance:         Basic glyph lookup.
+* GLYPHFONTS:                            Supported file formats.
+* GNU C compiler bugs:                   TeX or Metafont failing.
+* GNU General Public License:            Introduction.
+* Gopher CTAN access:                    Electronic distribution.
+* group-writable directories:            Security.
+* GSFTOPK_DEBUG (128):                   Debugging.
+* GUTenberg:                             CD-ROM distribution.
+* hash table buckets, printing:          Debugging.
+* hash table routines:                   Calling sequence.
+* hash_summary_only variable for debugging: Debugging.
+* help, mailing list for general TeX:    Mailing lists.
+* HIER:                                  Default path features.
+* history of Kpathsea:                   History.
+* home directories in paths:             Tilde expansion.
+* HOME, as ~ expansion:                  Tilde expansion.
+* HP-UX, compiling on:                   TeX or Metafont failing.
+* identifiers, characters valid in:      Config files.
+* illegal pointer combination warnings:  Pointer combination warnings.
+* include fontmap directive:             Fontmap.
+* INDEXSTYLE:                            Supported file formats.
+* info-tex@shsu.edu:                     Mailing lists.
+* input lines, reading:                  Calling sequence.
+* install-data Make target:              Installing files.
+* install-exec Make target:              Installing files.
+* installation:                          Installation.
+* installation testing:                  Installation testing.
+* installation, architecture-(in)dependent files only: Installing files.
+* installation, changing default directories: Default path generation.
+* installation, customized:              Custom installation.
+* installation, getting executables instead of: Simple installation.
+* installation, simple:                  Simple installation.
+* installing files:                      Installing files.
+* interactive query:                     Path searching options.
+* interface, not frozen:                 Introduction.
+* introduction:                          Introduction.
+* kdebug::                               Debugging.
+* kdefault.c:                            Default expansion.
+* Knuth, Donald E.:                      History.
+* Knuth, Donald E., archive of programs by: Other TeX packages.
+* Knuth, Donald E., original author:     Electronic distribution.
+* Korn shell, losing with configure:     configure shells.
+* Kpathsea config file, source for path: Path sources.
+* Kpathsea version number:               Kpathsea application distributions.
+* kpathsea.h:                            Programming overview.
+* kpathsea/HIER:                         Default path features.
+* kpathsea/README.CONFIGURE:             Running configure.
+* KPATHSEA_DEBUG:                        Calling sequence.
+* kpathsea_debug:                        Debugging.
+* KPATHSEA_DEBUG:                        Debugging.
+* kpathsea_debug:                        Debugging.
+* kpathsea_debug variable:               Calling sequence.
+* KPSE_BITMAP_TOLERANCE:                 Basic glyph lookup.
+* kpse_cnf_get:                          Programming with config files.
+* KPSE_DEBUG_EXPAND (16):                Debugging.
+* KPSE_DEBUG_FOPEN (4):                  Debugging.
+* KPSE_DEBUG_HASH (2):                   Debugging.
+* KPSE_DEBUG_PATHS (8):                  Debugging.
+* KPSE_DEBUG_SEARCH (32):                Debugging.
+* KPSE_DEBUG_STAT (1):                   Debugging.
+* KPSE_DEBUG_VARS (64):                  Debugging.
+* KPSE_DOT expansion:                    KPSE_DOT expansion.
+* kpse_fallback_font:                    Fallback font.
+* kpse_find_*:                           Calling sequence.
+* kpse_find_file <1>:                    Calling sequence.
+* kpse_find_file:                        File lookup.
+* kpse_find_glyph_format:                Glyph lookup.
+* kpse_format_info:                      Calling sequence.
+* kpse_format_info_type:                 Debugging.
+* kpse_init_prog:                        Calling sequence.
+* kpse_init_prog, and MAKETEX_MODE:      Default path features.
+* kpse_make_specs:                       mktex script names.
+* kpse_open_file:                        Calling sequence.
+* kpse_program_name:                     Calling sequence.
+* kpse_set_progname:                     Calling sequence.
+* kpse_set_program_name:                 Calling sequence.
+* kpse_var_value:                        Programming with config files.
+* kpsewhich:                             Invoking kpsewhich.
+* Kpsewhich, and debugging:              Debugging.
+* ksh, losing with configure:            configure shells.
+* labrea.stanford.edu:                   Other TeX packages.
+* LaserJet drive:                        Kpathsea application distributions.
+* last-resort font:                      Fallback font.
+* LaTeX help mailing list:               Mailing lists.
+* lcircle10:                             Fontmap.
+* LDFLAGS:                               configure environment.
+* leading colons:                        Default expansion.
+* leaf directories wrongly guessed:      Unable to find files.
+* leaf directory trick:                  Subdirectory expansion.
+* libdl.a:                               dlopen.
+* libraries, changing:                   Running make.
+* libraries, specifying additional:      configure environment.
+* LIBS:                                  configure environment.
+* libucb, avoiding:                      Running make.
+* license for using the library:         Introduction.
+* lines, reading arbitrary-length:       Calling sequence.
+* Linux File System Standard:            mktex configuration.
+* Linux shells and configure:            configure shells.
+* Linux, using Web2c:                    CD-ROM distribution.
+* lndir for building symlink trees:      configure scenarios.
+* loader options:                        configure environment.
+* loader options, final:                 Running make.
+* loader options, initial:               Running make.
+* local cache of fonts:                  Security.
+* log file:                              Logging.
+* logging successful searches:           Logging.
+* lost+found directory:                  Searching overview.
+* lostchar:                              Suppressing warnings.
+* ls-R:                                  Supported file formats.
+* ls-R and AFS:                          Installing files.
+* ls-R database file:                    ls-R.
+* ls-R, simplest build:                  ls-R.
+* Mach10 configure error:                Empty Makefiles.
+* Macintosh TeX implementations:         Other TeX packages.
+* MacKenzie, David <1>:                  Subdirectory expansion.
+* MacKenzie, David:                      History.
+* magic characters:                      Searching overview.
+* mailing lists:                         Mailing lists.
+* maintainer-clean Make target:          Cleaning up.
+* Make arguments, additional:            Running make.
+* make, running:                         Running make.
+* Makefile.in:                           Running configure.
+* Makefiles, empty:                      Empty Makefiles.
+* MAKETEX_DEBUG (512):                   Debugging.
+* MAKETEX_FINE_DEBUG (1024):             Debugging.
+* MAKETEX_MODE:                          Default path features.
+* memory allocation routines:            Calling sequence.
+* Metafont failures:                     TeX or Metafont failing.
+* Metafont installation:                 Unable to generate fonts.
+* Metafont making too-large fonts:       Unable to generate fonts.
+* Metafont using the wrong resolution:   Unable to generate fonts.
+* MFBASES:                               Supported file formats.
+* MFINPUTS:                              Supported file formats.
+* MFPOOL:                                Supported file formats.
+* MFTINPUTS:                             Supported file formats.
+* mirrors, FTP:                          Electronic distribution.
+* mismatched checksum warnings:          Suppressing warnings.
+* missfont.log:                          mktex script names.
+* MISSFONT_LOG:                          mktex script names.
+* missing character warnings:            Suppressing warnings.
+* mktex script configuration:            mktex configuration.
+* mktex script names:                    mktex script names.
+* mktex scripts:                         mktex scripts.
+* mktex.cnf:                             mktex configuration.
+* mktex.opt:                             mktex configuration.
+* mktexdir:                              mktex configuration.
+* mktexmf:                               mktex script names.
+* mktexpk:                               mktex script names.
+* mktexpk , initial runs:                Simple installation.
+* mktextex:                              mktex script names.
+* mktextfm:                              mktex script names.
+* mode directory, omitting:              mktex configuration.
+* Morgan, Tim:                           History.
+* mostlyclean Make target:               Cleaning up.
+* MPINPUTS:                              Supported file formats.
+* MPMEMS:                                Supported file formats.
+* MPPOOL:                                Supported file formats.
+* MPSUPPORT:                             Supported file formats.
+* MT_FEATURES:                           mktex configuration.
+* multiple architectures, compiling on:  configure scenarios.
+* multiple architectures, directories for: configure scenarios.
+* multiple architectures, installing on: Installing files.
+* multiple TeX hierarchies:              Brace expansion.
+* must exist:                            Searching overview.
+* names for mktex scripts:               mktex script names.
+* NetBSD configure error:                Empty Makefiles.
+* NetBSD shells and configure:           configure shells.
+* Neumann, Gustaf:                       History.
+* newsgroup for TeX:                     Mailing lists.
+* NeXT sed error:                        Empty Makefiles.
+* NeXT, lacking X11:                     Kpathsea application distributions.
+* NFS and ls-R:                          ls-R.
+* NFS CTAN access:                       Electronic distribution.
+* nomode:                                mktex configuration.
+* non-English typesetting:               Kpathsea application distributions.
+* non-Unix operating systems:            Custom installation.
+* Northwest Computing Support Center:    Tape distribution.
+* NTG:                                   CD-ROM distribution.
+* null pointers, dereferencing:          Bug checklist.
+* numeric debugging values:              Debugging.
+* obtaining TeX:                         unixtex.ftp.
+* obtaining TeX on tape:                 Tape distribution.
+* obtaining Web2c by ftp:                Electronic distribution.
+* obtaining Web2c on CD-ROM:             CD-ROM distribution.
+* OCPINPUTS:                             Supported file formats.
+* OFMFONTS:                              Supported file formats.
+* online Metafont display, spurious:     Unable to generate fonts.
+* OpenWin libraries, dynamic linking problems: ShellWidgetClass.
+* optimization caveat:                   TeX or Metafont failing.
+* optimization, enabling:                configure scenarios.
+* options for debugging:                 Debugging.
+* options to configure:                  configure options.
+* OS/2 support:                          Custom installation.
+* other TeX distributions:               Other TeX packages.
+* OTPINPUTS:                             Supported file formats.
+* overview of path searching:            Searching overview.
+* overview of programming with Kpathsea: Programming overview.
+* OVFFONTS:                              Supported file formats.
+* OVPFONTS:                              Supported file formats.
+* patches, Sun OpenWin:                  ShellWidgetClass.
+* path expansion:                        Path expansion.
+* path searching:                        Path searching.
+* path searching options:                Path searching options.
+* path searching, overview:              Searching overview.
+* path searching, standalone:            Invoking kpsewhich.
+* path sources:                          Path sources.
+* paths, changing default <1>:           Default path generation.
+* paths, changing default:               Changing search paths.
+* paths, device name included in:        Default path features.
+* paths.h:                               Default path generation.
+* paths.h, creating:                     Running make.
+* pathsearch.h:                          Programming overview.
+* pc Pascal compiler:                    History.
+* PCL driver:                            Kpathsea application distributions.
+* PDF generation:                        Kpathsea application distributions.
+* permission denied:                     Searching overview.
+* permissions, directory:                Security.
+* permissions, file:                     Security.
+* PKFONTS:                               Supported file formats.
+* plain.base:                            Unable to generate fonts.
+* pointer combination warnings:          Pointer combination warnings.
+* PostScript driver:                     Kpathsea application distributions.
+* PostScript fonts, additional:          Simple installation.
+* precompiled executables, instead of installation: Simple installation.
+* precompiled Unix binaries:             Other TeX packages.
+* preprocessor options:                  configure environment.
+* preprocessor options, additional:      Running make.
+* Prime Time TeXcetera CD-ROM:           CD-ROM distribution.
+* printer configuration files:           Simple installation.
+* privacy, semblance of:                 Logging.
+* problems, common:                      Common problems.
+* proginit.c:                            Default path features.
+* proginit.h:                            Calling sequence.
+* program-varying paths:                 Supported file formats.
+* program_invocation_name:               Calling sequence.
+* program_invocation_short_name:         Calling sequence.
+* programming overview:                  Programming overview.
+* programming with config files:         Programming with config files.
+* programming with Kpathsea:             Calling sequence.
+* programs using the library:            Introduction.
+* proof mode:                            Unable to generate fonts.
+* PSHEADERS:                             Supported file formats.
+* pxp Pascal preprocessor:               History.
+* quoting variable values:               Variable expansion.
+* readable:                              Suppressing warnings.
+* reading arbitrary-length lines:        Calling sequence.
+* README.CONFIGURE:                      Running configure.
+* README.mirrors:                        Electronic distribution.
+* recording successful searches:         Logging.
+* relative filenames:                    Searching overview.
+* relative filenames in ls-R:            Installing files.
+* reporting bugs:                        Reporting bugs.
+* resident.c:                            Calling sequence.
+* resolution, setting:                   Path searching options.
+* resolution, wrong:                     Unable to generate fonts.
+* resolutions, last-resort:              Fallback font.
+* retrieving TeX:                        unixtex.ftp.
+* right-hand side of variable assignments: Config files.
+* Rokicki, Tom:                          History.
+* root user:                             Tilde expansion.
+* runtime configuration files:           Config files.
+* runtime debugging:                     Debugging.
+* Sauter fonts, and dynamic source creation: mktex scripts.
+* scripts for file creation:             mktex scripts.
+* search path, defined:                  Searching overview.
+* search paths, changing default:        Changing search paths.
+* searching for files:                   File lookup.
+* searching for glyphs:                  Glyph lookup.
+* searching overview:                    Searching overview.
+* searching the database:                Searching overview.
+* searching the disk:                    Searching overview.
+* security considerations:               Security.
+* sed error from configure:              Empty Makefiles.
+* SELFAUTODIR:                           Calling sequence.
+* SELFAUTOLOC:                           Calling sequence.
+* SELFAUTOPARENT:                        Calling sequence.
+* sending patches:                       Bug checklist.
+* setgid scripts:                        Security.
+* sh5, ok with configure:                configure shells.
+* shar, recommended:                     Bug checklist.
+* shared library, making:                Shared library.
+* shell scripts as configuration files:  Config files.
+* shell variables:                       Variable expansion.
+* shell_escape, example for code:        Programming with config files.
+* shells and configure:                  configure shells.
+* simple installation:                   Simple installation.
+* site overrides for mktex...:           mktex configuration.
+* size of distribution archives:         Disk space.
+* skeleton TeX directory:                TeX directory structure.
+* slow startup time:                     Slow path searching.
+* Solaris BSD compatibility, not:        Running make.
+* source files:                          Supported file formats.
+* sources for search paths:              Path sources.
+* special:                               Suppressing warnings.
+* st_nlink:                              Subdirectory expansion.
+* stack trace:                           Bug checklist.
+* standalone path searching:             Invoking kpsewhich.
+* standard error and debugging output:   Debugging.
+* standard options:                      Standard options.
+* startup time, excessive:               Slow path searching.
+* static linking:                        ShellWidgetClass.
+* static linking and dlsym:              dlopen.
+* string routines:                       Calling sequence.
+* strip:                                 mktex configuration.
+* stripsupplier:                         mktex configuration.
+* striptypeface:                         mktex configuration.
+* subdirectory searching:                Subdirectory expansion.
+* suggestions, making:                   Introduction.
+* Sun 2:                                 History.
+* Sun OpenWin patches:                   ShellWidgetClass.
+* supplier directory, omitting:          mktex configuration.
+* support organization:                  Tape distribution.
+* supported file formats:                Supported file formats.
+* suppressing warnings:                  Suppressing warnings.
+* symbolic link trees, for multiple architectures: configure scenarios.
+* symbolic links not found:              Unable to find files.
+* symbolic links, and ls-R:              ls-R.
+* symlinks, resolving:                   Calling sequence.
+* system C compiler bugs:                TeX or Metafont failing.
+* system dependencies:                   Running configure.
+* system V universe:                     Running make.
+* T1FONTS:                               Supported file formats.
+* T1INPUTS:                              Supported file formats.
+* T42FONTS:                              Supported file formats.
+* tape distribution:                     Tape distribution.
+* TDS:                                   TeX directory structure.
+* testing, post-installation:            Installation testing.
+* tests, simple:                         Simple installation.
+* teTeX:                                 Other TeX packages.
+* TeX directory structure:               TeX directory structure.
+* TeX distributions besides Web2c:       Other TeX packages.
+* TeX environment variables:             Supported file formats.
+* TeX failures:                          TeX or Metafont failing.
+* TeX file lookup:                       File lookup.
+* TeX glyph lookup:                      Glyph lookup.
+* TeX help mailing list:                 Mailing lists.
+* TeX hierarchy, one:                    configure scenarios.
+* TeX Live CD-ROM:                       CD-ROM distribution.
+* TeX support:                           TeX support.
+* TeX Users Group:                       Introduction.
+* tex-archive@math.utah.edu:             Mailing lists.
+* tex-file.c:                            File lookup.
+* tex-file.h:                            Programming overview.
+* tex-glyph.c:                           Glyph lookup.
+* tex-glyph.h:                           Programming overview.
+* tex-k-request@mail.tug.org:            Mailing lists.
+* tex-k@mail.tug.org (bug address):      Reporting bugs.
+* tex-make.c:                            mktex script names.
+* TEX_HUSH <1>:                          Suppressing warnings.
+* TEX_HUSH:                              Searching overview.
+* TEXBIB:                                Supported file formats.
+* TEXCONFIG:                             Supported file formats.
+* TEXDOCS:                               Supported file formats.
+* TEXFONTMAPS:                           Supported file formats.
+* TEXFONTS:                              Supported file formats.
+* texfonts.map:                          Fontmap.
+* TEXFORMATS:                            Supported file formats.
+* TEXINDEXSTYLE:                         Supported file formats.
+* TEXINPUTS:                             Supported file formats.
+* TEXMF:                                 TeX directory structure.
+* texmf.cnf, and variable expansion:     Variable expansion.
+* texmf.cnf, creating:                   Running make.
+* texmf.cnf, definition for:             Config files.
+* texmf.cnf, generated:                  Default path generation.
+* texmf.cnf, source for path:            Path sources.
+* texmf.in:                              Default path generation.
+* texmf.in, editing:                     Changing search paths.
+* texmf.sed:                             Default path generation.
+* TEXMFCNF <1>:                          Supported file formats.
+* TEXMFCNF:                              Config files.
+* TEXMFDBS <1>:                          Supported file formats.
+* TEXMFDBS:                              ls-R.
+* TEXMFINI:                              Supported file formats.
+* TEXMFLOG:                              Logging.
+* TEXMFOUTPUT:                           mktex script names.
+* TEXPICTS:                              Supported file formats.
+* TEXPKS:                                Supported file formats.
+* TEXPOOL:                               Supported file formats.
+* TEXPSHEADERS:                          Supported file formats.
+* TEXSIZES:                              Fallback font.
+* TEXSOURCES:                            Supported file formats.
+* TFMFONTS:                              Supported file formats.
+* tilde expansion:                       Tilde expansion.
+* tilde.c:                               Tilde expansion.
+* time system call:                      Logging.
+* tolerance for glyph lookup:            Basic glyph lookup.
+* total disk space:                      Disk space.
+* trailing / in home directory:          Tilde expansion.
+* trailing colons:                       Default expansion.
+* TRFONTS:                               Supported file formats.
+* trick for detecting leaf directories:  Subdirectory expansion.
+* trojan horse attack:                   Security.
+* TTFONTS:                               Supported file formats.
+* TUG:                                   CD-ROM distribution.
+* tug.org:                               unixtex.ftp.
+* tug@tug.org:                           Introduction.
+* typeface directory, omitting:          mktex configuration.
+* ucbinclude, avoiding:                  Running make.
+* UKTUG:                                 CD-ROM distribution.
+* Ultrix shells and configure:           configure shells.
+* unable to find files:                  Unable to find files.
+* unable to generate fonts:              Unable to generate fonts.
+* uname:                                 Bug checklist.
+* universe, BSD vs. system V:            Running make.
+* UNIX_ST_LINK:                          Subdirectory expansion.
+* unixtex.ftp:                           unixtex.ftp.
+* unixtex@u.washington.edu:              Tape distribution.
+* unknown special warnings:              Suppressing warnings.
+* unreadable file warnings:              Suppressing warnings.
+* unreadable files:                      Searching overview.
+* unusable ls-R warning:                 ls-R.
+* usage patterns, finding:               Logging.
+* USE_VARTEXFONTS:                       mktex configuration.
+* Usenet TeX newsgroup:                  Mailing lists.
+* varfonts:                              mktex configuration.
+* variable expansion:                    Variable expansion.
+* variable.c:                            Variable expansion.
+* variable.h:                            Programming with config files.
+* VARTEXFONTS:                           mktex configuration.
+* VAX 11/750:                            History.
+* version number, of Kpathsea:           Kpathsea application distributions.
+* version numbers, determining:          Bug checklist.
+* VF files, not found:                   Searching overview.
+* VFFONTS:                               Supported file formats.
+* VMS support:                           Custom installation.
+* VMS TeX implementations:               Other TeX packages.
+* Vojta, Paul:                           History.
+* Walnut Creek TeX CD-ROM:               CD-ROM distribution.
+* Walsh, Norman:                         History.
+* warning about unusable ls-R:           ls-R.
+* warnings, file access:                 Searching overview.
+* warnings, pointer combinations:        Pointer combination warnings.
+* warnings, suppressing:                 Suppressing warnings.
+* wcstombs:                              dlopen.
+* Weber, Olaf:                           History.
+* whitespace, in fontmap files:          Fontmap.
+* whitespace, not ignored on continuation lines: Config files.
+* Windows TeX implementations:           Other TeX packages.
+* World Wide Web CTAN access:            Electronic distribution.
+* www.tug.org:                           unixtex.ftp.
+* X11 previewer:                         Kpathsea application distributions.
+* X11, lacking on NeXT:                  Kpathsea application distributions.
+* XCFLAGS:                               Running make.
+* XCPPFLAGS:                             Running make.
+* XDEFS:                                 Running make.
+* XDVIFONTS:                             Supported file formats.
+* XDVIMAKEPK:                            mktex script names.
+* XDVISIZES:                             Fallback font.
+* XLDFLAGS:                              Running make.
+* XLOADLIBES:                            Running make.
+* XMAKEARGS:                             Running make.
+* Xmu library problems:                  ShellWidgetClass.
+* XtStrings:                             XtStrings.
+* zuhn, david:                           History.
+* { expansion:                           Brace expansion.
+* ~ expansion:                           Tilde expansion.
+
+

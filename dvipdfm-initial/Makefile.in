@@ -1,0 +1,19 @@
+
+test = @CFLAGS@
+directories = kpathsea/kpathsea dvipdfm
+XMAKEARGS=kpsewhich
+prefix=@prefix@
+datadir=@datadir@
+bindir=@bindir@
+CONFIG=config.h config.cache config.log Makefile
+default:
+	cd kpathsea && $(MAKE)
+	cd dvipdfm && $(MAKE)
+	
+distclean clean: this-distclean
+	for d in $(directories); do \
+	  (cd $$d && $(MAKE) $@) ; done;
+this-distclean:
+	rm -f $(CONFIG)
+install:
+	cd dvipdfm && $(MAKE) $@

@@ -1,0 +1,1065 @@
+This is Info file kpathsea.info, produced by Makeinfo version 1.68 from
+the input file kpathsea.texi.
+
+INFO-DIR-SECTION TeX
+START-INFO-DIR-ENTRY
+* Kpathsea: (kpathsea).                       File lookup along search paths.
+* kpsewhich: (kpathsea)Invoking kpsewhich.    TeX file searching.
+* mktexmf: (kpathsea)mktex scripts.           MF source generation.
+* mktexpk: (kpathsea)mktex scripts.           PK bitmap generation.
+* mktextex: (kpathsea)mktex scripts.          TeX source generation.
+* mktextfm: (kpathsea)mktex scripts.          TeX font metric generation.
+* mktexlsr: (kpathsea)Filename database.      Update ls-R.
+END-INFO-DIR-ENTRY
+
+  This file documents the Kpathsea library for path searching.
+
+  Copyright (C) 1993, 94, 95, 96, 97 K. Berry & O. Weber.
+
+  Permission is granted to make and distribute verbatim copies of this
+manual provided the copyright notice and this permission notice are
+preserved on all copies.
+
+  Permission is granted to copy and distribute modified versions of this
+manual under the conditions for verbatim copying, provided that the
+entire resulting derived work is distributed under the terms of a
+permission notice identical to this one.
+
+  Permission is granted to copy and distribute translations of this
+manual into another language, under the above conditions for modified
+versions, except that this permission notice may be stated in a
+translation approved by the Free Software Foundation.
+
+
+File: kpathsea.info,  Node: Subdirectory expansion,  Prev: KPSE_DOT expansion,  Up: Path expansion
+
+Subdirectory expansion
+----------------------
+
+  Two or more consecutive slashes in a path element following a
+directory D is replaced by all subdirectories of D: first those
+subdirectories directly under D, then the subsubdirectories under
+those, and so on.  At each level, the order in which the directories are
+searched is unspecified.  (It's "directory order", and definitely not
+alphabetical.)
+
+  If you specify any filename components after the `//', only
+subdirectories which match those components are included.  For example,
+`/a//b' would expand into directories `/a/1/b', `/a/2/b', `/a/1/1/b',
+and so on, but not `/a/b/c' or `/a/1'.
+
+  You can include multiple `//' constructs in the path.
+
+  `//' at the beginning of a path is ignored; you didn't really want to
+search every directory on the system, did you?
+
+  I should mention one related implementation trick, which I took from
+GNU find.  Matthew Farwell suggested it, and David MacKenzie
+implemented it.
+
+  The trick is that in every real Unix implementation (as opposed to the
+POSIX specification), a directory which contains no subdirectories will
+have exactly two links (namely, one for `.' and one for `..').  That is
+to say, the `st_nlink' field in the `stat' structure will be two.
+Thus, we don't have to stat everything in the bottom-level (leaf)
+directories--we can just check `st_nlink', notice it's two, and do no
+more work.
+
+  But if you have a directory that contains a single subdirectory and
+500 regular files, `st_nlink' will be 3, and Kpathsea has to stat every
+one of those 501 entries.  Therein lies slowness.
+
+  You can disable the trick by undefining `UNIX_ST_LINK' in
+`kpathsea/config.h'. (It is undefined by default except under Unix.)
+
+  Unfortunately, in some cases files in leaf directories are `stat''d:
+if the path specification is, say, `$TEXMF/fonts//pk//', then files in
+a subdirectory `.../pk', even if it is a leaf, are checked. The reason
+cannot be explained without reference to the implementation, so read
+`kpathsea/elt-dirs.c' (search for `may descend') if you are curious.
+And if you can find a way to *solve* the problem, please let me know.
+
+  Subdirectory expansion is implemented in the source file
+`kpathsea/elt-dirs.c'.
+
+
+File: kpathsea.info,  Node: Filename database,  Next: Invoking kpsewhich,  Prev: Path expansion,  Up: Path searching
+
+Filename database (`ls-R')
+==========================
+
+  Kpathsea goes to some lengths to minimize disk accesses for searches
+(*note Subdirectory expansion::.).  Nevertheless, at installations with
+enough directories, searching each possible directory for a given file
+can take an excessively long time (depending on the speed of the disk,
+whether it's NFS-mounted, how patient you are, etc.).
+
+  In practice, a font tree containing the standard PostScript and PCL
+fonts is large enough for searching to be noticeably slow on typical
+systems these days.  Therefore, Kpathsea can use an externally-built
+"database" file named `ls-R' that maps files to directories, thus
+avoiding the need to exhaustively search the disk.
+
+  A second database file `aliases' allows you to give additional names
+to the files listed in `ls-R'.  This can be helpful to adapt to "8.3"
+filename conventions in source files.
+
+  The `ls-R' and `aliases' features are implemented in the source file
+`kpathsea/db.c'.
+
+* Menu:
+
+* ls-R::                        The main filename database.
+* Filename aliases::            Aliases for those names.
+* Database format::             Syntax details of the database file.
+
+
+File: kpathsea.info,  Node: ls-R,  Next: Filename aliases,  Up: Filename database
+
+`ls-R'
+------
+
+  As mentioned above, you must name the main filename database `ls-R'.
+You can put one at the root of each TeX installation hierarchy you wish
+to search (`$TEXMF' by default); most sites have only one hierarchy.
+Kpathsea looks for `ls-R' files along the `TEXMFDBS' path, so that
+should presumably match the list of hierarchies.
+
+  The recommended way to create and maintain `ls-R' is to run the
+`mktexlsr' script, which is installed in `$(bindir)' (`/usr/local/bin'
+by default).  That script goes to some trouble to follow symbolic links
+as necessary, etc.  It's also invoked by the distributed `mktex...'
+scripts.
+
+  At its simplest, though, you can build `ls-R' with the command
+     cd /YOUR/TEXMF/ROOT && ls -LAR ./ >ls-R
+
+presuming your `ls' produces the right output format (see the section
+below).  GNU `ls', for example, outputs in this format.  Also presuming
+your `ls' hasn't been aliased in a system file (e.g., `/etc/profile')
+to something problematic, e.g., `ls --color=tty'.  In that case, you
+will have to disable the alias before generating `ls-R'.  For the
+precise definition of the file format, see *Note Database format::.
+
+  Regardless of whether you use the supplied script or your own, you
+will almost certainly want to invoke it via `cron', so when you make
+changes in the installed files (say if you install a new LaTeX
+package), `ls-R' will be automatically updated.
+
+  The `-A' option to `ls' includes files beginning with `.'  (except
+for `.' and `..'), such as the file `.tex' included with the LaTeX
+tools package.  (On the other hand, *directories* whose names begin
+with `.' are always ignored.)
+
+  If your system does not support symbolic links, omit the `-L'.
+
+  `ls -LAR /YOUR/TEXMF/ROOT' will also work.  But using `./' avoids
+embedding absolute pathnames, so the hierarchy can be easily
+transported.  It also avoids possible trouble with automounters or
+other network filesystem conventions.
+
+  Kpathsea warns you if it finds an `ls-R' file, but the file does not
+contain any usable entries.  The usual culprit is running plain `ls -R'
+instead of `ls -LR ./' or `ls -R /YOUR/TEXMF/ROOT'.  Another
+possibility is some system directory name starting with a `.' (perhaps
+if you are using AFS); Kpathsea ignores everything under such
+directories.
+
+  Because the database may be out-of-date for a particular run, if a
+file is not found in the database, by default Kpathsea goes ahead and
+searches the disk. If a particular path element begins with `!!',
+however, *only* the database will be searched for that element, never
+the disk.  If the database does not exist, nothing will be searched.
+Because this can surprise users ("I see the font `foo.tfm' when I do an
+`ls'; why can't Dvips find it?"), it is not in any of the default
+search paths.
+
+
+File: kpathsea.info,  Node: Filename aliases,  Next: Database format,  Prev: ls-R,  Up: Filename database
+
+Filename aliases
+----------------
+
+  In some circumstances, you may wish to find a file under several
+names.  For example, suppose a TeX document was created using a DOS
+system and tries to read `longtabl.sty'.  But now it's being run on a
+Unix system, and the file has its original name, `longtable.sty'.  The
+file won't be found.  You need to give the actual file `longtable.sty'
+an alias `longtabl.sty'.
+
+  You can handle this by creating a file `aliases' as a companion to
+the `ls-R' for the hierarchy containing the file in question.  (You
+must have an `ls-R' for the alias feature to work.)
+
+  The format of `aliases' is simple: two whitespace-separated words per
+line; the first is the real name `longtable.sty', and second is the
+alias (`longtabl.sty').  These must be base filenames, with no
+directory components.  `longtable.sty' must be in the sibling `ls-R'.
+
+  Also, blank lines and lines starting with `%' or `#' are ignored in
+`aliases', to allow for comments.
+
+  If a real file `longtabl.sty' exists, it is used regardless of any
+aliases.
+
+
+File: kpathsea.info,  Node: Database format,  Prev: Filename aliases,  Up: Filename database
+
+Database format
+---------------
+
+  The "database" read by Kpathsea is a line-oriented file of plain
+text. The format is that generated by GNU (and most other) `ls'
+programs given the `-R' option, as follows.
+
+   * Blank lines are ignored.
+
+   * If a line begins with `/' or `./' or `../' and ends with a colon,
+     it's the name of a directory.  (`../' lines aren't useful,
+     however, and should not be generated.)
+
+   * All other lines define entries in the most recently seen directory.
+     /'s in such lines will produce possibly-strange results.
+
+   * Files with no preceding directory line are ignored.
+
+  For example, here's the first few lines of `ls-R' (which totals about
+30K bytes) on my system:
+
+     bibtex
+     dvips
+     fonts
+     ls-R
+     metafont
+     metapost
+     tex
+     web2c
+     
+     ./bibtex:
+     bib
+     bst
+     doc
+     
+     ./bibtex/bib:
+     asi.bib
+     btxdoc.bib
+     ...
+
+
+File: kpathsea.info,  Node: Invoking kpsewhich,  Prev: Filename database,  Up: Path searching
+
+`kpsewhich': Standalone path searching
+======================================
+
+  The Kpsewhich program exercises the path searching functionality
+independent of any particular application.  This can also be useful as a
+sort of `find' program to locate files in your TeX hierarchies, perhaps
+in administrative scripts.  It is used heavily in the distributed
+`mktex...' scripts.
+
+  Synopsis:
+     kpsewhich OPTION... FILENAME...
+
+  The options and filename(s) to look up can be intermixed.  Options
+can start with either `-' or `--', and any unambiguous abbreviation is
+accepted.
+
+* Menu:
+
+* Path searching options::      Changing the mode, resolution, etc.
+* Auxiliary tasks::             Path and variable expansion.
+* Standard options::            -help and -version.
+
+
+File: kpathsea.info,  Node: Path searching options,  Next: Auxiliary tasks,  Up: Invoking kpsewhich
+
+Path searching options
+----------------------
+
+  Kpsewhich looks up each non-option argument on the command line as a
+filename, and returns the first file found.  There is no option to
+return all the files with a particular name (you can run the Unix
+`find' utility for that, *note Invoking find: (findutils)Invoking
+find.).
+
+  Various options alter the path searching behavior:
+
+`--dpi=NUM'
+     Set the resolution to NUM; this only affects `gf' and `pk'
+     lookups.  `-D' is a synonym, for compatibility with Dvips.
+     Default is 600.
+
+`--format=NAME'
+     Set the format for lookup to NAME.  By default, the format is
+     guessed from the filename, with `tex' being used if nothing else
+     fits.  The recognized filename extensions (including any leading
+     `.') are also allowable NAMEs.
+
+     All formats also have a name, which is the only way to specify
+     formats with no associated suffix.  For example, for Dvips
+     configuration files you can use `--format="dvips config"'.  (The
+     quotes are for the sake of the shell.)
+
+     Here's the current list of recognized names and the associated
+     suffixes.  *Note Supported file formats::, for more information on
+     each of these.
+          gf: gf
+          pk: pk
+          bitmap font
+          afm: .afm
+          base: .base
+          bib: .bib
+          bst: .bst
+          cnf: .cnf
+          ls-R: ls-R
+          fmt: .fmt
+          map: .map
+          mem: .mem
+          mf: .mf
+          mfpool: .pool
+          mft: .mft
+          mp: .mp
+          mppool: .pool
+          MetaPost support
+          ocp: .ocp
+          ofm: .ofm .tfm
+          opl: .opl
+          otp: .otp
+          ovf: .ovf
+          ovp: .ovp
+          graphic/figure: .eps .epsi
+          tex: .tex
+          TeX system documentation
+          texpool: .pool
+          TeX system sources
+          PostScript header/font: .pro
+          Troff fonts
+          tfm: .tfm
+          type1 fonts: .pfa .pfb
+          vf: .vf
+          dvips config
+          ist: .ist
+          truetype fonts: .ttf .ttc
+          type42 fonts
+          web2c files
+          other text files
+          other binary files
+
+     This option and `--path' are mutually exclusive.
+
+`--interactive'
+     After processing the command line, read additional filenames to
+     look up from standard input.
+
+`-mktex=FILETYPE'
+`-no-mktex=FILETYPE'
+     Turn on or off the `mktex' script associated with FILETYPE.  The
+     only values that make sense for FILETYPE are `pk', `mf', `tex',
+     and `tfm'. By default, all are off in Kpsewhich.  *Note mktex
+     scripts::.
+
+`--mode=STRING'
+     Set the mode name to STRING; this also only affects `gf' and `pk'
+     lookups.  No default: any mode will be found.  *Note mktex script
+     arguments::.
+
+`--must-exist'
+     Do everything possible to find the files, notably including
+     searching the disk.  By default, only the `ls-R' database is
+     checked, in the interest of efficiency.
+
+`--path=STRING'
+     Search along the path STRING (colon-separated as usual), instead
+     of guessing the search path from the filename.  `//' and all the
+     usual expansions are supported (*note Path expansion::.).  This
+     option and `--format' are mutually exclusive.  To output the
+     complete directory expansion of a path, instead of doing a
+     one-shot lookup, see `--expand-path' in the following section.
+
+`--progname=NAME'
+     Set the program name to NAME; default is `kpsewhich'.  This can
+     affect the search paths via the `.PROGNAM' feature in
+     configuration files (*note Config files::.).
+
+
+File: kpathsea.info,  Node: Auxiliary tasks,  Next: Standard options,  Prev: Path searching options,  Up: Invoking kpsewhich
+
+Auxiliary tasks
+---------------
+
+  Kpsewhich provides some additional features not strictly related to
+path lookup:
+
+   * `--debug=NUM' sets the debugging options to NUM.  *Note
+     Debugging::.
+
+   * `--expand-braces=STRING' outputs the variable and brace expansion
+     of STRING.  *Note Path expansion::.
+
+   * `--expand-var=STRING' outputs the variable expansion of STRING.
+     For example, the `mktex...' scripts run `kpsewhich
+     --expand-var='$TEXMF'' to find the root of the TeX system
+     hierarchy.  *Note Path expansion::.
+
+   * `--expand-path=STRING' outputs the complete expansion of STRING as
+     a colon-separated path.  This is useful to construct a search path
+     for a program that doesn't accept recursive subdirectory
+     specifications.
+
+     For one-shot uses of an arbitrary (not built in to Kpathsea) path,
+     see `--path' in the previous section.
+
+   * `--show-path=NAME' shows the path that would be used for file
+     lookups of file type NAME.  Either a filename extension (`pk',
+     `.vf', etc.) or an integer can be used, just as with `--format',
+     described in the previous section.
+
+
+File: kpathsea.info,  Node: Standard options,  Prev: Auxiliary tasks,  Up: Invoking kpsewhich
+
+Standard options
+----------------
+
+  Kpsewhich accepts the standard GNU options:
+
+   * `--help' prints a help message on standard output and exits.
+
+   * `--version' prints the Kpathsea version number and exits.
+
+
+File: kpathsea.info,  Node: TeX support,  Next: Programming,  Prev: Path searching,  Up: Top
+
+TeX support
+***********
+
+  Although the basic features in Kpathsea can be used for any type of
+path searching, it came about (like all libraries) with a specific
+application in mind: I wrote Kpathsea specifically for TeX system
+programs.  I had been struggling with the programs I was using (Dvips,
+Xdvi, and TeX itself) having slightly different notions of how to
+specify paths; and debugging was painful, since no code was shared.
+
+  Therefore, Kpathsea provides some TeX-specific formats and features.
+Indeed, many of the supposedly generic path searching features were
+provided because they seemed useful in that conTeXt (font lookup,
+particularly).
+
+  Kpathsea provides a standard way to search for files of any of the
+supported file types; glyph fonts are a bit different than all the rest.
+Searches are based solely on filenames, not file contents--if a GF file
+is named `cmr10.600pk', it will be found as a PK file.
+
+* Menu:
+
+* Supported file formats::      File types Kpathsea knows about.
+* File lookup::                 Searching for most kinds of files.
+* Glyph lookup::                Searching for bitmap fonts.
+* Suppressing warnings::        Avoiding warnings via TEX_HUSH.
+
+
+File: kpathsea.info,  Node: Supported file formats,  Next: File lookup,  Up: TeX support
+
+Supported file formats
+======================
+
+  Kpathsea has support for a number of file types.  Each file type has a
+list of environment and config file variables that are checked to define
+the search path, and most have a default suffix that plays a role in
+finding files (see the next section).  Some also define additional
+suffixes, and/or a program to be run to create missing files on the fly.
+
+  Since environment variables containing periods, such as
+`TEXINPUTS.latex', are not allowed on some systems, Kpathsea looks for
+environment variables with an underscore, e.g., `TEXINPUTS_latex'
+(*note Config files::.).
+
+  The following table lists the above information.
+
+`afm'
+     (Adobe font metrics, *note Metric files: (dvips)Metric files.)
+     `AFMFONTS'; suffix `.afm'.
+
+`base'
+     (Metafont memory dump, *note Memory dumps: (web2c)Memory dumps.)
+     `MFBASES', `TEXMFINI'; suffix `.base'.
+
+`bib'
+     (BibTeX bibliography source, *note bibtex invocation:
+     (web2c)bibtex invocation.)  `BIBINPUTS', `TEXBIB'; suffix `.bib'.
+
+`bst'
+     (BibTeX style file, *note Basic BibTeX style files: (web2c)Basic
+     BibTeX style files.)  `BSTINPUTS'; suffix `.bst'.
+
+`cnf'
+     (Runtime configuration files, *note Config files::.)  `TEXMFCNF';
+     suffix `.cnf'.
+
+`dvips config'
+     (Dvips `config.*' files, such as `config.ps', *note Config files:
+     (dvips)Config files.)  `TEXCONFIG'.
+
+`fmt'
+     (TeX memory dump, *note Memory dumps: (web2c)Memory dumps.)
+     `TEXFORMATS', `TEXMFINI'; suffix `.fmt'.
+
+`gf'
+     (generic font bitmap, *note Glyph files: (dvips)Glyph files.)
+     `PROGRAMFONTS', `GFFONTS', `GLYPHFONTS', `TEXFONTS'; suffix `gf'.
+
+`graphic/figure'
+     (Encapsulated PostScript figures, *note PostScript figures:
+     (dvips)PostScript figures.)  `TEXPICTS', `TEXINPUTS'; additional
+     suffixes: `.eps', `.epsi'.
+
+`ist'
+     (makeindex style files) `TEXINDEXSTYLE', `INDEXSTYLE'; suffix
+     `.ist'.
+
+`ls-R'
+     (Filename databases, *note Filename database::.)  `TEXMFDBS'.
+
+`map'
+     (Fontmaps, *note Fontmap::.)  `TEXFONTMAPS'; suffix `.map'.
+
+`mem'
+     (MetaPost memory dump, *note Memory dumps: (web2c)Memory dumps.)
+     `MPMEMS', `TEXMFINI'; suffix `.mem'.
+
+`MetaPost support'
+     (MetaPost support files, used by DMP; *note dmp invocation:
+     (web2c)dmp invocation.)  `MPSUPPORT'.
+
+`mf'
+     (Metafont source, *note mf invocation: (web2c)mf invocation.)
+     `MFINPUTS'; suffix `.mf'; dynamic creation program: `mktexmf'.
+
+`mfpool'
+     (Metafont program strings, *note pooltype invocation:
+     (web2c)pooltype invocation.)  `MFPOOL', `TEXMFINI'; suffix `.pool'.
+
+`mft'
+     (`MFT' style file, *note mft invocation: (web2c)mft invocation.)
+     `MFTINPUTS'; suffix `.mft'.
+
+`mp'
+     (MetaPost source, *note mpost invocation: (web2c)mpost invocation.)
+     `MPINPUTS'; suffix `.mp'.
+
+`mppool'
+     (MetaPost program strings, *note pooltype invocation:
+     (web2c)pooltype invocation.)  `MPPOOL', `TEXMFINI'; suffix `.pool'.
+
+`ocp'
+     (Omega compiled process files) `OCPINPUTS';
+     suffix `.ocp'; dynamic creation program: `MakeOmegaOCP'.
+
+`ofm'
+     (Omega font metrics) `OFMFONTS', `TEXFONTS';
+     suffixes `.ofm', `.tfm'; dynamic creation program: `MakeOmegaOFM'.
+
+`opl'
+     (Omega property lists) `OPLFONTS', `TEXFONTS'; suffix `.opl'.
+
+`otp'
+     (Omega translation process files) `OTPINPUTS'; suffix `.otp'.
+
+`ovf'
+     (Omega virtual fonts) `OVFFONTS', `TEXFONTS'; suffix `.ovf'.
+
+`ovp'
+     (Omega virtual property lists) `OVPFONTS', `TEXFONTS'; suffix
+     `.ovp'.
+
+`pk'
+     (packed bitmap fonts, *note Glyph files: (dvips)Glyph files.)
+     `PROGRAMFONTS' (PROGRAM being `XDVI', etc.), `PKFONTS', `TEXPKS',
+     `GLYPHFONTS', `TEXFONTS'; suffix `pk'; dynamic creation program:
+     `mktexpk'.
+
+`PostScript header'
+     (downloadable PostScript, *note Header files: (dvips)Header files.)
+     `TEXPSHEADERS', `PSHEADERS'; additional suffix `.pro'.
+
+`tex'
+     (TeX source, *note tex invocation: (web2c)tex invocation.)
+     `TEXINPUTS'; suffix `.tex'; additional suffixes: none, because
+     such a list cannot be complete; dynamic creation program:
+     `mktextex'.
+
+`TeX system documentation'
+     (Documentation files for the TeX system) `TEXDOCS'.
+
+`TeX system sources'
+     (Source files for the TeX system) `TEXSOURCES'.
+
+`texpool'
+     (TeX program strings, *note pooltype invocation: (web2c)pooltype
+     invocation.)  `TEXPOOL', `TEXMFINI'; suffix `.pool'.
+
+`tfm'
+     (TeX font metrics, *note Metric files: (dvips)Metric files.)
+     `TFMFONTS', `TEXFONTS'; suffix `.tfm'; dynamic creation program:
+     `mktextfm'.
+
+`Troff fonts'
+     (Troff fonts, used by DMP; *note DMP invocation: (web2c)DMP
+     invocation.)  `TRFONTS'.
+
+`truetype fonts'
+     (TrueType outline fonts) `TTFONTS'; suffixes `.ttf', `.ttc'.
+
+`type1 fonts'
+     (Type 1 PostScript outline fonts, *note Glyph files: (dvips)Glyph
+     files.)  `T1FONTS', `T1INPUTS', `TEXPSHEADERS', `DVIPSHEADERS';
+     suffixes `.pfa', `.pfb'.
+
+`type42 fonts'
+     (Type 42 PostScript outline fonts) `T42FONTS'.
+
+`vf'
+     (virtual fonts, *note Virtual fonts: (dvips)Virtual fonts.)
+     `VFFONTS', `TEXFONTS'; suffix `.vf'.
+
+  There are two special cases, because the paths and environment
+variables always depend on the name of the program: the variable name is
+constructed by converting the program name to upper case, and then
+appending `INPUTS'.  Assuming the program is called `foo', this gives
+us the following table.
+
+`other text files'
+     (text files used by `foo') `FOOINPUTS'.
+
+`other binary files'
+     (binary files used by `foo') `FOOINPUTS'.
+
+  If an environment variable by these names are set, the corresponding
+`texmf.cnf' definition won't be looked at (unless, as usual, the
+environment variable value has an extra `:').  *Note Default
+expansion::.
+
+  For the font variables, the intent is that:
+   * `TEXFONTS' is the default for everything.
+
+   * `GLYPHFONTS' is the default for bitmap (or, more precisely,
+     non-metric) files.
+
+   * Each font format has a variable of its own.
+
+   * Each program has its own font override path as well; e.g.,
+     `DVIPSFONTS' for Dvipsk.  Again, this is for bitmaps, not metrics.
+
+
+File: kpathsea.info,  Node: File lookup,  Next: Glyph lookup,  Prev: Supported file formats,  Up: TeX support
+
+File lookup
+===========
+
+  This section describes how Kpathsea searches for most files (bitmap
+font searches are the exception, as described in the next section).
+
+  Here is the search strategy for a file NAME:
+  1. If the file format defines default suffixes, and the suffix of
+     NAME name is not already a known suffix for that format, try the
+     name with each default appended, and use alternative names found
+     in the fontmaps if necessary.  We postpone searching the disk as
+     long as possible.  Example: given `foo.sty', look for `foo.sty.tex'
+     before `foo.sty'.  This is unfortunate, but allows us to find
+     `foo.bar.tex' before `foo.bar' if both exist and we were given
+     `foo.bar'.
+
+  2. Search for NAME, and if necssary for alternative names found in
+     the fontmaps.  Again we avoid searching the disk if possible.
+     Example: given `foo', we look for `foo'.
+
+  3. If the file format defines a program to invoke to create missing
+     files, run it (*note mktex scripts::.).
+
+  This is implemented in the routine `kpse_find_file' in
+`kpathsea/tex-file.c'.  You can watch it in action with the debugging
+options (*note Debugging::.).
+
+
+File: kpathsea.info,  Node: Glyph lookup,  Next: Suppressing warnings,  Prev: File lookup,  Up: TeX support
+
+Glyph lookup
+============
+
+  This section describes how Kpathsea searches for a bitmap font in GF
+or PK format (or either) given a font name (e.g., `cmr10') and a
+resolution (e.g., 600).
+
+  Here is an outline of the search strategy (details in the sections
+below) for a file NAME at resolution DPI.  The search stops at the
+first successful lookup.
+
+  1. Look for an existing file NAME.DPIFORMAT in the specified
+     format(s).
+
+  2. If NAME is an alias for a file F in the fontmap file
+     `texfonts.map', look for F.DPI.
+
+  3. Run an external program (typically named `mktexpk') to generate
+     the font (*note mktex scripts::.)
+
+  4. Look for FALLBACK.DPI, where FALLBACK is some last-resort font
+     (typically `cmr10').
+
+  This is implemented in `kpse_find_glyph_format' in
+`kpathsea/tex-glyph.c'.
+
+* Menu:
+
+* Basic glyph lookup::          Features common to all glyph lookups.
+* Fontmap::                     Aliases for fonts.
+* Fallback font::               Resolutions and fonts of last resort.
+
+
+File: kpathsea.info,  Node: Basic glyph lookup,  Next: Fontmap,  Up: Glyph lookup
+
+Basic glyph lookup
+------------------
+
+  When Kpathsea looks for a bitmap font NAME at resolution DPI in a
+format FORMAT, it first checks each directory in the search path for a
+file `NAME.DPIFORMAT'; for example, `cmr10.600pk'.  Kpathsea looks for
+a PK file first, then a GF file.
+
+  If that fails, Kpathsea looks for `dpiDPI/NAME.FORMAT'; for example,
+`dpi600/cmr10.pk'. This is how fonts are typically stored on
+filesystems (such as DOS) that permit only three-character extensions.
+
+  If that fails, Kpathsea looks for a font with a close-enough DPI.
+"Close enough" is defined by the macro `KPSE_BITMAP_TOLERANCE' in
+`kpathsea/tex-glyph.h' to be `DPI / 500 + 1'.  This is slightly more
+than the 0.2% minimum allowed by the DVI standard
+(`CTAN:/dviware/driv-standard/level-0').
+
+
+File: kpathsea.info,  Node: Fontmap,  Next: Fallback font,  Prev: Basic glyph lookup,  Up: Glyph lookup
+
+Fontmap
+-------
+
+  If a bitmap font or metric file is not found with the original name
+(see the previous section), Kpathsea looks through any "fontmap" files
+for an "alias" for the original font name.  These files are named
+`texfonts.map' and searched for along the `TEXFONTMAPS'
+environment/config file variable.  All `texfonts.map' files that are
+found are read; earlier definitions override later ones.
+
+  This feature is intended to help in two respects:
+
+  1. An alias name is limited in length only by available memory, not
+     by your filesystem.  Therefore, if you want to ask for
+     `Times-Roman' instead of `ptmr', you can (you get `ptmr8r').
+
+  2. A few fonts have historically had multiple names: specifically,
+     LaTeX's "circle font" has variously been known as `circle10',
+     `lcircle10', and `lcirc10'.  Aliases can make all the names
+     equivalent, so that it no longer matters what the name of the
+     installed file is; TeX documents will find their favorite name.
+
+
+  The format of fontmap files is straightforward:
+
+   * Comments start with `%' and continue to the end of the line.
+
+   * Blank lines are ignored.
+
+   * Each nonblank line is broken up into a series of "words":   a
+     sequence of non-whitespace characters.
+
+   * If the first word is `include', the second word is used as   a
+     filename, and it is searched for and read.
+
+   * Otherwise, the first word on each line is the true filename;
+
+   * the second word is the alias;
+
+   * subsequent words are ignored.
+
+  If an alias has an extension, it matches only those files with that
+extension; otherwise, it matches anything with the same root, regardless
+of extension.  For example, an alias `foo.tfm' matches only when
+`foo.tfm' is being searched for; but an alias `foo' matches `foo.vf',
+`foo.600pk', etc.
+
+  As an example, here is an excerpt from the `texfonts.map' in the
+Web2c distribution.  It makes the circle fonts equivalent and includes
+automatically generated maps for most PostScript fonts available from
+various font suppliers.
+
+     circle10        lcircle10
+     circle10        lcirc10
+     lcircle10       circle10
+     lcircle10       lcirc10
+     lcirc10         circle10
+     lcirc10         lcircle10
+     ...
+     include adobe.map
+     include apple.map
+     include bitstrea.map
+     ...
+
+  Fontmaps are implemented in the file `kpathsea/fontmap.c'.  The
+Fontname distribution has much more information on font naming (*note
+Introduction: (fontname)Introduction.).
+
+
+File: kpathsea.info,  Node: Fallback font,  Prev: Fontmap,  Up: Glyph lookup
+
+Fallback font
+-------------
+
+  If a bitmap font cannot be found or created at the requested size,
+Kpathsea looks for the font at a set of "fallback resolutions".  You
+specify these resolutions as a colon-separated list (like search paths).
+Kpathsea looks first for a program-specific environment variable (e.g.,
+`DVIPSSIZES' for Dvipsk), then the environment variable `TEXSIZES',
+then a default specified at compilation time (the Make variable
+`default_texsizes').  You can set this list to be empty if you prefer
+to find fonts at their stated size or not at all.
+
+  Finally, if the font cannot be found even at the fallback resolutions,
+Kpathsea looks for a fallback font, typically `cmr10'.  Programs must
+enable this feature by assigning to the global variable
+`kpse_fallback_font' or calling `kpse_init_prog' (*note Calling
+sequence::.); the default is no fallback font.
+
+
+File: kpathsea.info,  Node: Suppressing warnings,  Prev: Glyph lookup,  Up: TeX support
+
+Suppressing warnings
+====================
+
+  Kpathsea provides a way to suppress selected usually-harmless
+warnings; this is useful at large sites where most users are not
+administrators, and thus the warnings are merely a source of confusion,
+not a help.  To do this, you set the environment variable or
+configuration file value `TEX_HUSH' to a colon-separated list of
+values.  Here are the possibilities:
+
+`all'
+     Suppress everything possible.
+
+`checksum'
+     Suppress mismatched font checksum warnings.
+
+`lostchar'
+     Suppress warnings when a character is missing from a font that a
+     DVI or VF file tries to typeset.
+
+`readable'
+     Suppress warnings about attempts to access a file whose permissions
+     render it unreadable.
+
+`special'
+     Suppresses warnings about an unimplemented or unparsable
+     `\special' command.
+
+`tex-hush.c' defines the function that checks the variable value.  Each
+driver implements its own checks where appropriate.
+
+
+File: kpathsea.info,  Node: Programming,  Next: Index,  Prev: TeX support,  Up: Top
+
+Programming
+***********
+
+  This chapter is for programmers who wish to use Kpathsea.  *Note
+Introduction::, for the conditions under which you may do so.
+
+* Menu:
+
+* Overview: Programming overview.         Introduction.
+* Calling sequence::                      Specifics of what to call.
+* Program-specific files::                How to handle these.
+* Config: Programming with config files.  Getting info from texmf.cnf.
+
+
+File: kpathsea.info,  Node: Programming overview,  Next: Calling sequence,  Up: Programming
+
+Programming overview
+====================
+
+  Aside from this manual, your best source of information is the source
+to the programs I've modified to use Kpathsea (*note Introduction::.).
+Of those, Dviljk is probably the simplest, and hence a good place to
+start.  Xdvik adds VF support and the complication of X resources.
+Dvipsk adds the complication of its own config files.  Web2c is source
+code I also maintain, so it uses Kpathsea rather straightforwardly, but
+is of course complicated by the Web to C translation.  Finally,
+Kpsewhich is a small utility program whose sole purpose is to exercise
+the main path-searching functionality.
+
+  Beyond these examples, the `.h' files in the Kpathsea source describe
+the interfaces and functionality (and of course the `.c' files define
+the actual routines, which are the ultimate documentation).
+`pathsearch.h' declares the basic searching routine.  `tex-file.h' and
+`tex-glyph.h' define the interfaces for looking up particular kinds of
+files.  You may wish to use `#include <kpathsea/kpathsea.h>', which
+includes every Kpathsea header.
+
+  The library provides no way for an external program to register new
+file types: `tex-file.[ch]' must be modified to do this. For example,
+Kpathsea has support for looking up Dvips config files, even though no
+program other than Dvips will likely ever want to do so.  I felt this
+was acceptable, since along with new file types should also come new
+defaults in `texmf.cnf' (and its descendant `paths.h'), since it's
+simplest for users if they can modify one configuration file for all
+kinds of paths.
+
+  Kpathsea does not parse any formats itself; it barely opens any files.
+Its primary purpose is to return filenames.  The GNU font utilities does
+contain libraries to read TFM, GF, and PK files, as do the programs
+above, of course.
+
+
+File: kpathsea.info,  Node: Calling sequence,  Next: Program-specific files,  Prev: Programming overview,  Up: Programming
+
+Calling sequence
+================
+
+  The typical way to use Kpathsea in your program goes something like
+this:
+
+  1. Call `kpse_set_program_name' with `argv[0]' as the first argument;
+     the second argument is a string or `NULL'.  The second argument is
+     used by Kpathsea as the program name for the `.PROGRAM' feature of
+     config files (*note Config files::.).  If the second argument is
+     `NULL', the value of the first argument is used.  This function
+     must be called before any other use of the Kpathsea library.
+
+     If necessary, `kpse_set_program_name' sets the global variables
+     `program_invocation_name' and `program_invocation_short_name'.
+     These variables are used in the error message macros defined in
+     `kpathsea/lib.h'.  It sets the global variable `kpse_program_name'
+     to the program name it uses.  It also initializes debugging
+     options based on the environment variable `KPATHSEA_DEBUG' (if
+     that is set).  Finally, it sets the variables `SELFAUTOLOC',
+     `SELFAUTODIR' and `SELFAUTOPARENT' to the location, parent and
+     grandparent directory of the executable, removing `.' and `..'
+     path elements and resolving symbolic links.  These are used in the
+     default configuration file to allow people to invoke TeX from
+     anywhere, specifically from a mounted CD-ROM.  (You can use
+     `--expand-var=\$SELFAUTOLOC', etc., to see the values finds.)
+
+  2. The `kpse_set_progname' is deprecated.  A call to
+     `kpse_set_progname' with `argv[0]' is equivalent to a call of
+     `kpse_set_program_name' with first argument `argv[0]' and second
+     argument `NULL'.  The function is deprecated because it cannot
+     ensure that the `.PROGRAM' feature of config files will always
+     work (*note Config files::.).
+
+  3. Set debugging options. *Note Debugging::.  If your program doesn't
+     have a debugging option already, you can define one and set
+     `kpathsea_debug' to the number that the user supplies (as in Dviljk
+     and Web2c), or you can just omit this altogether (people can
+     always set `KPATHSEA_DEBUG').  If you do have runtime debugging
+     already, you need to merge Kpathsea's options with yours (as in
+     Dvipsk and Xdvik).
+
+  4. If your program has its own configuration files that can define
+     search paths, you should assign those paths to the `client_path'
+     member in the appropriate element of the `kpse_format_info' array.
+     (This array is indexed by file type; see `tex-file.h'.)  See
+     `resident.c' in Dvipsk for an example.
+
+  5. Call `kpse_init_prog' (see `proginit.c'). It's useful for the DVI
+     drivers, at least, but for other programs it may be simpler to
+     extract the parts of it that actually apply.  This does not
+     initialize any paths, it just looks for (and sets) certain
+     environment variables and other random information.  (A search
+     path is always initialized at the first call to find a file of
+     that type; this eliminates much useless work, e.g., initializing
+     the BibTeX search paths in a DVI driver.)
+
+  6. The routine to actually find a file of type FORMAT is
+     `kpse_find_FORMAT', defined in `tex-file.h'. These are macros that
+     expand to a call to `kpse_find_file'.  You can call, say,
+     `kpse_find_tfm' after doing only the first of the initialization
+     steps above--Kpathsea automatically reads the `texmf.cnf' generic
+     config files, looks for environment variables, and does expansions
+     at the first lookup.
+
+  7. To find PK and/or GF bitmap fonts, the routines are `kpse_find_pk',
+     `kpse_find_gf' and `kpse_find_glyph', defined in `tex-glyph.h'.
+     These return a structure in addition to the resultant filename,
+     because fonts can be found in so many ways. See the documentation
+     in the source.
+
+  8. To actually open a file, not just return a filename, call
+     `kpse_open_file'.  This function takes the name to look up and a
+     Kpathsea file format as arguments, and returns the usual `FILE *'.
+     It always assumes the file must exist, and thus will search the
+     disk if necessary (unless the search path specified `!!', etc.).
+     In other words, if you are looking up a VF or some other file that
+     need not exist, don't use this.
+
+
+  Kpathsea also provides many utility routines. Some are generic: hash
+tables, memory allocation, string concatenation and copying, string
+lists, reading input lines of arbitrary length, etc. Others are
+filename-related: default path, tilde, and variable expansion, `stat'
+calls, etc. (Perhaps someday I'll move the former to a separate
+library.)
+
+  The `c-*.h' header files can also help your program adapt to many
+different systems.  You will almost certainly want to use Autoconf for
+configuring your software if you use Kpathsea; I strongly recommend
+using Autoconf regardless.  It is available from
+`ftp://prep.ai.mit.edu/pub/gnu/'.
+
+
+File: kpathsea.info,  Node: Program-specific files,  Next: Programming with config files,  Prev: Calling sequence,  Up: Programming
+
+Program-specific files
+======================
+
+  Many programs will need to find some configuration files.  Kpathsea
+contains some support to make it easy to place them in their own
+directories.  The Standard TeX directory structure (*note Introduction:
+(tds)Top.), specifies that such files should go into a subdirectory
+named after the program, like `texmf/ttf2pk'.
+
+  Two special formats, `kpse_program_text_format' and
+`kpse_program_binary_format' exist, which use `.:$TEXMF/PROGRAM//' as
+their compiled-in search path.  To override this default, you can use
+the variable `PROGRAMINPUTS' in the environment and/or `texmf.cnf'.
+That is to say, the name of the variable is constructed by converting
+the name of the program to upper case, and appending `INPUTS'.
+
+  The only difference between these two formats is whether
+`kpse_open_file' will open the files it finds in text or binary mode.
+
+
+File: kpathsea.info,  Node: Programming with config files,  Prev: Program-specific files,  Up: Programming
+
+Programming with config files
+=============================
+
+  You can (and probably should) use the same `texmf.cnf' configuration
+file that Kpathsea uses for your program.  This helps installers by
+keeping all configuration in one place.
+
+  To retrieve a value VAR from config files, the best way is to call
+`kpse_var_value' on the string `VAR'.  This will look first for an
+environment variable VAR, then a config file value.  The result will be
+the value found or `NULL'.  This function is declared in
+`kpathsea/variable.h'.  For an example, see the `shell_escape' code in
+`web2c/lib/texmfmp.c'.
+
+  The routine to do variable expansion in the context of a search path
+(as opposed to simply retrieving a value) is `kpse_var_expand', also
+declared in `kpathsea/variable.h'.  It's generally only necessary to
+set the search path structure components as explained in the previous
+section, rather than using this yourself.
+
+  If for some reason you want to retrieve a value *only* from a config
+file, not automatically looking for a corresponding environment
+variable, call `kpse_cnf_get' (declared in `kpathsea/cnf.h') with the
+string VAR.
+
+  No initialization calls are needed.
+

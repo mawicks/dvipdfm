@@ -1,0 +1,124 @@
+This is Info file kpathsea.info, produced by Makeinfo version 1.68 from
+the input file kpathsea.texi.
+
+INFO-DIR-SECTION TeX
+START-INFO-DIR-ENTRY
+* Kpathsea: (kpathsea).                       File lookup along search paths.
+* kpsewhich: (kpathsea)Invoking kpsewhich.    TeX file searching.
+* mktexmf: (kpathsea)mktex scripts.           MF source generation.
+* mktexpk: (kpathsea)mktex scripts.           PK bitmap generation.
+* mktextex: (kpathsea)mktex scripts.          TeX source generation.
+* mktextfm: (kpathsea)mktex scripts.          TeX font metric generation.
+* mktexlsr: (kpathsea)Filename database.      Update ls-R.
+END-INFO-DIR-ENTRY
+
+  This file documents the Kpathsea library for path searching.
+
+  Copyright (C) 1993, 94, 95, 96, 97 K. Berry & O. Weber.
+
+  Permission is granted to make and distribute verbatim copies of this
+manual provided the copyright notice and this permission notice are
+preserved on all copies.
+
+  Permission is granted to copy and distribute modified versions of this
+manual under the conditions for verbatim copying, provided that the
+entire resulting derived work is distributed under the terms of a
+permission notice identical to this one.
+
+  Permission is granted to copy and distribute translations of this
+manual into another language, under the above conditions for modified
+versions, except that this permission notice may be stated in a
+translation approved by the Free Software Foundation.
+
+
+Indirect:
+kpathsea.info-1: 1441
+kpathsea.info-2: 51000
+kpathsea.info-3: 99109
+kpathsea.info-4: 139125
+
+Tag Table:
+(Indirect)
+Node: Top1441
+Node: Introduction2087
+Node: History4447
+Node: Installation8523
+Node: Simple installation9313
+Node: Custom installation12891
+Node: Disk space14057
+Node: Kpathsea application distributions14971
+Node: Changing search paths16075
+Node: Default path features17243
+Node: Default path generation19359
+Node: Running configure20786
+Node: configure shells21826
+Node: configure options22595
+Node: configure environment24086
+Node: configure scenarios25874
+Node: Shared library27448
+Node: Running make28765
+Node: Installing files30797
+Node: Cleaning up32732
+Node: Filename database generation33767
+Node: mktex scripts34321
+Node: mktex configuration35268
+Node: mktex script names40160
+Node: mktex script arguments41241
+Node: Installation testing42116
+Node: Security42468
+Node: TeX directory structure45021
+Node: unixtex.ftp49436
+Node: Electronic distribution51000
+Node: CD-ROM distribution54278
+Node: Tape distribution56263
+Node: Other TeX packages57123
+Node: Reporting bugs58412
+Node: Bug checklist59147
+Node: Mailing lists63237
+Node: Debugging64582
+Node: Logging69644
+Node: Common problems71142
+Node: Unable to find files71963
+Node: Slow path searching74362
+Node: Unable to generate fonts75725
+Node: TeX or Metafont failing77270
+Node: Empty Makefiles79129
+Node: XtStrings80341
+Node: dlopen81161
+Node: ShellWidgetClass81963
+Node: Pointer combination warnings83580
+Node: Path searching83955
+Node: Searching overview84600
+Node: Path sources87959
+Node: Config files89024
+Node: Path expansion92517
+Node: Default expansion93460
+Node: Variable expansion95138
+Node: Tilde expansion96527
+Node: Brace expansion97411
+Node: KPSE_DOT expansion98606
+Node: Subdirectory expansion99109
+Node: Filename database101440
+Node: ls-R102746
+Node: Filename aliases105623
+Node: Database format106788
+Node: Invoking kpsewhich107800
+Node: Path searching options108667
+Node: Auxiliary tasks112360
+Node: Standard options113618
+Node: TeX support113928
+Node: Supported file formats115215
+Node: File lookup121473
+Node: Glyph lookup122757
+Node: Basic glyph lookup123877
+Node: Fontmap124744
+Node: Fallback font127342
+Node: Suppressing warnings128298
+Node: Programming129355
+Node: Programming overview129866
+Node: Calling sequence131782
+Node: Program-specific files136805
+Node: Programming with config files137835
+Node: Index139125
+
+End Tag Table

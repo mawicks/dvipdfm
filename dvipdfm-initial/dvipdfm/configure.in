@@ -1,0 +1,32 @@
+dnl Process this file with autoconf to produce a configure script.
+AC_INIT(acconfig.h)
+AC_CONFIG_HEADER(acdefines.h)
+
+AC_DEFINE(PACKAGE,"dvipdfm")
+AC_DEFINE(VERSION,"0.7dev")
+
+AC_PREFIX_PROGRAM(tex)
+
+dnl Checks for programs.
+AC_PROG_INSTALL
+AC_PROG_CC
+AC_PROG_LN_S
+AC_ARG_PROGRAM
+
+dnl Checks for libraries.
+dnl Replace main' with a function in -lm:
+AC_CHECK_LIB(m, floor)
+
+dnl Checks for header files.
+AC_CHECK_HEADERS(unistd.h)
+
+dnl Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+AC_STRUCT_TM
+
+dnl Checks for library functions.
+AC_CHECK_FUNCS(strspn)
+AC_CHECK_FUNCS(basename)
+
+AC_OUTPUT(Makefile config.h)
+
