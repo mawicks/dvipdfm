@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.56 1999/09/05 01:35:35 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.57 1999/09/06 02:15:10 mwicks Exp $
  
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -191,7 +191,7 @@ void pdf_doc_this_bop (char *string, unsigned length)
 void pdf_doc_set_origin (double x, double y)
 {
   int len;
-  static first = 1;
+  static char first = 1;
   if (first) {
     len = sprintf (work_buffer, "%g 0 0 %g %g %g cm\n",
 		   dvi_tell_mag(), dvi_tell_mag(),
@@ -643,7 +643,7 @@ static pdf_obj *name_subtree (dest_entry *dests, unsigned long ndests)
   return result;
 }
 
-static number_dests = 0;
+static unsigned long number_dests = 0;
 
 static void finish_dests_tree (void)
 {
@@ -693,7 +693,7 @@ struct articles
 
 typedef struct articles article_entry;
 static article_entry articles[MAX_ARTICLES];
-static number_articles = 0;
+static unsigned long number_articles = 0;
 
 static pdf_obj *articles_array;
 static void start_articles (void)
@@ -798,7 +798,7 @@ void finish_articles(void)
 }
 
 #ifdef HAVE_LIBPNG
-static thumbnail_opt = 0;
+static char thumbnail_opt = 0;
 static char *thumb_basename = NULL;
 
 void pdf_doc_enable_thumbnails(void)
@@ -1116,7 +1116,7 @@ void doc_make_form_xobj (pdf_obj *this_form_contents, pdf_obj *bbox,
 
 static pdf_obj *save_page_contents, *save_page_fonts;
 static pdf_obj *save_page_xobjects, *save_page_resources;
-static xobject_pending = 0;
+static char xobject_pending = 0;
 
 /* begin_form_xobj creates an xobject with its "origin" at
    xpos and ypos that is clipped to the specified bbox. Note

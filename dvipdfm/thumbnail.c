@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/thumbnail.c,v 1.9 1999/08/21 02:47:56 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/thumbnail.c,v 1.10 1999/09/06 02:15:11 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -55,7 +55,7 @@ static char *guess_name (const char *thumb_filename)
   return tmpname;
 }
 
-static thumbnail_remove_opt = 0;
+static char thumbnail_remove_opt = 0;
 void thumb_remove(void)
 {
   thumbnail_remove_opt = 1;

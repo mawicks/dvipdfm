@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.54 1999/08/26 04:51:03 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.55 1999/09/06 02:15:10 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1202,7 +1202,7 @@ static int backup_line (void)
   return 1;
 }
 
-static pdf_file_size = 0;
+static unsigned long pdf_file_size = 0;
 
 static long find_xref(void)
 {
@@ -1612,7 +1612,7 @@ MEM_END
   return main_trailer;
 }
 
-static any_open = 0;
+static char any_open = 0;
 
 pdf_obj *pdf_open (FILE *file)
 {

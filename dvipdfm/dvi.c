@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.58 1999/09/05 01:35:34 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.59 1999/09/06 02:15:09 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -43,7 +43,7 @@
 /* Interal Variables */
 
 static FILE *dvi_file;
-static debug = 0;
+static char debug = 0;
 static unsigned num_loaded_fonts = 0, stackdepth;
 static unsigned long *page_loc = NULL;
 static unsigned long post_location, dvi_file_size;
@@ -322,7 +322,7 @@ struct dvi_registers {
 static struct dvi_registers dvi_state;
 static struct dvi_registers dvi_stack[DVI_MAX_STACK_DEPTH];
 static int current_font;
-static dvi_stack_depth = 0;  
+static unsigned dvi_stack_depth = 0;  
 static int processing_page = 0;
 
 static void clear_state (void)
@@ -889,7 +889,7 @@ static void do_eop(void)
 
 #define S_BUFFER_SIZE 1024
 static unsigned char s_buffer[S_BUFFER_SIZE];
-static s_len = 0;
+static unsigned s_len = 0;
 
 void dvi_do_page(unsigned n)  /* Most of the work of actually interpreting
 			    the dvi file is here. */

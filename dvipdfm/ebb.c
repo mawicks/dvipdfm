@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.24 1999/09/06 01:48:41 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.25 1999/09/06 02:15:09 mwicks Exp $
 
     This is ebb, a bounding box extraction program.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -55,7 +55,7 @@ static void usage (void)
   exit(1);
 }
 
-static verbose = 0;
+static char verbose = 0;
 
 static void do_time(FILE *file)
 {

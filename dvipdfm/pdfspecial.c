@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.62 1999/09/06 01:48:41 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.63 1999/09/06 02:15:10 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -71,7 +71,7 @@ static void do_exobj (void);
 static void do_uxobj (char **start, char *end, double x_user, double
 		      y_user);
 
-static ignore_colors = 0;
+static char ignore_colors = 0;
 
 void pdf_special_ignore_colors(void)
 {

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/psspecial.c,v 1.4 1999/09/06 01:48:41 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/psspecial.c,v 1.5 1999/09/06 02:15:11 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -188,7 +188,7 @@ int ps_parse_special (char *buffer, UNSIGNED_QUAD size, double x_user,
 		      double y_user)
 {
   char *start = buffer, *end;
-  static cleanup = 1;
+  static char cleanup = 1;
   int result = 0;
   end = buffer + size;
   skip_white (&start, end);

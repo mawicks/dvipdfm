@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pkfont.h,v 1.5 1999/02/21 14:30:23 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pkfont.h,v 1.6 1999/09/06 02:15:11 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -27,12 +27,12 @@
 
 #include "pdfobj.h"
 
-void pk_set_verbose(void);
-int pk_font (char *tex_name, double ptsize, int tfm_id, char
+extern void pk_set_verbose(void);
+extern int pk_font (char *tex_name, double ptsize, int tfm_id, char
 	     *res_name);
-pdf_obj *pk_font_resource (int pk_id);
-char *pk_font_used (int pk_id);
-void pk_close_all (void);
-void pk_set_dpi (int dpi);
+extern pdf_obj *pk_font_resource (int pk_id);
+extern char *pk_font_used (int pk_id);
+extern void pk_close_all (void);
+extern void pk_set_dpi (int dpi);
 
 #endif /* _PK_FONT_H */

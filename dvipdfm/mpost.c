@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.18 1999/09/06 01:48:41 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.19 1999/09/06 02:15:10 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -394,7 +394,7 @@ static void dump_path (void)
 
 #define PS_STACK_SIZE 1024
 static pdf_obj *stack[PS_STACK_SIZE];
-static top_stack;
+static unsigned top_stack;
 
 double x_state, y_state;
 static int state = 0;
@@ -1154,7 +1154,7 @@ int parse_contents (FILE *image_file)
 
 int do_raw_ps_special (char **start, char* end, int cleanup)
 {
-  char *token, *save;
+  char *token, *save = NULL;
   int error = 0;
   pdf_obj *obj;
   state = 0;
@@ -1180,7 +1180,7 @@ int do_raw_ps_special (char **start, char* end, int cleanup)
     }
     skip_white (start, end);
   }
-  if (*start < end) {
+  if (save && *start < end) {
     dump (save, end);
   }
   if (cleanup)

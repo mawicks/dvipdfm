@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pkfont.c,v 1.12 1999/08/15 04:54:56 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pkfont.c,v 1.13 1999/09/06 02:15:10 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -35,8 +35,8 @@
 #include "ctype.h"
 
 pdf_obj *pk_encoding_ref = NULL;
-static verbose = 0, debug = 0;
-static font_dpi = 600;
+static unsigned char verbose = 0, debug = 0;
+static unsigned font_dpi = 600;
 
 void pk_set_verbose(void)
 {
@@ -53,7 +53,7 @@ void pk_set_dpi (int dpi)
 
 static void make_pk_encoding_ref (void)
 {
-  static first = 1;
+  static char first = 1;
   if (first) {
     int i;
     pdf_obj *encoding, *differences;

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/htex.c,v 1.4 1999/09/05 02:56:36 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/htex.c,v 1.5 1999/09/06 02:15:10 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -92,7 +92,7 @@ static int parse_html_tag (char **start, char *end)
   return result;
 }
 
-static pending = 0;
+static char pending = 0;
 char *pending_value;
 double pending_x, pending_y;
 int pending_type;

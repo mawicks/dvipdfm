@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.87 1999/08/31 23:02:01 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.88 1999/09/06 02:15:11 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -95,11 +95,10 @@ void type1_set_mapfile (const char *name)
 
 pdf_obj *find_encoding_differences (pdf_obj *encoding)
 {
-  static filling;
+  static char filling = 0;
   int i;
   pdf_obj *result = pdf_new_array ();
   pdf_obj *tmp;
-  filling = 0;
   for (i=0; i<256; i++) {
     tmp = pdf_get_array (encoding, i);
     if (tmp == NULL || tmp -> type != PDF_NAME) {
@@ -226,7 +225,7 @@ static FILE *mapfile = NULL;
 struct font_record *get_font_record (const char *tex_name)
 {
   struct font_record *result;
-  static first = 1;
+  static char first = 1;
   char *full_map_filename, *start, *end = NULL, *record_name;
   result = new_font_record ();
   if (first) {
@@ -330,8 +329,8 @@ static unsigned long get_low_endian_quad (FILE *file)
 }
 
 /* PFB section */
-static num_pfbs = 0;
-static max_pfbs = 0;
+static unsigned num_pfbs = 0;
+static unsigned max_pfbs = 0;
 struct a_pfb
 {
   char *pfb_name;
@@ -960,7 +959,7 @@ static void mangle_fontname(char *fontname)
 {
   int i;
   char ch;
-  static first = 1;
+  static char first = 1;
   memmove (fontname+7, fontname, strlen(fontname)+1);
   /* The following procedure isn't very random, but it
      doesn't need to be for this application. */

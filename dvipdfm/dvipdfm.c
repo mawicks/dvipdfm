@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.53 1999/09/05 21:01:21 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.54 1999/09/06 02:15:09 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -122,8 +122,8 @@ static void usage (void)
 
 static double paper_width = 612.0, paper_height = 792.0;
 static int paper_specified = 0;
-static landscape_mode = 0;
-static ignore_colors = 0;
+static char landscape_mode = 0;
+static char ignore_colors = 0;
 static double mag = 1.0, x_offset=72.0, y_offset=72.0;
 static int font_dpi = 600;
 
