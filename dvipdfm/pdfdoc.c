@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.17 1998/12/05 15:23:07 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.18 1998/12/05 16:51:16 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -56,7 +56,7 @@ static pdf_obj *this_page_bop = NULL, *this_page_eop = NULL;
 static pdf_obj *this_page_beads = NULL;
 static pdf_obj *this_page_annots = NULL;
 static pdf_obj *this_page_xobjects = NULL, *this_page_fonts = NULL;
-static pdf_obj *tmp1, *tmp2;
+static pdf_obj *tmp1;
 
 static unsigned long page_count = 0;
 static struct pages {
@@ -490,17 +490,8 @@ static void finish_dests_tree (void)
     pdf_release_obj (dests_dict);
     return;
   }
-  name_array = pdf_new_array ();
-  qsort(dests, number_dests, sizeof(dests[0]), cmp_dest);
-  for (i=0; i<number_dests; i++) {
-    pdf_add_array (name_array, pdf_new_string (dests[i].name,
-					       dests[i].length));
-    pdf_add_array (name_array, pdf_link_obj (dests[i].array));
-  }
   kid = pdf_new_dict ();
-  pdf_add_dict (kid,
-		pdf_new_name ("Names"),
-		name_array);
+  /* Make /Limits key for kid */
   tmp1 = pdf_new_array();
   pdf_add_array (tmp1, pdf_new_string (dests[0].name,
  				       dests[0].length));
@@ -509,12 +500,29 @@ static void finish_dests_tree (void)
   pdf_add_dict (kid,
 		pdf_new_name ("Limits"),
 		tmp1);
-  tmp2 = pdf_new_array();
-  pdf_add_array (tmp2, pdf_ref_obj (kid));
+  /* Build /Names array for kid */
+  name_array = pdf_new_array ();
+  qsort(dests, number_dests, sizeof(dests[0]), cmp_dest);
+  for (i=0; i<number_dests; i++) {
+    pdf_add_array (name_array, pdf_new_string (dests[i].name,
+					       dests[i].length));
+    RELEASE (dests[i].name);
+    pdf_add_array (name_array, pdf_link_obj (dests[i].array));
+  }
+  RELEASE (dests);
+  number_dests = 0;
+  pdf_add_dict (kid,
+		pdf_new_name ("Names"),
+		name_array);
+  /* Point /Dests dictionary to the kid */
+  tmp1 = pdf_new_array();
+  pdf_add_array (tmp1, pdf_ref_obj (kid));
   pdf_add_dict (dests_dict,
 		pdf_new_name ("Kids"),
-		tmp2);
+		tmp1);
+  /* Done with kid.  We only need the reference */
   pdf_release_obj (kid);
+  /* Done with dests */
   pdf_release_obj (dests_dict);
 }
 
@@ -927,9 +935,6 @@ void pdf_doc_finish ()
 
   /* Do consistency check on forward references to pages */
   for (i=0; i<page_count; i++) {
-    fprintf (stderr, "Releasing pagref for page=%i,p=%p\n", i,
-	     pages[i].page_ref);
-    pdf_write_obj (stderr, pages[i].page_ref);
     pdf_release_obj (pages[i].page_ref);
     pages[i].page_ref = NULL;
   }

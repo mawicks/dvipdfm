@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.18 1998/12/05 15:23:07 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.19 1998/12/05 16:51:17 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -789,6 +789,9 @@ MEM_START
     filename = pdf_string_value(filestring);
     fprintf (stderr, "(%s)", filename);
     if (debug) fprintf (stderr, "Opening %s\n", filename);
+#ifdef MEM_DEBUG
+    fprintf (debugfile, "Opending file and Reading trailer\n");
+#endif
     if ((trailer = pdf_open (filename)) == NULL) {
       fprintf (stderr, "\nSpecial ignored\n");
       release_xform_info (p);

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.11 1998/12/05 11:47:25 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.12 1998/12/05 16:51:16 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -925,7 +925,7 @@ void pdf_write_obj (FILE *file, const pdf_obj *object)
     ERROR ("pdf_write_obj:  Called with invalid object");
   }
   if (file == stderr)
-    fprintf (stderr, "{%d}", object -> refcount);
+    fprintf (stderr, "{%p:%d[%p]}", object, object -> refcount, object ->data);
   switch (object -> type) {
   case PDF_BOOLEAN:
     write_boolean (file, object -> data);
@@ -1100,6 +1100,9 @@ static long find_xref(void)
 pdf_obj *parse_trailer (void)
 {
   char *start;
+#ifdef MEM_DEBUG
+MEM_START
+#endif
   /* This routine must be called with the file pointer located at
      the start of the trailer */
   /* Fill work_buffer and hope trailer fits.  This should
@@ -1113,6 +1116,9 @@ pdf_obj *parse_trailer (void)
   }
   start = work_buffer + strlen("trailer");
   skip_white(&start, work_buffer+WORK_BUFFER_SIZE);
+#ifdef MEM_DEBUG
+MEM_END
+#endif
   return (parse_pdf_dict (&start, work_buffer+WORK_BUFFER_SIZE));
 }
 
@@ -1363,6 +1369,12 @@ pdf_obj *read_xref (void)
 {
   pdf_obj *main_trailer, *prev_trailer, *prev_xref, *xref_size;
   long xref_pos;
+#ifdef MEM_DEBUG
+MEM_START
+#endif  
+#ifdef MEM_DEBUG
+  fprintf (debugfile, "Finding xref position\n");
+#endif
   if ((xref_pos = find_xref()) == 0) {
     fprintf (stderr, "No xref loc.  Is this a correct PDF file?\n");
     return NULL;
@@ -1372,20 +1384,30 @@ pdf_obj *read_xref (void)
   }
   /* Read primary xref table */
   seek_absolute (pdf_input_file, xref_pos);
+#ifdef MEM_DEBUG
+  fprintf (debugfile, "Parsing xref\n");
+#endif
   if (!parse_xref()) {
     fprintf (stderr,
 	     "\nCouldn't read xref table.  Is this a correct PDF file?\n");
     return NULL;
   }
+#ifdef MEM_DEBUG
+  fprintf (debugfile, "Parsing trailer\n");
+#endif
   if ((main_trailer = parse_trailer()) == NULL) {
     fprintf (stderr,
 	     "\nCouldn't read xref trailer.  Is this a correct PDF file?\n");
     return NULL;
   }
-  if (debug) {
-    fprintf (stderr, "\nmain trailer:\n");
-    pdf_write_obj (stderr, main_trailer);
-  }
+#ifdef MEM_DEBUG
+  fprintf (debugfile, "Where am I\n");
+  fprintf (stderr, "\nmain trailer:\n");
+  pdf_write_obj (stderr, main_trailer);
+#endif
+#ifdef MEM_DEBUG
+  fprintf (debugfile, "Looking up catalog\n");
+#endif
   if (pdf_lookup_dict (main_trailer, "Root") == NULL ||
       (xref_size = pdf_lookup_dict (main_trailer, "Size")) == NULL) {
     fprintf (stderr,
@@ -1396,11 +1418,14 @@ pdf_obj *read_xref (void)
     extend_xref (pdf_number_value (xref_size));
   }
   /* Read any additional xref tables */
+#ifdef MEM_DEBUG
+  fprintf (debugfile, "Looking for 'prev' xref tables\n");
+#endif
   prev_trailer = pdf_link_obj (main_trailer);
   while ((prev_xref = pdf_lookup_dict (prev_trailer, "Prev")) != NULL) {
-    pdf_release_obj (prev_trailer);
     xref_pos = pdf_number_value (prev_xref);
     seek_absolute (pdf_input_file, xref_pos);
+    pdf_release_obj (prev_trailer);
     if (!parse_xref()) {
       fprintf (stderr,
 	       "\nCouldn't read xref table.  Is this a correct PDF file?\n");
@@ -1416,12 +1441,22 @@ pdf_obj *read_xref (void)
       pdf_write_obj (stderr, prev_trailer);
     }
   }
+#ifdef MEM_DEBUG
+  fprintf (stderr, "Main trailer is\n");
+  pdf_write_obj(stderr, main_trailer);
+  pdf_write_obj(stderr, prev_trailer);
+MEM_END
+#endif  
+  pdf_release_obj (prev_trailer);
   return main_trailer;
 }
 
 pdf_obj *pdf_open (char *filename)
 {
   pdf_obj *trailer;
+#ifdef MEM_DEBUG
+MEM_START
+#endif
   if ((pdf_input_file = fopen (filename, FOPEN_RBIN_MODE)) == NULL) {
     fprintf (stderr, "Unable to open file name (%s)\n", filename);
     return NULL;
@@ -1438,8 +1473,11 @@ pdf_obj *pdf_open (char *filename)
   if (debug) {
     fprintf (stderr, "\nDone with xref:\n");
   }
-  if (debug)
-    pdf_write_obj (stderr, trailer);
+#ifdef MEM_DEBUG
+  fprintf (stderr, "in pdf_open, trailer is\n");
+  pdf_write_obj (stderr, trailer);
+  MEM_END
+#endif
   return trailer;
 }
 

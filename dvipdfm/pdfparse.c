@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.c,v 1.9 1998/12/05 11:47:25 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.c,v 1.10 1998/12/05 16:51:17 mwicks Exp $
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
 
@@ -499,11 +499,13 @@ pdf_obj *parse_pdf_object (char **start, char *end)
       if (tmp1 != NULL && tmp2 != NULL && *start < end && *((*start)++) == 'R') {
 	result = pdf_new_ref ((unsigned long) pdf_number_value (tmp1), 
 			      (int) pdf_number_value (tmp2));
+	pdf_release_obj (tmp1);
+	pdf_release_obj (tmp2);
 	break;
       }
-      if (tmp1 != NULL) {
-	if (tmp2 != NULL)
-	  pdf_release_obj (tmp2);
+      /* Following checks if we got two numbers, but not 'r' */
+      if (tmp1 != NULL && tmp2 != NULL) {
+	pdf_release_obj (tmp2);
 	*start = position2;
       }
       result = tmp1;

@@ -4,6 +4,7 @@
 #include "pdfspecial.h"
 #include "mfileio.h"
 #include "epdf.h"
+#include "mem.h"
 
 double xscale, yscale;
 
@@ -46,9 +47,16 @@ pdf_obj *pdf_include_page(pdf_obj *trailer, double x_user, double y_user,
   pdf_obj *media_box, *resources, *contents, *contents_ref;
   pdf_obj *this_form_contents;
   pdf_obj *tmp1;
+#ifdef MEM_DEBUG
+MEM_START
+#endif
+
   /* Now just lookup catalog location */
   /* Deref catalog */
 
+#ifdef MEM_DEBUG
+ fprintf (debugfile, "Getting Catalog\n");
+#endif
   if ((catalog = pdf_deref_obj(pdf_lookup_dict (trailer,"Root"))) ==
       NULL) {
     fprintf (stderr, "\nCatalog isn't where I expect it.\n");
@@ -56,15 +64,28 @@ pdf_obj *pdf_include_page(pdf_obj *trailer, double x_user, double y_user,
   }
 
   /* Lookup page tree in catalog */
+#ifdef MEM_DEBUG
+ fprintf (debugfile, "Getting Page tree\n");
+#endif
   page_tree = pdf_deref_obj (pdf_lookup_dict (catalog, "Pages"));
-
+  /* Should be done with catalog */
+  pdf_release_obj (catalog);
   /* Media box and resources can be inherited so start looking for
      them here */
+#ifdef MEM_DEBUG
+ fprintf (debugfile, "Looking for MediaBox\n");
+#endif
   media_box = pdf_deref_obj (pdf_lookup_dict (page_tree, "MediaBox"));
+#ifdef MEM_DEBUG
+ fprintf (debugfile, "Looking for Resources\n");
+#endif
   resources = pdf_deref_obj (pdf_lookup_dict (page_tree, "Resources"));
   if (resources == NULL) {
     resources = pdf_new_dict();
   }
+#ifdef MEM_DEBUG
+ fprintf (debugfile, "Searching for first page (with inheritance)\n");
+#endif
   while ((kids_ref = pdf_lookup_dict (page_tree, "Kids")) != NULL) {
     kids = pdf_deref_obj (kids_ref);
     pdf_release_obj (page_tree);
@@ -146,5 +167,8 @@ pdf_obj *pdf_include_page(pdf_obj *trailer, double x_user, double y_user,
     pdf_release_obj (contents);
     pdf_doc_add_to_page (" Q", 2);
   }
+#ifdef MEM_DEBUG
+MEM_END
+#endif
   return (contents_ref);
 }
