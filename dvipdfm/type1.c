@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.21 1998/12/21 04:56:02 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.22 1998/12/21 04:59:38 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -733,10 +733,17 @@ int type1_font (const char *tex_name, int tfm_font_id, const char *resource_name
 void type1_close_all (void)
 {
   int i, j;
+  /* Three arrays are created by this module and need to be released */
+
+  /* First, each TeX font name that ends up as a postscript font gets
+     added to type1_fonts (yes, even times, etc.) */
   for (i=0; i<num_type1_fonts; i++) {
     pdf_release_obj (type1_fonts[i].indirect);
   }
   RELEASE (type1_fonts);
+  /* Second every distinct pfb name ends up in pfbs.  It is possible
+     that two distinct tex names map to the same pfb name.  That's why
+     there is a separate array for pfbs */
 
   /* Read any necessary font files and flush them */
   for (i=0; i<num_pfbs; i++) {
@@ -746,7 +753,8 @@ void type1_close_all (void)
     pdf_release_obj (pfbs[i].indirect);
   }
   RELEASE (pfbs);
-  /* Now do encodings */
+  /* Now do encodings.  Clearly many pfbs will map to the same
+     encoding.  That's why there is a separate array for encodings */
   for (i=0; i<num_encodings; i++) {
     RELEASE (encodings[i].enc_name);
     pdf_release_obj (encodings[i].encoding_ref);
