@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tpic.c,v 1.11 1999/02/21 14:30:24 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tpic.c,v 1.12 1999/02/21 18:24:28 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -35,7 +35,7 @@
 
 double pen_size = 1.0;
 int fill_shape = 0;
-double fill_color = 0.0;
+double fill_color = 0.0; double default_fill_color = 0.5;
 struct path
 {
   double x, y;
@@ -72,6 +72,7 @@ static void set_fill_color (char **buffer, char *end)
   char *number;
 MEM_START
   fill_shape = 1;
+  fill_color = default_fill_color; 
   skip_white (buffer, end);
   if ((number = parse_number(buffer, end))) {
     fill_color = 1.0 - atof (number);
@@ -447,10 +448,12 @@ int tpic_parse_special(char *buffer, UNSIGNED_QUAD size, double
 	  }
 	  den += 16;
 	}
-	if (den != 0)
-	  fill_color = 1.0 - (float) (num)/(den);
-	else
-	  fill_color = 0.5;
+	if (den != 0) {
+	  default_fill_color = 1.0 - (float) (num)/(den);
+	}
+	else {
+	  default_fill_color = 0.5;
+	}
       }
       break;
     default:
