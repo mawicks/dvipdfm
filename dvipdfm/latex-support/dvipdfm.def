@@ -70,7 +70,7 @@
   {\edef#4{ #1}}%
   }
 % \def\c@lor@to@ps#1 #2\@@{\csname c@lor@ps@#1\endcsname#2 \@@}
-% \def\c@lor@ps@#1 #2\@@{TeXDict begin #1 end}
+% \def\c@lor@ps@#1 #2\@@{TeXDict beginclude@ #1 end}
 % \def\c@lor@ps@rgb#1\@@{#1 setrgbcolor}
 % \def\c@lor@ps@hsb#1\@@{#1 sethsbcolor}
 % \def\c@lor@ps@cmyk#1\@@{#1 setcmykcolor}
@@ -84,10 +84,16 @@
 \def\define@color@named#1#2{%
   \expandafter\let\csname col@#1\endcsname\@nnil}
 \def\Ginclude@bmp#1{%
+\message{<#1>}%
   \special{pdf: image width \the\Gin@req@width\space height
 \the\Gin@req@height\space depth \the\z@ (#1)}}
 \def\Ginclude@pdf#1{%
+\message{<#1>}%
   \special{pdf: epdf width \the\Gin@req@width\space height
+\the\Gin@req@height\space depth \the\z@ (#1)}}
+\def\Ginclude@eps#1{%
+\message{<#1>}%
+  \special{pdf: image width \the\Gin@req@width\space height
 \the\Gin@req@height\space depth \the\z@ (#1)}}
 \def\Grot@start{%
 \special{pdf: bt rotate \Grot@angle\space }}

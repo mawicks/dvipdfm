@@ -40,3 +40,4 @@ ebb.o: ebb.c system.h mfileio.h numbers.h pdfobj.h jpeg.h pdfspecial.h \
  mem.h pdfparse.h config.h pngimage.h
 htex.o: htex.c htex.h numbers.h pdfparse.h pdfobj.h mem.h mfileio.h \
  pdfdoc.h dvi.h error.h pdfdev.h /usr/include/ctype.h
+mpost.o: mpost.c pdfobj.h pdfspecial.h numbers.h mpost.h

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.50 1999/08/24 02:32:22 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.51 1999/08/24 03:38:04 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -41,6 +41,7 @@
 #include "mfileio.h"
 #include "jpeg.h"
 #include "epdf.h"
+#include "mpost.h"
 
 #include "config.h"
 
@@ -876,6 +877,7 @@ MEM_START
       }
       else{
 	fprintf (stderr, "\nNot a supported image type.\n");
+	error = 1;
       }
       FCLOSE (image_file);
       fprintf (stderr, ")");
@@ -883,22 +885,22 @@ MEM_START
       fprintf (stderr, "\nError locating or opening file (%s)\n", filename);
       error = 1;
     }
-    { /* Put reference to object on page */
-      next_image += 1;
-      pdf_doc_add_to_page_xobjects (res_name, pdf_ref_obj(result));
-      pdf_doc_add_to_page (" q", 2);
-      add_xform_matrix (x_user, y_user, p->xscale, p->yscale, p->rotate);
-      if (p->depth != 0.0)
-	add_xform_matrix (0.0, -p->depth, 1.0, 1.0, 0.0);
-      release_xform_info(p);
-      sprintf (work_buffer, " /%s Do Q", res_name);
-      pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
-    }
-    if (objname != NULL && result != NULL) {
-      add_reference (objname, pdf_link_obj (result), res_name);
-      /* Read the explanation for the next line in do_ann() */
-      release_reference (objname);
-    }
+  }
+  if (result) { /* Put reference to object on page */
+    next_image += 1;
+    pdf_doc_add_to_page_xobjects (res_name, pdf_ref_obj(result));
+    pdf_doc_add_to_page (" q", 2);
+    add_xform_matrix (x_user, y_user, p->xscale, p->yscale, p->rotate);
+    if (p->depth != 0.0)
+      add_xform_matrix (0.0, -p->depth, 1.0, 1.0, 0.0);
+    release_xform_info(p);
+    sprintf (work_buffer, " /%s Do Q", res_name);
+    pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
+  }
+  if (objname != NULL && result != NULL) {
+    add_reference (objname, pdf_link_obj (result), res_name);
+    /* Read the explanation for the next line in do_ann() */
+    release_reference (objname);
   }
   if (objname)
     RELEASE (objname);
