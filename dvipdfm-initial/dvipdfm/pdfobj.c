@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfobj.c,v 1.8 1998/11/22 07:38:19 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfobj.c,v 1.9 1998/11/23 02:52:54 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -86,7 +86,7 @@ static void release_dict (struct pdf_dict *data);
 static void write_stream (FILE *file, const struct pdf_stream *stream);
 static pdf_obj *release_stream (struct pdf_stream *stream);
 
-static int debug = 1, verbose = 1;
+static int debug = 0, verbose = 0;
 
 void pdf_obj_set_debug(void)
 {

@@ -8,7 +8,7 @@
 /* #undef TM_IN_SYS_TIME */
 
 #define PACKAGE "dvipdfm"
-#define VERSION "0.7dev"
+#define VERSION "0.7"
 
 /* Define if you have the basename function.  */
 #define HAVE_BASENAME 1

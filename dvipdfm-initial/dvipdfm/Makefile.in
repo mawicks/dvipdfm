@@ -27,5 +27,6 @@ clean:
 	rm -f $(OBJ)
 	rm -f $(PROGRAMS)
 	rm -f ../doc/*.log
+	rm -f core
 $(OBJ): $(HEADERS)	
 

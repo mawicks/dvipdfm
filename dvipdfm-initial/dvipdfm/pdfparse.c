@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfparse.c,v 1.6 1998/11/22 07:38:20 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfparse.c,v 1.7 1998/11/23 02:52:55 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -416,7 +416,9 @@ pdf_obj *parse_pdf_object (char **start, char *end)
   char *save = *start;
   char *position2;
   skip_white(start, end);
-  if (*start < end) switch (**start) {
+  if (*start >= end)
+    return NULL;
+  switch (**start) {
   case '<': 
     /* Check for those troublesome strings starting with '<' */
     if (*start+1 < end && *(*start+1) != '<') {

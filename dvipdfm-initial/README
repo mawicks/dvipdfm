@@ -17,10 +17,11 @@ or if you prefer FTP:
 	destinations are supported, for example.
 	
       - Ability to include PDF files and JPEG files
-        as embedded images.  For PDF files, resources
-	will be embedded from the original file as necessary.
-	File inclusion currently works for many PDF files,
-	but not for linearized	PDF files.
+        as embedded images.  For PDF files, only the first
+        page is included.  Resources will be embedded from
+	the original file as necessary.  File inclusion
+	does not work for PDF files that store the page
+	contents in several segments in an array.
 	
       - Support for arbitrary linear graphics transformations.
         Any material on the page can be scaled and rotated.

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfspecial.c,v 1.9 1998/11/22 21:37:58 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfspecial.c,v 1.10 1998/11/23 02:52:55 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -102,29 +102,34 @@ pdf_obj *get_reference_lvalue(char **start, char *end)
 static void do_put(char **start, char *end)
 {
   pdf_obj *result, *data;
-
   skip_white(start, end);
   if ((result = get_reference_lvalue(start, end)) == NULL) {
     fprintf (stderr, "\nSpecial put:  Nonexistent object reference\n");
     return;
   }
-  
   if (result -> type == PDF_DICT) {
+    skip_white (start, end);
     if ((data = parse_pdf_dict (start, end)) == NULL) {
       return;
     }
     pdf_merge_dict (result, data);
+    parse_crap(start, end);
     return;
   }
   if (result -> type == PDF_ARRAY) {
-    if ((data = parse_pdf_array (start, end)) == NULL) {
-      return;
+    skip_white(start, end);
+    while (*start < end && 
+	   (data = parse_pdf_object (start, end)) != NULL) {
+      pdf_add_array (result, data);
+      skip_white(start, end);
     }
-    pdf_add_array (result, data);
+    if (*start < end) {
+      fprintf (stderr, "\nSpecial: put: invalid object.  Rest of command ignored");
+    }
     return;
   }
   else {
-    fprintf (stderr, "\nSpecial put:  Invalid object type\n");
+    fprintf (stderr, "\nSpecial put:  Invalid destination object type\n");
     return;
   }
 }

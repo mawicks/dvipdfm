@@ -3,7 +3,7 @@ AC_INIT(acconfig.h)
 AC_CONFIG_HEADER(acdefines.h)
 
 AC_DEFINE(PACKAGE,"dvipdfm")
-AC_DEFINE(VERSION,"0.7dev")
+AC_DEFINE(VERSION,"0.7")
 
 AC_PREFIX_PROGRAM(tex)
 
