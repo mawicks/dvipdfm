@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.35 1998/12/23 06:52:41 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.36 1998/12/23 08:21:36 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -284,12 +284,15 @@ static void parse_glyphs (unsigned char *buffer, unsigned long length,
   double last_number = 0.0;
   char *glyph = NULL;
   int i = 0;
+#ifdef MEM_DEBUG
+  MEM_START
+#endif
   fprintf (stderr, "parse_glyphs:\n");
   start = (char *) buffer;
   end = start+length;
   for (i=0; i<256; i++) {
-    glyphs[i] = strcpy (NEW (strlen(".notdef")+1, char),
-			     ".notdef");
+    glyphs[i] = NEW (strlen (".notdef")+1, char); 
+    strcpy (glyphs[i], ".notdef");
   }
   {
     /* State definitions 
@@ -353,29 +356,27 @@ static void parse_glyphs (unsigned char *buffer, unsigned long length,
       case 3:
 	ident = parse_ident (&start, end);
 	if (ident != NULL && !strcmp (ident, "put") && 
-	    (int) last_number <= 256 && (int) last_number >= 0) {
+	    (int) last_number < 256 && (int) last_number >= 0) {
 	  if (glyphs[(int)last_number] != NULL) 
 	    RELEASE (glyphs[(int)last_number]);
 	  glyphs[(int)last_number] = glyph;
-	  fprintf (stderr, "Setting glyph (%s) to pos %d\n", glyph,
-		   (int)last_number);
+	  fprintf (stderr, "(%d/%s)", (int)last_number, glyph);
 	}
 	else {
 	  RELEASE (glyph);
 	}
+	if (ident != NULL)
+	  RELEASE (ident);
 	state = 1;
 	break;
       }
       skip_white (&start, end);
     }
   }
-  {
-    int i;
-    for (i=0; i<256; i++) {
-      fprintf (stderr, "(%d) = (%s)\n", i, glyphs[i]);
-    }
-    fprintf (stderr, "Leaving parse_glyphs\n");
-  }
+#ifdef MEM_DEBUG
+  MEM_END
+#endif
+  return;
 }
   
 #define ASCII 1
@@ -491,7 +492,7 @@ static unsigned long do_partial (unsigned char *filtered, unsigned char
   /* At this point, we just before the beginning of the glyphs, just after
      the word /CharStrings */
   {
-    int nused = 0;  /* We always embed .notdef regardless */
+    int nused = 0;
     int nleft;
     static char *used_glyphs[256];
     struct glyph *this_glyph;
@@ -502,13 +503,25 @@ static unsigned long do_partial (unsigned char *filtered, unsigned char
     filtered_pointer += (start-tail);
     /* Build an array containing only those glyphs we need to embed */
     for (i=0; i<256; i++) {
-      if (chars_used[i]) {
+      /* Don't add any glyph twice */
+      if (chars_used[i] &&
+	  (nused == 0 ||
+	  !bsearch (glyphs[i], used_glyphs, nused, sizeof (char *), glyph_match))) {
 	used_glyphs[nused] = glyphs[i];
 	nused += 1;
+	qsort (used_glyphs, nused, sizeof (char *), glyph_cmp);
       }
     }
-    nleft = nused+1; /* Add one for .notdef */
-    qsort (used_glyphs, nused, sizeof (char *), glyph_cmp);
+    /* Add .notdef if it's not already there. We always embed .notdef */
+    if (!bsearch (".notdef", used_glyphs, nused, sizeof (char *),
+		  glyph_match)) {
+      /* We never free the entries of used_glyphs so we can use a
+	 static string */
+      used_glyphs[nused] = ".notdef";
+      nused += 1;
+      qsort (used_glyphs, nused, sizeof (char *), glyph_cmp); 
+    }
+    nleft = nused;
     fprintf (stderr, "\nEmbedding %d glyphs\n", nleft);
     filtered_pointer += sprintf ((char *) filtered_pointer, " %d",
 				 nused);
@@ -550,8 +563,7 @@ static unsigned long do_partial (unsigned char *filtered, unsigned char
       ident = parse_ident (&start, end);
       RELEASE (ident);
       skip_white (&start, end);
-      if (this_glyph ||
-	  !strcmp (glyph, ".notdef")) {
+      if (this_glyph) {
 	fprintf (stderr, "embedded)");
 	memcpy (filtered_pointer, tail, start-tail);
 	filtered_pointer += start-tail;
@@ -694,6 +706,14 @@ static int type1_pfb_id (const char *pfb_name, int encoding_id)
   return i;
 }
 
+static void release_glyphs (char **glyphs)
+{
+  int i;
+  for (i=0; i<256; i++) {
+    RELEASE (glyphs[i]);
+  }
+}
+
 static void do_pfb (int pfb_id)
 {
   char *full_pfb_name;
@@ -722,7 +742,9 @@ static void do_pfb (int pfb_id)
     length1 = do_pfb_header (type1_binary_file, pfbs[pfb_id].direct,
 			     glyphs);
     length2 = do_pfb_body (type1_binary_file, pfb_id,
-			   NULL);
+			   glyphs);
+    release_glyphs (glyphs);
+    RELEASE (glyphs);
   }
   length3 = do_pfb_trailer (type1_binary_file, pfbs[pfb_id].direct);
   if ((ch = fgetc (type1_binary_file)) != 128 ||
