@@ -3,7 +3,7 @@ AC_INIT(dvipdfm.c)
 
 AC_DEFINE(VERSION,"0.7.4")
 
-AC_CONFIG_HEADER(c-auto)
+AC_CONFIG_HEADER(c-auto.h)
 
 dnl Don't bother going further if we don't have kpse.
 AC_HAS_KPSE_FORMATS
