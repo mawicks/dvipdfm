@@ -539,7 +539,7 @@ fi
 
 
 cat >> confdefs.h <<\EOF
-#define VERSION "0.7.4dev"
+#define VERSION "0.7.4"
 EOF
 
 
