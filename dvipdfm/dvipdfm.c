@@ -1,7 +1,7 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.31 1999/01/25 22:41:43 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.32 1999/02/09 03:24:06 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
-    Copyright (C) 1998  by Mark A. Wicks
+    Copyright (C) 1998, 1999 by Mark A. Wicks
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -95,7 +95,7 @@ static void set_default_pdf_filename(void)
 
 static void usage (void)
 {
-   fprintf (stderr, "%s, version %s, Copyright (C) 1998 by Mark A. Wicks\n", PACKAGE, VERSION);
+   fprintf (stderr, "%s, version %s, Copyright (C) 1998, 1999 by Mark A. Wicks\n", PACKAGE, VERSION);
    fprintf (stderr, "dvipdfm comes with ABSOLUTELY NO WARRANTY.\n");
    fprintf (stderr, "This is free software, and you are welcome to redistribute it\n");
    fprintf (stderr, "under certain conditions.  Details are distributed with the software.\n");

@@ -1,6 +1,6 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.c,v 1.20 1999/01/09 21:08:40 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.c,v 1.21 1999/02/09 03:24:08 mwicks Exp $
     This is dvipdf, a DVI to PDF translator.
-    Copyright (C) 1998  by Mark A. Wicks
+    Copyright (C) 1998, 1999 by Mark A. Wicks
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

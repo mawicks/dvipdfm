@@ -1,7 +1,7 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.15 1999/02/09 03:14:02 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.16 1999/02/09 03:24:06 mwicks Exp $
 
     This is ebb, a bounding box extraction program.
-    Copyright (C) 1998  by Mark A. Wicks
+    Copyright (C) 1998, 1999 by Mark A. Wicks
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
