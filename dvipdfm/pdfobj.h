@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.h,v 1.23 1999/08/21 19:30:03 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.h,v 1.24 1999/08/26 04:51:03 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -150,6 +150,7 @@ extern char *pdf_name_value (pdf_obj *object);
 extern pdf_obj *pdf_new_string (const void *string, unsigned length);
 extern void pdf_set_string (pdf_obj *object, unsigned char *string, unsigned length);
 extern void *pdf_string_value (pdf_obj *object);
+extern unsigned int pdf_string_length (pdf_obj *object);
 
 #define pdf_obj_string_value(s) ((void *)(((pdf_string *)((s)->data)) -> string))
 #define pdf_obj_string_length(s) (((pdf_string *)((s)->data)) -> length)

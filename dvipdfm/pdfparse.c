@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.c,v 1.23 1999/02/21 14:30:22 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.c,v 1.24 1999/08/26 04:51:03 mwicks Exp $
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
 
@@ -426,6 +426,8 @@ pdf_obj *parse_pdf_string (char **start, char *end)
 	  for (i=0; i<3; i++) 
 	    string[strlength] = string[strlength]*8 + (*((*start)++)-'0');
 	  strlength+= 1;
+	} else {
+	  string[strlength++] = *((*start)++);
 	}
       }
     else {

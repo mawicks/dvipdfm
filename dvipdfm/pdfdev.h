@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.h,v 1.24 1999/08/25 03:52:00 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.h,v 1.25 1999/08/26 04:51:03 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -50,7 +50,6 @@ extern void dev_eop (void);
 
 extern void dev_select_font (int tex_font_id);
 extern void dev_reselect_font (void);
-
 extern void dev_set_char (mpt_t xpos, mpt_t ypos, unsigned char ch,
 			  mpt_t width, int font_id);
 extern void dev_set_string (mpt_t xpos, mpt_t ypos, unsigned char *ch,
@@ -87,8 +86,8 @@ extern void dev_do_special (void *buffer, UNSIGNED_QUAD size, double
 
 extern double dev_page_height(void);
 extern double dev_page_width(void);
-/* This is a bit of a hack to get metapost inclusion to work */
+/* These last two are hacks to get metapost inclusion to work */
 extern double dev_dvi2pts (void);
-
+extern void graphics_mode (void);
 
 #endif /* PDFDEV_H */

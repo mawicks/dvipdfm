@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.79 1999/08/25 03:52:00 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.80 1999/08/26 04:51:03 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -180,7 +180,7 @@ static void text_mode (void)
   return;
 }
 
-static void graphics_mode (void)
+void graphics_mode (void)
 {
   int len = 0;
   switch (motion_state) {
@@ -275,6 +275,7 @@ static void dev_set_font (int font_id)
     dev_font[font_id].used_on_this_page = 1;
   }
   current_font = font_id;
+  return;
 }
 
 void dev_set_string (mpt_t xpos, mpt_t ypos, unsigned char *s, int

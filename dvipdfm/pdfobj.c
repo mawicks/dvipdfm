@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.53 1999/08/21 19:30:03 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.54 1999/08/26 04:51:03 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -502,6 +502,13 @@ void *pdf_string_value (pdf_obj *a_pdf_string)
   return data -> string;
 }
 
+unsigned int pdf_string_length (pdf_obj *a_pdf_string)
+{
+  pdf_string *data;
+  data = a_pdf_string -> data;
+  return (data -> length);
+}
+
 /* This routine escapes non printable characters and control
    characters in an output string.  It optionally remaps
    the problem characters in the encoding */
@@ -717,7 +724,7 @@ static void write_array (FILE *file, const pdf_array *array)
 pdf_obj *pdf_get_array (pdf_obj *array, unsigned long index)
 {
   pdf_array *data;
-  pdf_obj *result = NULL;;
+  pdf_obj *result = NULL;
   if (array == NULL) {
     ERROR ("pdf_get_array: passed NULL object");
   }
