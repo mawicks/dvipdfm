@@ -3,7 +3,7 @@ AC_INIT(dvipdfm.c)
 AC_CONFIG_HEADER(acdefines.h)
 
 AC_DEFINE(PACKAGE,"dvipdfm")
-AC_DEFINE(VERSION,"0.7.1")
+AC_DEFINE(VERSION,"0.7.2")
 sinclude(../kpathsea/common.ac)
 
 AC_CHECK_SIZEOF(int)
