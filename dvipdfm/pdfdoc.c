@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.41 1999/01/19 03:36:57 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.42 1999/01/26 19:03:13 mwicks Exp $
  
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -1030,7 +1030,9 @@ void doc_make_form_xobj (pdf_obj *this_form_contents, pdf_obj *bbox,
   pdf_add_dict (xobj_dict, pdf_new_name ("BBox"), bbox);
   pdf_add_dict (xobj_dict, pdf_new_name ("FormType"), 
 		pdf_new_number(1.0));
-  tmp1 = build_scale_array (1, 0, 0, 1, 0, 0);
+  tmp1 = build_scale_array (1, 0, 0, 1,
+			    -pdf_number_value(pdf_get_array(bbox, 0)),
+			    -pdf_number_value(pdf_get_array(bbox, 1)));
   pdf_add_dict (xobj_dict, pdf_new_name ("Matrix"), tmp1);
   pdf_add_dict (xobj_dict, pdf_link_obj (resources_name), resources);
   return;
