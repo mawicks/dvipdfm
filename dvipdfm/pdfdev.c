@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.102 2000/07/24 01:39:51 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.102.4.1 2000/07/31 06:41:33 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -211,15 +211,13 @@ static void text_mode (void)
 
 void graphics_mode (void)
 {
-  int len = 0;
   switch (motion_state) {
   case GRAPHICS_MODE:
     break;
   case STRING_MODE:
-    len += sprintf (format_buffer+len, ")]TJ"); /* Fall through */
+    pdf_doc_add_to_page (")]TJ", 4);
   case TEXT_MODE:
-    len += sprintf (format_buffer+len, " ET");
-    pdf_doc_add_to_page (format_buffer, len);
+    pdf_doc_add_to_page (" ET", 3);
     break;
   }
   motion_state = GRAPHICS_MODE;
@@ -253,15 +251,20 @@ static void string_mode (mpt_t xpos, mpt_t ypos, double slant, double extend)
       rounded_delx = ROUND(desired_delx,0.01);
       /* Estimate errors in DVI units */
       text_yerror = (desired_dely - rounded_dely)/dvi2pts;
-      text_xerror = (extend/dvi2pts*(desired_delx - rounded_delx)+slant*text_yerror);
-      len += sprintf (format_buffer+len, " %.7g %.7g TD[(",
-		      rounded_delx, rounded_dely);
+      text_xerror = (extend/dvi2pts*(desired_delx -
+				     rounded_delx)+slant*text_yerror);
+      format_buffer[len++] = ' ';
+      len += fixnumtoa (format_buffer+len, (long)(rounded_delx*65536));
+      format_buffer[len++] = ' ';
+      len += fixnumtoa (format_buffer+len, (long)(rounded_dely*65536));
+      pdf_doc_add_to_page (format_buffer, len);
+      len = 0;
+      pdf_doc_add_to_page (" TD[(", 5);
       text_leading = dely;
       text_xorigin = xpos-text_xerror;
       text_yorigin = ypos-text_yerror;
     }
     text_offset = 0;
-    pdf_doc_add_to_page (format_buffer, len);
     break;
   }
   motion_state = STRING_MODE;
@@ -282,8 +285,12 @@ static void dev_set_font (int font_id)
 {
   int len = 0;
   text_mode();
-  len = sprintf (format_buffer, "/%s %.6g Tf", dev_font[font_id].short_name,
-		 dev_font[font_id].ptsize);
+  len = sprintf (format_buffer, "/%s ", dev_font[font_id].short_name);
+  len += fixnumtoa (format_buffer+len, (long)
+		    (ROUND(dev_font[font_id].ptsize,0.01)*65526));
+  format_buffer[len++] = ' ';
+  format_buffer[len++] = 'T';
+  format_buffer[len++] = 'f';
   if (dev_font[font_id].slant != text_slant ||
       dev_font[font_id].extend != text_extend) {
     len += sprintf (format_buffer+len, " %.7g 0 %.3g 1 %.7g %.7g Tm",
@@ -324,8 +331,14 @@ void dev_set_string (mpt_t xpos, mpt_t ypos, unsigned char *s, int
   if (motion_state != STRING_MODE)
     string_mode(xpos, ypos, dev_font[font_id].slant, dev_font[font_id].extend);
   else if (kern != 0) {
-    text_offset -= kern*dev_font[font_id].extend*(dev_font[font_id].mptsize/1000.0);
-    len += sprintf (format_buffer+len, ")%ld(", kern);
+    text_offset -=
+      kern*dev_font[font_id].extend*(dev_font[font_id].mptsize/1000.0);
+    /* This routine needs to be fast */
+    format_buffer[len++] = ')';
+    len += itoa (format_buffer+len, kern);
+    format_buffer[len++] = '(';
+    pdf_doc_add_to_page (format_buffer, len);
+    len = 0;
   }
   len += pdfobj_escape_str (format_buffer+len, FORMAT_BUF_SIZE-len, s,
 			    length,
@@ -895,7 +908,7 @@ static int locate_pk_font (char *tex_name, mpt_t ptsize)
     need_more_dev_fonts (1);
     dev_font[thisfont].tfm_font_id = tfm_open (tex_name);
     dev_font[thisfont].short_name[0] = 'F';
-    sprintf (dev_font[thisfont].short_name+1, "%d", n_phys_fonts+1);
+    itoa (dev_font[thisfont].short_name+1, n_phys_fonts+1);
     pk_id = pk_font (tex_name, ptsize*dvi2pts,
 		     dev_font[thisfont].tfm_font_id,
 		     dev_font[thisfont].short_name);
@@ -975,22 +988,46 @@ void dev_close_all_fonts(void)
 void dev_rule (mpt_t xpos, mpt_t ypos, mpt_t width, mpt_t height)
 {
   int len = 0;
+  long w, p1, p2, p3, p4;
   graphics_mode();
    /* Is using a real stroke the right thing to do?  It seems to preserve
       the logical meaning of a "rule" as opposed to a filled rectangle.
       I am assume the reader can more intelligently render a rule than a filled rectangle */
   if (width> height) {  /* Horizontal stroke? */
     mpt_t half_height = height/2;
-    len = sprintf (format_buffer, " %.2f w %.2f %.2f m %.2f %.2f l S",
-		   height*dvi2pts,
-		   xpos*dvi2pts, (ypos+half_height)*dvi2pts,
-		   (xpos+width)*dvi2pts, (ypos+half_height)*dvi2pts);
+    w = (long) (ROUND(height*dvi2pts,0.01)*65536);
+    p1 = (long) (ROUND(xpos*dvi2pts,0.01)*65536);
+    p2 = (long) (ROUND((ypos+half_height)*dvi2pts,0.01)*65536);
+    p3 = (long) (ROUND((xpos+width)*dvi2pts,0.01)*65536);
+    p4 = (long) (ROUND((ypos+half_height)*dvi2pts,0.01)*65536);
   } else { /* Vertical stroke */
     mpt_t half_width = width/2;
-    len = sprintf (format_buffer, " %.2f w %.2f %.2f m %.2f %.2f l S",
-		   width*dvi2pts,
-		   (xpos+half_width)*dvi2pts, ypos*dvi2pts,
-		   (xpos+half_width)*dvi2pts, (ypos+height)*dvi2pts);
+    w = (long) (ROUND(width*dvi2pts,0.01)*65536);
+    p1 = (long) (ROUND((xpos+half_width)*dvi2pts,0.01)*65536);
+    p2 = (long) (ROUND(ypos*dvi2pts,0.01)*65536);
+    p3 = (long) (ROUND((xpos+half_width)*dvi2pts,0.01)*65536);
+    p4 = (long) (ROUND((ypos+height)*dvi2pts,0.01)*65536);
+  }
+  /* This needs to be quick */
+  {
+    format_buffer[len++] = ' ';
+    len += fixnumtoa (format_buffer+len, w);
+    format_buffer[len++] = ' ';
+    format_buffer[len++] = 'w';
+    format_buffer[len++] = ' ';
+    len += fixnumtoa (format_buffer+len, p1);
+    format_buffer[len++] = ' ';
+    len += fixnumtoa (format_buffer+len, p2);
+    format_buffer[len++] = ' ';
+    format_buffer[len++] = 'm';
+    format_buffer[len++] = ' ';
+    len += fixnumtoa (format_buffer+len, p3);
+    format_buffer[len++] = ' ';
+    len += fixnumtoa (format_buffer+len, p4);
+    format_buffer[len++] = ' ';
+    format_buffer[len++] = 'l';
+    format_buffer[len++] = ' ';
+    format_buffer[len++] = 'S';
   }
   pdf_doc_add_to_page (format_buffer, len);
 }

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/numbers.c,v 1.11 1999/09/08 16:51:46 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/numbers.c,v 1.11.10.1 2000/07/31 06:41:33 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -151,6 +151,74 @@ SIGNED_QUAD sqxfw (SIGNED_QUAD sq, fixword fw)
   return (sign>0)?result:-result;
 }
 
+int itoa (char *s, long int i)
+{
+   int j, nwhole;
+   char *p = s;
+   if (i<0) {
+      *(p++) = '-';
+      i = -i;
+   }
+   /* Generate at least one digit in reverse order */
+   nwhole = 0;
+   do {
+      p[nwhole++] = i%10 + '0';
+      i /= 10;
+   } while (i != 0);
+   /* Reverse the digits */
+   for (j=0; j<nwhole/2; j++) {
+      char tmp = p[j];
+      p[j] = p[nwhole-j-1];
+      p[nwhole-j-1]=tmp;
+   }
+   p += nwhole;
+   *p = 0;
+   return (p-s);
+}
+
+int fixnumtoa (char *s, long int i)
+{
+   int j, nwhole, thresh;
+   char *p = s;
+   unsigned long whole_part, frac_part;
+   if (i<0) {
+      *(p++) = '-';
+      i = -i;
+   }
+   whole_part = ((unsigned long) i) / (65536l);
+   frac_part = ((unsigned long) i)%65536l;
+   /* Generate at least one digit in reverse order */
+   nwhole = 0;
+   do {
+      p[nwhole++] = whole_part%10 + '0';
+      whole_part /= 10;
+   } while (whole_part != 0);
+   /* Reverse the digits */
+   for (j=0; j<nwhole/2; j++) {
+      char tmp = p[j];
+      p[j] = p[nwhole-j-1];
+      p[nwhole-j-1]=tmp;
+   }
+   p += nwhole;
+   #define BASE ((unsigned long)(256*65536l))
+   frac_part *= 256;
+   thresh = BASE / 10000;
+   /* Round last digit */
+   frac_part += thresh/2;
+   if (frac_part > thresh) {
+      *(p++) = '.';
+   }
+   for (j=0; j<4 && frac_part> thresh; j++) {
+      char next_digit;
+      next_digit = (10*frac_part)/BASE;
+      frac_part = (10*frac_part)%BASE;
+      *(p++) = next_digit + '0';
+      thresh *= 10;
+   }
+   *p = 0;
+   return (p-s);
+}
+
 SIGNED_QUAD axboverc (SIGNED_QUAD n1, SIGNED_QUAD n2, SIGNED_QUAD div)
 {
   int sign = 1;
@@ -204,3 +272,5 @@ SIGNED_QUAD axboverc (SIGNED_QUAD n1, SIGNED_QUAD n2, SIGNED_QUAD div)
     result += 1;
   return (sign>0)?result:-result;
 }
+
+

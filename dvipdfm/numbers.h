@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/numbers.h,v 1.10 1999/09/15 22:13:10 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/numbers.h,v 1.10.10.1 2000/07/31 06:41:33 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -65,6 +65,9 @@ typedef signed long fixword;
 extern SIGNED_QUAD sqxfw (SIGNED_QUAD sq, fixword fw);
 extern SIGNED_QUAD axboverc (SIGNED_QUAD n1, SIGNED_QUAD n2,
 			     SIGNED_QUAD div);
+
+int fixnumtoa (char *s, long int i);
+int itoa (char *s, long int i);
 
 #endif /* NUMBERS_H */
 
