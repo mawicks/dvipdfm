@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.1 1998/11/27 21:16:37 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.2 1998/11/29 05:10:08 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -218,12 +218,9 @@ static get_tfm (struct a_tfm *a_tfm)
 /* External Routine */
 
 
-int tfm_open (char *tex_font_name)
+int tfm_open (char *tfm_file_name)
 {
-  char *tfm_file_name, *full_tfm_file_name;
-  tfm_file_name = NEW (strlen(tex_font_name)+5, char);
-  strcpy (tfm_file_name, tex_font_name);
-  strcat (tfm_file_name, ".tfm");
+  char *full_tfm_file_name;
   full_tfm_file_name = kpse_find_tfm (tfm_file_name);
   if (full_tfm_file_name == NULL) {
     fprintf (stderr, "%s: ", tfm_file_name);
@@ -232,8 +229,6 @@ int tfm_open (char *tex_font_name)
   if (numtfms >= MAX_FONTS) {
     ERROR ("tfm_open:  Tried to open too many TFM files!");
   }
-  fprintf (stderr, "(%s", tfm_file_name);
-  release (tfm_file_name);
   if (!(tfm_file = fopen (full_tfm_file_name, FOPEN_RBIN_MODE))) {
     fprintf (stderr, "tfm_open: %s\n", tfm_file_name);
     ERROR ("tfm_open:  Specified TFM file cannot be opened");
@@ -243,7 +238,6 @@ int tfm_open (char *tex_font_name)
   }
   get_tfm (&tfm[numtfms]);
   fclose (tfm_file);
-  fprintf (stderr, ")");
   if (tfm_verbose) {
     dump_sizes (&tfm[numtfms]);
   }

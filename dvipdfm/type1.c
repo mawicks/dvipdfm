@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.1 1998/11/27 21:16:37 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.2 1998/11/29 05:10:08 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -112,24 +112,19 @@ static unsigned long do_pfb_segment (FILE *file, int expected_type, pdf_obj *str
   return length;
 }
 
-pdf_obj *type1_fontfile (const char *tex_name)
+pdf_obj *type1_fontfile (const char *pfb_name)
 {
   FILE *type1_binary_file;
   pdf_obj *stream, *stream_dict, *stream_label, *tmp1, *tmp2;
   unsigned long length1, length2, length3;
-  char *pfb_name, *full_pfb_name;
+  char *full_pfb_name;
   int ch;
-  pfb_name = NEW (strlen (tex_name) + 5, char);
-  strcpy (pfb_name, tex_name);
-  strcat (pfb_name, ".pfb");
   full_pfb_name = kpse_find_file (pfb_name, kpse_type1_format,
 				  1);
   if (full_pfb_name == NULL) {
     fprintf (stderr, "%s: ", pfb_name);
     ERROR ("type1_fontfile:  Unable to find binary font file");
   }
-  fprintf (stderr, "(%s", pfb_name);
-  release (pfb_name);
   if ((type1_binary_file = fopen (full_pfb_name, FOPEN_RBIN_MODE)) == NULL) {
     fprintf (stderr, "type1_fontfile:  %s\n", pfb_name);
     ERROR ("type1_fontfile:  Unable to open binary font file");
@@ -144,7 +139,6 @@ pdf_obj *type1_fontfile (const char *tex_name)
     ERROR ("type1_fontfile:  Are you sure this is a pfb?");
   /* Got entire file! */
   fclose (type1_binary_file);
-  fprintf (stderr, ")");
   stream_dict = pdf_stream_dict (stream);
   pdf_add_dict (stream_dict, pdf_new_name("Length1"),
 		pdf_new_number (length1));
@@ -226,28 +220,23 @@ static reset_afm_variables (void)
   isfixed = 0;
 }
 
-static void open_afm_file (const char *tex_name)
+static void open_afm_file (const char *afm_name)
 {
-  static char *afm_name, *full_afm_name;
-  afm_name = NEW (strlen (tex_name) + 5, char);
-  strcpy (afm_name, tex_name);
-  strcat (afm_name, ".afm");
+  static char *full_afm_name;
   full_afm_name = kpse_find_file (afm_name, kpse_afm_format,
 				  1);
   if (full_afm_name == NULL) {
     fprintf (stderr, "%s: ", afm_name);
     ERROR ("type1_font_descriptor:  Unable to find AFM file");
   }
-  fprintf (stderr, "(%s", afm_name);
-  release (afm_name);
   if ((type1_afm_file = fopen (full_afm_name, FOPEN_R_MODE)) == NULL) {
     fprintf (stderr, "type1_font_descriptor:  %s\n", afm_name);
     ERROR ("type1_font_descriptor:  Unable to open AFM file");
   }
 }
+
 static void close_afm_file (void)
 {
-  fprintf (stderr, ")");
   fclose (type1_afm_file);
 }
 
