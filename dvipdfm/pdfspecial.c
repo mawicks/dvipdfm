@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.46 1999/08/15 00:24:25 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.47 1999/08/15 02:27:02 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -59,10 +59,10 @@ static char *lookup_ref_res_name (char *name);
 static pdf_obj *lookup_object(char *name);
 static void do_content (char **start, char *end, double x_user, double
 			y_user);
-static void do_epdf(char **start, char *end, double x_user, double y_user);
 static void do_image(char **start, char *end, double x_user, double y_user);
 static pdf_obj *jpeg_start_image (FILE *file);
-static void finish_image (pdf_obj *image_res, struct xform_info *p);
+static void finish_image (pdf_obj *image_res, struct xform_info *p,
+			  char *res_name);
 static void do_bxobj (char **start, char *end,
 		      double x_user, double y_user);
 static void do_exobj (void);
@@ -816,79 +816,12 @@ static void do_bead(char **start, char *end)
   return;
 }
 
-static void do_epdf (char **start, char *end, double x_user, double y_user)
-{
-  char *filename = NULL, *objname = NULL, *save;
-  pdf_obj *filestring = NULL;
-  pdf_obj *trailer, *result = NULL;
-  int error = 0;
-  struct xform_info *p;
-#ifdef MEM_DEBUG
-MEM_START
-#endif
-  skip_white(start, end);
-  objname = parse_opt_ident(start, end);
-  p = new_xform_info ();
-  skip_white(start, end);
-  save = *start;
-  if (!parse_dimension(start, end, p)) {
-    fprintf (stderr, "\nFailed to find dimensions for encapsulated figure\n");
-    error = 1;
-  }
-  if (!error && (filestring = parse_pdf_string(start, end)) == NULL) {
-    fprintf (stderr, "\nMissing filename\n");
-    error = 1;
-  }
-  if (!error) {
-    filename = pdf_string_value(filestring);
-  }
-  if (!error && !validate_image_xform_info (p)) {
-    fprintf (stderr, "\nSpecified dimensions are inconsistent\n");
-    dump (save, end);
-    error = 1;
-  }
-  if (!error) {
-    char *kpse_file_name;
-    if ((kpse_file_name = kpse_find_pict (filename))) {
-      fprintf (stderr, "(%s", kpse_file_name);
-      if ((trailer = pdf_open (kpse_file_name)) != NULL) {
-	result = pdf_include_page(trailer, x_user, y_user, p);
-	fprintf (stderr, ")");
-	pdf_release_obj (trailer);
-	pdf_close ();
-      } else {
-	fprintf (stderr, "\nError trying to include PDF file.\n");
-	error = 1;
-      }
-    } else {
-      fprintf (stderr, "\nError locating PDF file (%s)\n", filename);
-      error = 1;
-    }
-  }
-  release_xform_info (p);
-  if (objname != NULL && result != NULL) {
-    add_reference (objname, pdf_link_obj (result),
-		   pdf_name_value(pdf_lookup_dict(pdf_stream_dict(result), "Name")));
-    /* Immediately unlink the object.  Read explanation in do_ann() */ 
-    release_reference (objname);
-  }
-  if (objname) 
-    RELEASE (objname);
-  if (filestring)
-    pdf_release_obj (filestring);
-  if (result)
-    pdf_release_obj (result);
-  if (error)
-    fprintf (stderr, "\nEPDF special ignored.\n");
-#ifdef MEM_DEBUG
-MEM_END
-#endif
-}
-
 static void do_image (char **start, char *end, double x_user, double y_user)
 {
   char *filename = NULL, *objname = NULL, *save;
   pdf_obj *filestring = NULL, *result = NULL;
+  static long next_image = 1;
+  static char res_name[16];
   int error = 0;
   struct xform_info *p;
 #ifdef MEM_DEBUG
@@ -919,17 +852,25 @@ MEM_START
   if (!error) {
     char *kpse_file_name;
     FILE *image_file;
+    sprintf (res_name, "Im%ld", next_image);
     if ((kpse_file_name = kpse_find_pict (filename)) &&
 	(image_file = fopen (kpse_file_name, FOPEN_RBIN_MODE))) {
       fprintf (stderr, "(%s", kpse_file_name);
       if (check_for_jpeg(image_file)) {
 	result = jpeg_start_image(image_file);
+	if (result)
+	  finish_image (result, p, res_name);
       }
 #ifdef HAVE_LIBPNG
       else if (check_for_png(image_file)) {
 	result = start_png_image (image_file, NULL);
+	if (result)
+	  finish_image (result, p, res_name);
       }
 #endif
+      else if (check_for_pdf (image_file)) {
+	result = pdf_include_page (image_file, p, res_name);
+      }
       else{
 	fprintf (stderr, "\nNot a supported image type.\n");
       }
@@ -940,22 +881,19 @@ MEM_START
       error = 1;
     }
   }
-  if (result) {
-    finish_image (result, p);
-  }
   { /* Put reference to object on page */
+    next_image += 1;
+    pdf_doc_add_to_page_xobjects (res_name, pdf_ref_obj(result));
     pdf_doc_add_to_page (" q", 2);
     add_xform_matrix (x_user, y_user, p->xscale, p->yscale, p->rotate);
     if (p->depth != 0.0)
       add_xform_matrix (0.0, -p->depth, 1.0, 1.0, 0.0);
-    sprintf (work_buffer, " /%s Do Q", 
-	     pdf_name_value(pdf_lookup_dict(pdf_stream_dict(result), "Name")));
+    release_xform_info(p);
+    sprintf (work_buffer, " /%s Do Q", res_name);
     pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
   }
-  release_xform_info(p);
   if (objname != NULL && result != NULL) {
-    add_reference (objname, pdf_link_obj (result), 
-		   pdf_name_value(pdf_lookup_dict(pdf_stream_dict(result), "Name")));
+    add_reference (objname, pdf_link_obj (result), res_name);
     /* Read the explanation for the next line in do_ann() */
     release_reference (objname);
   }
@@ -1438,7 +1376,7 @@ MEM_START
       do_eop(&start, end);
       break;
     case EPDF:
-      do_epdf(&start, end, x_user, y_user);
+      do_image(&start, end, x_user, y_user);
       break;
     case IMAGE:
       do_image(&start, end, x_user, y_user);
@@ -1509,7 +1447,6 @@ void add_xform_matrix (double xoff, double yoff,
 }
 
 
-static num_images = 0;
 pdf_obj *jpeg_start_image(FILE *file)
 {
   pdf_obj *xobject, *xobj_dict;
@@ -1543,15 +1480,14 @@ pdf_obj *jpeg_start_image(FILE *file)
   return (xobject);
 }
 
-static void finish_image (pdf_obj *image_res, struct xform_info *p)
+static void finish_image (pdf_obj *image_res, struct xform_info *p,
+			  char *res_name)
 {
   pdf_obj *image_dict;
   double xscale, yscale;
-  sprintf (work_buffer, "Im%d", ++num_images);
-  pdf_doc_add_to_page_xobjects (work_buffer, pdf_ref_obj (image_res));
   image_dict = pdf_stream_dict (image_res);
   pdf_add_dict (image_dict, pdf_new_name ("Name"),
-		pdf_new_name (work_buffer));
+		pdf_new_name (res_name));
   pdf_add_dict (image_dict, pdf_new_name ("Type"),
 		pdf_new_name ("XObject"));
   pdf_add_dict (image_dict, pdf_new_name ("Subtype"),

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.50 1999/08/14 03:50:16 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.51 1999/08/15 02:27:02 mwicks Exp $
  
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1085,16 +1085,13 @@ static pdf_obj *build_scale_array (double a, double b, double c,
    and add a unity scaling matrix. It fills
    in required fields.  The caller must initialize
    the stream */
-int num_xobjects = 0;
+
 void doc_make_form_xobj (pdf_obj *this_form_contents, pdf_obj *bbox,
-			    pdf_obj *resources)
+			    pdf_obj *resources, char *form_name)
 {
   pdf_obj *xobj_dict, *tmp1;
   xobj_dict = pdf_stream_dict (this_form_contents);
-  num_xobjects += 1;
-  sprintf (work_buffer, "Fm%d", num_xobjects);
-  pdf_add_dict (xobj_dict, pdf_new_name ("Name"),
-		pdf_new_name (work_buffer));
+  pdf_add_dict (xobj_dict, pdf_new_name ("Name"), pdf_new_name(form_name));
   pdf_add_dict (xobj_dict, pdf_link_obj (type_name),
 		pdf_new_name ("XObject"));
   pdf_add_dict (xobj_dict, pdf_new_name ("Subtype"),
@@ -1121,6 +1118,7 @@ pdf_obj *begin_form_xobj (double xpos, double ypos,
 			  double bburx, double bbury)
 {
   pdf_obj *bbox;
+  static long int num_forms = 0;
   if (xobject_pending) {
     fprintf (stderr, "\nCannot nest form XObjects\n");
     return NULL;
@@ -1151,8 +1149,9 @@ pdf_obj *begin_form_xobj (double xpos, double ypos,
   sprintf (work_buffer, "1 0 0 1 %g %g cm",
 	   ROUND(-xpos,0.1), ROUND(-ypos,0.1));
   pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
+  sprintf (work_buffer, "Fm%ld", ++num_forms);
   doc_make_form_xobj (this_page_contents, bbox,
-		      pdf_ref_obj(current_page_resources));
+		      pdf_ref_obj(current_page_resources), work_buffer);
   /* Make sure the object is self-contained by adding the
      current font to the object stream */
   dev_reselect_font();

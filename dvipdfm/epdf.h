@@ -5,8 +5,7 @@
 #include "pdfspecial.h"
 #include "pdfobj.h"
 
-extern pdf_obj *pdf_include_page (pdf_obj *trailer, double x_user, double
-			   y_user,
-			   struct xform_info *p);
+extern pdf_obj *pdf_include_page (FILE *file, struct xform_info *p,
+				  char *res_name);
 
 #endif /* _EPDF_H_ */

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.50 1999/08/14 03:50:16 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.51 1999/08/15 02:27:02 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1595,18 +1595,22 @@ MEM_END
   return main_trailer;
 }
 
-pdf_obj *pdf_open (char *filename)
+static any_open = 0;
+
+pdf_obj *pdf_open (FILE *file)
 {
   pdf_obj *trailer;
 #ifdef MEM_DEBUG
 MEM_START
 #endif
-  if ((pdf_input_file = fopen (filename, FOPEN_RBIN_MODE)) == NULL) {
-    fprintf (stderr, "Unable to open file name (%s)\n", filename);
-    return NULL;
+  if (any_open) {
+    fprintf (stderr, "\nOnly one PDF file may be open at one time.\n");
+    any_open = 1;
+    exit(1);
   }
+  pdf_input_file = file;
   if (!check_for_pdf (pdf_input_file)) {
-    fprintf (stderr, "pdf_open: %s: not a PDF 1.[1-2] file\n", filename);
+    fprintf (stderr, "pdf_open: Not a PDF 1.[1-2] file\n");
     return NULL;
   }
   if ((trailer = read_xref()) == NULL) {
@@ -1655,7 +1659,7 @@ void pdf_close (void)
   RELEASE (xref_table);
   xref_table = NULL;
   num_input_objects = 0;
-  fclose (pdf_input_file);
+  any_open = 0;
   pdf_input_file = NULL;
   if (debug) {
     fprintf (stderr, "\nexiting pdf_close:\n");
