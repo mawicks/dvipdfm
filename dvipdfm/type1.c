@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.31 1998/12/23 00:31:51 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.32 1998/12/23 01:02:09 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <kpathsea/tex-file.h>
+#include <time.h>
 #include "system.h"
 #include "pdfobj.h"
 #include "mem.h"
@@ -40,6 +41,8 @@
 #include "pdfparse.h"
 #include "pdflimits.h"
 #include "t1crypt.h"
+
+#define do_partials 1
 
 static const char *map_filename = "pdffonts.map";
 
@@ -474,7 +477,7 @@ static unsigned long do_pfb_body (FILE *file, int pfb_id)
       buffer[i] = decrypt(buffer[i]);
     }
     crypt_init (EEKEY);
-    if (pfbs[pfb_id].encoding_id >= 0) {
+    if (do_partials && pfbs[pfb_id].encoding_id >= 0) {
       filtered_length = do_partial (filtered, buffer, length, 
 				    pfbs[pfb_id].used_chars,
 				    encodings[pfbs[pfb_id].encoding_id].glyphs);
@@ -877,6 +880,26 @@ char *type1_font_used (int type1_id)
   }
 }
 
+static void mangle_fontname()
+{
+  int i;
+  char ch;
+  static first = 1;
+  memmove (fontname+7, fontname, strlen(fontname)+1);
+  /* The following line isn't really that random, but it
+     doesn't need to be here */
+  if (first) {
+    srand (time(NULL));
+    first = 0;
+  }
+  for (i=0; i<6; i++) {
+    ch = rand() % 26;
+    fontname[i] = ch+'A';
+  }
+  fontname[6] = '+';
+}
+
+
 static int is_a_base_font (char *name)
 {
   static char *basefonts[] = {
@@ -940,6 +963,9 @@ int type1_font (const char *tex_name, int tfm_font_id, const char *resource_name
       type1_fonts[num_type1_fonts].pfb_id = -1;
       if (font_record -> pfb_name != NULL) {
 	if (!is_a_base_font (fontname)) {
+	  if (do_partials) {
+	    mangle_fontname();
+	  }
 	  type1_fonts[num_type1_fonts].pfb_id =
 	    type1_pfb_id (font_record -> pfb_name, encoding_id);
 	  pdf_add_dict (font_resource, 
@@ -952,7 +978,7 @@ int type1_font (const char *tex_name, int tfm_font_id, const char *resource_name
       pdf_add_dict (font_resource,
 		    pdf_new_name ("BaseFont"),
 		    pdf_new_name (fontname));  /* fontname is global and set
-						  by type1_font_descriptor() */
+						  by scan_afm_file() */
       firstchar = tfm_get_firstchar(tfm_font_id);
       pdf_add_dict (font_resource,
 		    pdf_new_name ("FirstChar"),
