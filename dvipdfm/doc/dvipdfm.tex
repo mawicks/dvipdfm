@@ -1,4 +1,4 @@
-% $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/doc/dvipdfm.tex,v 1.5 1998/12/04 20:26:07 mwicks Exp $
+% $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/doc/dvipdfm.tex,v 1.6 1998/12/04 21:43:38 mwicks Exp $
 \special{  pdf:  docview <</PageMode /UseOutlines>>}%
 \catcode`\ =11\def\space{ }\catcode`\ =10
 % Page layout
@@ -146,8 +146,8 @@
 %
 \title{Dvipdfm User's Manual}
 \author{Mark A. Wicks}
-\version{Version 0.7.3}
-\date{November 29, 1998}
+\version{Version 0.7.4}
+\date{December 3, 1998}
 \maketitle
 \section{Introduction}
 This package is a DVI (\TeX) to PDF conversion utility,
@@ -290,10 +290,14 @@ defined variables}}
 1em&\vtop{\leftskip0pt\rightskip0pt\hsize=3.0in\noindent #}\cr
 \omit\hfil\it Variable\hfil&\omit\hfil \it Description \hfil\cr
 \noalign{\smallskip\begincolor\red\hrule\endcolor\smallskip}
-@thispage&An {\it indirect reference} to the current page.\cr 
-@page&An {\it indirect reference} to page $n$.\cr
-@nextpage&An {\it indirect reference} to the page following the current page.\cr
-@prevpage&An {\it indirect reference} to the page preceding the current page.\cr
+@catalog&A reference to the document's catalog.\cr
+@names&A reference to the document's /Names dictionary.\cr
+@pages&A reference to the root of the document's /Pages tree.\cr
+@resources&A reference to the current page resource dictionary.\cr
+@thispage&A reference to the current page.\cr
+@page{\it n}&A reference to page {\it n}.\cr
+@nextpage&A reference to the page following |@thispage|.\cr
+@prevpage&A reference to the page preceding |@thispage|.\cr
 @ypos&A {\it number} representing the current vertical position in units of PDF points.\cr
 @xpos&A {\it number} representing the current horizontal position in units of PDF points.\cr
 }}}
@@ -320,7 +324,9 @@ In the \TeX\ style, a dimension specification consists of one of the keywords
 |width|, |height|, or |depth| followed by a dimension
 consisting of a numerical value, followed by a unit for the dimension.  The
 unit will typically be |pt| (which represents a \TeX\ point, not a
-PDf point) but |cm| and |in| are also allowed.  The notation
+PDf point) but |mm|, |cm| and |in| are also allowed.
+If the document is magnified, the ``true'' dimensions |truept|,
+|truemm|, |truecm|, and |truein| may be used.  The notation
 {\it dimension\/} in a syntax description means a dimension is expected.
 
 A transformation consists of one of the keywords |scale|, |xscale|,
@@ -372,37 +378,6 @@ was typeset with
                    Aren't these things ugly?.
                    It's a good thing they don't
                    print by default.) >>}
-\endtt
-
-
-\subsection{Article}
-\syntax
-{\tt article} {\tt @}{\it name} {\it PDF\_dictionary}
-
-\description
-The |article| (or |art|) command initializes an article.  An article
-is a collection of boxed regions in the document that should be
-read consecutively. The {\it name} parameter is required.  The required PDF dictionary 
-is similar to the |/Info| dictionary accessed via the |docinfo| command
-and would typically include the |/Title| and |/Author| keys.
-\example
-\begintt
-\special {pdf: article @somearticle << /Title (Some title)
-                                       /Author (Me) >>}
-\endtt
-
-\subsection{Bead}
-\syntax
-{\tt bead} {\tt @}{\it name} {\it dimension}+
-
-\description
-The |bead| command adds a rectangular area to an existing article thread.
-The parameter {\it dimension}+ specifies a rectangular area
-in the same manner as for an annotation.  The {\it name}
-must correspond to an existing |article|.
-\example
-\begintt
-\special{pdf: bead @someart width 156pt height 20pt depth 4pt}
 \endtt
 
 \subsection{Dest}
@@ -496,6 +471,21 @@ must follow a level~1 outline
 entry.  A level~3 outline entry must follow a level~2 outline
 and cannot immediately follow a level 1 outline entry.
 
+\subsection{Pagesize}
+\syntax
+{\tt pagesize} {\it dimension}+
+\description
+The |pagesize| command specifies the document's physical
+paper size.  The |pagesize| command must be specified on
+the first page and must precede the first annotation
+or background color specification on the page.
+In other words, it should occur as close to the
+beginning of the document as possible.
+\example
+\begintt
+pagesize width 11.0truein height 8.5truein
+\endtt
+
 \subsection{Put}
 \syntax
 \beginlist
@@ -506,7 +496,9 @@ or
 {\tt put} @{\it name} {\it PDF\_Dictionary}
 \endlist
 \description
-The |put| command modifies an existing PDF object created with |obj|.
+The |put| command modifies an existing PDF object created with |obj|,
+or one of the following internally defined objects: |@catalog|,
+|@names|, |@pages|, |@thispage|, or |@resources|.
 The first form is used when @{\it name} is an array.  The second
 form is used when @{\tt name} is a dictionary.  More than
 one object may be added to an array at once.
@@ -515,6 +507,32 @@ are added to the dictionary represented by @{\it name}.
 \example
 \begintt
 \special{pdf: put @mydict << /Nextpage @thispage >>}
+\endtt
+
+\subsection{Thread}
+\syntax
+{\tt thread} {\tt @}{\it name} {\it dimension}+ [ {\it PDF\_dictionary} ]
+
+\description
+The |thread| (or |art|) command adds a bead to an article.
+An article is a collection of boxed regions in the document that should be
+read consecutively.
+Each bead using the same {\it name} belongs to the same article.
+The {\it name} parameter is required.  The {\it dimension} parameter
+defined the rectangular area belonging to the bead in
+the same manner as for |annot|.
+The optional PDF dictionary 
+should supplied on one of the beads.  It keys are
+similar to the |/Info| dictionary accessed via the |docinfo| command
+and would typically include the |/Title| and |/Author| keys.
+Keys may only be written once.  In other words, if the author
+and title supplied on the first bead of an article differ
+from the article and title supplied on the second bead, those
+specified on the first bead will be used.
+\example
+\begintt
+\special {pdf: thread @somearticle << /Title (Some title)
+                                       /Author (Me) >>}
 \endtt
 
 \subsection{Close}
@@ -527,13 +545,70 @@ The object may continue to be referenced using @{\it name}
 indefinitely.  If the object is never closed, it will
 be closed when |dvipdfm| finishes processing the document.
 
+\section{Form XObjects}
+
+The PDF specification allows an object to be stored once
+and displayed at multiple locations throughout the document.
+The following commands give access to this facility.
+
+\subsection{Beginxobj}
+\syntax
+{\tt beginxobj} @{\it name} {\it dimension}+
+\description
+The |beginxobj| (or |bxobj|) command begins the definition of
+a Form XObject.  All material typeset between the
+|beginxobj| and |endxobj| commands will be captured
+into the XObject.  The material can be displayed later
+at an arbitrary location with the |usexobj| command.
+The {\it name} may be used to refer to the object later,
+either via the |usexobj| command or as an indirect
+reference to the XObject if {\it name} is
+used within the context of a {\it PDF\_Object}..
+The required {\it dimension} identifies the extent
+(i.e., bounding box) of the area to be captured.
+It is specified in the same way as for |annot|.
+
+The material will not display during the object definition.
+In other words, if you are typsetting with \TeX\ you
+should place the XObject in a box of dimension 0 so
+you don't leave a white space hole where the object was
+defined.
+\example
+\begintt
+bxobj @myform width 2.0in height 24pt
+\endtt
+
+\subsection{Endxobj}
+\syntax
+{\tt endxobj}
+\description
+The |endxobj| (or |exobj|) command ends the previous
+|beginxobj| definition.  Note that XObject definitions
+may not be nested.  XObjects can be {\it used} within
+other XObjects, however.
+\example
+\begintt
+exobj
+\endtt
+
+\subsection{Usexobj}
+\syntax
+{\tt usexobj} @{\it name}
+\description
+The |usexobj| (or |uxobj|) command displays the 
+form XObject previously defined and
+associated with {\it name}.
+\example
+\begintt
+uxobj @myform
+\endtt
+
 \section{Text Transformation Commands}
 The commands in this section deal with transformation
 of arbitrary material, which may include
 material typeset by \TeX.  These
 may also be used on included graphics images
 if the commands in Section~8 won't do the job.
-
 
 \subsection{BeginTransform}
 \syntax
@@ -643,6 +718,10 @@ followed by a number representing
 the scaling factor or rotation angle in degrees.  Both {\it transformation} and {\it dimension}
 parameters can be supplied as long as they are not logically
 inconsistent.
+
+Note: The object is stored as an XObject and can be redisplayed later by using the
+|usexobj| function and specifying {\it name}.
+
 \example
 \begintt
 \special{pdf:epdf yscale 0.50 width 4.0in rotate 45 (circuit.pdf)}
@@ -656,6 +735,9 @@ inconsistent.
 The {\tt image} command ``encapsulates'' a JPEG image
 taken from the file named by {\it PDF\_String}.
 Otherwise, this command functions just like |epdf|.
+
+Note: The object is stored as an XObject and can be redisplayed later by using the
+|usexobj| function and specifying {\it name}.
 
 \section{Raw Page Marking Commands}
 The commands in this section deal with embedding
@@ -717,8 +799,7 @@ and image inclusion capabilities of \dvipdfm.
 \subsection{Text Transformation}
 Tables with slanted entries are possible as shown
 in \link{Table~2}{rotatedtable}.  This table was achieved using
-various ``|bt rotate 35|'' commands.  It
-is difficult to do without macro support.
+various ``|bt rotate 35|'' commands.
 
 The following line of text was done with nested
 combinations of ``|bt rotate 10|'' and ``|bt rotate -10|''.
@@ -787,25 +868,7 @@ by 45$^\circ$.%
 \bigskip
 \endinsert
 
-Sophisticated macro support for images is not yet available.  For now,
-you need to enclose the image
-in your own box of the correct size so \TeX\ reserves
-space for it. No space is reserved for a |special|
-unless you reserve it.  I used the following simple
-Macro for the previous images:
-\begintt
-\def\reserve#1#2#3{\setbox0\hbox{}\wd0=#1
-                   \ht0=#2\special{#3}\box0}
-\endtt
-The arguments to the |\reserve| macro are the width, height,
-and |\special| contents, respectively.
-The first image in this section was included with
-\begintt
-\centerline{\reserve{1.50in}{2.05in}{pdf: image (mwicks.jpeg)}}
-\endtt
-
-Until macro support is more developed, you will need to know
-the dimensions of the image.  By default, JPEG files are included
+By default, JPEG files are included
 at a resolution of 100dpi so if you know the pixel size
 of the image, you know how much space to reserve.
 Any \TeX\ magnification is applied to the image
@@ -869,6 +932,15 @@ The keyword |default| forces the default behavior.
 The keyword |none| in the PFB field name
 the embedded font to be omitted.
 See the file for examples.
+
+\section{La\TeX\ Support}
+Preliminary support for the La\TeX\ graphics bundle and |hyperref|
+are available.  Until drivers for |dvipdfm| are included
+in the standard distributions of these packages,
+I will include them in distributions of |dvipdfm|.
+The file required for the La\TeX\ graphics is
+called |dvipdfm.def| and the file required for |hyperref|
+support is called |hdvipdfm.def|.  
 
 \newpage
 \section{References}
