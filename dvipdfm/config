@@ -15,7 +15,7 @@
 % D "/usr/local/bin/pstill -c -o %o %i"
 
 % The following line works with GhostScript
-D "cat %i | gs -q -sDEVICE=pdfwrite -dCompatibilityLevel=1.2 -dUseFlateCompression=true -sOutputFile=%o - -c quit"
+D "cat %i | gs -q -sPAPERSIZE=ledger -sDEVICE=pdfwrite -dCompatibilityLevel=1.2 -dUseFlateCompression=true -sOutputFile=%o - -c quit"
 
 % The following line works with Adobe Acrobat Distiller
 % D "/usr/local/bin/distill -quiet -pairs %i %o"
