@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.33 1999/01/05 20:10:52 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.34 1999/01/06 00:43:10 mwicks Exp $
  
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -53,7 +53,7 @@ static struct
 static pdf_obj *current_page_resources = NULL;
 static pdf_obj *this_page_contents = NULL;
 static pdf_obj *glob_page_bop, *glob_page_eop;
-static pdf_obj *this_page_bop = NULL, *this_page_eop = NULL;
+static pdf_obj *this_page_bop = NULL;
 static pdf_obj *this_page_beads = NULL;
 static pdf_obj *this_page_annots = NULL;
 static pdf_obj *this_page_xobjects = NULL, *this_page_fonts = NULL;
@@ -169,13 +169,6 @@ void pdf_doc_this_bop (char *string, unsigned length)
   if (length > 0)
     pdf_add_stream (this_page_bop, string, length);
 }
-
-void pdf_doc_this_eop (char *string, unsigned length)
-{
-  if (length > 0)
-    pdf_add_stream (this_page_eop, string, length);
-}
-
 
 void pdf_doc_eop (char *string, unsigned length)
 {
@@ -776,10 +769,6 @@ MEM_START
       pdf_release_obj (this_page_bop);
       this_page_bop = NULL;
     }
-    if (this_page_eop != NULL) {
-      pdf_release_obj (this_page_eop);
-      this_page_eop = NULL;
-    }
     if (this_page_contents != NULL) {
       pdf_release_obj (this_page_contents);
       this_page_contents = NULL;
@@ -907,7 +896,6 @@ MEM_START
     finish_last_page();
   }
   this_page_bop = pdf_new_stream(STREAM_COMPRESS);
-  this_page_eop = pdf_new_stream(STREAM_COMPRESS);
   /* Was this page already instantiated by a forward reference to it? */
   if (pages[page_count].page_ref == NULL) {
     /* If not, create it. */
@@ -923,7 +911,6 @@ MEM_START
   /* start the contents stream for the new page */
   this_page_contents = pdf_new_stream(STREAM_COMPRESS);
   pdf_add_array (tmp1, pdf_ref_obj (this_page_contents));
-  pdf_add_array (tmp1, pdf_ref_obj (this_page_eop));
   pdf_add_array (tmp1, pdf_ref_obj (glob_page_eop));
   pdf_add_dict (pages[page_count].page_dict,
 		pdf_link_obj(contents_name), tmp1);
