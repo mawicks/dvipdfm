@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.12 1999/09/01 00:55:11 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.13 1999/09/05 01:35:34 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -128,10 +128,10 @@ int mp_fontid (char *tex_name, double pt_size)
     return -1;
 }
 
-static double bbllx, bblly, bburx, bbury;
-int mp_parse_headers (FILE *image_file)
+static int mp_parse_headers (FILE *image_file, struct xform_info *p)
 {
   char *start, *end, *token, *name;
+  char *llx = NULL, *lly = NULL, *urx = NULL, *ury = NULL;
   unsigned long save_position;
   mfgets (work_buffer, WORK_BUFFER_SIZE, image_file);
   /* Presumably already checked file, so press on */
@@ -142,30 +142,21 @@ int mp_parse_headers (FILE *image_file)
   end = start+strlen(start);
   skip_white (&start, end);
   /* Expect 4 numbers or fail */
-  if ((token = parse_number (&start, end))) {
-    skip_white (&start, end);
-    bbllx = atof (token);
-    RELEASE(token);
-  } else
+  if ((llx = parse_number (&start, end)) &&
+      (lly = parse_number (&start, end)) &&
+      (urx = parse_number (&start, end)) &&
+      (ury = parse_number (&start, end))) {
+    p->llx = atof (llx);
+    p->lly = atof (lly);
+    p->urx = atof (urx);
+    p->ury = atof (ury);
+  } else{
+    if (llx) RELEASE(llx);
+    if (lly) RELEASE(lly);
+    if (urx) RELEASE(urx);
+    if (ury) RELEASE(ury);
     return 0;
-  if ((token = parse_number (&start, end))) {
-    skip_white (&start, end);
-    bblly = atof (token);
-    RELEASE(token);
-  } else
-    return 0;
-  if ((token = parse_number (&start, end))) {
-    skip_white (&start, end);
-    bburx = atof (token);
-    RELEASE(token);
-  } else
-    return 0;
-  if ((token = parse_number (&start, end))) {
-    skip_white (&start, end);
-    bbury = atof (token);
-    RELEASE(token);
-  } else
-    return 0;
+  }
   /* Got four numbers */
   /* Read all headers--act on *Font records */
   save_position = tell_position(image_file);
@@ -1110,11 +1101,11 @@ pdf_obj *mp_include (FILE *image_file,  struct xform_info *p,
 {
    pdf_obj *xobj = NULL;
    rewind (image_file);
-   if (mp_parse_headers (image_file)) {
+   if (mp_parse_headers (image_file, p)) {
       /* Looks like an MP file.  Setup xobj "capture" */
-     pdf_scale_image (p, bburx-bbllx, bbury-bblly);
-     xobj = begin_form_xobj (bbllx,bblly, bbllx, bblly,
-			     bburx, bbury, res_name);
+     pdf_scale_image (p, (p->urx)-(p->llx), (p->ury)-(p->lly));
+     xobj = begin_form_xobj (p->llx,p->lly, p->llx, p->lly,
+			     p->urx, p->ury, res_name);
      if (!xobj)
        return NULL;
      /* Flesh out the contents */

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/epdf.c,v 1.17 1999/09/04 23:23:40 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/epdf.c,v 1.18 1999/09/05 01:35:34 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -136,7 +136,10 @@ MEM_START
   }
   /* Arrays of contents must be handled very differently (not implemented) */
   if (contents && contents -> type != PDF_ARRAY) {
-    doc_make_form_xobj (contents, media_box, resources, res_name);
+    doc_make_form_xobj (contents, media_box,
+			pdf_number_value(pdf_get_array (media_box, 0)),
+			pdf_number_value(pdf_get_array (media_box, 1)),
+			resources, res_name);
   } else {
     fprintf (stderr, "\nIgnoring stream with with multiple segments\n");
     contents = NULL;

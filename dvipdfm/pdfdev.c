@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.83 1999/08/30 18:03:09 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.84 1999/09/05 01:35:34 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -846,12 +846,12 @@ void dev_rule (mpt_t xpos, mpt_t ypos, mpt_t width, mpt_t height)
 
 double dev_phys_x (void)
 {
-  return dvi_dev_xpos()+hoffset;
+  return dvi_dev_xpos()*dvi_tell_mag() + hoffset;
 }
 
 double dev_phys_y (void)
 {
-  return dev_page_height()+dvi_dev_ypos()-voffset;
+  return dev_page_height() + dvi_tell_mag()*dvi_dev_ypos() -voffset;
 }
 
 

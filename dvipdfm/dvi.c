@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.57 1999/08/25 21:54:53 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.58 1999/09/05 01:35:34 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -178,7 +178,6 @@ static void do_scales (double mag)
   total_mag = (double) dvi_mag / 1000.0 * mag;
   dvi2pts = (double) dvi_unit_num / (double) dvi_unit_den;
   dvi2pts *= (72.0)/(254000.0);
-  dvi2pts *= total_mag;
 }
 
 

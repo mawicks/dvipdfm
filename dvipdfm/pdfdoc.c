@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.55 1999/09/04 23:23:40 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.56 1999/09/05 01:35:35 mwicks Exp $
  
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -32,9 +32,10 @@
 #include "pdfobj.h"
 #include "error.h"
 #include "mem.h"
+#include "dvi.h"
+#include "pdfdev.h"
 #include "pdfdoc.h"
 #include "pdfspecial.h"
-#include "pdfdev.h"
 #include "numbers.h"
 #include "mfileio.h"
 
@@ -192,7 +193,9 @@ void pdf_doc_set_origin (double x, double y)
   int len;
   static first = 1;
   if (first) {
-    len = sprintf (work_buffer, "1 0 0 1 %g %g cm\n", x, y);
+    len = sprintf (work_buffer, "%g 0 0 %g %g %g cm\n",
+		   dvi_tell_mag(), dvi_tell_mag(),
+		   x, y);
     pdf_add_stream (coord_xform_stream, work_buffer, len);
     first = 0;
   }
@@ -1088,7 +1091,8 @@ static pdf_obj *build_scale_array (double a, double b, double c,
    the stream */
 
 void doc_make_form_xobj (pdf_obj *this_form_contents, pdf_obj *bbox,
-			    pdf_obj *resources, char *form_name)
+			 double refptx, double refpty,
+			 pdf_obj *resources, char *form_name)
 {
   pdf_obj *xobj_dict, *tmp1;
   xobj_dict = pdf_stream_dict (this_form_contents);
@@ -1104,9 +1108,7 @@ void doc_make_form_xobj (pdf_obj *this_form_contents, pdf_obj *bbox,
      bounding box is.  We use an identity scaling matrix,
      and translate the lower left corner of the bounding box to the
      origin */
-  tmp1 = build_scale_array (1, 0, 0, 1, 
-			    -pdf_number_value (pdf_get_array (bbox, 0)),
-			    -pdf_number_value (pdf_get_array (bbox, 1)));
+  tmp1 = build_scale_array (1, 0, 0, 1, -refptx, -refpty);
   pdf_add_dict (xobj_dict, pdf_new_name ("Matrix"), tmp1);
   pdf_add_dict (xobj_dict, pdf_link_obj (resources_name), resources);
   return;
@@ -1116,6 +1118,9 @@ static pdf_obj *save_page_contents, *save_page_fonts;
 static pdf_obj *save_page_xobjects, *save_page_resources;
 static xobject_pending = 0;
 
+/* begin_form_xobj creates an xobject with its "origin" at
+   xpos and ypos that is clipped to the specified bbox. Note
+   that the origin is not the lower left corner of the bbox */
 pdf_obj *begin_form_xobj (double xpos, double ypos,
 			  double bbllx, double bblly,
 			  double bburx, double bbury, char *res_name)
@@ -1143,14 +1148,19 @@ pdf_obj *begin_form_xobj (double xpos, double ypos,
   /* Translate coordinate system so reference point of object 
      is at 0 */
   bbox = pdf_new_array ();
-  pdf_add_array (bbox, pdf_new_number (ROUND(bbllx-xpos,0.01)));
-  pdf_add_array (bbox, pdf_new_number (ROUND(bblly-ypos,0.01)));
-  pdf_add_array (bbox, pdf_new_number (ROUND(bburx-xpos,0.01)));
-  pdf_add_array (bbox, pdf_new_number (ROUND(bbury-ypos,0.01)));
+  /*  pdf_add_array (bbox, pdf_new_number (ROUND(bbllx-xpos,0.01)));
+      pdf_add_array (bbox, pdf_new_number (ROUND(bblly-ypos,0.01)));
+      pdf_add_array (bbox, pdf_new_number (ROUND(bburx-xpos,0.01)));
+      pdf_add_array (bbox, pdf_new_number (ROUND(bbury-ypos,0.01))); */
+  pdf_add_array (bbox, pdf_new_number (ROUND(bbllx,0.01)));
+  pdf_add_array (bbox, pdf_new_number (ROUND(bblly,0.01)));
+  pdf_add_array (bbox, pdf_new_number (ROUND(bburx,0.01)));
+  pdf_add_array (bbox, pdf_new_number (ROUND(bbury,0.01)));
   /* Resource is already made, so call doc_make_form_xobj() */
-  sprintf (work_buffer, "1 0 0 1 %.2f %.2f cm", -xpos, -ypos);
-  pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
+  /*  sprintf (work_buffer, "1 0 0 1 %.2f %.2f cm", -xpos, -ypos);
+      pdf_doc_add_to_page (work_buffer, strlen(work_buffer)); */
   doc_make_form_xobj (this_page_contents, bbox,
+		      xpos, ypos,
 		      pdf_ref_obj(current_page_resources), res_name);
   /* Make sure the object is self-contained by adding the
      current font to the object stream */
