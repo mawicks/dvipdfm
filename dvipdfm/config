@@ -17,7 +17,7 @@
 % The following line works with GhostScript
 % D "gs -q -sPAPERSIZE=ledger -sDEVICE=pdfwrite -dCompatibilityLevel=1.2 -dUseFlateCompression=true -sOutputFile=%o %i -c quit"
 % The following line works on compressed or uncompressed postscript with GhostScript
-D "zcat -f %i | gs -q -sPAPERSIZE=ledger -sDEVICE=pdfwrite -dCompatibilityLevel=1.2 -dUseFlateCompression=true -sOutputFile=%o - -c quit"
+D "zcat -f %i | gs -q -sPAPERSIZE=a0 -sDEVICE=pdfwrite -dCompatibilityLevel=1.2 -dUseFlateCompression=true -sOutputFile=%o - -c quit"
 
 % The following line works with Adobe Acrobat Distiller
 % D "/usr/local/bin/distill -quiet -pairs %i %o"

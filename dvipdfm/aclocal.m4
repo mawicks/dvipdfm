@@ -42,7 +42,6 @@ AC_DEFUN(AC_HAS_OMEGA_FORMATS,
 			[AC_MSG_RESULT(no)])])
 AC_DEFUN(AC_HAS_TTF_FORMATS,
 	[AC_MSG_CHECKING([whether your kpathsea supports Truetype (TTF) file formats])
-	 TTF_OPT='#';
 	 AC_TRY_COMPILE([#include <stdio.h>
 #include <kpathsea/tex-file.h>],
 	     	        [kpse_truetype_format],
