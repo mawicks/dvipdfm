@@ -146,7 +146,7 @@ depend.make:
 @MAINT@#
 @MAINT@doc/dvipdfm.dvi:	doc/dvipdfm.tex
 @MAINT@	cd doc; tex dvipdfm
-@MAINT@doc/dvipdfm.pdf:	dvipdfm.dvi
+@MAINT@doc/dvipdfm.pdf:	doc/dvipdfm.dvi
 @MAINT@	cd doc; dvipdft dvipdfm
 @MAINT@tarball: depend configure
 	/bin/rm -rf ../dvipdfm
