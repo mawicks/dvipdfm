@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.2 1998/11/29 05:10:08 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.3 1998/11/29 08:54:31 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -36,6 +36,173 @@
 #include "type1.h"
 #include "tfm.h"
 #include "pdfparse.h"
+#include "pdflimits.h"
+
+#define MAP_FILE "pdffonts.map"
+
+struct font_record 
+{
+  char *afm_name;
+  char *pfb_name;
+  char *enc_name;
+};
+
+struct encoding {
+  char *enc_name;
+  pdf_obj *encoding_ref;
+} encodings[MAX_ENCODINGS];
+int num_encodings = 0;
+
+
+#include "winansi.h"
+
+pdf_obj *find_encoding_differences (pdf_obj *encoding)
+{
+  static filling;
+  int i;
+  pdf_obj *result = pdf_new_array ();
+  pdf_obj *tmp;
+  filling = 0;
+  for (i=0; i<256; i++) {
+    /* Boy do I regret starting arrays at 1 */
+    tmp = pdf_get_array (encoding, i+1);
+    if (tmp == NULL || tmp -> type != PDF_NAME) {
+      ERROR ("Encoding file may be incorrect\n");
+    }
+    if (!strcmp (winansi_encoding[i],
+		 pdf_name_value(tmp)))
+      filling = 0;
+    else{
+      if (!filling)
+	pdf_add_array (result, pdf_new_number (i));
+      filling = 1;
+      pdf_add_array (result, pdf_link_obj(tmp));
+    }
+  }
+  return result;
+}
+
+pdf_obj *get_encoding (const char *enc_name)
+{
+  FILE *encfile;
+  char *full_enc_filename;
+  pdf_obj *result, *result_ref;
+  long filesize;
+  int i;
+  /* See if we already have this saved */
+  for (i=0; i<num_encodings; i++)
+    if (!strcmp (enc_name, encodings[i].enc_name))
+      return pdf_link_obj (encodings[i].encoding_ref);
+  /* Guess not.. */
+  if ((full_enc_filename = kpse_find_file (enc_name,
+					   kpse_tex_ps_header_format,
+					   1)) == NULL ||
+      (encfile = fopen (full_enc_filename, "r")) == NULL ||
+      (filesize = file_size (encfile)) == 0) {
+    if (encfile)
+      fclose (encfile);
+    fprintf (stderr, "%s: ", enc_name) ;
+    ERROR ("Can't find or open encoding file\n");
+  }
+  /* Got one and opened it */
+  {
+    char *buffer, *start, *end, *junk_ident;
+    pdf_obj *junk_obj, *encoding, *differences;
+    buffer = NEW (filesize, char); 
+    fread (buffer, sizeof (char), filesize, encfile);
+    start = buffer;
+    end = buffer + filesize;
+    start[filesize-1] = 0;
+    skip_white (&start, end);
+    while (start < end && *start != '[') {
+      if ((junk_ident = parse_ident (&start, end)) != NULL)
+	release (junk_ident);
+      else if ((junk_obj = parse_pdf_object (&start, end)) != NULL)
+	pdf_release_obj (junk_obj);
+      skip_white(&start, end);
+    }
+    if (start >= end ||
+	(encoding = parse_pdf_array (&start, end)) == NULL) {
+      fprintf (stderr, "%s: ", enc_name);
+      ERROR ("Can't find an encoding in this file!\n");
+    }
+    differences = find_encoding_differences (encoding);
+    pdf_release_obj (encoding);
+    result = pdf_new_dict();
+    pdf_add_dict (result, pdf_new_name ("Type"),
+		  pdf_new_name ("Encoding"));
+    pdf_add_dict (result, pdf_new_name ("BaseEncoding"),
+		  pdf_new_name ("WinAnsiEncoding"));
+    pdf_add_dict (result, pdf_new_name ("Differences"),
+		  differences);
+  }
+  result_ref = pdf_ref_obj (result);
+  pdf_release_obj (result);
+
+  encodings[num_encodings].encoding_ref = result_ref;
+  encodings[num_encodings].enc_name = NEW (strlen(enc_name)+1, char);
+  strcpy (encodings[num_encodings].enc_name, enc_name);
+  num_encodings += 1;
+
+  return pdf_link_obj(result_ref);
+}
+
+
+struct font_record *get_font_record (const char *tex_name)
+{
+  struct font_record *result;
+  static first = 1;
+  static FILE *mapfile;
+  char *full_map_filename, *start, *end, *record_name, *afm_name;
+  if (first) {
+    first = 0;
+    full_map_filename = kpse_find_file (MAP_FILE, kpse_fontmap_format,
+					0);
+    if (full_map_filename == NULL || 
+	(mapfile = fopen (full_map_filename, "r")) == NULL) {
+      fprintf (stderr, "Warning:  No font map file\n");
+      return NULL;
+    }
+  }
+  if (mapfile == NULL) 
+    return NULL;
+  rewind (mapfile);
+  while ((start = fgets (work_buffer, WORK_BUFFER_SIZE, mapfile)) !=
+	 NULL) {
+    end = work_buffer + strlen(work_buffer);
+    skip_white (&start, end);
+    if (start >= end)
+      continue;
+    if ((record_name = parse_ident (&start, end)) == NULL)
+      continue;
+    if (strcmp (record_name, tex_name)) {
+      release (record_name);
+      continue;
+    }
+    break;
+  }
+  if (start == NULL)
+    return NULL;
+  skip_white (&start, end);
+  /* Check for AFM name otherwise the record is senseless */
+  if ((afm_name = parse_ident (&start, end)) == NULL) {
+    fprintf (stderr, "No afm field\n");
+    return NULL;
+  }
+  result = NEW (1, struct font_record);
+  result -> afm_name = afm_name;
+  skip_white (&start, end);
+  result -> enc_name = parse_ident (&start, end); /* May be null */  
+  skip_white (&start, end);
+  result -> pfb_name = parse_ident (&start, end); /* May be null */
+  if (result -> enc_name != NULL &&
+      !strcmp (result->enc_name, "default")) {
+    release(result->enc_name);
+    result -> enc_name = NULL;
+  }
+  return result;
+}
+
 
 static is_a_base_font (char *name)
 {
@@ -121,13 +288,11 @@ pdf_obj *type1_fontfile (const char *pfb_name)
   int ch;
   full_pfb_name = kpse_find_file (pfb_name, kpse_type1_format,
 				  1);
-  if (full_pfb_name == NULL) {
+  if (full_pfb_name == NULL ||
+      (type1_binary_file = fopen (full_pfb_name, FOPEN_RBIN_MODE)) == NULL) {
     fprintf (stderr, "%s: ", pfb_name);
-    ERROR ("type1_fontfile:  Unable to find binary font file");
-  }
-  if ((type1_binary_file = fopen (full_pfb_name, FOPEN_RBIN_MODE)) == NULL) {
-    fprintf (stderr, "type1_fontfile:  %s\n", pfb_name);
-    ERROR ("type1_fontfile:  Unable to open binary font file");
+    fprintf (stderr, "type1_fontfile:  Unable to find binary font file...Hope that's okay.");
+    return NULL;
   }
   stream = pdf_new_stream();
   /* Following line doesn't hide PDF stream structure very well */
@@ -223,6 +388,7 @@ static reset_afm_variables (void)
 static void open_afm_file (const char *afm_name)
 {
   static char *full_afm_name;
+  reset_afm_variables ();
   full_afm_name = kpse_find_file (afm_name, kpse_afm_format,
 				  1);
   if (full_afm_name == NULL) {
@@ -300,9 +466,9 @@ static void scan_afm_file (void)
 			cmr, should be set to be symbolic */
 #define NOCLUE 20
 
-pdf_obj *type1_font_descriptor (const char *tex_name)
+pdf_obj *type1_font_descriptor (const char *pfb_name)
 {
-  pdf_obj *font_descriptor, *font_descriptor_ref, *tmp1;
+  pdf_obj *font_descriptor, *font_descriptor_ref, *fontfile, *tmp1;
   int flags;
   font_descriptor = pdf_new_dict ();
   pdf_add_dict (font_descriptor,
@@ -349,9 +515,11 @@ pdf_obj *type1_font_descriptor (const char *tex_name)
   pdf_add_dict (font_descriptor,
 		pdf_new_name ("StemV"),  /* This is required */
 		pdf_new_number (NOCLUE));
-  pdf_add_dict (font_descriptor,
-		pdf_new_name ("FontFile"),
-		type1_fontfile (tex_name));
+  /* You don't need a fontfile for the standard fonts */
+  if ((fontfile = type1_fontfile (pfb_name)) != NULL) 
+    pdf_add_dict (font_descriptor,
+		  pdf_new_name ("FontFile"),
+		  fontfile);
   font_descriptor_ref = pdf_ref_obj (font_descriptor);
   pdf_release_obj (font_descriptor);
   return font_descriptor_ref;
@@ -361,7 +529,11 @@ pdf_obj *type1_font_resource (const char *tex_name, int tfm_font_id, const char 
 {
   int i;
   int firstchar, lastchar;
-  pdf_obj *font_resource, *font_resource_ref, *tmp1, *tmp2;
+  pdf_obj *font_resource, *font_resource_ref, *font_descriptor, *tmp1,
+    *tmp2;
+  pdf_obj *font_encoding_ref;
+  struct font_record *font_record;
+  const char *afm_name, *pfb_name;
   font_resource = pdf_new_dict ();
   pdf_add_dict (font_resource,
 		pdf_new_name ("Type"),
@@ -372,15 +544,27 @@ pdf_obj *type1_font_resource (const char *tex_name, int tfm_font_id, const char 
   pdf_add_dict (font_resource,
 		pdf_new_name ("Name"),
 		pdf_new_name (resource_name));
-  open_afm_file (tex_name);
-  reset_afm_variables ();
+  font_record = get_font_record (tex_name);
+  if (font_record != NULL && font_record -> afm_name != NULL) {
+    afm_name = font_record -> afm_name;
+  }
+  else
+    afm_name = tex_name;
+  open_afm_file (afm_name);
   scan_afm_file();
   close_afm_file ();
-  if (!is_a_base_font (fontname)) {
+  if (font_record != NULL && font_record -> afm_name != NULL)
+    release (font_record -> afm_name);
+  if (font_record != NULL && font_record -> pfb_name != NULL)
+    pfb_name = font_record -> pfb_name;
+  else
+    pfb_name = tex_name;
+  if (!is_a_base_font (fontname))
     pdf_add_dict (font_resource, 
 		  pdf_new_name ("FontDescriptor"),
-		  type1_font_descriptor (tex_name));
-  }
+		  type1_font_descriptor(pfb_name));
+  if (font_record != NULL && font_record -> pfb_name != NULL)
+    release (font_record -> pfb_name);
   pdf_add_dict (font_resource,
 		pdf_new_name ("BaseFont"),
 		pdf_new_name (fontname));  /* fontname is set
@@ -403,7 +587,15 @@ pdf_obj *type1_font_resource (const char *tex_name, int tfm_font_id, const char 
   pdf_add_dict (font_resource,
 		pdf_new_name ("Widths"),
 		tmp1);
+  if (font_record != NULL && 
+      font_record -> enc_name != NULL) {
+    font_encoding_ref = get_encoding (font_record -> enc_name);
+    pdf_add_dict (font_resource,
+		  pdf_new_name ("Encoding"),
+		  font_encoding_ref);
+  }
   font_resource_ref = pdf_ref_obj (font_resource);
   pdf_release_obj (font_resource);
   return font_resource_ref;
 }
+

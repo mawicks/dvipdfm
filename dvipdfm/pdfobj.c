@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.2 1998/11/27 23:35:02 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.3 1998/11/29 08:54:30 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -610,16 +610,13 @@ void pdf_set_name (pdf_obj *object, char *name)
 char *pdf_name_value (pdf_obj *object)
 {
   pdf_name *data;
-  char *result;
   if (object == NULL || object -> type != PDF_NAME) {
      ERROR ("pdf_name_value:  Passed non-name object");
   }
   data = object -> data;
   if (data -> name == NULL)
     return NULL;
-  result = NEW (strlen (data -> name)+1, char);
-  strcpy (result, data -> name);
-  return result;
+  return data -> name;
 }
 
 
