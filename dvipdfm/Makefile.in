@@ -61,7 +61,7 @@ clean:
 	   do rm -f $$i/*.dvi $$i/*.log $$i/*~; \
 	done
 	rm -f doc/dvipdfm.pdf latex-support/sample.pdf
-TAGS:
+TAGS:	$(src)
 	etags *.[ch]
 depend:
 	rm -f depend.make

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.40 1998/12/13 23:56:38 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.41 1998/12/14 04:42:58 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -37,7 +37,6 @@
 #include "pdflimits.h"
 #include "tfm.h"
 #include "dvi.h"
-#include "vf.h"
 
 /* Internal functions */
 static void dev_clear_color_stack (void);
@@ -137,8 +136,6 @@ static struct dev_font {
   double ptsize;
   mpt_t mptsize;
   pdf_obj *font_resource;
-  int type;
-  int vf_font_id; /* Only used for type = VIRTUAL */
 } dev_font[MAX_DEVICE_FONTS];
 
 static void reset_text_state(void)
@@ -206,7 +203,7 @@ static void string_mode (double xpos, double ypos)
     else {
       dely = ypos - text_yorigin;
       len += sprintf (format_buffer+len, " %.2f %.2f TD[(",
-		      delx/1000.0, dely/1000.0);
+		      delx*dvi2pts, dely*dvi2pts);
       text_leading = dely;
       text_xorigin = xpos;
       text_yorigin = ypos;
@@ -234,7 +231,7 @@ static void dev_set_font (int font_id)
   int len = 0;
   text_mode();
   len = sprintf (format_buffer, " /%s %.2f Tf", dev_font[font_id].short_name,
-		 dev_font[font_id].mptsize/1000.0);
+		 dev_font[font_id].ptsize);
   pdf_doc_add_to_page (format_buffer, len);
   /* Add to Font list in Resource dictionary for this page */
   if (!dev_font[font_id].used_on_this_page) { 
@@ -250,65 +247,57 @@ void dev_set_char (mpt_t xpos, mpt_t ypos, unsigned char ch, mpt_t
 {
   int len = 0;
   long kern;
-  switch (dev_font[font_id].type) {
-  case PHYSICAL:
-    if (font_id != current_font)
-      dev_set_font(font_id); /* Force a Tf since we are actually trying
-			       to write a character */
-    if (ypos != text_yorigin ||
-	abs(text_xorigin+text_offset-xpos) > dev_font[font_id].mptsize)
-      text_mode();
-    if (motion_state != STRING_MODE)
-      string_mode(xpos, ypos);
-    if ((kern =
-	 (1000l*(text_xorigin+text_offset-xpos))/dev_font[font_id].mptsize) != 0) {
-      text_offset = xpos-text_xorigin;
-      len += sprintf (format_buffer+len, ")%d(", (int) kern);
-    }
-    len += pdfobj_escape_str (format_buffer+len, FORMAT_BUF_SIZE-len,
-			      &ch, 1);
-    pdf_doc_add_to_page (format_buffer, len);
-    text_offset += width;
-    break;
-  case VIRTUAL:
-    vf_set_char (ch, dev_font[font_id].vf_font_id);
+  if (font_id != current_font)
+    dev_set_font(font_id); /* Force a Tf since we are actually trying
+			      to write a character */
+  if (ypos != text_yorigin ||
+      abs(text_xorigin+text_offset-xpos) > dev_font[font_id].mptsize)
+    text_mode();
+  if (motion_state != STRING_MODE)
+    string_mode(xpos, ypos);
+  if ((kern =
+       (1000l*(text_xorigin+text_offset-xpos))/dev_font[font_id].mptsize) != 0) {
+    text_offset = xpos-text_xorigin;
+    len += sprintf (format_buffer+len, ")%d(", (int) kern);
   }
+  len += pdfobj_escape_str (format_buffer+len, FORMAT_BUF_SIZE-len,
+			    &ch, 1);
+  pdf_doc_add_to_page (format_buffer, len);
+  text_offset += width;
+  /*    case VIRTUAL:
+	vf_set_char (ch , dev_font[font_id].vf_font_id); */
 }
 
 void dev_set_string (mpt_t xpos, mpt_t ypos, unsigned char *s, int
 		     length, mpt_t width, int font_id)
 {
-  int len = 0, i;
-  switch (dev_font[font_id].type) {
-    long kern;
-  case PHYSICAL:
-    if (font_id != current_font)
-      dev_set_font(font_id); /* Force a Tf since we are actually trying
+  int len = 0;
+  long kern;
+  if (font_id != current_font)
+    dev_set_font(font_id); /* Force a Tf since we are actually trying
 			       to write a character */
-    if (ypos != text_yorigin ||
-	abs(text_xorigin+text_offset-xpos) > dev_font[font_id].mptsize)
-      text_mode();
-    if (motion_state != STRING_MODE)
-      string_mode(xpos, ypos);
-    if ((kern =
-	 (1000l*(text_xorigin+text_offset-xpos))/dev_font[font_id].mptsize) != 0) {
-      text_offset = xpos-text_xorigin;
-      len += sprintf (format_buffer+len, ")%d(", (int) kern);
-    }
-    len += pdfobj_escape_str (format_buffer+len, FORMAT_BUF_SIZE-len, s, length);
-    pdf_doc_add_to_page (format_buffer, len);
-    text_offset += width;
-    break;
-  case VIRTUAL:
-    /* Unfortunately, there seems to be no good way to stream
+  if (ypos != text_yorigin ||
+      abs(text_xorigin+text_offset-xpos) > dev_font[font_id].mptsize)
+    text_mode();
+  if (motion_state != STRING_MODE)
+    string_mode(xpos, ypos);
+  if ((kern =
+       (1000l*(text_xorigin+text_offset-xpos))/dev_font[font_id].mptsize) != 0) {
+    text_offset = xpos-text_xorigin;
+    len += sprintf (format_buffer+len, ")%d(", (int) kern);
+  }
+  len += pdfobj_escape_str (format_buffer+len, FORMAT_BUF_SIZE-len, s, length);
+  pdf_doc_add_to_page (format_buffer, len);
+  text_offset += width;
+  /*  case VIRTUAL: */
+  /*  Unfortunately, there seems to be no good way to stream
        virtual characters so we revert back to the dvi_set single character
        routine.  This is a very ugly loop between the dvi stuff and the
        dev stuff. */
-    dvi_push();
+  /*    dvi_push();
     for (i=0; i<length; i++)
       dvi_set (s[i]);
-    dvi_pop();
-  }
+    dvi_pop(); */
 }
 
 void dev_init (double scale)
@@ -614,22 +603,21 @@ MEM_END
 #endif
 }
 
-int dev_locate_font (char *tex_name, double ptsize)
-     /* Here, the ptsize is 1/72 of inch */ 
+int dev_locate_font (char *tex_name, mpt_t ptsize)
+     /* Here, the ptsize is in device units, currently millipts */
 {
   /* Since Postscript fonts are scaleable, this font may have already
      been asked for.  Make sure it doesn't already exist. */
   int i, thisfont;
   if (verbose) {
-    fprintf (stderr, "dev_locate_font: fontname: (%s) ptsize: %g\n",
-	     tex_name, ptsize);
-    fprintf (stderr, "dev_locate_font: dev_id: %d\n", n_dev_fonts);
+    fprintf (stderr, "dev_locate_font: fontname: (%s) ptsize: %ld, id: %d\n",
+	     tex_name, ptsize, n_dev_fonts);
   }
+  if (ptsize == 0)
+    ERROR ("dev_locate_font called with point size of zero");
   if (n_dev_fonts == MAX_DEVICE_FONTS)
     ERROR ("dev_locate_font:  Tried to load too many fonts\n");
-  /* Use an automatic variable to hold n_dev_fonts so this
-     routine is *reentrant* */
-  thisfont = n_dev_fonts++;
+  thisfont = n_dev_fonts;
   for (i=0; i<thisfont; i++) {
     if (dev_font[i].tex_name && strcmp (tex_name, dev_font[i].tex_name) == 0) {
       break;
@@ -645,35 +633,16 @@ int dev_locate_font (char *tex_name, double ptsize)
     if (dev_font[i].font_resource) { /* If we got one, it must be a physical font */
       dev_font[i].short_name[0] = 'F';
       sprintf (dev_font[i].short_name+1, "%d", ++n_phys_fonts);
-      dev_font[i].type = PHYSICAL;
-    } else { /* No physical font, see if we can locate a virtual one */
-      dev_font[i].vf_font_id = vf_font_locate (tex_name, ptsize);
-      if (dev_font[i].vf_font_id < 0) {
-	fprintf (stderr, "%s: Can't locate an AFM or VF file\n", tex_name);
-	ERROR ("Not sure how to proceed.  For now this is fatal\n\
-Maybe in the future, I'll substitute some other font.");
-      }
-      dev_font[i].type = VIRTUAL;
+    } else { /* No physical font corresponding to this name */
+      thisfont = -1;
     }
-  } else {	/* Font name was found */
+  } else {	/* Font name was already in table*/
     /* Copy the parts that do not depend on point size */
     /* Rebuild everything else */
-    dev_font[thisfont].type = dev_font[i].type;
     dev_font[thisfont].tfm_font_id = dev_font[i].tfm_font_id;
-    switch (dev_font[i].type) {
-    case PHYSICAL:
-      strcpy (dev_font[thisfont].short_name, dev_font[i].short_name);
-      dev_font[thisfont].font_resource = pdf_link_obj
-	(dev_font[i].font_resource);
-      break;
-    case VIRTUAL:
-      /* Someday this should be done right so we don't have
-         to call vf_font_locate and reload the vf file for every
-         point size ! We won't check the return code since
-         we've located it once before we assume its still there  */
-      dev_font[thisfont].vf_font_id = vf_font_locate (tex_name, ptsize);
-      break;
-    }
+    strcpy (dev_font[thisfont].short_name, dev_font[i].short_name);
+    dev_font[thisfont].font_resource = pdf_link_obj
+      (dev_font[i].font_resource);
   }
   /* Note that two entries in dev_font may have the same name and
      pointsize.  This only comes into play with virtual fonts. 
@@ -684,10 +653,13 @@ Maybe in the future, I'll substitute some other font.");
      name/ptsize combinations also unique isn't worth the
      effort for the slight increase in storage requirements. */
 
-  dev_font[thisfont].ptsize = ptsize;
-  dev_font[thisfont].mptsize = (mpt_t) (ptsize*1000);
-  dev_font[thisfont].tex_name = NEW (strlen(tex_name)+1, char);
-  strcpy (dev_font[thisfont].tex_name, tex_name);
+  if (thisfont >=0) {
+    dev_font[thisfont].mptsize = ptsize;
+    dev_font[thisfont].ptsize = ptsize*dvi2pts;
+    dev_font[thisfont].tex_name = NEW (strlen(tex_name)+1, char);
+    strcpy (dev_font[thisfont].tex_name, tex_name);
+    n_dev_fonts +=1;
+  }
   return (thisfont);
 }
 
@@ -714,7 +686,6 @@ void dev_close_all_fonts(void)
     RELEASE (dev_font[i].tex_name);
   }
   type1_close_all_encodings();
-  vf_close_all_fonts();
 }
 
 
@@ -725,11 +696,15 @@ void dev_rule (mpt_t xpos, mpt_t ypos, mpt_t width, mpt_t height)
     fprintf (stderr, "(dev_rule)");
   }
   graphics_mode();
+  fprintf (stderr, "dev_rule: xpos=%ld,ypos=%ld,width=%ld,ht=%ld\n",
+	   xpos, ypos, width, height);
+  fprintf (stderr, "dev_rule: xpos=%g,ypos=%g,width=%g,ht=%g\n",
+	   xpos*dvi2pts, ypos*dvi2pts, width*dvi2pts, height*dvi2pts);
   len = sprintf (format_buffer, " %.2f %.2f m %.2f %.2f l %.2f %.2f l %.2f %.2f l b",
-		 xpos/1000.0, ypos/1000.0,
-		 (xpos+width)/1000.0, ypos/1000.0,
-		 (xpos+width)/1000.0, (ypos+height)/1000.0,
-		 xpos/1000.0, (ypos+height)/1000.0);
+		 xpos*dvi2pts, ypos*dvi2pts,
+		 (xpos+width)*dvi2pts, ypos*dvi2pts,
+		 (xpos+width)*dvi2pts, (ypos+height)*dvi2pts,
+		 xpos*dvi2pts, (ypos+height)*dvi2pts);
   pdf_doc_add_to_page (format_buffer, len);
 }
 

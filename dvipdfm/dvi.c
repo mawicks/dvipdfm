@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.28 1998/12/13 23:56:38 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.29 1998/12/14 04:42:58 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -34,6 +34,7 @@
 #include "tfm.h"
 #include "mem.h"
 #include "dvi.h"
+#include "vf.h"
 
 #include "dvicodes.h"
 
@@ -41,8 +42,8 @@
 /* Interal Variables */
 
 static FILE *dvi_file;
-static dvi_verbose = 0;
-static dvi_debug = 0;
+static verbose = 0;
+static debug = 0;
 static unsigned numfonts = 0, stackdepth;
 static unsigned long *page_loc = NULL;
 static long max_pages = 0;
@@ -61,11 +62,11 @@ struct font_def {
   int type;  /* Type is physical or virtual */
   int font_id;  /* id returned by dev (for PHYSICAL fonts)
 		   or by vf module for (VIRTUAL fonts) */
+  int tfm_id;
   mpt_t size;
+  char *name;
   int source;  /* Source is either DVI or VF */
   signed long tex_id /* id used internally by TeX */;
-  unsigned long checksum, design_size;
-  char *directory, *name;
 } font_def[MAX_FONTS];
 
 static void invalid_signature()
@@ -79,12 +80,12 @@ static void invalid_signature()
 
 void dvi_set_verbose(void)
 {
-  dvi_verbose = 1;
+  verbose = 1;
 }
 
 void dvi_set_debug(void)
 {
-  dvi_debug = 1;
+  debug = 1;
 }
 
 int dvi_npages (void)
@@ -97,13 +98,13 @@ static void find_post (void)
   long current;
   int read_byte;
 
-  if (dvi_debug) {
+  if (debug) {
     fprintf (stderr, "dvi_init: Searching for post\n");
   }
 
   /* First find end of file */  
   dvi_file_size = file_size (dvi_file);
-  if (dvi_debug) {
+  if (debug) {
     fprintf (stderr, "dvi_init: DVI size is %ld\n", dvi_file_size);
   }
   current = dvi_file_size;
@@ -130,7 +131,7 @@ static void find_post (void)
      fprintf (stderr, "Found %d where post_post opcode should be\n", read_byte);
      invalid_signature();
   }
-  if (dvi_verbose) {
+  if (verbose) {
     fprintf (stderr, "Post_post:\t %8ld\n", current);
   }
 
@@ -141,7 +142,7 @@ static void find_post (void)
      invalid_signature();
   }
   post_location = current;
-  if (dvi_verbose) {
+  if (verbose) {
     fprintf (stderr, "Post:     \t %8ld\n", post_location);
   }
 }
@@ -151,7 +152,7 @@ static void get_page_info (void)
   int i;
   seek_absolute (dvi_file, post_location+27);
   numpages = get_unsigned_pair (dvi_file);
-  if (dvi_verbose) {
+  if (verbose) {
     fprintf (stderr, "Page count:\t %4d\n", numpages);
   }
   if (numpages == 0) {
@@ -167,7 +168,7 @@ static void get_page_info (void)
     page_loc[i] = get_unsigned_quad(dvi_file);
     range_check_loc(page_loc[numpages-1]+41);
   }
-  if (dvi_verbose) {
+  if(verbose) {
     for (i=0; i<numpages; i++) 
       fprintf (stderr, "Page %4d:\t %8ld\n", i, page_loc[i]);
   }
@@ -209,7 +210,7 @@ static void get_dvi_info (void)
     ERROR ("Capacity exceeded.");
   }
 
-  if (dvi_verbose) {
+  if (verbose) {
     fprintf (stderr, "DVI File Info\n");
     fprintf (stderr, "Unit: %ld / %ld\n", dvi_unit_num, dvi_unit_den);
     fprintf (stderr, "Mag: %ld\n", dvi_mag);
@@ -220,77 +221,102 @@ static void get_dvi_info (void)
   
 }
 
-
 static void dump_font_info (void)
 {
   unsigned i;
   for (i=0; i<numfonts; i++) {
-      fprintf (stderr, "Font: (%s)/", font_def[i].directory);
-      fprintf (stderr, "%s, ", font_def[i].name);
-      fprintf (stderr, "ID=%ld, ", font_def[i].tex_id);
-      fprintf (stderr, "size= %ld @ ", font_def[i].design_size);
-      fprintf (stderr, "%ld\n", font_def[i].size);
+    fprintf (stderr, "id: %i\n", i);
+    fprintf (stderr, "name: %s\n", font_def[i].name);
+    fprintf (stderr, "TeX/DVI ID: %ld\n", font_def[i].tex_id);
+    fprintf (stderr, "dev/vf ID: %d\n", font_def[i].font_id);
+    fprintf (stderr, "ptsize: %ld\n", font_def[i].size);
+    switch (font_def[i].type) {
+    case PHYSICAL:
+      fprintf (stderr, "Type: PHYSICAL\n");
+      break;
+    case VIRTUAL:
+      fprintf (stderr, "Type: VIRTUAL\n");
+      break;
+    }
+    switch (font_def[i].source) {
+    case DVI:
+      fprintf (stderr, "Source: DVI file\n");
+      break;
+    case VF:
+      fprintf (stderr, "Source: VF file\n");
+      break;
+    }
+    fprintf (stderr, "\n");
   }
 }
 
-static void get_a_font_record (struct font_def * a_font)
+static void get_a_font_record (SIGNED_QUAD tex_id)
 {
   UNSIGNED_BYTE dir_length, name_length;
-  a_font -> checksum = get_unsigned_quad (dvi_file);
-  a_font -> size = get_unsigned_quad (dvi_file);
-  a_font -> design_size = get_unsigned_quad (dvi_file);
+  UNSIGNED_QUAD checksum, size, design_size;
+  char *directory, *name;
+  int font_id;
+  if (debug) {
+    fprintf (stderr, "get_a_font_record: tex_id = %ld\n", tex_id);
+  }
+  checksum = get_unsigned_quad (dvi_file);
+  size = get_unsigned_quad (dvi_file);
+  design_size = get_unsigned_quad (dvi_file);
   dir_length = get_unsigned_byte (dvi_file);
   name_length = get_unsigned_byte (dvi_file);
-  a_font -> directory = NEW (dir_length+1, char);
-  if (fread (a_font -> directory, 1, dir_length, dvi_file) !=
+  directory = NEW (dir_length+1, char);
+  if (fread (directory, 1, dir_length, dvi_file) !=
       dir_length) {
     invalid_signature();
   }
-  a_font -> name = NEW (name_length+1, char);
-  if (fread (a_font -> name, 1, name_length, dvi_file) !=
+  name = NEW (name_length+1, char);
+  if (fread (name, 1, name_length, dvi_file) !=
       name_length) {
     invalid_signature();
   }
-  (a_font -> directory)[dir_length] = 0;
-  (a_font -> name)[name_length] = 0;
-  if (dvi_verbose)
-    fprintf (stderr, "[%s]", a_font -> name);
+  directory[dir_length] = 0;
+  name[name_length] = 0;
+  if (verbose)
+    fprintf (stderr, "[%s/%s]\n", directory, name);
+  
+  font_id = dvi_locate_font (name, size);
+  font_def[font_id].source = DVI;
+  font_def[font_id].tex_id = tex_id;
+  RELEASE (directory);
+  RELEASE (name);
 }
 
 
 static void get_dvi_fonts (void)
 {
   UNSIGNED_BYTE code;
-  if (dvi_verbose)
-    fprintf(stderr, "Fonts..");
+  SIGNED_QUAD tex_id;
+  if (verbose)
+    fprintf(stderr, "Scanning fonts...\n");
   seek_absolute (dvi_file, post_location+29);
   while (numfonts < MAX_FONTS && (code = get_unsigned_byte(dvi_file)) != POST_POST) {
     switch (code)
       {
       case FNT_DEF1:
-	font_def[numfonts].tex_id = get_unsigned_byte (dvi_file);
+	tex_id = get_unsigned_byte (dvi_file);
 	break;
       case FNT_DEF2:
-	font_def[numfonts].tex_id = get_unsigned_pair (dvi_file);
+	tex_id = get_unsigned_pair (dvi_file);
 	break;
       case FNT_DEF3:
-	font_def[numfonts].tex_id = get_unsigned_triple (dvi_file);
+	tex_id = get_unsigned_triple (dvi_file);
 	break;
       case FNT_DEF4:
-	font_def[numfonts].tex_id = get_signed_quad (dvi_file);
+	tex_id = get_signed_quad (dvi_file);
 	break;
       default:
 	fprintf (stderr, "Unexpected op code: %3d\n", code);
 	invalid_signature();
       }
-    get_a_font_record(&font_def[numfonts]);
-    numfonts += 1;
+    get_a_font_record(tex_id);
   }
-  if (numfonts >= MAX_FONTS)
-    ERROR ("Font capacity exceeded");
-  if (dvi_verbose) {
-    dump_font_info ();
-    fprintf (stderr, "\nRead %d fonts.\n", numfonts);
+  if (verbose) {
+    dump_font_info();
   }
 }
 
@@ -304,7 +330,7 @@ void get_comment(void)
     invalid_signature();
   }
   dvi_comment[length] = 0;
-  if (dvi_verbose) {
+  if (verbose) {
     fprintf (stderr, "Comment: %s\n", dvi_comment);
   }
 }
@@ -340,21 +366,41 @@ double dvi_unit_size(void)
   return dvi2pts;
 }
 
-
-static void do_locate_fonts (void) 
+int dvi_locate_font (char *tex_name, mpt_t ptsize)
 {
-  int i;
-  for (i=0; i<numfonts; i++) {
-    if (dvi_verbose) { 
-    fprintf (stderr, "<%s @ %gpt>",
-	     font_def[i].name, ROUND(font_def[i].size*dvi2pts,0.1));
-    }
-    /* Only need to read tfm once for the same name.  Check to see
-       if it already exists */
-    font_def[i].font_id = dev_locate_font (font_def[i].name, font_def[i].size*dvi2pts);
+  int thisfont;
+  if (verbose) {
+    fprintf (stderr, "dvi_locate_font: fontname: (%s) ptsize: %ld, dvi_id: %d\n",
+	     tex_name, ptsize, numfonts);
   }
+  if (numfonts == MAX_FONTS)
+    ERROR ("dvi_locate_font:  Tried to load too many fonts\n");
+  /* This routine needs to be recursive/reentrant.  Load current high water
+     mark into an automatic variable  */
+  thisfont = numfonts++;
+  font_def[thisfont].tfm_id = tfm_open (tex_name);
+  font_def[thisfont].source = VF; /* This will be reset later if 
+				     it was really generated by the
+				     dvi file */
+  /* type1_font_resource on next line always returns an *indirect*
+     obj */ 
+  font_def[thisfont].font_id = dev_locate_font (tex_name, ptsize);
+  if (font_def[thisfont].font_id >= 0) {
+    font_def[thisfont].type = PHYSICAL;
+  } else {
+    font_def[thisfont].type = VIRTUAL;
+    font_def[thisfont].font_id = vf_locate_font (tex_name, ptsize);
+    if (font_def[thisfont].font_id < 0) {
+      fprintf (stderr, "%s: Can't locate an AFM or VF file\n", tex_name);
+      ERROR ("Not sure how to proceed.  For now this is fatal\n\
+Maybe in the future, I'll substitute some other font.");
+    }
+  }
+  font_def[thisfont].size = ptsize;
+  font_def[thisfont].name = NEW (strlen(tex_name)+1, char);
+  strcpy (font_def[thisfont].name, tex_name);
+  return (thisfont);
 }
-
 
 void dvi_complete (void)    
 {
@@ -362,9 +408,9 @@ void dvi_complete (void)
      a change to overwrite it.  The docinfo dictionary is
      treated as a write-once record */
   dev_add_comment (dvi_comment);
-  if (dvi_debug) fprintf (stderr, "dvi:  Closing output device...");
+  if (debug) fprintf (stderr, "dvi:  Closing output device...");
   dev_close();
-  if (dvi_debug) fprintf (stderr, "dvi:  Output device closed\n");
+  if (debug) fprintf (stderr, "dvi:  Output device closed\n");
 }
 
 #define HOFFSET 72.0
@@ -379,81 +425,112 @@ double dvi_dev_ypos (void)
   return -(dvi_state.v*dvi2pts);
 }
 
-static mpt_t dvi_dev_xpos_mpt (void)
-{
-  return (mpt_t) sqxfw (dvi_state.h,dvi2mpts);
-}
-
-static mpt_t dvi_dev_ypos_mpt (void)
-{
-  return (mpt_t) -(sqxfw (dvi_state.v,dvi2mpts));
-}
-
 static void do_moveto (SIGNED_QUAD x, SIGNED_QUAD y)
 {
   dvi_state.h = x;
   dvi_state.v = y;
-  if (dvi_debug) fprintf (stderr, "do_moveto: x = %ld, y = %ld\n", x, y);
+  if (debug) fprintf (stderr, "do_moveto: x = %ld, y = %ld\n", x, y);
 }
 
 void dvi_right (SIGNED_QUAD x)
 {
+  if (debug){
+    fprintf (stderr, "Moving right by %ld\n", x);
+  }
   dvi_state.h += x;
 }
 
 void dvi_down (SIGNED_QUAD y)
 {
+  if (debug){
+    fprintf (stderr, "Moving right by %ld\n", y);
+  }
   dvi_state.v += y;
 }
 
 static void do_string (unsigned char *s, int len)
 {
   mpt_t width = 0;
-  int tfm_id;
   int i;
+  struct font_def *p;
+  if (debug) {
+    int i;
+    fprintf (stderr, "do_string: (font: %d)\n", current_font);
+    for (i=0; i<len; i++) fputc (s[i], stderr);
+    fputc ('\n', stderr);
+  }
+  
   if (current_font < 0) {
-    ERROR ("dvi_set:  No font selected");
+    ERROR ("do_string:  No font selected");
   }
-  /* The division by dvi2pts seems strange since we actually know the
-     "dvi" size of the fonts contained in the DVI file.  In other
-     words, we converted from DVI units to pts and back again!
-     The problem comes from fonts defined in VF files where we don't know the DVI
-     size.  It's keeping me sane to keep *point sizes* of *all* fonts in
-     the dev.c file and convert them back if necessary */ 
-  tfm_id = dev_font_tfm(current_font);
+  p = font_def+current_font;
   for (i=0; i<len; i++) {
-    width += tfm_get_fw_width(tfm_id, s[i]);
+    width += tfm_get_fw_width(p->tfm_id, s[i]);
   }
-  width = sqxfw (dev_font_mptsize(current_font), width);
-  dev_set_string (dvi_dev_xpos_mpt(), dvi_dev_ypos_mpt(), s, len,
-		  width, current_font);
-  dvi_state.h += sqxfw(width,mpts2dvi);
+  width = sqxfw (p->size, width);
+  switch (p->type) {
+  case PHYSICAL:
+    dev_set_string (dvi_state.h, -dvi_state.v, s, len,
+		    width, p->font_id);
+    break;
+  case VIRTUAL:
+    dvi_push();
+    for (i=0; i<len; i++) {
+      dvi_set (s[i]);
+    }
+    dvi_pop();
+  }
+  dvi_state.h += width;
 }
 
 void dvi_set (SIGNED_QUAD ch)
 {
   mpt_t width;
+  struct font_def *p;
   if (current_font < 0) {
     ERROR ("dvi_set:  No font selected");
   }
+  if (verbose) {
+    fprintf (stderr, "dvi_set, ch=%c\n", ch);
+  }
+  
   /* The division by dvi2pts seems strange since we actually know the
      "dvi" size of the fonts contained in the DVI file.  In other
      words, we converted from DVI units to pts and back again!
      The problem comes from fonts defined in VF files where we don't know the DVI
      size.  It's keeping me sane to keep *point sizes* of *all* fonts in
      the dev.c file and convert them back if necessary */ 
-  width = sqxfw (dev_font_mptsize(current_font),
-		 tfm_get_fw_width(dev_font_tfm(current_font), ch));
-  dev_set_char (dvi_dev_xpos_mpt(), dvi_dev_ypos_mpt(), ch, width, current_font);
-  dvi_state.h += sqxfw(width,mpts2dvi);
+  p = font_def+current_font;
+  width = tfm_get_fw_width (p->tfm_id, ch);
+  width = sqxfw (p->size, width);
+  switch (p->type) {
+  case PHYSICAL:
+    dev_set_char (dvi_state.h, -dvi_state.v, ch, width,
+		  p->font_id);
+    break;
+  case VIRTUAL:    
+    vf_set_char (ch, p->font_id);
+  }
+  dvi_state.h += width;
 }
 
 void dvi_put (SIGNED_QUAD ch)
 {
+  struct font_def *p;
   if (current_font < 0) {
     ERROR ("dvi_put:  No font selected");
   }
-  dev_set_char (dvi_dev_xpos_mpt(), dvi_dev_ypos_mpt(), ch, 0, current_font);
+  p = font_def+current_font;
+  switch (p->type) {
+  case PHYSICAL:
+    dev_set_char (dvi_state.h, -dvi_state.v, ch, 0,
+		  p->font_id);
+    break;
+  case VIRTUAL:    
+    fprintf (stderr, "Calling vf_set_char with c=%c, vf_id=%d\n", ch,
+	     p->font_id);
+    vf_set_char (ch, p->font_id);
+  }
   return;
 }
 
@@ -461,8 +538,8 @@ void dvi_put (SIGNED_QUAD ch)
 void dvi_rule (SIGNED_QUAD width, SIGNED_QUAD height)
 {
   do_moveto (dvi_state.h, dvi_state.v);
-  dev_rule (dvi_dev_xpos_mpt(), dvi_dev_ypos_mpt(), 
-	    sqxfw (width, dvi2mpts), sqxfw (height, dvi2mpts));
+  dev_rule (dvi_state.h, -dvi_state.v,
+	    width, height);
 }
 
 static void do_set1(void)
@@ -498,7 +575,7 @@ static void do_put1(void)
 
 void dvi_push (void) 
 {
-  if (dvi_debug) {
+  if (debug) {
     fprintf (stderr, "Pushing onto stack of depth %d\n",
 	     dvi_stack_depth);
   }
@@ -507,7 +584,7 @@ void dvi_push (void)
 
 void dvi_pop (void)
 {
-  if (dvi_debug) {
+  if (debug) {
     fprintf (stderr, "Popping off stack of depth %d\n",
 	     dvi_stack_depth);
   }
@@ -730,13 +807,13 @@ static void do_fnt (SIGNED_QUAD font_id)
 {
   int i;
   for (i=0; i<numfonts; i++) {
-    if (font_def[i].tex_id == font_id) break;
+    if (font_def[i].source == DVI && font_def[i].tex_id == font_id) break;
   }
   if (i == numfonts) {
     fprintf (stderr, "fontid: %ld\n", font_id);
     ERROR ("dvi_do_fnt:  Tried to select a font that hasn't been defined");
   }
-  current_font = font_def[i].font_id;
+  current_font = i;
 }
 
 static void do_fnt1(void)
@@ -775,7 +852,7 @@ static void do_xxx(UNSIGNED_QUAD size)
   for (i=0; i<size; i++) {
     buffer[i] = get_unsigned_byte(dvi_file);
   }
-  if (dvi_debug)
+  if (debug)
     fprintf (stderr, "%s\n", buffer);
   dev_do_special (buffer, size);
   RELEASE (buffer);
@@ -784,7 +861,7 @@ static void do_xxx(UNSIGNED_QUAD size)
 static void do_xxx1(void)
 {
   SIGNED_QUAD size;
-  if (dvi_debug)
+  if (debug)
     fprintf (stderr, "(xxx1)");
   size = get_unsigned_byte(dvi_file);
   do_xxx(size);
@@ -846,7 +923,7 @@ void dvi_do_page(int n)  /* Most of the work of actually interpreting
 {
   unsigned char opcode;
   /* Position to beginning of page */
-  if (dvi_debug) fprintf (stderr, "Seeking to page %d @ %ld\n", n,
+  if (debug) fprintf (stderr, "Seeking to page %d @ %ld\n", n,
 			  page_loc[n]);
   seek_absolute (dvi_file, page_loc[n]);
   dvi_stack_depth = 0;
@@ -1054,7 +1131,6 @@ error_t dvi_init (char * filename)
   get_dvi_fonts();
   get_comment();
   clear_state();
-  do_locate_fonts();
   return (NO_ERROR);
 }
 
@@ -1065,7 +1141,6 @@ void dvi_close (void)
   /* Do some house cleaning */
   fclose (dvi_file);
   for (i=0; i<numfonts; i++) {
-    RELEASE (font_def[i].directory);
     RELEASE (font_def[i].name);
   }
   RELEASE (page_loc);
@@ -1073,6 +1148,7 @@ void dvi_close (void)
   numpages = 0;
   dvi_file = NULL;
   dev_close_all_fonts();
+  vf_close_all_fonts();
   tfm_close_all();
 }
 
