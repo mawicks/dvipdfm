@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.65.2.2 1999/04/08 03:20:59 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.65.2.3 1999/04/19 23:43:51 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -457,7 +457,7 @@ void dev_begin_cmyk_color (double c, double m, double y, double k)
   colorstack[num_colors].c1 = c;
   colorstack[num_colors].c2 = m;
   colorstack[num_colors].c3 = y;
-  colorstack[num_colors].c4 = y;
+  colorstack[num_colors].c4 = k;
   colorstack[num_colors].colortype = CMYK;
   num_colors+= 1;
   dev_do_color();
