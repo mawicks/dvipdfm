@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.61 2000/01/14 16:06:33 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.62 2000/01/15 01:53:11 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1314,7 +1314,8 @@ long next_object (unsigned long obj)
   this_position = xref_table[obj].position;
   /* Check all other objects to find next one */
   for (i=0; i<num_input_objects; i++) {
-    if (xref_table[i].position > this_position &&
+    if ((xref_table[i].used) &&
+	xref_table[i].position > this_position &&
 	xref_table[i].position < result)
       result = xref_table[i].position;
   }

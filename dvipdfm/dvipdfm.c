@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.65 2000/01/14 16:06:32 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.66 2000/01/15 01:53:11 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -127,7 +127,6 @@ static void usage (void)
 }
 
 static double paper_width = 612.0, paper_height = 792.0;
-static int paper_specified = 0;
 static char landscape_mode = 0;
 static char ignore_colors = 0;
 static double mag = 1.0, x_offset=72.0, y_offset=72.0;
@@ -367,7 +366,6 @@ static void do_args (int argc, char *argv[])
 	    ERROR ("Missing paper size");
 	  paper_width = paper_size.width;
 	  paper_height = paper_size.height;
-	  paper_specified = 1;
 	  pop_arg();
 	}
 	break;
@@ -509,7 +507,7 @@ static void read_config_file (void)
   
   if ((full_config_name = kpse_find_file (config_file_name,
 				   kpse_program_text_format,
-				   1)) == NULL) {
+				   true)) == NULL) {
     return;
   }
   if (!(config_file = FOPEN (full_config_name, FOPEN_R_MODE))) {
@@ -572,7 +570,7 @@ int CDECL main (int argc, char *argv[])
 #ifdef KPATHSEA
   kpse_init_prog ("", font_dpi, NULL, NULL);
   pk_set_dpi (font_dpi);
-  kpse_set_program_enabled (kpse_pk_format, 1, kpse_src_texmf_cnf);
+  kpse_set_program_enabled (kpse_pk_format, true, kpse_src_texmf_cnf);
 #endif
 
   if (!dvi_filename) {
