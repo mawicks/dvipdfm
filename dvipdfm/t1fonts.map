@@ -13,7 +13,9 @@
 % The following entries are used to force an encoding to work around a bug
 % in Acrobat reader
 %
-cmr10 ot1
+cmr10 ot1 -s 0.5 -e 1.2
+%cmr10 ot1 -e 1.3 -s 0.5
+%cmr10 ot1
 cmr12 ot1
 cmr17 ot1
 cmr5 ot1

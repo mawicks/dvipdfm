@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.72 1999/07/16 19:27:34 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.73 1999/08/12 00:24:22 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -56,7 +56,20 @@ struct font_record
 {
   char *font_name;
   char *enc_name;
+  double slant, extend;
 };
+
+static struct font_record * new_font_record (void) 
+{
+  struct font_record *result;
+  result  = NEW (1, struct font_record);
+  result -> enc_name = NULL;
+  result -> font_name = NULL;
+  result -> slant = 0.0;
+  result -> extend = 1.0;
+  return result;
+}
+
 
 struct encoding {
   char *enc_name;
@@ -212,10 +225,7 @@ struct font_record *get_font_record (const char *tex_name)
   static first = 1;
   static FILE *mapfile;
   char *full_map_filename, *start, *end = NULL, *record_name;
-  result = NEW (1, struct font_record);
-  result -> enc_name = NULL;
-  result -> font_name = NULL;
-  
+  result = new_font_record ();
   if (first) {
     first = 0;
     full_map_filename = kpse_find_file (map_filename, kpse_program_text_format,
@@ -245,10 +255,49 @@ struct font_record *get_font_record (const char *tex_name)
   }
   if (start == NULL)
     return result;
+  /* Parse record line in map file.  First two fields (after TeX font
+     name) are position specific.  Arguments start at the first token
+     beginning with a  '-' */
   skip_white (&start, end);
-  result -> enc_name = parse_ident (&start, end); /* May be null */  
+  if (*start != '-') 
+    result -> enc_name = parse_ident (&start, end); /* May be null */  
   skip_white (&start, end);
-  result -> font_name = parse_ident (&start, end); /* May be null */
+  if (*start != '-') 
+    result -> font_name = parse_ident (&start, end); /* May be null */
+  skip_white (&start, end);
+  /* Parse any remaining arguments */ 
+  while (start+1 < end && *start == '-') {
+    char *number;
+    switch (*(start+1)) {
+    case 's': /* Slant option */
+      start += 2;
+      skip_white (&start, end);
+      if (start < end && 
+	  (number = parse_number(&start, end))) {
+	result -> slant = atof (number);
+      } else {
+	fprintf (stderr, "\n\nMissing slant value in map file for %s\n\n",
+		 tex_name);
+      }
+      break;
+    case 'e': /* Extend option */
+      start += 2;
+      skip_white (&start, end);
+      if (start < end && 
+	  (number = parse_number(&start, end))) {
+	result -> extend = atof (number);
+      } else {
+	fprintf (stderr, "\n\nMissing extend value in map file for %s\n\n",
+		 tex_name);
+      }
+      break;
+    default: 
+      fprintf (stderr, "\n\nWarning: Unrecognized option in map file %s: -->%s<--\n\n",
+	       tex_name, start);
+      start = end;
+    }
+    skip_white (&start, end);
+  }
   return result;
 }
 

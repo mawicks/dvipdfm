@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.41 1999/03/02 04:08:53 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.42 1999/08/12 00:24:22 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -184,7 +184,7 @@ static void do_args (int argc, char *argv[])
 	break;
       case 'x':
 	if (argc < 2) {
-	  fprintf (stderr, "\nMagnification specification missing a number\n\n");
+	  fprintf (stderr, "\nX Offset specification missing a number\n\n");
 	  usage();
 	}
 	{
@@ -215,7 +215,7 @@ static void do_args (int argc, char *argv[])
 	break;
       case 'y':
 	if (argc < 2) {
-	  fprintf (stderr, "\nMagnification specification missing a number\n\n");
+	  fprintf (stderr, "\nY offset specification missing a number\n\n");
 	  usage();
 	}
 	{
