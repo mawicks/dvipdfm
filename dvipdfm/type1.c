@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.22 1998/12/21 04:59:38 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.23 1998/12/21 06:03:52 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -317,7 +317,7 @@ struct a_pfb
 {
   char *pfb_name;
   pdf_obj *direct, *indirect;
-  char chars_used[256];
+  char used_chars[256];
   int encoding_id;
 } *pfbs = NULL;
 
@@ -325,13 +325,30 @@ static void clear_a_pfb (struct a_pfb *pfb)
 {
   int i;
   for (i=0; i<256; i++) {
-    (pfb->chars_used)[i] = 0;
+    (pfb->used_chars)[i] = 0;
   }
+}
+
+/* The following variable is used as a second
+   return value from type1_fontfile.  Returning
+   multiple values is always ugly */  
+static _last_pfb_id;
+static int last_pfb_id(void)
+{
+  return _last_pfb_id;
 }
 
 pdf_obj *type1_fontfile (const char *pfb_name, int encoding_id)
 {
   int i;
+  char *full_pfb_name;
+  _last_pfb_id = -1;
+  full_pfb_name = kpse_find_file (pfb_name, kpse_type1_format,
+				  1);
+  if (full_pfb_name == NULL) {
+    fprintf (stderr, "type1_fontfile:  Unable to find binary font file (%s)...Hope that's okay.", pfb_name);
+    return NULL;
+  }
   if (num_pfbs >= max_pfbs) {
     max_pfbs += MAX_FONTS;
     pfbs = RENEW (pfbs, max_pfbs, struct a_pfb);
@@ -349,6 +366,7 @@ pdf_obj *type1_fontfile (const char *pfb_name, int encoding_id)
     pfbs[i].indirect = pdf_ref_obj (pfbs[i].direct);
     pfbs[i].encoding_id = encoding_id;
   }
+  _last_pfb_id = i;
   return pdf_link_obj(pfbs[i].indirect);
 }
 
@@ -363,7 +381,9 @@ static void do_pfb (const char *pfb_name, pdf_obj *stream)
 				  1);
   if (full_pfb_name == NULL ||
       (type1_binary_file = fopen (full_pfb_name, FOPEN_RBIN_MODE)) == NULL) {
-    fprintf (stderr, "type1_fontfile:  Unable to find or open binary font file (%s)...Hope that's okay.", pfb_name);
+    fprintf (stderr, "type1_fontfile:  Unable to find or open binary font file (%s)",
+	     pfb_name);
+    ERROR ("This existed when I checked it earlier!");
     return;
   }
   /* Following line doesn't hide PDF stream structure very well */
@@ -530,6 +550,8 @@ static void scan_afm_file (void)
 }
 
 #define FIXED_WIDTH 1
+#define SERIF 2
+#define STANDARD 32
 #define ITALIC 64
 #define SYMBOLIC 4   /* Fonts that don't have Adobe encodings (e.g.,
 			cmr, should be set to be symbolic */
@@ -555,7 +577,7 @@ pdf_obj *type1_font_descriptor (const char *pfb_name, int encoding_id)
   flags = 0;
   if (italicangle != 0.0) flags += ITALIC;
   if (isfixed) flags += FIXED_WIDTH;
-  flags += SYMBOLIC;
+  flags += STANDARD;
   pdf_add_dict (font_descriptor,
 		pdf_new_name ("Flags"),
 		pdf_new_number (flags));
@@ -643,6 +665,19 @@ pdf_obj *type1_font_resource (int type1_id)
   }
 }
 
+char *type1_font_used (int type1_id)
+{
+  int pfb_id;
+  if (type1_id>=0 && type1_id<max_type1_fonts &&
+      (pfb_id = type1_fonts[type1_id].pfb_id) >= 0 &&
+      (pfb_id <max_pfbs))
+    return (pfbs[pfb_id].used_chars);
+  else {
+    ERROR ("Invalid font id in type1_font_used");
+    return NULL;
+  }
+}
+
 int type1_font (const char *tex_name, int tfm_font_id, const char *resource_name)
 {
   int i, result = -1;
@@ -663,6 +698,11 @@ int type1_font (const char *tex_name, int tfm_font_id, const char *resource_name
     scan_afm_file();
     close_afm_file ();
     {
+      /* Make sure there is enough room in type1_fonts for this entry */
+      if (num_type1_fonts >= max_type1_fonts) {
+	max_type1_fonts += MAX_FONTS;
+	type1_fonts = RENEW (type1_fonts, max_type1_fonts, struct a_type1_font);
+      }
       font_resource = pdf_new_dict ();
       pdf_add_dict (font_resource,
 		    pdf_new_name ("Type"),
@@ -680,12 +720,19 @@ int type1_font (const char *tex_name, int tfm_font_id, const char *resource_name
 		      pdf_new_name ("Encoding"),
 		      font_encoding_ref);
       }
+      /* Assume there will be no pfb for this font */
+      type1_fonts[num_type1_fonts].pfb_id = -1;
       if (font_record -> pfb_name != NULL) {
-	if (!is_a_base_font (fontname))
+	if (!is_a_base_font (fontname)) {
 	  pdf_add_dict (font_resource, 
 			pdf_new_name ("FontDescriptor"),
 			type1_font_descriptor(font_record -> pfb_name,
 					      encoding_id));
+	  /* Using last_pfb_id to return the pfb_id is a bit of a hack
+	     There is no good way to return this from
+	     type1_font_descriptor */
+	  type1_fonts[num_type1_fonts].pfb_id = last_pfb_id();
+	}
       }
       pdf_add_dict (font_resource,
 		    pdf_new_name ("BaseFont"),
@@ -707,10 +754,6 @@ int type1_font (const char *tex_name, int tfm_font_id, const char *resource_name
       pdf_add_dict (font_resource,
 		    pdf_new_name ("Widths"),
 		    tmp1);
-      if (num_type1_fonts >= max_type1_fonts) {
-	max_type1_fonts += MAX_FONTS;
-	type1_fonts = RENEW (type1_fonts, max_type1_fonts, struct a_type1_font);
-      }
       type1_fonts[num_type1_fonts].indirect = pdf_ref_obj(font_resource);
       pdf_release_obj (font_resource);
       result = num_type1_fonts;
