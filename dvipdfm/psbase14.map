@@ -1,0 +1,52 @@
+% original psbase14.map -- Constructed by M. Wicks, 9/28/99
+%
+% Format is as follows:
+% TeX-name encoding AFM-name PFB-name
+% The default behavior is to use the font's built-in
+% encoding, to use the TeX-name as the AFM-name, and
+% to use the AFM-name as the PFB-name.
+% The word "default" may be used in any field to
+% specify the default behavior. You can
+% also say "none", in the PFB field, for example
+% to say that no PFB should be loaded
+%
+% Courier
+%
+pcrr8r	8r	Courier
+pcrb8r	8r	Courier-Bold
+pcrro8r	8r	Courier-Oblique
+pcrbo8r	8r	Courier-BoldOblique
+%
+pcrr8rn	8r	Courier -e 0.85
+%
+% Helvetica
+%
+phvr8r	  8r	Helvetica
+phvb8r	  8r	Helvetica-Bold
+phvro8r   8r	Helvetica-Oblique
+phvbo8r   8r	Helvetica-BoldOblique
+%
+phvbon8r  8r	Helvetica-BoldOblique	-e 0.82
+phvbrn8r  8r	Helvetica-Bold        	-e 0.82
+phvron8r  8r 	Helvetica-Oblique	-e 0.82
+phvrrn8r  8r	Helvetica		-e 0.82
+
+% Symbol
+psyr	none	Symbol
+psyro	none	Symbol -s 0.167
+
+% Times
+ptmr8r 8r Times
+ptmb8r 8r Times-Bold
+ptmbi8r 8r Times-Italic
+ptmri8r 8r Times-Italic
+%
+ptmbo8r 8r Times-Bold -s 0.167
+ptmro8r 8r Times-Roman -s 0.167
+ptmrr8re 8r Times-Roman -e 1.2
+ptmrr8re 8r Times-Roman -e 0.82
+
+% ZapfDingbats
+pzdr none ZapfDingbats
+
+

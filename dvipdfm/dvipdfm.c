@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.60 1999/09/22 02:26:16 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.61 1999/09/28 01:44:58 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -127,6 +127,7 @@ static char landscape_mode = 0;
 static char ignore_colors = 0;
 static double mag = 1.0, x_offset=72.0, y_offset=72.0;
 static int font_dpi = 600;
+static int really_quiet = 0;
 
 struct page_range 
 {
@@ -372,11 +373,15 @@ static void do_args (int argc, char *argv[])
 	landscape_mode = 1;
 	break;
       case 'f':
-	type1_set_mapfile (argv[1]);
+	type1_read_mapfile (argv[1]);
 	pop_arg();
 	break;
       case 'e':
 	type1_disable_partial();
+	break;
+      case 'q':
+	really_quiet = 1;
+	type1_set_quiet();
 	break;
       case 'v':
 	dvi_set_verbose();
@@ -541,7 +546,6 @@ static void read_config_file (void)
 int CDECL main (int argc, char *argv[]) 
 {
   int i;
-  static int really_quiet = 0;
   int at_least_one_page = 0;
   if (argc < 2) {
     fprintf (stderr, "\nNo dvi filename specified.\n\n");
@@ -576,7 +580,7 @@ int CDECL main (int argc, char *argv[])
     set_default_pdf_filename();
   
   if (!really_quiet)
-    fprintf (stdout, "%s -> %s\n", dvi_filename, pdf_filename);
+    fprintf (stdout, "\n%s -> %s\n", dvi_filename, pdf_filename);
 
   dvi_init (dvi_filename, pdf_filename, mag, x_offset, y_offset);
 

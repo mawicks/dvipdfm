@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pkfont.c,v 1.15 1999/09/15 22:13:11 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pkfont.c,v 1.16 1999/09/28 01:44:58 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -592,5 +592,7 @@ void pk_close_all (void)
     RELEASE (pk_fonts[i].tex_name);
     RELEASE (pk_fonts[i].pk_file_name);
   }
+  if (pk_fonts)
+    RELEASE (pk_fonts);
 }
 

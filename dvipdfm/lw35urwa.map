@@ -1,0 +1,40 @@
+% original t1fonts.map -- Constructed by M. Wicks, 8/17/99
+%
+% Format is as follows:
+% TeX-name encoding AFM-name PFB-name
+% The default behavior is to use the font's built-in
+% encoding, to use the TeX-name as the AFM-name, and
+% to use the AFM-name as the PFB-name.
+% The word "default" may be used in any field to
+% specify the default behavior. You can
+% also say "none", in the PFB field, for example
+% to say that no PFB should be loaded
+%
+% 35 STANDARD ADOBE FONTS
+%
+% New century
+%
+pncb8r    8r        pncb8a
+pncbi8r   8r        pncbi8a
+pncr8r    8r        pncr8a
+pncri8r   8r        pncri8a
+pncbo8r   8r        pncb8a       -s 0.167
+pncro8r   8r        pncr8a       -s 0.167
+%
+% Palatino
+%
+pplb8r    8r        pplb8a
+pplbi8r   8r        pplbi8a
+pplr8r    8r        pplr8a
+pplri8r   8r        pplri8a
+pplbo8r   8r        pplb8a      -s 0.167
+pplbu8r   8r        pplbi8a     -s -0.1763
+pplr8rn   8r        pplr8a      -e 0.82
+pplro8r   8r        pplr8a      -s 0.167
+pplrr8re  8r        pplr8a      -e 1.2
+pplru8r   8r        pplri8a     -s -0.1763
+%
+% ZapfChancery
+%
+pzcmi8r   8r        pzcmi8a
+%

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.92 1999/09/20 19:16:33 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.93 1999/09/28 01:44:58 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -44,8 +44,7 @@
 #include "twiddle.h"
 
 #define DEFAULT_MAP_FILE "t1fonts.map"
-static char *map_filename = NULL;
-static unsigned char verbose = 0;
+static unsigned char verbose = 0, really_quiet = 0;
 
 void type1_set_verbose(void)
 {
@@ -54,26 +53,62 @@ void type1_set_verbose(void)
   }
 }
 
+void type1_set_quiet (void)
+{
+  really_quiet = 1;
+}
+
 struct font_record 
 {
+  char *tex_name;
   char *font_name;
   char *enc_name;
   double slant, extend;
   int remap;
-};
+} *font_map = NULL;
 
-static struct font_record * new_font_record (void) 
+unsigned int num_font_map = 0, max_font_map = 0;
+
+static void need_more_font_maps (int n)
 {
-  struct font_record *result;
-  result  = NEW (1, struct font_record);
-  result -> enc_name = NULL;
-  result -> font_name = NULL;
-  result -> slant = 0.0;
-  result -> extend = 1.0;
-  result -> remap = 0.0;
-  return result;
+  if (num_font_map+n > max_font_map) {
+    max_font_map += MAX_FONTS;
+    font_map = RENEW (font_map, max_font_map, struct font_record);
+  }
+  return;
 }
 
+static void init_font_record (struct font_record *r) 
+{
+  r->tex_name = NULL;
+  r->enc_name = NULL;
+  r->font_name = NULL;
+  r->slant = 0.0;
+  r->extend = 1.0;
+  r->remap = 0.0;
+  return;
+}
+static void fill_in_defaults (struct font_record *font_record)
+{
+  if (font_record -> enc_name != NULL && 
+      (!strcmp (font_record->enc_name, "default") ||
+       !strcmp (font_record->enc_name, "none"))) {
+    RELEASE(font_record->enc_name);
+    font_record -> enc_name = NULL;
+  }
+  if (font_record -> font_name != NULL && 
+      (!strcmp (font_record->font_name, "default") ||
+       !strcmp (font_record->font_name, "none"))) {
+    RELEASE(font_record->font_name);
+    font_record -> font_name = NULL;
+  }
+  /* We *must* fill in a font_name either explicitly or by default */
+  if (font_record -> font_name == NULL) {
+    font_record -> font_name = NEW (strlen(font_record->tex_name)+1, char);
+    strcpy (font_record->font_name, font_record->tex_name);
+  }
+  return;
+}
 
 struct encoding {
   char *enc_name;
@@ -85,15 +120,6 @@ struct encoding {
   pdf_obj *encoding_ref;
 } *encodings;
 int num_encodings = 0, max_encodings=0;
-
-void type1_set_mapfile (const char *name)
-{
-  if (name) {
-    map_filename = NEW (strlen(name)+1, char);
-    strcpy (map_filename, name);
-  }
-  return;
-}
 
 #include "winansi.h"
 
@@ -225,94 +251,109 @@ int get_encoding (const char *enc_name)
   }
 }
 
-static FILE *mapfile = NULL;
+extern void type1_read_mapfile (char *filename)
+{
+  FILE *mapfile;
+  char *full_map_filename, *start = NULL, *end, *tex_name;
+  if (!really_quiet)
+    fprintf (stderr, "<%s", filename);
+  full_map_filename = kpse_find_file (filename, kpse_program_text_format,
+				      0);
+  if (full_map_filename == NULL || 
+      (mapfile = FOPEN (full_map_filename, FOPEN_R_MODE)) == NULL) {
+    fprintf (stderr, "Warning:  Couldn't open font map file %s\n", filename);
+    mapfile = NULL;
+  }
+  if (mapfile) {
+    while ((start = mfgets (work_buffer, WORK_BUFFER_SIZE, mapfile)) !=
+	   NULL) {
+      end = work_buffer + strlen(work_buffer);
+      skip_white (&start, end);
+      if (start >= end)
+	continue;
+      if (*start == '%')
+	continue;
+      if ((tex_name = parse_ident (&start, end)) == NULL)
+	continue;
+      /* Parse record line in map file.  First two fields (after TeX font
+	 name) are position specific.  Arguments start at the first token
+	 beginning with a  '-' */
+      need_more_font_maps (1);
+      init_font_record(font_map+num_font_map);
+      font_map[num_font_map].tex_name = tex_name;
+      skip_white (&start, end);
+      if (*start != '-') {
+	font_map[num_font_map].enc_name = parse_ident (&start, end); /* May be null */  
+	skip_white (&start, end);
+      }
+      if (*start != '-') {
+	font_map[num_font_map].font_name = parse_ident (&start, end); /* May be null */
+	skip_white (&start, end);
+      }
+      /* Parse any remaining arguments */ 
+      while (start+1 < end && *start == '-') {
+	char *number;
+	switch (*(start+1)) {
+	case 's': /* Slant option */
+	  start += 2;
+	  skip_white (&start, end);
+	  if (start < end && 
+	      (number = parse_number(&start, end))) {
+	    font_map[num_font_map].slant = atof (number);
+	    RELEASE (number);
+	  } else {
+	    fprintf (stderr, "\n\nMissing slant value in map file for %s\n\n",
+		     tex_name);
+	  }
+	  break;
+	case 'e': /* Extend option */
+	  start += 2;
+	  skip_white (&start, end);
+	  if (start < end && 
+	      (number = parse_number(&start, end))) {
+	    font_map[num_font_map].extend = atof (number);
+	    RELEASE (number);
+	  } else {
+	    fprintf (stderr, "\n\nMissing extend value in map file for %s\n\n",
+		     tex_name);
+	  }
+	  break;
+	case 'r': /* Remap option */
+	  start += 2;
+	  skip_white (&start, end);
+	  font_map[num_font_map].remap = 1;
+	  break;
+	default: 
+	  fprintf (stderr, "\n\nWarning: Unrecognized option in map file %s: -->%s<--\n\n",
+		   tex_name, start);
+	  start = end;
+	}
+	skip_white (&start, end);
+      }
+      fill_in_defaults (font_map+num_font_map);
+      num_font_map += 1;
+    }
+    FCLOSE (mapfile);
+    if (!really_quiet)
+      fprintf (stderr, ">");
+  }
+  return;
+}
+
 struct font_record *get_font_record (const char *tex_name)
 {
-  struct font_record *result;
-  static char first = 1;
-  char *full_map_filename, *start, *end = NULL, *record_name;
-  if (!map_filename) {
-    type1_set_mapfile (DEFAULT_MAP_FILE);
+  struct font_record *result = NULL;
+  unsigned int i;
+  if (!font_map) {
+    type1_read_mapfile (DEFAULT_MAP_FILE);
   }
-  result = new_font_record ();
-  if (first) {
-    first = 0;
-    full_map_filename = kpse_find_file (map_filename, kpse_program_text_format,
-					0);
-    if (full_map_filename == NULL || 
-	(mapfile = FOPEN (full_map_filename, FOPEN_R_MODE)) == NULL) {
-      fprintf (stderr, "Warning:  No font map file\n");
-      mapfile = NULL;
-    }
-  }
-  if (mapfile == NULL) 
+  if (!font_map)
     return result;
-  rewind (mapfile);
-  while ((start = mfgets (work_buffer, WORK_BUFFER_SIZE, mapfile)) !=
-	 NULL) {
-    end = work_buffer + strlen(work_buffer);
-    skip_white (&start, end);
-    if (start >= end)
-      continue;
-    if ((record_name = parse_ident (&start, end)) == NULL)
-      continue;
-    if (!strcmp (record_name, tex_name)) {
-      RELEASE (record_name);
+  for (i=0; i<num_font_map; i++) {
+    if (!strcmp (font_map[i].tex_name, tex_name)) {
+      result = font_map+i;
       break;
     }
-    RELEASE (record_name);
-  }
-  if (start == NULL)
-    return result;
-  /* Parse record line in map file.  First two fields (after TeX font
-     name) are position specific.  Arguments start at the first token
-     beginning with a  '-' */
-  skip_white (&start, end);
-  if (*start != '-') 
-    result -> enc_name = parse_ident (&start, end); /* May be null */  
-  skip_white (&start, end);
-  if (*start != '-') 
-    result -> font_name = parse_ident (&start, end); /* May be null */
-  skip_white (&start, end);
-  /* Parse any remaining arguments */ 
-  while (start+1 < end && *start == '-') {
-    char *number;
-    switch (*(start+1)) {
-    case 's': /* Slant option */
-      start += 2;
-      skip_white (&start, end);
-      if (start < end && 
-	  (number = parse_number(&start, end))) {
-	result -> slant = atof (number);
-	RELEASE (number);
-      } else {
-	fprintf (stderr, "\n\nMissing slant value in map file for %s\n\n",
-		 tex_name);
-      }
-      break;
-    case 'e': /* Extend option */
-      start += 2;
-      skip_white (&start, end);
-      if (start < end && 
-	  (number = parse_number(&start, end))) {
-	result -> extend = atof (number);
-	RELEASE (number);
-      } else {
-	fprintf (stderr, "\n\nMissing extend value in map file for %s\n\n",
-		 tex_name);
-      }
-      break;
-    case 'r': /* Remap option */
-      start += 2;
-      skip_white (&start, end);
-      result -> remap = 1;
-      break;
-    default: 
-      fprintf (stderr, "\n\nWarning: Unrecognized option in map file %s: -->%s<--\n\n",
-	       tex_name, start);
-      start = end;
-    }
-    skip_white (&start, end);
   }
   return result;
 }
@@ -1094,6 +1135,7 @@ static void do_pfb (int pfb_id)
   return;
 }
 
+
 #define FIXED_WIDTH 1
 #define SERIF 2
 #define STANDARD 32
@@ -1177,28 +1219,6 @@ static pdf_obj *type1_font_descriptor (int encoding_id, int pfb_id, int tfm_font
   return font_descriptor_ref;
 }
 
-static void fill_in_defaults (struct font_record *font_record, const
-			      char *tex_name )
-{
-  if (font_record -> enc_name != NULL && 
-      (!strcmp (font_record->enc_name, "default") ||
-       !strcmp (font_record->enc_name, "none"))) {
-    RELEASE(font_record->enc_name);
-    font_record -> enc_name = NULL;
-  }
-  if (font_record -> font_name != NULL && 
-      (!strcmp (font_record->font_name, "default") ||
-       !strcmp (font_record->font_name, "none"))) {
-    RELEASE(font_record->font_name);
-    font_record -> font_name = NULL;
-  }
-  /* We *must* fill in a font_name either explicitly or by default */
-  if (font_record -> font_name == NULL) {
-    font_record -> font_name = NEW (strlen(tex_name)+1, char);
-    strcpy (font_record->font_name, tex_name);
-  }
-  return;
-}
 
 struct a_type1_font
 {
@@ -1297,7 +1317,6 @@ int type1_font (const char *tex_name, int tfm_font_id, char *resource_name)
      values filled in from pdffonts.map if any */
   font_record = get_font_record (tex_name);
   /* Fill in default value for font_name and enc if not specified in map file */
-  fill_in_defaults (font_record, tex_name);
   if (verbose>1){
     fprintf (stderr, "\nfontmap: %s -> %s", tex_name,
 	     font_record->font_name);
@@ -1314,7 +1333,6 @@ int type1_font (const char *tex_name, int tfm_font_id, char *resource_name)
   if (font_record -> enc_name != NULL) {
     encoding_id = get_encoding (font_record -> enc_name);
   }
-  
   if (is_a_base_font(font_record->font_name) ||
       (pfb_id = type1_pfb_id(font_record -> font_name, encoding_id,
 			     font_record -> remap)) >= 0) {
@@ -1419,11 +1437,6 @@ int type1_font (const char *tex_name, int tfm_font_id, char *resource_name)
   } else { /* Don't have a physical font */
     result = -1;
   }
-  if (font_record -> enc_name)
-    RELEASE (font_record -> enc_name);
-  if (font_record -> font_name)
-    RELEASE (font_record -> font_name);
-  RELEASE (font_record);
   return result;
 }
 
@@ -1463,12 +1476,15 @@ void type1_close_all (void)
     }
   }
   if (encodings)
-     RELEASE (encodings);
-
-  if (mapfile)
-    FCLOSE (mapfile);
-  if (map_filename) { 
-    RELEASE (map_filename); 
+    RELEASE (encodings);
+  for (i=0; i<num_font_map; i++) {
+    if (font_map[i].tex_name)
+      RELEASE (font_map[i].tex_name);
+    if (font_map[i].enc_name)
+      RELEASE (font_map[i].enc_name);
+    if (font_map[i].font_name)
+      RELEASE (font_map[i].font_name);
   }
+  RELEASE (font_map);
 }
 
