@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/vf.c,v 1.8 1998/12/12 03:58:37 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/vf.c,v 1.9 1998/12/13 22:37:55 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -656,7 +656,7 @@ static void vf_fnt (SIGNED_QUAD font_id, unsigned long vf_font)
     }
   }
   if (i < vf_fonts[vf_font].num_dev_fonts) { /* Font was found */
-    dev_select_font ((vf_fonts[vf_font].dev_fonts[i]).dev_id);
+    dvi_set_font ((vf_fonts[vf_font].dev_fonts[i]).dev_id);
   } else {
     fprintf (stderr, "Font_id: %ld not found in VF\n", font_id);
   }
@@ -748,7 +748,6 @@ void vf_set_char(int ch, int vf_font)
     if (vf_fonts[vf_font].num_dev_fonts > 0)
       default_font = ((vf_fonts[vf_font].dev_fonts)[0]).dev_id;
     dvi_vf_init (default_font);
-    /*    dev_select_font (default_font); */
     start = (vf_fonts[vf_font].ch_pkt)[ch];
     end = start + (vf_fonts[vf_font].pkt_len)[ch];
     while (start < end) {

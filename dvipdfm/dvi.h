@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.h,v 1.9 1998/12/12 03:35:12 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.h,v 1.10 1998/12/13 22:37:54 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -46,6 +46,7 @@ extern double dvi_unit_size (void);
 extern void dvi_vf_init (int dev_font_id);
 extern void dvi_vf_finish (void);
 
+extern void dvi_set_font (int font_id);
 extern void dvi_set (SIGNED_QUAD ch);
 extern void dvi_rule (SIGNED_QUAD width, SIGNED_QUAD height);
 extern void dvi_right (SIGNED_QUAD x);

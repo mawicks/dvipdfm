@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.25 1998/12/13 22:00:12 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.26 1998/12/13 22:37:54 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -566,7 +566,8 @@ static void do_string (unsigned char *s, int len)
     width += tfm_get_fw_width(tfm_id, s[i]);
   }
   width = sqxfw (dev_font_mptsize(current_font), width);
-  dev_set_string (dvi_dev_xpos_mpt(), dvi_dev_ypos_mpt(), s, len, width);
+  dev_set_string (dvi_dev_xpos_mpt(), dvi_dev_ypos_mpt(), s, len,
+		  width, current_font);
   dvi_state.h += sqxfw(width,mpts2dvi);
 }
 
@@ -584,19 +585,16 @@ void dvi_set (SIGNED_QUAD ch)
      the dev.c file and convert them back if necessary */ 
   width = sqxfw (dev_font_mptsize(current_font),
 		 tfm_get_fw_width(dev_font_tfm(current_font), ch));
-  dev_set_char (dvi_dev_xpos_mpt(), dvi_dev_ypos_mpt(), ch, width);
+  dev_set_char (dvi_dev_xpos_mpt(), dvi_dev_ypos_mpt(), ch, width, current_font);
   dvi_state.h += sqxfw(width,mpts2dvi);
 }
 
 void dvi_put (SIGNED_QUAD ch)
 {
-  signed long width;
   if (current_font < 0) {
     ERROR ("dvi_put:  No font selected");
   }
-  width = sqxfw (dev_font_mptsize(current_font),
-		 tfm_get_fw_width(dev_font_tfm(current_font), ch));
-  dev_set_char (dvi_dev_xpos_mpt(), dvi_dev_ypos_mpt(), ch, width);
+  dev_set_char (dvi_dev_xpos_mpt(), dvi_dev_ypos_mpt(), ch, 0, current_font);
   return;
 }
 
@@ -863,6 +861,12 @@ static void do_fntdef4(void)
   do_fntdef();
 }
 
+
+void dvi_set_font (int font_id)
+{
+  current_font = font_id;
+}
+
 static void do_fnt (SIGNED_QUAD font_id)
 {
   int i;
@@ -874,7 +878,6 @@ static void do_fnt (SIGNED_QUAD font_id)
     ERROR ("dvi_do_fnt:  Tried to select a font that hasn't been defined");
   }
   current_font = font_def[i].dev_id;
-  dev_select_font (current_font);
 }
 
 static void do_fnt1(void)
@@ -1192,7 +1195,6 @@ void dvi_vf_init (int dev_font_id)
   dvi_state.y = 0; dvi_state.z = 0;
   saved_dvi_font = current_font;
   current_font = dev_font_id;
-  dev_select_font (current_font);
 }
 
 /* After VF subroutine is finished, we simply pop the DVI stack */
@@ -1200,5 +1202,4 @@ void dvi_vf_finish (void)
 {
   dvi_pop();
   current_font = saved_dvi_font;
-  dev_select_font (current_font);
 }
