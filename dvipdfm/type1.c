@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.50 1999/01/05 22:56:34 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.51 1999/01/09 02:23:19 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -567,11 +567,16 @@ static unsigned long do_partial_body (unsigned char *filtered, unsigned char
       continue;
     case '(':
       pdfobj = parse_pdf_string (&start, end);
+      if (pdfobj == NULL) {
+	ERROR ("Error processing a string in a PFB file.");
+      }
       pdf_release_obj (pdfobj);
       continue;
     case '/':
       start += 1;
       ident = parse_ident (&start, end);
+      if (ident == NULL)
+	ERROR ("Error processing a name in a PFB file.");
       if (!strcmp ((char *) ident, "CharStrings")) {
 	RELEASE (ident);
 	break;
@@ -582,6 +587,8 @@ static unsigned long do_partial_body (unsigned char *filtered, unsigned char
       }
     default:
       ident = parse_ident (&start, end);
+      if (ident == NULL)
+	ERROR ("Error processing a symbol in the PFB file.");
       if (is_a_number(ident))
 	last_number = atof (ident);
       else {
@@ -655,6 +662,7 @@ static unsigned long do_partial_body (unsigned char *filtered, unsigned char
       glyph = parse_ident (&start, end);
       this_glyph = bsearch (glyph, used_glyphs, nused, sizeof (char *), glyph_match);
       /* Get the number that should follow the glyph name */
+      skip_white(&start, end);
       ident = parse_ident (&start, end);
       if (!is_a_number (ident))
 	ERROR ("Expecting a number after glyph name");
@@ -662,6 +670,7 @@ static unsigned long do_partial_body (unsigned char *filtered, unsigned char
       RELEASE (ident);
       /* The next identifier should be a "RD" or a "-|".  We don't
 	 really care what it is */
+      skip_white(&start, end);
       ident = parse_ident (&start, end);
       RELEASE (ident);
       /* Skip a blank */
