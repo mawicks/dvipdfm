@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.42 1999/02/21 14:30:23 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.42.2.1 1999/05/18 21:43:32 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1479,7 +1479,7 @@ void add_xform_matrix (double xoff, double yoff,
   double c, s;
   c = ROUND(cos(rotate),1e-5);
   s = ROUND(sin(rotate),1e-5);
-  sprintf (work_buffer, " %g %g %g %g %g %g cm", 
+  sprintf (work_buffer, " %f %f %f %f %.2f %.2f cm", 
 	   c*xscale, s*xscale, -s*yscale, c*yscale, xoff, yoff);
   pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
 }
