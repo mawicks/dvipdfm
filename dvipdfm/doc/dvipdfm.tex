@@ -1,4 +1,4 @@
-% $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/doc/dvipdfm.tex,v 1.1 1998/11/27 21:16:37 mwicks Exp $
+% $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/doc/dvipdfm.tex,v 1.2 1998/11/30 01:45:36 mwicks Exp $
 \special{  pdf:  docview <</PageMode /UseOutlines>>}%
 \catcode`\ =11\def\space{ }\catcode`\ =10
 % Page layout
@@ -146,8 +146,8 @@
 %
 \title{Dvipdfm User's Manual}
 \author{Mark A. Wicks}
-\version{Version 0.7}
-\date{November, 1998}
+\version{Version 0.7.3}
+\date{November 29, 1998}
 \maketitle
 \section{Introduction}
 This package is a DVI (\TeX) to PDF conversion utility,
@@ -555,7 +555,6 @@ may be nested to perform rotations within rotated text, for exmaple.
 \subsection{BeginTransform}
 \syntax
 {\tt endtransform}
-
 \description
 The |endtransform| (|etrans| or |et|) concludes
 the action of the immediately preceding |begintransform|
@@ -578,13 +577,15 @@ stack.
 
 \subsection{Begincolor}
 \syntax
-{\tt begincolor} {\it PDF\_Array}
+{\tt begincolor} {\it PDF\_Number$\vert$\it PDF\_Array}
 \description
-The |begincolor| (|bcolor| or |bc|) command uses the
-array to set the default color for future marking operators.
-The current color is pushed on the color stack.  The
-array must have three elements specifying the coordinates
-of the color in the Device RGB color space.
+The |begincolor| (|bcolor| or |bc|) command uses its
+argument to set the default color for future marking operators.
+The current color is pushed on the color stack.  The argument
+may be a single number, which is interpreted as a grayscale
+value; a three element array, which is interpreted as an RGB
+color space coordinate; or a four element array, which
+is interpreted as a CMYK color space coordinate.
 \example
 \begintt
 \special{ pdf: bc [ 1 0 0 ] }
@@ -604,6 +605,20 @@ the color from the stack.
 \special{ pdf: ec }
 \endtt
 
+\subsection{Bgcolor}
+\syntax
+{\tt bgcolor} {\it PDF\_Number$\vert$\it PDF\_Array}
+\description
+The |bgcolor| (|bbc| or |bgc|) command uses the value
+of its argument to set the default color for the page
+background.  The interpretation
+fo the argument is the same as for the |begincolor| command.
+The stack is not involved here.  There is no way
+to go back to the previous background color.
+\example
+\begintt
+\special{ pdf: bc [ 1 0 0 ] }
+\endtt
 
 \section{Image Commands}
 The commands in this section deal with embedding
@@ -820,6 +835,41 @@ using |epdf|.
 Notice that any resources required for the object
 are also embedded.  In this case, the Times Roman font
 resource was embedded along with the content stream.
+
+\section{Font Mapping}
+
+Different \TeX\ font names can be 
+mapped into different physical font names (PostScript) via
+the map file named |pdffonts.map|.  The file is
+similar to the |psfonts.map| file used by |dvips|
+and other drivers.  Each line in the
+file consists of four fields delimited
+by white space.  The first field
+is the \TeX\ font name.  The second
+field is the encoding name (|.enc| will
+be appended to this name, if necessary
+to locate an encofing file).  The
+encoding files have the same format
+as those used for |dvips|.
+The third field is the AFM file name,
+and the fourth field is the PFB file name.
+{\it None} of the fields are required, however,
+the fields are positional.  In other words,
+to specify an entry in the fourth field,
+you must include entries in the first
+three fields.
+If any field is unspecified, the default
+is as follows:  the default encoding is none,
+the AFM file name is taken
+to be the same as the \TeX\ file name.
+The PFB file name is taken to the be
+same as the AFM file name.  They
+keywords |default| and |none| are
+recognized in the encoding, AFM, and PFB fields.
+The keyword |default| forces the default behavior.
+The keyword |none| in the PFB field name
+the embedded font to be omitted.
+See the file for examples.
 
 \newpage
 \section{References}

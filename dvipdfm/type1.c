@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.5 1998/11/30 01:27:28 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.6 1998/11/30 01:45:36 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -202,7 +202,7 @@ struct font_record *get_font_record (const char *tex_name)
     break;
   }
   if (start == NULL)
-    return NULL;
+    return result;
   result = NEW (1, struct font_record);
   skip_white (&start, end);
   result -> enc_name = parse_ident (&start, end); /* May be null */  
