@@ -53,7 +53,7 @@ rptmri  none Times-Italic
 ptmbo8r 8r Times-Bold -s 0.167
 ptmro8r 8r Times-Roman -s 0.167
 ptmrr8re 8r Times-Roman -e 1.2
-ptmr8rn 8r Times-Italic -e 0.82
+ptmr8rn 8r Times-Roman -e 0.82
 
 % ZapfDingbats
 pzdr none ZapfDingbats
