@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.36 1998/12/24 05:12:46 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.37 1998/12/24 23:19:24 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -47,7 +47,6 @@ static debug = 0;
 static unsigned numfonts = 0, stackdepth;
 static unsigned long *page_loc = NULL;
 static long max_pages = 0;
-static char dvi_comment[257];
 static unsigned long post_location, dvi_file_size;
 static UNSIGNED_PAIR numpages = 0;
 static UNSIGNED_QUAD media_width, media_height;
@@ -301,6 +300,7 @@ static void get_dvi_fonts (void)
 void get_comment(void)
 {
   UNSIGNED_BYTE length;
+  static char dvi_comment[257];
   seek_absolute (dvi_file, 14);
   length = get_unsigned_byte(dvi_file);
   if (fread (dvi_comment, 1, length, dvi_file) != length) {
@@ -310,6 +310,7 @@ void get_comment(void)
   if (verbose) {
     fprintf (stderr, "Comment: %s\n", dvi_comment);
   }
+  dev_add_comment (dvi_comment);
 }
 
 
@@ -1100,7 +1101,6 @@ void dvi_close (void)
   /* We add comment in dvi_close instead of dvi_init so user has
      a change to overwrite it.  The docinfo dictionary is
      treated as a write-once record */
-  dev_add_comment (dvi_comment);
 
   /* Do some house cleaning */
   fclose (dvi_file);

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.32 1998/12/24 05:12:46 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.33 1998/12/24 23:19:25 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -759,30 +759,36 @@ void pdf_add_dict (pdf_obj *dict, pdf_obj *key, pdf_obj *value) /* Array is ende
   if (key == NULL || key -> type != PDF_NAME ) {
     ERROR ("pdf_add_dict: Passed invalid key");
   }
-  if (value != NULL && (value -> type == 0 ||
-      value -> type > PDF_INDIRECT )) {
+  if (value != NULL &&
+      (value -> type == 0 || value -> type > PDF_INDIRECT )) {
     ERROR ("pdf_add_dict: Passed invalid value");
   }
-  /* Don't add key unless it's not already present */
-  if (pdf_lookup_dict (dict, pdf_name_value(key)) == NULL) {
-    data = dict -> data;
+  data = dict -> data;
+  /* If this key already exists, simply replace the value */
+  while (data -> key != NULL) {
+    if (!strcmp (pdf_name_value(key), pdf_name_value(data->key))) {
+      /* Release the old value */
+      pdf_release_obj (data->value);
+      /* Release the new key (we don't need it) */
+      pdf_release_obj (key);
+      data->value = value;
+      break;
+    }
+    data = data -> next;
+  }
+  /* If we didn't find the key, build a new "end" node and add
+     the new key just before the end */
+  if (data -> key == NULL) {
     new_node = NEW (1, pdf_dict);
     new_node -> key = NULL;
     new_node -> value = NULL;
     new_node -> next = NULL;
-    while (data -> key != NULL)
-      data = data -> next;
     data -> next = new_node;
     data -> key = key;
     data -> value = value;
   }
-  else {
-    pdf_release_obj (key);
-    pdf_release_obj (value);
-  }
   return;
 }
-
 
 /* pdf_merge_dict makes a link for each item in dict2 before
    stealing it */
@@ -795,11 +801,8 @@ void pdf_merge_dict (pdf_obj *dict1, pdf_obj *dict2)
     ERROR ("pdf_merge_dict:  Passed invalid second dictionary");
   data = dict2 -> data;
   while (data -> key != NULL) {
-    pdf_name *key = (data -> key) -> data;
-    if (key == NULL || pdf_lookup_dict (dict1, key -> name) == NULL) {
-      pdf_add_dict (dict1, pdf_link_obj(data -> key),
-		    pdf_link_obj (data -> value));
-    }
+    pdf_add_dict (dict1, pdf_link_obj(data -> key),
+		  pdf_link_obj (data -> value));
     data = data -> next;
   }
 }
@@ -823,6 +826,27 @@ pdf_obj *pdf_lookup_dict (const pdf_obj *dict, const char *name)
     data = data -> next;
   }
   return NULL;
+}
+
+void pdf_remove_dict (pdf_obj *dict, const char *name)
+{
+  pdf_dict *data, **data_p;
+  if (dict == NULL || dict->type != PDF_DICT)
+    ERROR ("pdf_remove_dict:  Passed invalid dictionary");
+  data = (dict -> data);
+  data_p = (pdf_dict **) &(dict->data);
+  while (data->key != NULL) {
+    if (pdf_match_name (data -> key, name)) {
+      pdf_release_obj (data -> key);
+      pdf_release_obj (data -> value);
+      *data_p = data -> next;
+      RELEASE (data);
+      break;
+    }
+    data_p = &(data->next);
+    data = data -> next;
+  }
+  return;
 }
 
 char *pdf_get_dict (const pdf_obj *dict, int index)
@@ -979,7 +1003,8 @@ void pdf_add_stream (pdf_obj *stream, char *stream_data, unsigned length)
 void pdf_write_obj (FILE *file, const pdf_obj *object)
 {
   if (object == NULL) {
-    ERROR ("pdf_write_obj passed null pointer");
+    write_null(file);
+    return;
   }
   if (object -> type > PDF_INDIRECT) {
     fprintf (stderr, "Object type = %d\n", object -> type);
