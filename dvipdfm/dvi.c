@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.52 1999/03/08 04:25:42 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.53 1999/03/23 01:54:26 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -461,9 +461,13 @@ void dvi_set (SIGNED_QUAD ch)
     dev_set_string (dvi_state.h, -dvi_state.v, &lch, 1, width,
 		  p->font_id);
     break;
-  case VIRTUAL:    
-    vf_set_char (ch, p->font_id);
-    break;
+  case VIRTUAL:
+    {
+      int save_current_font = current_font;
+      vf_set_char (ch, p->font_id);
+      current_font = save_current_font;
+      break;
+    }
   }
   dvi_state.h += width;
 }
