@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.28.8.1 2000/07/24 23:37:27 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.28.8.2 2000/07/25 00:16:47 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -56,6 +56,9 @@ struct a_tfm
 				 this field*/
   SIGNED_QUAD *header;
   UNSIGNED_QUAD *char_info;
+  UNSIGNED_PAIR *width_index;
+  UNSIGNED_BYTE *height_index;
+  UNSIGNED_BYTE *depth_index;
   SIGNED_QUAD *width;
   SIGNED_QUAD *height;
   SIGNED_QUAD *depth;
@@ -64,6 +67,20 @@ struct a_tfm
   fixword *unpacked_heights;
   fixword *unpacked_depths;
 };
+
+void a_tfm_init (struct a_tfm *a_tfm) 
+{
+  a_tfm->width_index = NULL;
+  a_tfm->height_index = NULL;
+  a_tfm->depth_index = NULL;
+  a_tfm->width = NULL;
+  a_tfm->height = NULL;
+  a_tfm->depth = NULL;
+  a_tfm->unpacked_widths = NULL;
+  a_tfm->unpacked_heights = NULL;
+  a_tfm->unpacked_depths = NULL;
+}
+
 
 struct a_tfm *tfm = NULL;
 static unsigned numtfms = 0, max_tfms = 0; /* numtfms should equal
@@ -90,7 +107,7 @@ static void invalid_ofm_file (void)
 
 void tfm_set_verbose (void)
 {
-  tfm_verbose = 1;
+  tfm_verbose += 1;
 }
 
 void tfm_set_debug (void)
@@ -195,17 +212,17 @@ static void ofm_get_sizes (FILE *ofm_file,  UNSIGNED_QUAD ofm_file_size,
 
 static void dump_sizes (struct a_tfm *a_tfm)
 {
-  fprintf (stderr, "wlenfile: %ld\n", a_tfm -> wlenfile);
+  fprintf (stderr, "\nwlenfile: %ld, ", a_tfm -> wlenfile);
   fprintf (stderr, "wlenheader: %ld\n", a_tfm -> wlenheader);
-  fprintf (stderr, "bc: %ld\n", a_tfm -> bc);
-  fprintf (stderr, "ec: %ld\n", a_tfm -> ec);
-  fprintf (stderr, "nwidths: %ld\n", a_tfm -> nwidths);
-  fprintf (stderr, "nheights: %ld\n", a_tfm -> nheights);
+  fprintf (stderr, "bc: %ld, ", a_tfm -> bc);
+  fprintf (stderr, "ec: %ld, ", a_tfm -> ec);
+  fprintf (stderr, "nwidths: %ld, ", a_tfm -> nwidths);
+  fprintf (stderr, "nheights: %ld, ", a_tfm -> nheights);
   fprintf (stderr, "ndepths: %ld\n", a_tfm -> ndepths);
-  fprintf (stderr, "nitcor: %ld\n", a_tfm -> nitcor);
-  fprintf (stderr, "nlig: %ld\n", a_tfm -> nlig);
-  fprintf (stderr, "nkern: %ld\n", a_tfm -> nkern);
-  fprintf (stderr, "nextens: %ld\n", a_tfm -> nextens);
+  fprintf (stderr, "nitcor: %ld, ", a_tfm -> nitcor);
+  fprintf (stderr, "nlig: %ld, ", a_tfm -> nlig);
+  fprintf (stderr, "nkern: %ld, ", a_tfm -> nkern);
+  fprintf (stderr, "nextens: %ld, ", a_tfm -> nextens);
   fprintf (stderr, "nfonparm: %ld\n", a_tfm -> nfonparm);
   return;
 }
@@ -329,26 +346,31 @@ static void do_ofm_char_info (FILE *tfm_file, struct a_tfm *a_tfm,
 {
   unsigned i;
   if (num_chars != 0) {
+    a_tfm -> width_index = NEW (num_chars, UNSIGNED_PAIR);
+    a_tfm -> height_index = NEW (num_chars, UNSIGNED_BYTE);
+    a_tfm -> depth_index = NEW (num_chars, UNSIGNED_BYTE);
     a_tfm -> unpacked_widths = NEW (num_chars, fixword);
     a_tfm -> unpacked_heights = NEW (num_chars, fixword);
     a_tfm -> unpacked_depths = NEW (num_chars, fixword);
   }
   for (i=0; i<num_chars; i++) {
-    UNSIGNED_PAIR width;
-    UNSIGNED_BYTE height;
-    UNSIGNED_BYTE depth;
-    width = get_unsigned_pair (tfm_file);
-    height = get_unsigned_byte (tfm_file);
-    depth = get_unsigned_byte (tfm_file);
+    (a_tfm->width_index)[i] = get_unsigned_pair (tfm_file);
+    (a_tfm->height_index)[i] = get_unsigned_byte (tfm_file);
+    (a_tfm->depth_index)[i] = get_unsigned_byte (tfm_file);
     /* Ignore remaining quad */
     get_unsigned_quad (tfm_file);
-    (a_tfm->unpacked_widths)[i] = (a_tfm->width)[width];
-    (a_tfm->unpacked_heights)[i] = (a_tfm->height)[height];
-    (a_tfm->unpacked_depths)[i] = (a_tfm->depth)[depth];
   }
 }
 
-
+static void ofm_unpack_arrays (struct a_tfm *a_tfm, UNSIGNED_QUAD num_chars)
+{
+  unsigned i;
+  for (i=0; i<num_chars; i++) {
+    (a_tfm->unpacked_widths)[i] = (a_tfm->width)[(a_tfm->width_index)[i]];
+    (a_tfm->unpacked_heights)[i] = (a_tfm->height)[(a_tfm->height_index)[i]];
+    (a_tfm->unpacked_depths)[i] = (a_tfm->depth)[(a_tfm->depth_index)[i]];
+  }
+}
 static void ofm_get_arrays (FILE *tfm_file, struct a_tfm *a_tfm)
 {
   if (tfm_debug) fprintf (stderr, "Reading %ld word header\n",
@@ -366,10 +388,10 @@ static void ofm_get_arrays (FILE *tfm_file, struct a_tfm *a_tfm)
   if (tfm_debug) fprintf (stderr, "Reading %ld depths\n",
 			  a_tfm -> ndepths);
   do_fix_word_array (tfm_file, &(a_tfm -> depth), a_tfm -> ndepths);
+  
+  ofm_unpack_arrays (a_tfm, (a_tfm->ec)-(a_tfm->bc)+1);
   return;
 }
-
-
 
 static void get_ofm (FILE *ofm_file, UNSIGNED_QUAD ofm_file_size,
 		     struct a_tfm *a_tfm)
@@ -400,24 +422,42 @@ int tfm_open (const char *tfm_name)
       break;
   }
   if (i == numtfms) { /* Name hasn't already been loaded */
-    full_tfm_file_name = kpse_find_tfm (tfm_name);
-    if (full_tfm_file_name == NULL) {
-      fprintf (stderr, "\n%s: ", tfm_name);
-      ERROR ("tfm_open:  Unable to find TFM file");
-    }
-    need_more_tfms (1);
-    if (!(tfm_file = FOPEN (full_tfm_file_name, FOPEN_RBIN_MODE))) {
-      fprintf (stderr, "tfm_open: %s\n", tfm_name);
-    ERROR ("tfm_open:  Specified TFM file cannot be opened");
-    }
-    if ((tfm_file_size = file_size(tfm_file)) < 24) {
-      invalid_tfm_file ();
+    if ((full_tfm_file_name = kpse_find_tfm (tfm_name))) {
+      need_more_tfms (1);
+      a_tfm_init (tfm+numtfms);
+      if (!(tfm_file = FOPEN (full_tfm_file_name, FOPEN_RBIN_MODE))) {
+	fprintf (stderr, "%s: ", tfm_name);
+	ERROR ("Specified TFM file cannot be opened");
+      }
+      if (tfm_verbose)
+	fprintf (stderr, "(TFM:%s", full_tfm_file_name);
+      if ((tfm_file_size = file_size(tfm_file)) < 24) {
+	invalid_tfm_file ();
+      }
+      get_tfm (tfm_file, tfm_file_size, &tfm[numtfms]);
+    } else if ((full_tfm_file_name = kpse_find_ofm (tfm_name))) {
+      need_more_tfms (1);
+      a_tfm_init (tfm+numtfms);
+      if (!(tfm_file = FOPEN (full_tfm_file_name, FOPEN_RBIN_MODE))) {
+	fprintf (stderr, "%s:  ", tfm_name);
+	ERROR ("TFM file cannot be opened");
+      }
+      if (tfm_verbose)
+	fprintf (stderr, "(OFM:%s", full_tfm_file_name);
+      if ((tfm_file_size = file_size(tfm_file)) < 24) {
+	invalid_ofm_file ();
+      }
+      get_ofm (tfm_file, tfm_file_size, &tfm[numtfms]);
+    } else {
+      fprintf (stderr, "%s:  ", tfm_name);
+      ERROR ("Unable to find a TFM or OFM file");
     }
     tfm[numtfms].tex_name = NEW (strlen(tfm_name)+1, char);
     strcpy (tfm[numtfms].tex_name, tfm_name);
-    get_tfm (tfm_file, tfm_file_size, &tfm[numtfms]);
     FCLOSE (tfm_file);
-    if (tfm_verbose) {
+    if (tfm_verbose) 
+      fprintf (stderr, ")");
+    if (tfm_verbose>3) {
       dump_sizes (&tfm[numtfms]);
     }
     return numtfms++;
@@ -444,6 +484,12 @@ void tfm_close_all(void)
     RELEASE (tfm[i].unpacked_widths);
     RELEASE (tfm[i].unpacked_heights);
     RELEASE (tfm[i].unpacked_depths);
+    if (tfm[i].width_index)
+      RELEASE (tfm[i].width_index);
+    if (tfm[i].height_index)
+      RELEASE (tfm[i].height_index);
+    if (tfm[i].depth_index)
+      RELEASE (tfm[i].depth_index);
   }
   if (tfm)
     RELEASE (tfm);
