@@ -86,11 +86,6 @@
 \message{<#1>}%
   \special{pdf: image width \the\Gin@req@width\space height
 \the\Gin@req@height\space depth \the\z@ (#1)}}
-\def\Ginclude@pdf#1{%
-\message{<#1>}%
-  \special{pdf: epdf width \the\Gin@req@width\space height
-\the\Gin@req@height\space depth \the\z@\space
-  bbox \Gin@llx\space \Gin@lly\space \Gin@urx\space \Gin@ury(#1)}}
 \def\Ginclude@eps#1{%
  \message{<#1>}%
   \bgroup
@@ -128,7 +123,7 @@
 \@namedef{Gin@rule@.jpg}#1{{bmp}{.bb}{#1}}
 \@namedef{Gin@rule@.jpeg}#1{{bmp}{.bb}{#1}}
 \@namedef{Gin@rule@.png}#1{{bmp}{.bb}{#1}}
-\@namedef{Gin@rule@.pdf}#1{{pdf}{.bb}{#1}}
+\@namedef{Gin@rule@.pdf}#1{{eps}{.bb}{#1}}
 \@namedef{Gin@rule@*}#1{{eps}{\Gin@ext}{#1}}
 \endinput
 %%
