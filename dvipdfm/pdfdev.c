@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.6 1998/12/03 02:40:39 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.7 1998/12/03 14:42:12 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -124,7 +124,6 @@ struct dev_font {
   char short_name[7];	/* Needs to be big enough to hold name "Fxxx"
 			   where xxx is number of largest font */
   char *tex_name;
-  char used_on_this_page;
   long tex_font_id;
   double ptsize;
   pdf_obj *font_resource;
@@ -247,10 +246,6 @@ void dev_close (void)
 
 static void bop_font_reset(void)
 {
-  int i;
-  for (i=0; i<n_dev_fonts; i++) {
-    dev_font[i].used_on_this_page = 0;
-  }
   current_font = -1;
 }
 
@@ -520,7 +515,8 @@ void dev_locate_font (char *tex_name,
       break;
     }
   }
-  if (i == n_dev_fonts) {  /* Font not found, so load it */
+  if (i == n_dev_fonts) {  /* Font not found, so load it and give it a
+			    short name */
     dev_font[i].short_name[0] = 'F';
     sprintf (dev_font[i].short_name+1, "%d", n_dev_fonts+1);
     /* type1_font_resource on next line always returns an indirect
@@ -530,15 +526,10 @@ void dev_locate_font (char *tex_name,
 						     dev_font[i].short_name);
   } else {	/* Font was found */
     strcpy (dev_font[n_dev_fonts].short_name, dev_font[i].short_name);
-    /* Next line makes a copy of an indirect object.  It's not really the
-       indirect object pointing to an indirect object that it looks
-       like.  Someday a true object copy constructor needs to be
-       written */
-    dev_font[n_dev_fonts].font_resource = pdf_ref_obj (dev_font[i].font_resource);
+    dev_font[n_dev_fonts].font_resource = pdf_link_obj (dev_font[i].font_resource);
   }
   dev_font[n_dev_fonts].tex_font_id = tex_font_id;
   dev_font[n_dev_fonts].ptsize = ptsize;
-  dev_font[n_dev_fonts].used_on_this_page = 0;
   dev_font[n_dev_fonts].tex_name = NEW (strlen(tex_name)+1, char);
   strcpy (dev_font[n_dev_fonts].tex_name, tex_name);
   n_dev_fonts += 1;
@@ -564,11 +555,10 @@ void dev_select_font (long tex_font_id)
   current_font = i;
   current_ptsize = dev_font[i].ptsize;
   /* Add to resource list for this page */
-  if (!dev_font[i].used_on_this_page) {
+  if (!pdf_lookup_dict (this_page_fontlist_dict, dev_font[i].short_name)) {
     pdf_add_dict (this_page_fontlist_dict,
 		  pdf_new_name (dev_font[i].short_name),
 		  pdf_link_obj (dev_font[i].font_resource));
-    dev_font[i].used_on_this_page = 1;
   }
 }
 
