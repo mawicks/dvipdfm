@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.13 1999/01/26 16:20:56 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.14 1999/02/05 19:40:09 mwicks Exp $
 
     This is ebb, a bounding box extraction program.
     Copyright (C) 1998  by Mark A. Wicks
@@ -36,12 +36,13 @@
 
 static void usage (void)
 {
-  fprintf (stderr, "%s, version %s, Copyright (C) 1998 by Mark A. Wicks\n",
+  fprintf (stderr, "%s, version %s, Copyright (C) 1998, 1999 by Mark A. Wicks\n",
 	   EBB_PROGRAM, EBB_VERSION);
   fprintf (stderr, "ebb comes with ABSOLUTELY NO WARRANTY.\n");
   fprintf (stderr, "This is free software, and you are welcome to redistribute it\n");
   fprintf (stderr, "under certain conditions.  Details are distributed with the software.\n");
-  fprintf (stderr, "\nUsage: [-v] ebb [files]\n");
+  fprintf (stderr, "\nUsage: [-v] [-b] ebb [files]\n");
+  fprintf (stderr, "\t-b\t\tWrite .bb file in binary mode\n");
   fprintf (stderr, "\t-v\t\tVerbose\n");
   exit(1);
 }
@@ -87,6 +88,8 @@ static char *make_bb_filename (char *name)
   return result;
 }
 
+static char *bb_file_mode = FOPEN_W_MODE;
+
 static void write_bb (char *filename, int bbllx, int bblly, int bburx,
 		      int bbury) 
 {
@@ -95,7 +98,7 @@ static void write_bb (char *filename, int bbllx, int bblly, int bburx,
   if (verbose)
     fprintf (stderr, "okay\n");
   bbfilename = make_bb_filename (filename);
-  if ((bbfile = fopen (bbfilename, FOPEN_W_MODE)) == NULL) {
+  if ((bbfile = fopen (bbfilename, bb_file_mode)) == NULL) {
     fprintf (stderr, "Unable to open output file: %s\n", bbfilename);
     return;
   }
@@ -212,6 +215,8 @@ int main (int argc, char *argv[])
     usage();
   while (argc > 0 && *argv[0] == '-') {
     switch (*(argv[0]+1)) {
+    case 'b':
+      bb_file_mode = FOPEN_WBIN_MODE;
     case 'v':
       verbose = 1;
       argc -= 1;
