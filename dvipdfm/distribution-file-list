@@ -38,6 +38,8 @@ dvicodes.h
 dvipdfm.c
 dvipdfm.h
 ebb.c
+encodings.h
+encodings.c
 epdf.c
 epdf.h
 error.h
