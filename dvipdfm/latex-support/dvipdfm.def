@@ -89,7 +89,8 @@
 \def\Ginclude@pdf#1{%
 \message{<#1>}%
   \special{pdf: epdf width \the\Gin@req@width\space height
-\the\Gin@req@height\space depth \the\z@ (#1)}}
+\the\Gin@req@height\space depth \the\z@\space
+  bbox \Gin@llx\space \Gin@lly\space \Gin@urx\space \Gin@ury(#1)}}
 \def\Ginclude@eps#1{%
  \message{<#1>}%
   \bgroup
