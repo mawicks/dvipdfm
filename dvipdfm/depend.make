@@ -10,8 +10,8 @@ mem.o: mem.c mem.h
 jpeg.o: jpeg.c system.h mfileio.h numbers.h mem.h jpeg.h pdfobj.h \
  pdfspecial.h dvi.h error.h pdfdev.h
 numbers.o: numbers.c numbers.h error.h mfileio.h
-pdfobj.o: pdfobj.c pdflimits.h config.h pdfobj.h mem.h error.h \
- mfileio.h numbers.h pdfspecial.h pdfparse.h system.h
+pdfobj.o: pdfobj.c system.h pdflimits.h config.h pdfobj.h mem.h \
+ error.h mfileio.h numbers.h pdfspecial.h pdfparse.h twiddle.h
 pdfparse.o: pdfparse.c system.h pdfparse.h numbers.h pdfobj.h \
  pdfspecial.h pdfdoc.h pdfdev.h mem.h dvi.h error.h mfileio.h
 pdfspecial.o: pdfspecial.c system.h pdflimits.h pdfspecial.h numbers.h \

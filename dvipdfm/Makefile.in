@@ -104,27 +104,26 @@ depend.make:
 @MAINT@configure: configure.in
 @MAINT@	autoconf
 @MAINT@dist: depend configure
-	grep VERSION config.h | awk '{ print $$3 }' | sed -e's/"//g' > VERSION
 	/bin/rm -rf ../dvipdfm
 	mkdir ../dvipdfm
-	tar -zcf ../dvipdfm-`cat VERSION`.tar.gz -T distribution-file-list
+	tar -zcf ../dvipdfm-@VERSION@.tar.gz -T distribution-file-list
 	cd ..
-	tar -C ../dvipdfm -zxf ../dvipdfm-`cat VERSION`.tar.gz
-	tar -C .. -zcf ../dvipdfm-`cat VERSION`.tar.gz dvipdfm 
+	tar -C ../dvipdfm -zxf ../dvipdfm-@VERSION@.tar.gz
+	tar -C .. -zcf ../dvipdfm-@VERSION@.tar.gz dvipdfm
 @MAINT@dvipdfm-static:  $(objects) Makefile
 	$(CC) -o dvipdfm-static $(objects) --static $(LDFLAGS) $(LIBS)
 @MAINT@ebb-static : $(eobjects) Makefile
 	$(CC) -o ebb-static $(eobjects) --static $(LDFLAGS) $(LIBS)
-@MAINT@bin-dist: dvipdfm-static ebb-static dvipdfm ebb
+@MAINT@bin-dist: dvipdfm-static ebb-static dvipdfm ebb VERSION
 @MAINT@	/bin/rm -rf dvipdfm-bin
 @MAINT@	mkdir -p dvipdfm-bin
 @MAINT@	cp -a dvipdfm ebb INSTALL-BINARY COPYING README t1fonts.map dvipdfm-bin
 @MAINT@	strip dvipdfm ebb dvipdfm-static ebb-static
-@MAINT@	tar -zcf dvipdfm-binary-linux-i386-glibc-@VERSION@.tar.gz dvipdfm-bin
+@MAINT@	tar -zcf ../dvipdfm-binary-linux-i386-glibc-@VERSION@.tar.gz dvipdfm-bin
 @MAINT@	/bin/rm -rf dvipdfm-bin
 @MAINT@	mkdir -p dvipdfm-bin
 @MAINT@	cp -a INSTALL-BINARY COPYING README t1fonts.map dvipdfm-bin
 @MAINT@	cp -a dvipdfm-static dvipdfm-bin/dvipdfm
 @MAINT@	cp -a ebb-static dvipdfm-bin/ebb
-@MAINT@	tar -zcf dvipdfm-binary-linux-i386-static-@VERSION@.tar.gz dvipdfm-bin
+@MAINT@	tar -zcf ../dvipdfm-binary-linux-i386-static-@VERSION@.tar.gz dvipdfm-bin
 @MAINT@	/bin/rm -rf dvipdfm-bin
