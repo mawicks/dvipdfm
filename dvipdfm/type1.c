@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.55 1999/01/22 23:31:22 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.56 1999/01/24 16:48:05 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -485,6 +485,52 @@ static void dump_used( char *used_chars)
 #define ASCII 1
 #define BINARY 2
 
+static unsigned char *get_pfb_segment (unsigned long *length,
+				       FILE *file, int expected_type)
+{
+  unsigned char *buffer = NULL;
+  unsigned long nread;
+  unsigned long new_length;
+  int stream_type, ch;
+
+  *length = 0;
+  /* Unfortunately, there can be several segments that need to be
+     concatenated, so we loop through all of them */
+  while (1) {
+    if ((ch = fgetc (file)) < 0 || ch != 128){
+      sprintf (work_buffer, "get_pfb_segment:  pfb header has %d, expecting 128\n", ch);
+      ERROR (work_buffer);
+    }
+    if ((stream_type = fgetc (file)) < 0 || stream_type != expected_type) {
+      seek_relative (file, -2); /* Backup up two (yuck!) */
+      break;
+    }
+    new_length = get_low_endian_quad (file);
+    if (verbose > 3) {
+      fprintf (stderr, "Length of next binary segment: %ld\n",
+	       new_length);
+    }
+    buffer = RENEW (buffer, (*length)+new_length, unsigned char);
+    if ((nread = fread(buffer+(*length), sizeof(unsigned char), new_length, file)) !=
+	new_length) {
+      fprintf (stderr, "Found only %ld/%ld bytes\n", nread, new_length);
+      ERROR ("type1_do_pfb_segment:  Are you sure this is a pfb?");
+    }
+    *length += new_length;
+  }
+  if (*length == 0) {
+    ERROR ("type1_get_pfb_segment: Segment length is zero");
+  }
+  if (expected_type == ASCII) {
+    int i;
+    for (i=0; i<(*length); i++) {
+      if (buffer[i] == '\r')
+	buffer[i] = '\n';  /* Show my Unix prejudice */
+    }
+  }
+  return buffer;
+}
+
 static unsigned int glyph_length (char **glyphs) 
 {
   int i;
@@ -499,38 +545,16 @@ static unsigned int glyph_length (char **glyphs)
 static unsigned long do_pfb_header (FILE *file, int pfb_id,
 				    char **glyphs)
 {
-  int i, ch;
-  int stream_type;
   unsigned char *buffer, *filtered;
-  unsigned long length, nread;
-  if ((ch = fgetc (file)) < 0 || ch != 128){
-    fprintf (stderr, "Got %d, expecting 128\n", ch);
-    ERROR ("type1_do_pfb_segment:  Are you sure this is a pfb?");
-  }
-  if ((stream_type = fgetc (file)) < 0 || stream_type != ASCII) {
-    fprintf (stderr, "Got %d, expecting %d\n", ch, ASCII);
-    ERROR ("type1_do_pfb_segment:  Are you sure this is a pfb?");
-  }
-  length = get_low_endian_quad (file);
-  buffer = NEW (length, unsigned char);
-  if ((nread = fread(buffer, sizeof(unsigned char), length, file)) ==
-      length) {
-    for (i=0; i<length; i++) {
-      if (buffer[i] == '\r')
-	buffer[i] = '\n';  /* May not be portable to non-Unix
-			      systems */
-    }
-    if (partial_enabled) {
-      filtered = NEW (length+strlen(pfbs[pfb_id].fontname)+1, unsigned char);
-      length = parse_header (filtered, buffer, length, pfb_id, glyphs);
-      pdf_add_stream (pfbs[pfb_id].direct, (char *) filtered, length);
-      RELEASE (filtered);
-    } else {
-      pdf_add_stream (pfbs[pfb_id].direct, (char *) buffer, length);
-    }
+  unsigned long length;
+  buffer = get_pfb_segment (&length, file, ASCII);
+  if (partial_enabled) {
+    filtered = NEW (length+strlen(pfbs[pfb_id].fontname)+1, unsigned char);
+    length = parse_header (filtered, buffer, length, pfb_id, glyphs);
+    pdf_add_stream (pfbs[pfb_id].direct, (char *) filtered, length);
+    RELEASE (filtered);
   } else {
-    fprintf (stderr, "Found only %ld of %ld bytes\n", nread, length);
-    ERROR ("type1_do_pfb_segment:  Are you sure this is a pfb?");
+    pdf_add_stream (pfbs[pfb_id].direct, (char *) buffer, length);
   }
   RELEASE (buffer);
   return length;
@@ -715,36 +739,10 @@ static unsigned long do_partial_body (unsigned char *filtered, unsigned char
 static unsigned long do_pfb_body (FILE *file, int pfb_id,
 				  char **glyphs)
 {
-  int i, ch;
-  int stream_type;
+  int i;
   unsigned char *buffer=NULL, *filtered=NULL;
   unsigned long length=0;
-  /* Unfortunately, there can be several binary segments, so
-     we loop through all of them */
-  while (1) {
-    unsigned long nread;
-    unsigned long new_length;
-    if ((ch = fgetc (file)) < 0 || ch != 128){
-      fprintf (stderr, "Got %d, expecting 128\n", ch);
-      ERROR ("type1_do_pfb_segment:  Are you sure this is a pfb?");
-    }
-    if ((stream_type = fgetc (file)) < 0 || stream_type != BINARY) {
-      seek_relative (file, -2); /* Backup up two (yuck!) */
-      break;
-    }
-    new_length = get_low_endian_quad (file);
-    if (verbose > 3) {
-      fprintf (stderr, "Length of next binary segment: %ld\n",
-	       new_length);
-    }
-    buffer = RENEW (buffer, length+new_length, unsigned char);
-    if ((nread = fread(buffer+length, sizeof(unsigned char), new_length, file)) !=
-	new_length) {
-      fprintf (stderr, "Found only %ld/%ld bytes\n", nread, new_length);
-      ERROR ("type1_do_pfb_segment:  Are you sure this is a pfb?");
-    }
-    length += new_length;
-  }
+  buffer = get_pfb_segment (&length, file, BINARY);
   if (partial_enabled && glyphs != NULL) {
     /* For partial font embedding we need to decrypt the binary
        portion of the pfb */
@@ -771,32 +769,10 @@ static unsigned long do_pfb_body (FILE *file, int pfb_id,
 
 static unsigned long do_pfb_trailer (FILE *file, pdf_obj *stream)
 {
-  int i, ch;
-  int stream_type;
   unsigned char *buffer;
-  unsigned long length, nread;
-  if ((ch = fgetc (file)) < 0 || ch != 128){
-    fprintf (stderr, "Got %d, expecting 128\n", ch);
-    ERROR ("type1_do_pfb_segment:  Are you sure this is a pfb?");
-  }
-  if ((stream_type = fgetc (file)) < 0 || stream_type != ASCII) {
-    fprintf (stderr, "Got %d, expecting %d\n", stream_type, ASCII);
-    ERROR ("type1_do_pfb_segment:  Are you sure this is a pfb?");
-  }
-  length = get_low_endian_quad (file);
-  buffer = NEW (length, unsigned char);
-  if ((nread = fread(buffer, sizeof(unsigned char), length, file)) ==
-      length) {
-    for (i=0; i<length; i++) {
-      if (buffer[i] == '\r')
-	buffer[i] = '\n';  /* May not be portable to non-Unix
-			      systems */
-    }
-    pdf_add_stream (stream, (char *) buffer, length);
-  } else {
-    fprintf (stderr, "Found only %ld out of %ld bytes\n", nread, length);
-    ERROR ("type1_do_pfb_segment:  Are you sure this is a pfb?");
-  }
+  unsigned long length;
+  buffer = get_pfb_segment (&length, file, ASCII);
+  pdf_add_stream (stream, (char *) buffer, length);
   RELEASE (buffer);
   return length;
 }
