@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/error.h,v 1.5 1999/02/21 14:30:20 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/error.h,v 1.6 1999/03/08 04:25:42 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -26,7 +26,6 @@
 #ifndef _ERROR_H_
 #define _ERROR_H_
 
-#include "system.h"
 
 #define FATAL_ERROR -1
 #define NO_ERROR 0
