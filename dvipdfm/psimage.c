@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/psimage.c,v 1.8 1999/10/08 17:26:18 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/psimage.c,v 1.9 1999/11/17 01:06:05 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -70,12 +70,12 @@ static char *build_command_line (char *psname, char *pdfname)
 	switch (*(++current)) {
 	case 'o': /* Output file name */
 	  need(strlen(pdfname));
-	  strcat (result, pdfname);
+	  strcpy (result+size, pdfname);
 	  size+=strlen(pdfname);
 	  break;
 	case 'i': /* Input filename */
 	  need(strlen(psname));
-	  strcat (result, psname);
+	  strcpy (result+size, psname);
 	  size+=strlen(psname);
 	  break;
 	case 'b': 
@@ -86,7 +86,7 @@ static char *build_command_line (char *psname, char *pdfname)
 	      strncpy (result+size, psname, last-psname);
 	      size += last-psname;
 	    } else {
-	      strcat (result, psname);
+	      strcpy (result+size, psname);
 	      size += strlen(psname);
 	    }
 	  }

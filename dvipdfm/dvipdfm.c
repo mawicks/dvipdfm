@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.62 1999/09/28 15:27:17 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.63 1999/11/17 01:06:05 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -59,6 +59,7 @@ struct
   {"legal" , { 612.0, 1008.0}},
   {"ledger" , { 1224.0, 792.0}},
   {"tabloid" , { 792.0, 1224.0}},
+  {"a5" , { 420.91, 595.27}},
   {"a4" , { 595.27, 841.82}},
   {"a3" , { 841.82, 1190.16}}};
 
