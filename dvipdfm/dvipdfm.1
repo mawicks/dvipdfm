@@ -12,10 +12,122 @@ dvipdfm \- Produce PDF files directly from DVI files
 .SH DESCRIPTION
 The program
 .B dvipdfm
-produces a PDF file directly from a DVI file.
+produces a PDF file directly from a DVI file.  
 
 
 .SH OPTIONS
+.TP 5
+.B -l
+Select landscape mode by exchanging the 
+.I x
+and
+.I y
+dimensions of the paper.
+
+.TP 5
+.B -c
+Ignore color specials.  The
+.B -c
+option may be used to produce a black and white document
+from a document containing color TeX special commands.
+
+.TP 5
+.B \-\^e
+Toggle partial font embedding flag.  When partial
+font embedding is off, fonts are fully embedded.
+The default, if not changed in the configuration file,
+is to embed only those glyphs actually used in the document.
+
+.TP 5
+.B \-\^m " mag"
+Magnify the input document by
+.IR mag .
+
+.TP 5
+.B \-\^o " name"
+Generate PDF output file having the name
+.IR name .
+
+.TP 5
+.B \-\^p " paper"
+Select the papersize by name (e.g.,
+.BR letter ", " legal ", " ledger ", " tabloid ", " a3 ", " a4 ", or " a5
+)
+
+
+.TP 5
+.B \-\^r " size"
+Set resolution of bitmapped fonts to
+.B size
+dots per inch.  Bitmapped fonts are generated
+by the Kpathsea library, which uses MetaFont.  Bitmapped
+fonts are included as type 3 fonts in the PDF output file.
+
+.TP 5
+.B \-\^s " page_specification"
+Select the pages of the DVI file to be converted.  
+The
+.I page_specification 
+consists of a comma separated list of
+.I page ranges.
+Each
+.I page_range
+consists of a 
+.I first_page
+followed by a
+.B \-
+, followed by a
+.IR last_page .
+An empty
+.I first_page
+is implied to be the first page of the DVI file.
+An empty
+.I last_page
+is treated as the last page of the DVI file
+(e.g., "
+.B \-\^s \-
+" includes all pages, "
+.B \-\^s \-,\-
+" includes two copies of all pages in the DVI file,
+and "
+.B \-\^s 1\-10
+" includes the first ten pages of the DVI file.)
+
+.TP 5
+.B \-\^v 
+Increase verbosity.
+Results of the 
+.B \-\^v option are cumulative (e.g., 
+.B \-\^vv
+) increases the verbosity twice.
+
+.TP 5
+.B \-\^x x_offset
+Set the left margin to 
+.I x_offset
+.  The default left margin is
+.BR 1.0in .
+The dimension may be specified in any units understood by TeX (e.g.,
+.BR bpt ", " pt ", " in ", " cm
+)
+
+.TP 5
+.B \-\^y y_offset
+Set the top margin to 
+.I y_offset
+.  The default top margin is
+.BR 1.0in .
+The dimension may be specified in any units understood by TeX (e.g.,
+.BR bpt ", " pt ", " in ", " cm
+)
+
+.TP 5
+.B \-\^z compression_level
+Set the compression level to 
+.IR compression_level .
+The compressions levels range from 0 (no compression) to
+9 (maximum compression) and correspond to the values understood by zlib.
+
 
 .SH ENVIRONMENT
 
