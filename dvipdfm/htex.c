@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/htex.c,v 1.8 1999/09/19 20:19:39 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/htex.c,v 1.9 2000/01/14 16:06:32 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -96,7 +96,7 @@ static int parse_html_tag (char **start, char *end)
 #define HREF 1
 #define NAME 2
 static pdf_obj *link_dict = NULL;
-static pending_type = 0;
+static unsigned pending_type = 0;
 
 char *base_value = NULL;
 static void html_make_link_dict (char *name)

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.60 1999/10/08 00:15:57 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.61 2000/01/14 16:06:33 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -113,7 +113,7 @@ void pdf_obj_set_compression (int level)
   return;
 }
 
-static pdf_version = 2;
+static unsigned pdf_version = 2;
 void pdf_set_version (unsigned version)
 {
   if (version >= 2 && version <= 3) {

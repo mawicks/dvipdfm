@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.27 1999/09/08 16:51:46 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.28 2000/01/14 16:06:32 mwicks Exp $
 
     This is ebb, a bounding box extraction program.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -74,7 +74,11 @@ static char *make_bb_filename (const char *name)
 {
   int i;
   char *result;
+#ifdef HAVE_XBASENAME   
+  name = xbasename (name);
+#else   
   name = basename (name);
+#endif
   for (i=0; i<sizeof(extensions)/sizeof(extensions[0]); i++) {
     if (strlen (extensions[i]) < strlen(name) &&
 	!strncmp (name+strlen(name)-strlen(extensions[i]),

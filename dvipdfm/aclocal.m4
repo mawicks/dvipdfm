@@ -31,16 +31,6 @@ variable CPPFLAGS or CLFAGS with -I pointing to the directory containing
 the file "tex-file.h"
 
 ])])])
-# Temporarily removed following test to *not* use installed directory
-# User must supply location of TeX tree via --datadir option 
-# AC_DEFUN(AC_TEXMF_TREE,
-#   [AC_MSG_CHECKING([location of your texmf tree using kpsewhich])
-# TEXMF=`kpsewhich --expand-var '$TEXMFMAIN' 2>/dev/null`
-# if test "x$TEXMF" = "x" ; then
-# TEXMF='${datadir}/texmf';
-# fi
-# AC_SUBST(TEXMF)
-# AC_MSG_RESULT($TEXMF)])
 #
 # Check for zlib
 #

@@ -15,6 +15,9 @@
 /* HAVE_KPATHSEA - Define if you have kpathsea */
 #undef HAVE_KPATHSEA
 
+/* HAVE_XBASENAME - Define if you have xbasename() in your libkpathsea instead of basename() */
+#undef HAVE_XBASENAME
+
 /* HAVE_ZLIB - Define if you have zlib and its headers */
 #undef HAVE_ZLIB
 /* HAVE_ZLIB_COMPRESS2 - Define if your zlib has the compress2 function */

@@ -29,6 +29,10 @@ you know where it is you might try setting the LDFLAGS environment variable
 with -L pointing to the directory containing libkpathsea.a
 ]))
 
+dnl Check whether this version of kpathsea have xbasename() instead of basename()
+
+AC_CHECK_LIB(kpathsea, xbasename, [AC_DEFINE(HAVE_XBASENAME)])
+
 TEXMF='${datadir}/texmf'
 AC_SUBST(TEXMF)
 

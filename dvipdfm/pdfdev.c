@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.99 1999/09/28 14:15:54 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.100 2000/01/14 16:06:32 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1012,7 +1012,7 @@ void dev_do_special (void *buffer, UNSIGNED_QUAD size, double x_user,
   }
 }
 
-static dvi_stack_depth = 0;
+static unsigned dvi_stack_depth = 0;
 static int dvi_tagged_depth = -1;
 static unsigned char link_annot = 1;
 void dev_link_annot (unsigned char flag)

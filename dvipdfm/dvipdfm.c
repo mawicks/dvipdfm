@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.64 2000/01/13 02:04:52 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.65 2000/01/14 16:06:32 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -80,7 +80,11 @@ char *dvi_filename = NULL, *pdf_filename = NULL;
 static void set_default_pdf_filename(void)
 {
   const char *dvi_base;
+#ifdef HAVE_XBASENAME
+  dvi_base = xbasename (dvi_filename);
+#else   
   dvi_base = basename (dvi_filename);
+#endif   
   if (strlen (dvi_base) < 5 || strncmp (".dvi", dvi_base+strlen(dvi_base)-4, 4)) 
   {
     pdf_filename = NEW (strlen(dvi_base)+5, char);
