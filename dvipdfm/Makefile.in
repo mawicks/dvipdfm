@@ -148,6 +148,7 @@ depend.make:
 	cd ..
 	tar -C ../dvipdfm -zxf ../dvipdfm-@VERSION@.tar.gz
 	tar -C .. -zcf ../dvipdfm-@VERSION@.tar.gz dvipdfm
+	/bin/rm -rf ../dvipdfm
 @MAINT@dvipdfm-static:  $(objects) Makefile
 	$(CC) -o dvipdfm-static $(objects) --static $(LDFLAGS) $(LIBS)
 @MAINT@ebb-static : $(eobjects) Makefile
