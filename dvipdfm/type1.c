@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.30 1998/12/22 20:08:33 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.31 1998/12/23 00:31:51 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -193,8 +193,6 @@ int get_encoding (const char *enc_name)
   return num_encodings++;
 }
 
-
-
 struct font_record *get_font_record (const char *tex_name)
 {
   struct font_record *result;
@@ -319,12 +317,145 @@ static unsigned long do_pfb_header (FILE *file, pdf_obj *stream)
   return length;
 }
 
+int CDECL search_glyph(const void *key, const void *glyph) 
+{
+  return strcmp(key, ((struct glyph *) glyph) ->name);
+}
+
+static unsigned long do_partial (unsigned char *filtered, unsigned char
+			*unfiltered, unsigned long length, 
+			char *chars_used, struct glyph *glyphs)
+{
+  char *start, *end, *tail, *ident;
+  unsigned char *filtered_pointer;
+  double last_number = 0.0;
+  start = (char *) unfiltered, end = (char *) unfiltered+length;
+  /* Skip first four bytes */
+  tail = start; filtered_pointer = filtered;
+  start += 4;
+  /* Skip everything up to the charstrings section */
+  while (start < end) {
+    skip_white (&start, end);
+    switch (*start) {
+    case '[':
+    case ']':
+    case '{':
+    case '}':
+      start += 1;
+      continue;
+    case '/':
+      start += 1;
+      ident = parse_ident (&start, end);
+      if (!strcmp ((char *) ident, "CharStrings")) {
+	RELEASE (ident);
+	break;
+      }
+      else {
+	RELEASE (ident);
+	continue;
+      }
+    default:
+      ident = parse_ident (&start, end);
+      if (is_a_number(ident))
+	last_number = atof (ident);
+      else {
+	if (!strcmp (ident, "RD") ||
+	    !strcmp (ident, "-|")) {
+	  start += ((unsigned long) last_number) + 1;
+	}
+      }
+      RELEASE (ident);
+      continue;
+    }
+    break;
+  }
+  if (start >= end)
+    ERROR ("Unexpected end of binary portion of PFB file");
+  /* At this point, we just before the beginning of the glyphs, just after
+     the word /CharStrings */
+  {
+    int nused = 1; /* We always embed .notdef regardless */
+    struct glyph *this_glyph;
+    int i;
+    /* Copy what we have so far over to the new buffer */
+    memcpy (filtered_pointer, tail, start-tail);
+    /* Advance pointer into new buffer */
+    filtered_pointer += (start-tail);
+    /* Find out how many glyphs we are going to embed */
+    for (i=0; i<256; i++) nused += chars_used[i];
+    fprintf (stderr, "\nEmbedding %d glyphs\n", nused);
+    filtered_pointer += sprintf ((char *) filtered_pointer, " %d",
+				 nused);
+    skip_white(&start, end);
+    /* The following ident *should* be the number of glyphs in this
+       file */
+    ident = parse_ident (&start, end);
+    if (ident == NULL || !is_a_number (ident) || nused > atof (ident)) 
+      ERROR ("More glyphs needed than present in file");
+    fprintf (stderr, "File has %s glyphs\n", ident);
+    RELEASE (ident);
+    tail = start;
+    while (start < end && *start != '/') start++;
+    memcpy (filtered_pointer, tail, start-tail);
+    filtered_pointer += (start-tail);
+    /* Now we are exactly at the beginning of the glyphs */
+    while (start < end && *start == '/') {
+      char *glyph;
+      tail = start;
+      start += 1;
+      glyph = parse_ident (&start, end);
+      fprintf (stderr, "(%s...", glyph);
+      this_glyph = bsearch (glyph, glyphs, 256, sizeof (struct glyph), search_glyph);
+      /* Get the number that should follow the glyph name */
+      ident = parse_ident (&start, end);
+      if (!is_a_number (ident))
+	ERROR ("Expecting a number after glyph name");
+      last_number = atof (ident);
+      RELEASE (ident);
+      /* The next identifier should be a "RD" or a "-|".  We don't
+	 really care what it is */
+      ident = parse_ident (&start, end);
+      RELEASE (ident);
+      /* Skip a blank */
+      start += 1;
+      /* Skip the binary stream */
+      start += (unsigned long) last_number;
+      /* Skip the "ND" or "|-" terminator */
+      ident = parse_ident (&start, end);
+      RELEASE (ident);
+      skip_white (&start, end);
+      if ((this_glyph && chars_used[this_glyph->position]) ||
+	  !strcmp (glyph, ".notdef")) {
+	fprintf (stderr, "embedded)");
+	memcpy (filtered_pointer, tail, start-tail);
+	filtered_pointer += start-tail;
+	nused--;
+      } else {
+	fprintf (stderr, "skipped)");
+      }
+      RELEASE (glyph);
+    }
+    if (start >= end) {
+      ERROR ("Premature end of glyph definitions in font file");
+    }
+    if (nused == 0)
+      fprintf (stderr, "%d Missing Glyphs\n", nused);
+    else
+      ERROR ("Didn't find all the required glyphs");
+    /* Include the rest of the file verbatim */
+    memcpy (filtered_pointer, start, end-start);
+    filtered_pointer += end-start;
+  }
+  return (filtered_pointer-filtered);
+}
+
+
 static unsigned long do_pfb_body (FILE *file, int pfb_id)
 {
   int i, ch;
   int stream_type;
-  unsigned char *buffer;
-  unsigned long length, nread;
+  unsigned char *buffer, *filtered;
+  unsigned long length, nread, filtered_length;
   if ((ch = fgetc (file)) < 0 || ch != 128){
     fprintf (stderr, "Got %d, expecting 128\n", ch);
     ERROR ("type1_do_pfb_segment:  Are you sure this is a pfb?");
@@ -335,6 +466,7 @@ static unsigned long do_pfb_body (FILE *file, int pfb_id)
   }
   length = get_low_endian_quad (file);
   buffer = NEW (length, unsigned char);
+  filtered = NEW (length, unsigned char);
   if ((nread = fread(buffer, sizeof(unsigned char), length, file)) ==
       length) {
     crypt_init(EEKEY);
@@ -342,15 +474,26 @@ static unsigned long do_pfb_body (FILE *file, int pfb_id)
       buffer[i] = decrypt(buffer[i]);
     }
     crypt_init (EEKEY);
-    for (i=0; i<nread; i++) {
-      buffer[i] = encrypt(buffer[i]);
+    if (pfbs[pfb_id].encoding_id >= 0) {
+      filtered_length = do_partial (filtered, buffer, length, 
+				    pfbs[pfb_id].used_chars,
+				    encodings[pfbs[pfb_id].encoding_id].glyphs);
+      for (i=0; i<filtered_length; i++) {
+	buffer[i] = encrypt(filtered[i]);
+      }
+      length = filtered_length;
+    } else {
+      for (i=0; i<nread; i++) {
+	buffer[i] = encrypt(buffer[i]);
+      }
     }
-    pdf_add_stream (pfbs[pfb_id].direct, (char *) buffer, nread);
+    pdf_add_stream (pfbs[pfb_id].direct, (char *) buffer, length);
   } else {
     fprintf (stderr, "Found only %ld/%ld bytes\n", nread, length);
     ERROR ("type1_do_pfb_segment:  Are you sure this is a pfb?");
   }
   RELEASE (buffer);
+  RELEASE (filtered);
   return length;
 }
 
@@ -879,15 +1022,11 @@ void type1_close_all (void)
   /* Now do encodings.  Clearly many pfbs will map to the same
      encoding.  That's why there is a separate array for encodings */
   for (i=0; i<num_encodings; i++) {
-    fprintf (stderr, "Encoding (%s):\n", encodings[i].enc_name);
     RELEASE (encodings[i].enc_name);
     pdf_release_obj (encodings[i].encoding_ref);
     /* Release glyph names for this encoding */
     for (j=0; j<256; j++) {
-      fprintf (stderr, "(%s)[%d]", 
-	       (encodings[i].glyphs)[j].name, (encodings[i].glyphs)[j].position);
       RELEASE ((encodings[i].glyphs)[j].name);
     }
-    fprintf (stderr, "\n");
   }
 }
