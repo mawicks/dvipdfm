@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.73 1999/08/18 01:44:03 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.74 1999/08/18 03:45:20 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -837,7 +837,7 @@ void dev_do_special (void *buffer, UNSIGNED_QUAD size, double x_user,
   graphics_mode();
   if (!pdf_parse_special (buffer, size, x_user, y_user) &&
       !tpic_parse_special (buffer, size, x_user, y_user) &&
-      !htex_parse_special (buffer, size, x_user, y_user)) {
+      !htex_parse_special (buffer, size)) {
     fprintf (stderr, "Unrecognized special ignored\n");
     dump (buffer, ((char *)buffer)+size);
   }
