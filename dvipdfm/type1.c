@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.13 1998/12/09 21:51:52 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.14 1998/12/09 23:24:40 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -490,9 +490,6 @@ pdf_obj *type1_font_descriptor (const char *pfb_name)
   pdf_add_dict (font_descriptor,
 		pdf_new_name ("Type"),
 		pdf_new_name ("FontDescriptor"));
-  if (capheight == 0.0) {
-    fprintf (stderr, "\nWarning:  type1_font_descriptor:  AFM file: CapHeight is zero\n");
-  }
   pdf_add_dict (font_descriptor,
 		pdf_new_name ("CapHeight"),
 		pdf_new_number (ROUND(capheight,0.01)));

@@ -101,7 +101,7 @@ pdfdev.o: pdfdev.c \
  $(kpathsea_srcdir)/debug.h $(kpathsea_srcdir)/types.h $(kpathsea_srcdir)/lib.h \
  $(kpathsea_srcdir)/progname.h $(kpathsea_srcdir)/c-fopen.h \
  $(kpathsea_srcdir)/tex-file.h type1.h mem.h \
- mfileio.h pdfspecial.h pdflimits.h tfm.h vf.h
+ mfileio.h pdfspecial.h pdflimits.h tfm.h dvi.h vf.h
 pdfdoc.o: pdfdoc.c \
  c-auto.h system.h $(kpathsea_srcdir)/config.h \
  $(kpathsea_srcdir)/c-std.h \
