@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.31 2000/10/13 02:13:00 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.32 2000/10/22 00:31:00 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -91,16 +91,6 @@ static void tfms_need (unsigned n)
   }
 }
 
-static void invalid_tfm_file (void)
-{
-  ERROR ("Something is wrong.  Are you sure this is a valid TFM file?\n");
-}
-
-static void invalid_ofm_file (void)
-{
-  ERROR ("Something is wrong.  Are you sure this is a valid OFM file?\n");
-}
-
 /* External Routine */
 
 void tfm_set_verbose (void)
@@ -154,8 +144,9 @@ static void get_sizes (FILE *tfm_file, SIGNED_QUAD tfm_file_size,
   a_tfm -> wlenheader = get_unsigned_pair (tfm_file);
   a_tfm -> bc = get_unsigned_pair (tfm_file);
   a_tfm -> ec = get_unsigned_pair (tfm_file);
-  if (a_tfm -> ec < a_tfm -> bc)
-    invalid_tfm_file();
+  if (a_tfm -> ec < a_tfm -> bc) {
+    ERROR ("TFM file error (ec < bc)\n");
+  }
   a_tfm -> nwidths = get_unsigned_pair (tfm_file);
   a_tfm -> nheights = get_unsigned_pair (tfm_file);
   a_tfm -> ndepths = get_unsigned_pair (tfm_file);
@@ -164,13 +155,19 @@ static void get_sizes (FILE *tfm_file, SIGNED_QUAD tfm_file_size,
   a_tfm -> nkern = get_unsigned_pair (tfm_file);
   a_tfm -> nextens = get_unsigned_pair (tfm_file);
   a_tfm -> nfonparm = get_unsigned_pair (tfm_file);
-  if ( a_tfm -> wlenfile != tfm_file_size/4 ||
-      sum_of_tfm_sizes (a_tfm) != a_tfm -> wlenfile)
-    invalid_tfm_file();
   if (tfm_debug) {
-    fprintf (stderr, "Computed size (words)%d\n", sum_of_tfm_sizes (a_tfm));
+    fprintf (stderr, "\nComputed size (words)%d\n", sum_of_tfm_sizes (a_tfm));
     fprintf (stderr, "Stated size (words)%ld\n", a_tfm -> wlenfile);
     fprintf (stderr, "Actual size (bytes)%ld\n", tfm_file_size);
+  }
+  if ( a_tfm -> wlenfile != tfm_file_size/4 ||
+       sum_of_tfm_sizes (a_tfm) != a_tfm -> wlenfile) {
+    if (tfm_file_size/4 > a_tfm -> wlenfile) {
+      fprintf (stderr, "\nHmm.  A TFM file is larger than it says it is!");
+      fprintf (stderr, "\nProceeding nervously...\n");
+    } else {
+      ERROR ("TFM file problem.  Table sizes don't agree.\n");
+    }
   }
   return;
 }
@@ -184,8 +181,9 @@ static int ofm_get_sizes (FILE *ofm_file,  UNSIGNED_QUAD ofm_file_size,
   a_tfm -> wlenheader = get_signed_quad (ofm_file);
   a_tfm -> bc = get_signed_quad (ofm_file);
   a_tfm -> ec = get_signed_quad (ofm_file);
-  if (a_tfm -> ec < a_tfm -> bc)
-    invalid_ofm_file();
+  if (a_tfm -> ec < a_tfm -> bc) {
+    ERROR ("OFM file error (ec < bc)\n");
+  }
   a_tfm -> nwidths = get_signed_quad (ofm_file);
   a_tfm -> nheights = get_signed_quad (ofm_file);
   a_tfm -> ndepths = get_signed_quad (ofm_file);
@@ -200,8 +198,9 @@ static int ofm_get_sizes (FILE *ofm_file,  UNSIGNED_QUAD ofm_file_size,
   }
   if (level == 0) {
     if (a_tfm -> wlenfile != ofm_file_size/4 ||
-	sum_of_ofm_sizes (a_tfm) != a_tfm -> wlenfile)
-      invalid_ofm_file();
+	sum_of_ofm_sizes (a_tfm) != a_tfm -> wlenfile) {
+      ERROR ("OFM file problem.  Table sizes don't agree.\n");
+    }
     if (level == 0 && tfm_debug) {
       fprintf (stderr, "Computed size (words)%ld\n", sum_of_ofm_sizes (a_tfm));
       fprintf (stderr, "Stated size (words)%ld\n", a_tfm -> wlenfile);
@@ -509,7 +508,7 @@ int tfm_open (const char *tfm_name)
       if (tfm_verbose > 1)
 	fprintf (stderr, "(TFM:%s", full_tfm_file_name);
       if ((tfm_file_size = file_size(tfm_file)) < 24) {
-	invalid_tfm_file ();
+	ERROR ("TFM file too small to be a valid file\n");
       }
       get_tfm (tfm_file, tfm_file_size, &tfm[numtfms]);
 #ifdef HAVE_OMEGA_FORMATS       
@@ -525,7 +524,7 @@ int tfm_open (const char *tfm_name)
       if (tfm_verbose > 1)
 	fprintf (stderr, "(OFM:%s", full_tfm_file_name);
       if ((tfm_file_size = file_size(tfm_file)) < 24) {
-	invalid_ofm_file ();
+	ERROR ("OFM file too small to be a valid file\n");
       }
       get_ofm (tfm_file, tfm_file_size, &tfm[numtfms]);
 #endif       
