@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mem.c,v 1.10 1999/02/09 03:24:07 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mem.c,v 1.11 1999/02/16 13:39:32 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -47,7 +47,8 @@ void *new (size_t size, char *function, int line)
 {
   void *result;
   if ((result = malloc (size)) == NULL) {
-    fprintf (stderr, "Out of memory!\n");
+    fprintf (stderr, "Out of memory in %s:%d\n", function, line);
+    fprintf (stderr, "Asked for %lu\n", (unsigned long) size);
     exit (1);
   }
 

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.16 1999/02/09 03:24:09 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.17 1999/02/16 13:39:33 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -173,15 +173,21 @@ static void get_unsigned_quad_array (UNSIGNED_QUAD *a_word, int length)
 
 static void do_fix_word_array (SIGNED_QUAD **a, UNSIGNED_PAIR len)
 {
-  *a = NEW (len, SIGNED_QUAD);
-  get_fix_word_array (*a, len);
+  if (len != 0) {
+    *a = NEW (len, SIGNED_QUAD);
+    get_fix_word_array (*a, len);
+  } else
+    *a = NULL;
   return;
 }
 
 static void do_unsigned_quad_array (UNSIGNED_QUAD **a, UNSIGNED_PAIR len)
 {
-  *a = NEW (len, UNSIGNED_QUAD);
-  get_unsigned_quad_array (*a, len);
+  if (len != 0) {
+    *a = NEW (len, UNSIGNED_QUAD);
+    get_unsigned_quad_array (*a, len);
+  } else
+    *a = NULL;
   return;
 }
 
@@ -288,16 +294,26 @@ void tfm_close_all(void)
 {
   int i;
   for (i=0; i<numtfms; i++) {
-    RELEASE (tfm[i].header);
-    RELEASE (tfm[i].char_info);
-    RELEASE (tfm[i].width);
-    RELEASE (tfm[i].height);
-    RELEASE (tfm[i].depth);
-    RELEASE (tfm[i].italic);
-    RELEASE (tfm[i].lig_kern);
-    RELEASE (tfm[i].kern);
-    RELEASE (tfm[i].exten);
-    RELEASE (tfm[i].param);
+    if (tfm[i].header)
+      RELEASE (tfm[i].header);
+    if (tfm[i].char_info)
+      RELEASE (tfm[i].char_info);
+    if (tfm[i].width)
+      RELEASE (tfm[i].width);
+    if (tfm[i].height)
+      RELEASE (tfm[i].height);
+    if (tfm[i].depth)
+      RELEASE (tfm[i].depth);
+    if (tfm[i].italic)
+      RELEASE (tfm[i].italic);
+    if (tfm[i].lig_kern)
+      RELEASE (tfm[i].lig_kern);
+    if (tfm[i].kern)
+      RELEASE (tfm[i].kern);
+    if (tfm[i].exten)
+      RELEASE (tfm[i].exten);
+    if (tfm[i].param)
+      RELEASE (tfm[i].param);
     RELEASE (tfm[i].tex_name);
     RELEASE (tfm[i].unpacked_widths);
   }
