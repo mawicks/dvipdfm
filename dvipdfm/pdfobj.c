@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.66 2000/01/19 00:23:47 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.67 2000/02/09 12:52:06 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -474,7 +474,7 @@ static void release_number (pdf_number *data)
 static void write_number (FILE *file, const pdf_number *number)
 {
   int count;
-  count = sprintf (format_buffer, "%g", number -> value);
+  count = sprintf (format_buffer, "%.10g", number -> value);
   pdf_out (file, format_buffer, count);
 }
 
