@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.59 1999/09/05 05:49:10 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.60 1999/09/05 15:00:15 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -639,6 +639,62 @@ static void do_bcolor(char **start, char *end)
   return;
 }
 
+static void do_scolor(char **start, char *end)
+{
+  char *save = *start;
+  pdf_obj *color;
+  int error = 0;
+#ifdef MEM_DEBUG
+  MEM_START
+#endif /* MEM_DEBUG */
+  skip_white(start, end);
+  if ((color = parse_pdf_object(start, end)) != NULL &&
+      (color -> type == PDF_ARRAY ||
+       color -> type == PDF_NUMBER )) {
+    switch (color -> type) {
+      int i;
+    case PDF_ARRAY:
+      for (i=0; i<5; i++) {
+	if (pdf_get_array (color, i) == NULL ||
+	    pdf_get_array (color, i) -> type != PDF_NUMBER)
+	  break;
+      }
+      switch (i) {
+      case 3:
+	dev_set_def_rgb_color (pdf_number_value (pdf_get_array (color,0)),
+			       pdf_number_value (pdf_get_array (color,1)),
+			       pdf_number_value (pdf_get_array (color,2)));
+	break;
+      case 4:
+	dev_set_def_cmyk_color (pdf_number_value (pdf_get_array (color,0)),
+				pdf_number_value (pdf_get_array (color,1)),
+				pdf_number_value (pdf_get_array (color,2)),
+				pdf_number_value (pdf_get_array (color,3)));
+	break;
+      default:
+	fprintf (stderr, "\nSpecial: begincolor: Expecting either RGB or CMYK color array\n");
+	error = 1;
+      }
+      break;
+    case PDF_NUMBER:
+      dev_set_def_gray (pdf_number_value (color));
+    }
+  } else {
+    fprintf (stderr, "\nSpecial: Begincolor: Expecting color specified by an array or number\n");
+    error = 1;
+  }
+  if (error) {
+    *start = save;
+    dump (*start, end);
+  }
+  if (color)
+    pdf_release_obj (color);
+#ifdef MEM_DEBUG
+  MEM_END
+#endif /* MEM_DEBUG */
+  return;
+}
+
 static void do_bgray(char **start, char *end)
 {
   char *number_string;
@@ -1094,6 +1150,7 @@ static int is_pdf_special (char **start, char *end)
 #define BXOBJ 26
 #define EXOBJ 27
 #define UXOBJ 28
+#define SCOLOR 29
 
 struct pdfmark
 {
@@ -1126,6 +1183,9 @@ struct pdfmark
   {"bc", BCOLOR},
   {"bcolor", BCOLOR},
   {"begincolor", BCOLOR},
+  {"sc", SCOLOR},
+  {"scolor", SCOLOR},
+  {"setcolor", SCOLOR},
   {"ec", ECOLOR},
   {"ecolor", ECOLOR},
   {"endcolor", ECOLOR},
@@ -1429,6 +1489,10 @@ MEM_START
     case BGCOLOR:
       if (!ignore_colors)
 	do_bgcolor (&start, end);
+      break;
+    case SCOLOR:
+      if (!ignore_colors)
+	do_scolor (&start, end);
       break;
     case BCOLOR:
       if (!ignore_colors)

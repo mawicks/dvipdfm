@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.14 1999/09/05 05:49:10 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.15 1999/09/05 15:00:14 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -390,12 +390,13 @@ int move_pending = 0;
 
 #define PUSH(o) { \
   if (top_stack<PS_STACK_SIZE) { \
-				   stack[top_stack++] = o; \
-							     } else { \
-									fprintf (stderr, "PS stack overflow including MetaPost file"); \
-																	 return; \
-																		   } \
-																		       } \
+    stack[top_stack++] = o; \
+  } else { \
+    fprintf (stderr, "PS stack overflow including MetaPost file or inline PS code"); \
+    error=1; \
+    break; \
+  } \
+  }
 
 #define POP_STACK() (top_stack>0?stack[--top_stack]:NULL)
 
@@ -512,9 +513,9 @@ static int lookup_operator(char *token)
 
 static int state = 0;
 
-static void do_operator(char *token)
+static int do_operator(char *token)
 {
-  int operator;
+  int operator, error = 0;
   pdf_obj *tmp1=NULL, *tmp2=NULL, *tmp3=NULL, *tmp4 = NULL;
   pdf_obj *tmp5=NULL, *tmp6=NULL;
   int len;
@@ -1052,14 +1053,17 @@ static void do_operator(char *token)
     PUSH (pdf_new_string (token, strlen(token)));
     break;
   default: 
-    fprintf (stderr, "\nUnknown operator: %s\n", token);
-    ERROR ("Unknown operator in Metapost file\n");
+    fprintf (stderr, "\nUnknown PS operator: %s\n", token);
+    error = 1;
+    break;
   }
+  return !error;
 }
 
 static char line_buffer[1024];
-void parse_contents (FILE *image_file)
+int parse_contents (FILE *image_file)
 {
+  int error = 0;
   top_stack = 0;
   x_state = 0.0;
   y_state = 0.0;
@@ -1071,7 +1075,7 @@ void parse_contents (FILE *image_file)
     start = line_buffer;
     end = start+strlen(line_buffer);
     skip_white (&start, end);
-    while (start < end) {
+    while (start < end && !error) {
       if (isdigit (*start) || *start == '-') {
 	token = parse_number (&start, end);
 	PUSH (pdf_new_number(atof(token)));
@@ -1084,21 +1088,24 @@ void parse_contents (FILE *image_file)
 	PUSH (obj);
       } else {
 	token = parse_ident (&start, end);
-	do_operator (token);
+	if (!do_operator (token))
+	  error = 1;
 	RELEASE (token);
       }
       skip_white (&start, end);
     }
   }
+  return !error;
 }
 
-void do_raw_ps_special (char **start, char* end)
+int do_raw_ps_special (char **start, char* end)
 {
   char *token;
+  int error = 0;
   pdf_obj *obj;
   state = 0;
   skip_white (start, end);
-  while (*start < end) {
+  while (*start < end && !error) {
     if (isdigit (**start) || **start == '-') {
       token = parse_number (start, end);
       PUSH (pdf_new_number(atof(token)));
@@ -1111,11 +1118,14 @@ void do_raw_ps_special (char **start, char* end)
       PUSH (obj);
     } else {
       token = parse_ident (start, end);
-      do_operator (token);
+      if (!do_operator (token)) {
+	error = 1;
+      }
       RELEASE (token);
     }
     skip_white (start, end);
   }
+  return !error;
 }
 
 static void mp_cleanup (void)

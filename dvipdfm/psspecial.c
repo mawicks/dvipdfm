@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/psspecial.c,v 1.1 1999/09/05 13:16:43 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/psspecial.c,v 1.2 1999/09/05 15:00:15 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -30,6 +30,7 @@
 #include "pdfparse.h"
 #include "pdfspecial.h"
 #include "psimage.h"
+#include "mpost.h"
 #include "pdfdoc.h"
 
 #define HOFFSET 1
@@ -184,11 +185,10 @@ static int parse_psfile (char **start, char *end, double x_user, double y_user)
       }
     }
   } else {
-    fprintf (stderr, "\nError parsing PSfile=...\n");
+    fprintf (stderr, "\nError parsing PSfile special\n");
     error = 1;
   }
   RELEASE (p);
-  fprintf (stderr, "error=%d\n", error);
   return !error;
 }
 
@@ -201,14 +201,14 @@ int ps_parse_special (char *buffer, UNSIGNED_QUAD size, double x_user,
   skip_white (&start, end);
   if (!strncmp (start, "PSfile", strlen("PSfile")) ||
       !strncmp (start, "psfile", strlen("PSfile"))) {
-    if (parse_psfile(&start, end, x_user, y_user)) {
-      result = 1;
-    }
+    result = 1; /* This means it is a PSfile special, not that it was
+		   successful */
+    parse_psfile(&start, end, x_user, y_user);
   } else if (!strncmp (start, "ps:", strlen("ps:")) ||
 	     !strncmp (start, "PS:", strlen("PS:"))) {
     start += 3;
-    if (do_raw_ps_special (&start, end)) 
-      result = 1;
+    result = 1; /* Likewise */
+    do_raw_ps_special (&start, end);
   }
   return result;
 }

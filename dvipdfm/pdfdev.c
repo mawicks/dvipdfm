@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.86 1999/09/05 13:16:43 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.87 1999/09/05 15:00:14 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -40,6 +40,7 @@
 #include "tpic.h"
 #include "htex.h"
 #include "psspecial.h"
+#include "colorsp.h"
 #include "pdflimits.h"
 #include "tfm.h"
 #include "dvi.h"
@@ -375,8 +376,9 @@ struct color color_by_name (char *s)
   if (i == sizeof(colors_by_name)/sizeof(colors_by_name[0])) {
     fprintf (stderr, "Color \"%s\" no known.  Using default color.\n", s);
     result = default_color;
-  } else
+  } else {
     result = colors_by_name[i].color;
+  }
   return result;
 }
 
@@ -502,7 +504,7 @@ void dev_set_def_rgb_color (double r, double g, double b)
   return;
 }
 
-void dev_set_def_gray_color (double g) 
+void dev_set_def_gray (double g) 
 {
   default_color.c1 = g;
   default_color.colortype = GRAY;
@@ -510,6 +512,22 @@ void dev_set_def_gray_color (double g)
   return;
 }
 
+void dev_set_def_named_color (char *s)
+{
+  struct color color = color_by_name (s);
+  switch (color.colortype) {
+  case GRAY:
+    dev_set_def_gray (color.c1);
+    break;
+  case RGB:
+    dev_set_def_rgb_color (color.c1, color.c2, color.c3);
+    break;
+  case CMYK:
+    dev_set_def_cmyk_color (color.c1, color.c2, color.c3, color.c4);
+    break;
+  }
+  return;
+}
 
 void dev_set_def_cmyk_color (double c, double m, double y, double k)
 {
@@ -519,6 +537,23 @@ void dev_set_def_cmyk_color (double c, double m, double y, double k)
   default_color.c4 = k;
   default_color.colortype = CMYK;
   dev_do_color();
+  return;
+}
+
+void dev_begin_named_color (char *s)
+{
+  struct color color = color_by_name (s);
+  switch (color.colortype) {
+  case GRAY:
+    dev_begin_gray (color.c1);
+    break;
+  case RGB:
+    dev_begin_rgb_color (color.c1, color.c2, color.c3);
+    break;
+  case CMYK:
+    dev_begin_cmyk_color (color.c1, color.c2, color.c3, color.c4);
+    break;
+  }
   return;
 }
 
@@ -916,6 +951,7 @@ void dev_do_special (void *buffer, UNSIGNED_QUAD size, double x_user,
   if (!pdf_parse_special (buffer, size, x_user, y_user) &&
       !tpic_parse_special (buffer, size, x_user, y_user) &&
       !htex_parse_special (buffer, size) &&
+      !color_special (buffer, size) &&
       !ps_parse_special (buffer, size, x_user, y_user)) {
     fprintf (stderr, "\nUnrecognized special ignored\n");
     dump (buffer, ((char *)buffer)+size);
