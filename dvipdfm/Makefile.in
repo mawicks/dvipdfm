@@ -14,7 +14,7 @@ dvipdfmdir=$(texmf)/dvipdfm
 psheaderdir=$(texmf)/dvips
 programs=dvipdfm ebb
 scripts=dvipdft
-mkinstalldirs=$(SHELL) mkinstalldirs
+mkinstalldirs=@SHELL@ mkinstalldirs
 .c.o:
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) -o $@ $<
 headers=dvi.h pdflimits.h error.h mfileio.h jpeg.h mem.h numbers.h \

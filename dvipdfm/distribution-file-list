@@ -62,6 +62,7 @@ mem.c
 mem.h
 mfileio.c
 mfileio.h
+mkinstalldirs
 mpost.c
 mpost.h
 numbers.c
