@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.39 1999/02/21 14:50:28 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.40 1999/02/21 14:53:58 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -92,28 +92,28 @@ static void set_default_pdf_filename(void)
 
 static void usage (void)
 {
-   fprintf (stderr, "%s, version %s, Copyright (C) 1998, 1999 by Mark A. Wicks\n", PACKAGE, VERSION);
-   fprintf (stderr, "dvipdfm comes with ABSOLUTELY NO WARRANTY.\n");
-   fprintf (stderr, "This is free software, and you are welcome to redistribute it\n");
-   fprintf (stderr, "under certain conditions.  Details are distributed with the software.\n");
-   fprintf (stderr, "\nUsage: dvipdfm [options] dvifile\n");
-   fprintf (stderr, "where [options] is one or more of\n\n");
-   fprintf (stderr, "-c      \tIgnore color specials (for printing on B&W printers)\n");
-   fprintf (stderr, "-f filename\tSet font map file name [pdffonts.map]\n");
-   fprintf (stderr, "-o filename\tSet output file name [dvifile.pdf]\n");
-   fprintf (stderr, "-l \t\tLandscape mode\n");
-   fprintf (stderr, "-m number\tSet additional magnification\n");
-   fprintf (stderr, "-p papersize\tSet papersize (letter, legal, ledger, tabloid, a4, or a3) [letter]\n");
-   fprintf (stderr, "-r resolution\tSet resolution (in DPI) for raster fonts [600]\n");
-   fprintf (stderr, "-s pages\tSelect page ranges (-)\n");
-   fprintf (stderr, "-x dimension\tSet horizontal offset [1.0in]\n");
-   fprintf (stderr, "-y dimension\tSet vertical offset [1.0in]\n");
-   fprintf (stderr, "-e          \tDisable partial font embedding [default is enabled])\n");
-   fprintf (stderr, "-z number\tSet compression level (0-9) [default is 9])\n");
-   fprintf (stderr, "-v          \tBe verbose\n");
-   fprintf (stderr, "-vv         \tBe more verbose\n");
-   fprintf (stderr, "\nAll dimensions entered on the command line are \"true\" TeX dimensions.\n");
-   fprintf (stderr, "Argument of \"-s\" lists physical page ranges separated by commas, e.g., \"-s 1-3,5-6\"\n\n");
+   fprintf (stdout, "%s, version %s, Copyright (C) 1998, 1999 by Mark A. Wicks\n", PACKAGE, VERSION);
+   fprintf (stdout, "dvipdfm comes with ABSOLUTELY NO WARRANTY.\n");
+   fprintf (stdout, "This is free software, and you are welcome to redistribute it\n");
+   fprintf (stdout, "under certain conditions.  Details are distributed with the software.\n");
+   fprintf (stdout, "\nUsage: dvipdfm [options] dvifile\n");
+   fprintf (stdout, "where [options] is one or more of\n\n");
+   fprintf (stdout, "-c      \tIgnore color specials (for printing on B&W printers)\n");
+   fprintf (stdout, "-f filename\tSet font map file name [pdffonts.map]\n");
+   fprintf (stdout, "-o filename\tSet output file name [dvifile.pdf]\n");
+   fprintf (stdout, "-l \t\tLandscape mode\n");
+   fprintf (stdout, "-m number\tSet additional magnification\n");
+   fprintf (stdout, "-p papersize\tSet papersize (letter, legal, ledger, tabloid, a4, or a3) [letter]\n");
+   fprintf (stdout, "-r resolution\tSet resolution (in DPI) for raster fonts [600]\n");
+   fprintf (stdout, "-s pages\tSelect page ranges (-)\n");
+   fprintf (stdout, "-x dimension\tSet horizontal offset [1.0in]\n");
+   fprintf (stdout, "-y dimension\tSet vertical offset [1.0in]\n");
+   fprintf (stdout, "-e          \tDisable partial font embedding [default is enabled])\n");
+   fprintf (stdout, "-z number\tSet compression level (0-9) [default is 9])\n");
+   fprintf (stdout, "-v          \tBe verbose\n");
+   fprintf (stdout, "-vv         \tBe more verbose\n");
+   fprintf (stdout, "\nAll dimensions entered on the command line are \"true\" TeX dimensions.\n");
+   fprintf (stdout, "Argument of \"-s\" lists physical page ranges separated by commas, e.g., \"-s 1-3,5-6\"\n\n");
    exit(1);
 }
 
