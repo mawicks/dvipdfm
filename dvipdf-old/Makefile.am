@@ -1,15 +1,6 @@
 include_HEADERS = dvi.h error.h io.h tfm.h numbers.h pdfobj.h pdfdoc.h type1.h pdfdev.h pdfspecial.h
-bin_PROGRAMS = dvipdf dvitest tfmtest pdftest doctest type1test devtest
+bin_PROGRAMS = dvipdf dvitest 
 dvitest_SOURCES = dvitest.c numbers.c dvi.c io.c mem.c pdfdev.c pdfdoc.c pdfobj.c type1.c tfm.c pdfspecial.c
 dvipdf_LDADD = ./kpathsea/kpathsea/kpathsea.a
 dvipdf_SOURCES = dvipdf.c numbers.c dvi.c io.c mem.c pdfdev.c pdfdoc.c pdfobj.c type1.c tfm.c pdfspecial.c
 dvitest_LDADD = ./kpathsea/kpathsea/kpathsea.a
-tfmtest_SOURCES = tfmtest.c numbers.c tfm.c io.c mem.c
-tfmtest_LDADD = ./kpathsea/kpathsea/kpathsea.a
-pdftest_SOURCES = pdftest.c pdfobj.c mem.c io.c
-doctest_SOURCES = doctest.c pdfdoc.c pdfobj.c mem.c type1.c io.c
-doctest_LDADD = ./kpathsea/kpathsea/kpathsea.a
-devtest_SOURCES = devtest.c pdfdev.c pdfdoc.c pdfobj.c mem.c type1.c pdfspecial.c dvi.c io.c numbers.c tfm.c
-devtest_LDADD = ./kpathsea/kpathsea/kpathsea.a
-type1test_SOURCES = type1test.c type1.c pdfobj.c mem.c io.c
-type1test_LDADD = ./kpathsea/kpathsea/kpathsea.a

@@ -1203,7 +1203,8 @@ struct object
      is copied to the new file with a new number.  new_ref remains set
      until the file is closed so that future references can access the
      object via new_ref instead of copying the object again */
-  pdf_obj *new_ref;
+  pdf_obj *direct;
+  pdf_obj *indirect;
   int used;
 } *xref_table;
 long num_input_objects;
@@ -1230,6 +1231,40 @@ long next_object (int obj)
   return result;
 }
 
+/* The following routine returns a reference to an object existing
+   only in file.  It does this as follows.  If the object
+   has never been referenced before, it reads the object
+   in and creates a reference to it.  Then it writes
+   the object out, keeping the existing reference. If the
+   object has been read in (and written out) before, it simply
+   returns the retained existing reference to that object */
+
+pdf_obj *pdf_ref_file_obj (int obj_no)
+{
+  pdf_obj *direct, *indirect;
+  if (obj_no < 0 || obj_no >= num_input_objects) {
+    fprintf (stderr, "\n\npdf_ref_file_obj: nonexistent object\n");
+    return NULL;
+  }
+  fprintf (stderr, "\n\npdf_ref_file_obj: obj=%d\n", obj_no);
+  if (xref_table[obj_no].indirect != NULL) {
+    fprintf (stderr, "\npdf_ref_file_obj: obj=%d is already referenced\n",obj_no);
+    return pdf_link_obj (xref_table[obj_no].indirect);
+  }
+  if ((direct = pdf_read_object (obj_no)) == NULL) {
+    fprintf (stderr, "\npdf_ref_file_obj: Could not read object\n");
+    return NULL;
+  }
+  indirect = pdf_ref_obj (direct);
+  xref_table[obj_no].indirect = indirect;
+  xref_table[obj_no].direct = direct;
+  /* Make sure the caller can't doesn't free this object */
+  pdf_write_obj (stderr, direct);
+  pdf_write_obj (stderr, indirect);
+  return pdf_link_obj (indirect);
+}
+
+
 static pdf_obj *pdf_new_ref (int label, int generation) 
 {
   pdf_obj *result;
@@ -1250,13 +1285,13 @@ static pdf_obj *pdf_new_ref (int label, int generation)
   return result;
 }
 
-pdf_obj *pdf_read_object (unsigned obj_no) 
+pdf_obj *pdf_read_object (int obj_no) 
 {
   long start_pos, end_pos, length;
   char *buffer, *number, *parse_pointer, *end;
   pdf_obj *result;
   fprintf (stderr, "\nEntered pdf_read: obj = %d\n", obj_no);
-  if (obj_no >= num_input_objects) {
+  if (obj_no < 0 || obj_no >= num_input_objects) {
     fprintf (stderr, "\nTrying to read nonexistent object\n");
     return NULL;
   }
@@ -1361,8 +1396,8 @@ void parse_xref (void)
       xref_table[i].used = 1;
     else
       xref_table[i].used = 0;
-    xref_table[i].new_ref = NULL;  /* Don't know if this object will be
-					 used */
+    xref_table[i].direct = NULL;
+    xref_table[i].indirect = NULL;
   }
   for (i=0; i<num_input_objects; i++) {
     if (xref_table[i].used) {
@@ -1378,7 +1413,7 @@ static int num_xobjects = 0;
 void pdf_open (char *file, double x_user, double y_user)
 {
   long eof_pos;
-  int i;
+  int i, done;
   pdf_obj *tmp1, *tmp2;
   pdf_obj *trailer;
   pdf_obj *catalog_ref, *catalog, *page_tree_ref, *page_tree,
@@ -1539,4 +1574,22 @@ void pdf_open (char *file, double x_user, double y_user)
   fprintf (stderr, "Everywhere.\n");
   pdf_release_obj(contents);
   fprintf (stderr, "???.\n");
+
+  /* Following loop must be iterated because each write could trigger
+     an additional indirect reference of an object with a lower
+     number! */
+
+  do {
+    done = 1;
+    for (i=0; i<num_input_objects; i++) {
+      if (xref_table[i].direct != NULL) {
+	fprintf (stderr, "\n\nreleasing the following object file# = %d:\n", i);
+	fprintf (stderr, "\n");
+	pdf_release_obj (xref_table[i].direct);
+	xref_table[i].direct = NULL;
+	done = 0;
+      }
+    }
+  } while (!done);
 }
+

@@ -10,7 +10,8 @@ void pdf_finish_specials(void);
 
 void pdf_open (char *name, double x_user, double y_user);
 
-pdf_obj *pdf_read_object (unsigned obj_no);
+pdf_obj *pdf_read_object (int obj_no);
 pdf_obj *pdf_deref_obj (pdf_obj *obj_ref);
+pdf_obj *pdf_ref_file_obj (int obj_no);
 
 #endif  /* PDFSPECIAL_H */

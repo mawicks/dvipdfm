@@ -5,6 +5,7 @@
 #include "mem.h"
 #include "error.h"
 #include "io.h"
+#include "pdfspecial.h"
 
 #define MIN(a,b) ((a)<(b)?(a):(b))
 
@@ -267,8 +268,10 @@ static void write_indirect (FILE *file, const struct pdf_indirect *indirect)
       pdf_out (file, format_buffer, length);
     }
     else {
-      fprintf (stderr, "\nTried to write a dirty object\n");
-      pdf_out (file, "        0       0    R", 22);
+      pdf_obj *clean;
+      clean = pdf_ref_file_obj (indirect -> label);
+      pdf_write_obj (file, clean);
+      pdf_release_obj (clean);
     }
   } else {
     length = sprintf (format_buffer, "%d %d R", indirect -> label,
