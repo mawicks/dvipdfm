@@ -1,5 +1,8 @@
 
-  The kpathsea library is included unmodified (other than
-deleting branches of the tree irrelevant to dvipdfm).
-Thanks to Karl Berry and Olaf Weber for developing this
-package and making it available.  
+   The kpathsea library is an essential part of dvipdfm (and all Web2c-based
+TeX utilities). Thanks to Karl Berry and Olaf Weber for developing this and
+making it available.
+
+   Thanks to Cesar Crusius for encouraging me to support MetaPost output and
+for providing sample code.
+
