@@ -42,6 +42,8 @@ Installation:
        say something like --datadir=/usr/local/share/tetex and
        --prefix=/usr/local. The kpathsea library uses the path containing
        the executable as a hint to locating the temf texmf.cnf file.
+       The executable MUST be placed in the same directory as your other
+       executables that use kpathsea.
 
    4.  Type "make" in the dvipdfm directory.
 

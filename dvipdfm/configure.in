@@ -58,6 +58,3 @@ AC_CHECK_FUNCS(strspn)
 
 
 AC_OUTPUT(Makefile)
-
-
-
