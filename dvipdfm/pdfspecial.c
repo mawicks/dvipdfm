@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.58 1999/09/05 02:10:59 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.59 1999/09/05 05:49:10 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -222,7 +222,7 @@ struct {
   {"bbox", BBOX, 0}
 };
 
-static struct xform_info *new_xform_info (void)
+struct xform_info *new_xform_info (void)
 {
   struct xform_info *result;
   result = NEW (1, struct xform_info);
@@ -237,13 +237,13 @@ static struct xform_info *new_xform_info (void)
   return result;
 }
 
-static void release_xform_info (struct xform_info *p)
+void release_xform_info (struct xform_info *p)
 {
   RELEASE (p);
   return;
 }
 
-static int validate_image_xform_info (struct xform_info *p)
+int validate_image_xform_info (struct xform_info *p)
 {
   int result = 1;
   if (p->width != 0.0)

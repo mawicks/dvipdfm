@@ -17,19 +17,19 @@ scripts=dvipdft
 headers=dvi.h pdflimits.h error.h mfileio.h jpeg.h mem.h numbers.h \
 	pdfdev.h pdfdoc.h pdfparse.h pdfspecial.h tfm.h type1.h epdf.h \
 	vf.h dvicodes.h t1crypt.h pkfont.h tpic.h thumbnail.h htex.h \
-	twiddle.h mpost.h psimage.h
+	twiddle.h mpost.h psimage.h psspecial.h
 src=pdfdev.c pdfdoc.c dvi.c mfileio.c mem.c jpeg.c numbers.c pdfobj.c \
 	pdfparse.c pdfspecial.c tfm.c type1.c dvipdfm.c epdf.c vf.c \
 	t1crypt.c pkfont.c tpic.c thumbnail.c pngimage.c ebb.c htex.c \
-	mpost.c psimage.c
+	mpost.c psimage.c psspecial.c
 objects=pdfdev.o pdfdoc.o dvi.o mfileio.o mem.o jpeg.o numbers.o pdfobj.o \
         pdfparse.o pdfspecial.o tfm.o type1.o dvipdfm.o epdf.o vf.o \
 	t1crypt.o pkfont.o tpic.o thumbnail.o pngimage.o htex.o \
-	mpost.o psimage.o
+	mpost.o psimage.o psspecial.o
 eobjects=ebb.o jpeg.o pdfobj.o mem.o mfileio.o numbers.o pdfparse.o \
 	pngimage.o mpost.o pdfdev.o pdfdoc.o type1.o thumbnail.o \
 	pkfont.o dvi.o vf.o htex.o tfm.o tpic.o pdfspecial.o \
-	t1crypt.o epdf.o psimage.o
+	t1crypt.o epdf.o psimage.o psspecial.o
 encodings=ot1.enc ot1alt.enc
 check default all: $(programs)
 ebb: $(eobjects) Makefile

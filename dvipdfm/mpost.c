@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.13 1999/09/05 01:35:34 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.14 1999/09/05 05:49:10 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -24,8 +24,11 @@
 
 #include <stdlib.h>
 #include <ctype.h>
+#include <math.h>
+
 #include "system.h"
 #include "mfileio.h"
+#include "dvi.h"
 #include "pdfobj.h"
 #include "pdfspecial.h"
 #include "pdfparse.h"
@@ -439,6 +442,9 @@ void dump_stack()
 #define SUB		32
 #define TRANSLATE	33
 #define TRUNCATE	34
+#define CURRENTPOINT    35
+#define NEG    	        36
+#define ROTATE          37
 #define FONTNAME	99
 
 struct operators 
@@ -451,6 +457,8 @@ struct operators
   {"closepath", CLOSEPATH},
   {"concat", CONCAT},
   {"curveto", CURVETO},
+  {"currentpoint", CURRENTPOINT},  /* This is here for rotate
+				      support in graphics package-not MP support */
   {"div", DIV},
   {"dtransform", DTRANSFORM},
   {"exch", EXCH},
@@ -462,9 +470,11 @@ struct operators
   {"lineto", LINETO},
   {"moveto", MOVETO},
   {"mul", MUL},
+  {"neg", NEG},
   {"newpath", NEWPATH},
   {"pop", POP},
   {"rlineto", RLINETO},
+  {"rotate", ROTATE},
   {"scale", SCALE},
   {"setcmykcolor", SETCMYKCOLOR},
   {"setdash", SETDASH},
@@ -564,6 +574,11 @@ static void do_operator(char *token)
     }
     if (tmp1)
       pdf_release_obj (tmp1);
+    break;
+  case CURRENTPOINT:
+    state = 0;
+    PUSH (pdf_new_number (dvi_dev_xpos()));
+    PUSH (pdf_new_number (dvi_dev_ypos()));
     break;
   case CURVETO:
     if (state <= 1) /* In path now */
@@ -779,6 +794,13 @@ static void do_operator(char *token)
     if (tmp2)
       pdf_release_obj (tmp2);
     break;
+  case NEG:
+    tmp1 = POP_STACK();
+    if (tmp1 && tmp1 -> type == PDF_NUMBER) {
+      pdf_set_number (tmp1, -pdf_number_value(tmp1));
+      PUSH (tmp1);
+    }
+    break;
   case NEWPATH:
     flush_path ();
     pdf_doc_add_to_page (" n", 2);
@@ -992,6 +1014,16 @@ static void do_operator(char *token)
     if (tmp2)
       pdf_release_obj (tmp2);
     break;
+  case ROTATE:
+    if ((tmp1 = POP_STACK()) && (tmp1 -> type == PDF_NUMBER)) {
+      double theta = pdf_number_value(tmp1)*M_PI/180.0;
+      len = sprintf (work_buffer, " %.4f %.4f %.4f %.4f 0 0 cm",
+		     cos(theta), -sin(theta),
+		     sin(theta), cos(theta));
+      pdf_doc_add_to_page (work_buffer, len);
+      RELEASE (tmp1);
+    }
+    break;
   case TRANSLATE:
     if ((tmp2 = POP_STACK()) &&  tmp2->type == PDF_NUMBER &&
 	(tmp1 = POP_STACK()) && tmp1->type == PDF_NUMBER) {
@@ -1060,9 +1092,36 @@ void parse_contents (FILE *image_file)
   }
 }
 
+void do_raw_ps_special (char **start, char* end)
+{
+  char *token;
+  pdf_obj *obj;
+  state = 0;
+  skip_white (start, end);
+  while (*start < end) {
+    if (isdigit (**start) || **start == '-') {
+      token = parse_number (start, end);
+      PUSH (pdf_new_number(atof(token)));
+      RELEASE (token);
+    } else if (**start == '[' && /* This code assumes that arrays are contained on one line */
+	       (obj = parse_pdf_array (start, end))) {
+      PUSH (obj);
+    } else if (**start == '(' &&
+	       (obj = parse_pdf_string (start, end))) {
+      PUSH (obj);
+    } else {
+      token = parse_ident (start, end);
+      do_operator (token);
+      RELEASE (token);
+    }
+    skip_white (start, end);
+  }
+}
+
 static void mp_cleanup (void)
 {
   release_fonts();
+  state = 0;
   if (top_stack != 0) {
     fprintf (stderr, "\nMetaPost: PS stack not empty at end of figure!\n");
   }

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.h,v 1.3 1999/08/25 21:54:53 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.h,v 1.4 1999/09/05 05:49:10 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -30,6 +30,7 @@
 extern int check_for_mp (FILE *image_file);
 extern pdf_obj *mp_include (FILE *image_file,  struct xform_info *p,
 		     char *res_name, double x_user, double y_user);
+extern void do_raw_ps_special (char **start, char *end);
 #endif /* MPOST_H */
 
 

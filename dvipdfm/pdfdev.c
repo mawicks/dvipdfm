@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.84 1999/09/05 01:35:34 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.85 1999/09/05 05:49:10 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -39,6 +39,7 @@
 #include "pdfparse.h"
 #include "tpic.h"
 #include "htex.h"
+#include "psspecial.h"
 #include "pdflimits.h"
 #include "tfm.h"
 #include "dvi.h"
@@ -357,7 +358,8 @@ void dev_add_comment (char *comment)
 struct color {
   int colortype;
   double c1, c2, c3, c4;
-} colorstack[MAX_COLORS], background = {GRAY, 1.0, 1.0, 1.0, 1.0};
+} colorstack[MAX_COLORS], background = {GRAY, 1.0, 1.0, 1.0, 1.0},
+    default_color = {GRAY, 0.0, 0.0, 0.0, 0.0};
 
 static int num_colors = 0;
 
@@ -423,20 +425,15 @@ static void dev_clear_color_stack (void)
   num_colors = 0;
   return;
 }
-
-void dev_do_color (void) 
+static void dev_set_color (struct color color)
 {
-  int len = 0;
-  if (num_colors == 0) {
-    pdf_doc_add_to_page (" 0 g 0 G", 8);
-    return;
-  }
-  switch (colorstack[num_colors-1].colortype) {
+  switch (color.colortype) {
+    int len;
   case RGB:
     len = sprintf (format_buffer, " %.2f %.2f %.2f",
-		   colorstack[num_colors-1].c1,
-		   colorstack[num_colors-1].c2,
-		   colorstack[num_colors-1].c3);
+		   color.c1,
+		   color.c2,
+		   color.c3);
     pdf_doc_add_to_page (format_buffer, len);
     pdf_doc_add_to_page (" rg", 3);
     pdf_doc_add_to_page (format_buffer, len);
@@ -444,29 +441,67 @@ void dev_do_color (void)
     break;
   case CMYK:
     len = sprintf (format_buffer, " %.2f %.2f %.2f %.2f",
-		   colorstack[num_colors-1].c1,
-		   colorstack[num_colors-1].c2,
-		   colorstack[num_colors-1].c3,
-		   colorstack[num_colors-1].c4);
+		   color.c1,
+		   color.c2,
+		   color.c3,
+		   color.c4);
     pdf_doc_add_to_page (format_buffer, len);
     pdf_doc_add_to_page (" k", 2);
     pdf_doc_add_to_page (format_buffer, len);
     pdf_doc_add_to_page (" K ", 3);
     break;
   case GRAY:
-    len = sprintf (format_buffer, " %.2f", colorstack[num_colors-1].c1);
+    len = sprintf (format_buffer, " %.2f", color.c1);
     pdf_doc_add_to_page (format_buffer, len);
     pdf_doc_add_to_page (" g", 2);
     pdf_doc_add_to_page (format_buffer, len);
     pdf_doc_add_to_page (" G", 2);
     break;
   default:
-    ERROR ("Internal error: Invalid color item on color stack");
-    break;
+    ERROR ("Internal error: Invalid default color item");
+  }
+}
+
+
+void dev_do_color (void) 
+{
+  if (num_colors == 0) {
+    dev_set_color (default_color);
+  } else {
+    dev_set_color (colorstack[num_colors-1]);
   }
   return;
 }
 
+void dev_set_def_rgb_color (double r, double g, double b)
+{
+  default_color.c1 = r;
+  default_color.c2 = g;
+  default_color.c3 = b;
+  default_color.colortype = RGB;
+  dev_do_color();
+  return;
+}
+
+void dev_set_def_gray_color (double g) 
+{
+  default_color.c1 = g;
+  default_color.colortype = GRAY;
+  dev_do_color();
+  return;
+}
+
+
+void dev_set_def_cmyk_color (double c, double m, double y, double k)
+{
+  default_color.c1 = c;
+  default_color.c2 = m;
+  default_color.c3 = y;
+  default_color.c4 = k;
+  default_color.colortype = CMYK;
+  dev_do_color();
+  return;
+}
 
 void dev_begin_rgb_color (double r, double g, double b)
 {
@@ -861,7 +896,8 @@ void dev_do_special (void *buffer, UNSIGNED_QUAD size, double x_user,
   graphics_mode();
   if (!pdf_parse_special (buffer, size, x_user, y_user) &&
       !tpic_parse_special (buffer, size, x_user, y_user) &&
-      !htex_parse_special (buffer, size)) {
+      !htex_parse_special (buffer, size) &&
+      !ps_parse_special (buffer, size, x_user, y_user)) {
     fprintf (stderr, "\nUnrecognized special ignored\n");
     dump (buffer, ((char *)buffer)+size);
   }
