@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.49 1999/01/05 18:16:22 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.50 1999/01/05 22:56:34 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -913,6 +913,8 @@ static void do_pfb (int pfb_id)
 		pdf_new_number (length2));
   pdf_add_dict (stream_dict, pdf_new_name("Length3"),
 		pdf_new_number (length3));
+  if (verbose > 1)
+    fprintf (stderr, "Embedded size: %ld bytes\n", length1+length2+length3);
   return;
 }
 
