@@ -57,6 +57,7 @@ latex-support/something.pdf
 latex-support/transistor.bb
 latex-support/transistor.pdf
 latex-support/sample.tex
+macglyphs.h
 mem.c
 mem.h
 mfileio.c
@@ -96,6 +97,8 @@ thumbnail.c
 thumbnail.h
 tfm.c
 tfm.h
+ttf.c
+ttf.h
 tpic.c
 tpic.h
 twiddle.h

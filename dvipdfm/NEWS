@@ -1,3 +1,14 @@
+October 19, 2000 - Version 0.13.2
+
+   This release adds preliminary support for TrueType fonts.
+
+   Also this release fixes two problems in the makefile that have been
+causing some people difficulties getting dvipdfm to compile. One of these
+problems was the test for compress2() (which was incorrect). The second
+problem occurs because some make implementations don't honor CPPFLAGS. An
+explicit rule has been added to do so.
+
+
 July 25, 2000 - Version 0.13
 
    This release adds support for 16 bit character sets via Omega's OFM
