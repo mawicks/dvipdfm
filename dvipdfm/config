@@ -1,1 +1,3 @@
-% Default to landscape mode
+% Distiller template examples
+% The following line works with Frank Siegert's pstill
+D pstill -c -o %o %i > /dev/null

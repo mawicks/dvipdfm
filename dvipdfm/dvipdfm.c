@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.47 1999/08/31 23:02:00 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.48 1999/09/01 00:55:09 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -460,13 +460,12 @@ static void read_config_file (void)
       strcpy (argv[0]+1, option);
       RELEASE (option);
       *argv[0] = '-';
-      if ((option = parse_ident (&start, end)))
-	{
-	  argc += 1;
-	  argv[1] = NEW (strlen(option)+1, char);
-	  strcpy (argv[1], option);
-	  RELEASE (option);
-	}
+      skip_white (&start, end);
+      if (start < end) {
+	argc += 1;
+	argv[1] = NEW (strlen(start)+1, char);
+	strcpy (argv[1], start);
+      }
     }
     do_args (argc, argv);
     while (argc > 0) {

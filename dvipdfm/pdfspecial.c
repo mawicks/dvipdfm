@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.54 1999/08/31 23:02:01 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.55 1999/09/01 00:55:11 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -42,6 +42,7 @@
 #include "jpeg.h"
 #include "epdf.h"
 #include "mpost.h"
+#include "psimage.h"
 
 #include "config.h"
 
@@ -875,6 +876,12 @@ MEM_START
       else if (check_for_mp (image_file)) {
 	result = mp_include (image_file, p, res_name, x_user, y_user);
       }
+      /* Make sure we check for PS *after* checking for MP since
+	 MP is a special case of PS */
+      else if (check_for_ps (image_file)) {
+	result = ps_include (kpse_file_name, p,
+			     res_name, x_user, y_user);
+      }
       else{
 	fprintf (stderr, "\nNot a supported image type.\n");
 	error = 1;
@@ -896,6 +903,8 @@ MEM_START
     release_xform_info(p);
     sprintf (work_buffer, " /%s Do Q", res_name);
     pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
+  } else {
+    fprintf (stderr, "\npdf: image... inclusion failed.\n");
   }
   if (objname != NULL && result != NULL) {
     add_reference (objname, pdf_link_obj (result), res_name);
@@ -1620,15 +1629,4 @@ static void do_uxobj (char **start, char *end, double x_user, double y_user)
     RELEASE (objname);
   return;
 }
-
-static char * distiller_template = NULL;
-
-void set_distiller_template (char *s) 
-{
-  distiller_template = NEW (strlen(s)+1, char);
-  strcpy (distiller_template, s);
-  return;
-}
-
-
 

@@ -77,6 +77,8 @@ pkfont.c
 pkfont.h
 pngimage.c
 pngimage.h
+psimage.c
+psimage.h
 standardenc.h
 system.h
 t1crypt.c

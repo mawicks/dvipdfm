@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.11 1999/08/28 03:27:20 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.12 1999/09/01 00:55:11 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -56,6 +56,7 @@ int check_for_mp (FILE *image_file)
     return 0;
   return 1;
 }
+
 static struct mp_fonts 
 {
   char *tex_name;
