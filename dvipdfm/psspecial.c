@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/psspecial.c,v 1.8 2000/01/15 16:40:06 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/psspecial.c,v 1.9 2000/02/06 03:04:16 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -192,7 +192,8 @@ static void do_texfig (char **start, char *end, double x_user, double y_user)
 {
   char *filename;
   struct xform_info *p;
-  if (*start < end && (filename = parse_ident (start, end))) {
+  skip_white (start, end);
+  if (*start < end && (filename = parse_val_ident (start, end))) {
 
     p = texfig_info ();
     if (validate_image_xform_info (p)) {
@@ -239,11 +240,17 @@ int ps_parse_special (char *buffer, UNSIGNED_QUAD size, double x_user,
     start += strlen ("ps: plotfile");
     result = 1;
     do_texfig (&start, end, x_user, y_user);
+  } else if (!strncmp (start, "ps::", strlen("ps::")) ||
+	     !strncmp (start, "PS::", strlen("PS::"))) {
+    /* dvipdfm doesn't distinguish between ps:: and ps: */
+    start += 4;
+    result = 1; /* Likewise */
+    do_raw_ps_special (&start, end, 0);
   } else if (!strncmp (start, "ps:", strlen("ps:")) ||
 	     !strncmp (start, "PS:", strlen("PS:"))) {
     start += 3;
     result = 1; /* Likewise */
-    do_raw_ps_special (&start, end, 0);
+    do_raw_ps_special (&start, end, 1);
   }
   return result;
 }
