@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.11 1998/12/08 05:33:35 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.12 1998/12/08 06:19:36 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -635,9 +635,12 @@ pdf_obj *type1_font_resource (const char *tex_name, int tfm_font_id, const char 
   } else { /* No AFM file.  This isn't fatal.  We still might have a vf! */
     result = NULL;
   }
-  RELEASE (font_record -> enc_name);
-  RELEASE (font_record -> afm_name);
-  RELEASE (font_record -> pfb_name);
+  if (font_record -> enc_name)
+    RELEASE (font_record -> enc_name);
+  if (font_record -> afm_name)
+    RELEASE (font_record -> afm_name);
+  if (font_record -> pfb_name)
+    RELEASE (font_record -> pfb_name);
   RELEASE (font_record);
   return result;
 }

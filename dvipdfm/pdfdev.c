@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.19 1998/12/08 05:33:35 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.20 1998/12/08 06:19:36 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -213,13 +213,6 @@ static void line_mode (void)
  case GRAPHICS_MODE:
    pdf_doc_add_to_page (" BT", 3); /* Fall through */
    reset_text_state();
-    /* Following may be necessary after a rule (and also after
-       specials) */
-   if (current_font != -1) {
-     sprintf (format_buffer, " /%s %g Tf", dev_font[current_font].short_name,
-	      ROUND(dev_font[current_font].ptsize*DPI/72,0.01));
-     pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
-   }
  case TEXT_MODE:
    sprintf (format_buffer, " 1 0 0 1 %g %g Td [",
 	    ROUND(dev_xpos,0.01), ROUND(dev_ypos,0.01));
@@ -526,6 +519,7 @@ MEM_END
 int dev_locate_font (char *tex_name,
 		     int tfm_font_id,
 		     double ptsize)
+     /* Here, the ptsize is 1/72 of inch */ 
 {
   /* Since Postscript fonts are scaleable, this font may have already
      been asked for.  Make sure it doesn't already exist. */
@@ -557,8 +551,10 @@ int dev_locate_font (char *tex_name,
 	ERROR ("Not sure how to proceed.  For now this is fatal\n\
 Maybe in the future, I'll substitute some other font.");
       }
+      dev_font[i].type = VIRTUAL;
     }
   } else {	/* Font name was found */
+    dev_font[n_dev_fonts].type = dev_font[i].type;
     switch (dev_font[i].type) {
     case PHYSICAL:
       strcpy (dev_font[n_dev_fonts].short_name, dev_font[i].short_name);
@@ -609,7 +605,6 @@ void dev_select_font (int dev_font_id)
     sprintf (format_buffer, " /%s %g Tf", dev_font[dev_font_id].short_name,
 	     ROUND(dev_font[dev_font_id].ptsize*DPI/72, 0.01));
     pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
-    pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
     current_font = dev_font_id;
     current_ptsize = dev_font[dev_font_id].ptsize;
     /* Add to Font list in Resource dictionary for this page */
@@ -647,6 +642,12 @@ void dev_set_char (unsigned ch, double width)
       fprintf (stderr, "(%c)", ch);
     fprintf (stderr, ")");
   }
+  /*  switch (dev_font[current_font].type) {
+  case PHYSICAL:
+    break;
+  case VIRTUAL:
+    break;
+    } */
   string_mode();
   len = pdfobj_escape_c (format_buffer, ch);
   pdf_doc_add_to_page (format_buffer, len);
