@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.113 2000/07/13 02:55:34 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.114 2000/07/13 03:49:01 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -421,29 +421,26 @@ struct a_pfb
   char *pfb_name;
   char *fontname;
   pdf_obj *direct, *indirect, *descriptor;
-  char *used_chars;
-  int encoding_id, remap;
+  char **used_glyphs;
+  int n_used_glyphs;
 } *pfbs = NULL;
 
 static void init_a_pfb (struct a_pfb *pfb)
 {
   int i;
   if (partial_enabled) {
-    pfb -> used_chars = NEW (256, char);
-    for (i=0; i<256; i++) {
-      (pfb->used_chars)[i] = 0;
-    }
+    n_used_glyphs = 0;
+    pfb -> used_glyphs = NEW (256, char *);
   } else {
-    pfb->used_chars = NULL;
+    pfb->used_glyphs = NULL;
   }
-  pfb->remap = 0;
   pfb->pfb_name = NULL;
   pfb->fontname = NULL;
   pfb->direct = NULL;
   pfb->indirect = NULL;
-  pfb->encoding_id = -1;
   pfb->descriptor = NULL;
 }
+
 
 #include "standardenc.h"
 
@@ -737,11 +734,10 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
   return filtered? filtered_pointer-filtered: length;
 }
 
-
-static void dump_glyphs( char **glyphs)
+static void dump_glyphs( char **glyphs, int n)
 {
   int i;
-  for (i=0; i<256; i++)
+  for (i=0; i<n; i++)
     fprintf (stderr, "(%d/%s)", i, glyphs[i]);
   return;
 }
@@ -1244,7 +1240,7 @@ static void type1_start_font_descriptor (int pfb_id)
   return;
 }
 
-static int type1_pfb_id (const char *pfb_name, int encoding_id, int remap)
+static int type1_pfb_id (const char *pfb_name)
 {
   int i;
   for (i=0; i<num_pfbs; i++) {
@@ -1271,12 +1267,10 @@ static int type1_pfb_id (const char *pfb_name, int encoding_id, int remap)
     strcpy (pfbs[i].pfb_name, pfb_name);
     pfbs[i].direct = pdf_new_stream(STREAM_COMPRESS);
     pfbs[i].indirect = pdf_ref_obj (pfbs[i].direct);
-    pfbs[i].encoding_id = encoding_id;
     if (partial_enabled) {
       pfbs[i].fontname = NEW (strlen(short_fontname)+8, char);
       strcpy (pfbs[i].fontname, short_fontname);
       mangle_fontname(pfbs[i].fontname);
-      pfbs[i].remap = remap;
     }
     else {
       pfbs[i].fontname = NEW (strlen(short_fontname)+1, char);
@@ -1358,12 +1352,24 @@ static void do_pfb (int pfb_id)
 
 struct a_type1_font
 {
-  pdf_obj *indirect;
+  pdf_obj *indirect, *encoding;
   long pfb_id;
   double slant, extend;
   int remap;
 } *type1_fonts = NULL;
 int num_type1_fonts = 0, max_type1_fonts = 0;
+
+static void init_a_type1_font (struct a_type1_font *type1_font) 
+{
+  if (partial_enabled) {
+    type1_font -> used_chars = NEW (256, char);
+    for (i=0; i<256; i++) {
+      (type1_font->used_chars)[i] = 0;
+    }
+  } else {
+    type1_fonts->used_chars = NULL;
+  }
+}
 
 pdf_obj *type1_font_resource (int type1_id)
 {
@@ -1409,12 +1415,8 @@ char *type1_font_used (int type1_id)
 {
   int pfb_id;
   char *result;
-  if (type1_id>=0 && type1_id<max_type1_fonts &&
-      (pfb_id = type1_fonts[type1_id].pfb_id) >= 0 &&
-      (pfb_id <max_pfbs))
-    result = pfbs[pfb_id].used_chars;
-  else if (type1_id >= 0 && type1_id < max_type1_fonts){
-    result = NULL;
+  if (type1_id>=0 && type1_id<max_type1_fonts) {
+    result = type1_fonts[type1_id].used_chars;
   } else {
     fprintf (stderr, "type1_font_used: type1_id=%d\n", type1_id);
     ERROR ("Invalid font id in type1_font_used");
@@ -1478,15 +1480,18 @@ int type1_font (const char *tex_name, int tfm_font_id, char *resource_name)
     encoding_id = get_encoding (font_record -> enc_name);
   }
   if ((font_record && is_a_base_font(font_record->font_name)) ||
-      (pfb_id = type1_pfb_id(font_record? font_record -> font_name: tex_name,
-			     encoding_id,
-			     font_record? font_record -> remap: 0)) >= 0) {
+      (pfb_id = type1_pfb_id(font_record? font_record -> font_name:
+			     tex_name)) >= 0) {
     /* Looks like we have a physical font (either a reader font or a
        Type 1 font binary file).  */
+    init_a_type1_font (type1_fonts+num_type1_fonts);
     type1_fonts[num_type1_fonts].pfb_id = pfb_id;
+    type1_fonts[num_type1_fonts].encoding_id = encoding_id;
     type1_fonts[num_type1_fonts].extend = font_record? font_record -> extend: 1.0;
     type1_fonts[num_type1_fonts].slant = font_record? font_record -> slant: 0.0;
-    type1_fonts[num_type1_fonts].remap = font_record? font_record -> remap: 0;
+    type1_fonts[num_type1_fonts].remap = font_record? font_record ->
+      remap: 0;
+
     /* Allocate a dictionary for the physical font */
     font_resource = pdf_new_dict ();
     if (encoding_id >= 0) {
@@ -1576,15 +1581,51 @@ int type1_font (const char *tex_name, int tfm_font_id, char *resource_name)
   return result;
 }
 
+static void type1_add_to_pfb_glyphs (int pfb_id, int encoding_id, int
+				     code) 
+{
+  char *glyph;
+  if (encoding_id >= 0 && encoding_id < num_encodings) {
+    glyph = (encodings[encoding_id].glyphs)[code];
+    if (pfb_id >= 0 && pfb_id < num_pfbs) {
+      if (!bsearch (glyph, pfbs[pfb_id].used_glyphs,
+		    pfbs[pfb_id].n_used_glyphs,
+		    sizeof (char *), glyph_match)) {
+	pfbs[pfb_id].n_used_glyphs += 1;
+	pfbs[pfb_id].used_glyphs = RENEW (pfbs[pfb_id].used_glyphs,
+					  pfbs[pfb_id].n_used_glyphs,
+					  (char *));
+	(pfbs[pfb_id].used_glyphs)[pfbs[pfb_id].n_used_glyphs] = 
+	  NEW (strlen(glyph)+1, char *);
+	strcpy((pfbs[pfb_id].used_glyphs)[pfbs[pfb_id].n_used_glyphs],
+	       glyph);
+	qsort (pfbs[pfb_id].used_glyphs, pfbs[pfb_id].n_used_glyphs, 
+	       sizeof (char *), glyph_cmp);
+      }
+    }
+  }
+}
 
 void type1_close_all (void)
 {
   int i, j;
   /* Three arrays are created by this module and need to be released */
-
   /* First, each TeX font name that ends up as a postscript font gets
      added to type1_fonts (yes, even Times-Roman, etc.) */
   for (i=0; i<num_type1_fonts; i++) {
+    /* If font subsetting is enabled, each used character needs
+       to be added to the used_glyphs array in the corresponding pfb
+    */
+    if (partial_enabled) {
+      for (j=0; j<256; j++) {
+	if ((type1_fonts[i].used_chars)[j] &&
+	    type1_fonts[i].pfb_id >= 0) {
+	  type1_add_to_pfb_glyphs (type1_fonts[i].pfb_id,
+				   type1_fonts[i].encoding_id, j);
+	}
+      }
+    }
+    RELEASE (type1_fonts[i].used_chars);
     pdf_release_obj (type1_fonts[i].indirect);
   }
   RELEASE (type1_fonts);
