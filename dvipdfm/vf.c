@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/vf.c,v 1.21.8.2 2000/07/25 04:15:35 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/vf.c,v 1.21.8.3 2000/07/27 00:26:16 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -783,9 +783,12 @@ void vf_set_char(unsigned ch, int vf_font)
     if (vf_fonts[vf_font].num_dev_fonts > 0)
       default_font = ((vf_fonts[vf_font].dev_fonts)[0]).dev_id;
     dvi_vf_init (default_font);
-    start = (vf_fonts[vf_font].ch_pkt)[ch];
+    if (ch >= vf_fonts[vf_font].num_chars ||
+	!(start = (vf_fonts[vf_font].ch_pkt)[ch])) {
+      ERROR ("Tried to set a nonexistent character in a virtual font");
+    }
     end = start + (vf_fonts[vf_font].pkt_len)[ch];
-    while (start < end) {
+    while (start && start < end) {
       opcode = *(start++);
       if (debug) {
 	fprintf (stderr, "VF opcode: %d", opcode);
@@ -966,11 +969,13 @@ MEM_START
 #endif
   for (i=0; i<num_vf_fonts; i++) {
     /* Release the packet for each character */
-    if (vf_fonts[i].ch_pkt)
+    if (vf_fonts[i].ch_pkt) {
       for (j=0; j<vf_fonts[i].num_chars; j++) {
 	if ((vf_fonts[i].ch_pkt)[j] != NULL)
 	  RELEASE ((vf_fonts[i].ch_pkt)[j]);
       }
+      RELEASE (vf_fonts[i].ch_pkt);
+    }
     if (vf_fonts[i].pkt_len)
       RELEASE (vf_fonts[i].pkt_len);
     /* Release each font record */

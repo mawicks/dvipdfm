@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.67.8.1 2000/07/25 03:29:17 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.67.8.2 2000/07/27 00:26:16 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -460,7 +460,7 @@ void dvi_set (SIGNED_QUAD ch)
 {
   mpt_t width, height = 0, depth = 0;
   struct loaded_font *p;
-  unsigned char lch = (unsigned char) ch;
+  unsigned char lch;
   if (current_font < 0) {
     ERROR ("dvi_set:  No font selected");
   }
@@ -475,6 +475,10 @@ void dvi_set (SIGNED_QUAD ch)
   width = sqxfw (p->size, width);
   switch (p->type) {
   case PHYSICAL:
+    if (ch > 255) {
+      ERROR ("Tried to set a multibyte character in a non-virtual font");
+    }
+    lch = (unsigned char) ch;
     dev_set_string (dvi_state.h, -dvi_state.v, &lch, 1, width, p->font_id);
     if (compute_boxes) {
       height = tfm_get_fw_height (p->tfm_id, ch);
@@ -497,7 +501,7 @@ void dvi_put (SIGNED_QUAD ch)
 {
   mpt_t width, height = 0, depth = 0;
   struct loaded_font *p;
-  unsigned char lch = (unsigned char) ch;
+  unsigned char lch;
   if (current_font < 0) {
     ERROR ("dvi_put:  No font selected");
   }
@@ -506,6 +510,13 @@ void dvi_put (SIGNED_QUAD ch)
   case PHYSICAL:
     width = tfm_get_fw_width (p->tfm_id, ch);
     width = sqxfw (p->size, width);
+    /* Treat a single character as a one byte string and use the
+       string routine.  The possibly multi-byte character must
+       be converted to a single-byte string */
+    if (ch > 255) {
+      ERROR ("Tried to set a multibyte character in a non-virtual font");
+    }
+    lch = (unsigned char) ch;
     dev_set_string (dvi_state.h, -dvi_state.v, &lch, 1, width, p->font_id);
     if (compute_boxes) {
       height = tfm_get_fw_height (p->tfm_id, ch);
