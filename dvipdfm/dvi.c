@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.15 1998/12/09 20:56:57 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.16 1998/12/10 02:25:33 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -536,7 +536,7 @@ void dvi_down (SIGNED_QUAD y)
 
 void dvi_set (SIGNED_QUAD ch)
 {
-  double dvi_width;
+  double width;
   if (current_font < 0) {
     ERROR ("dvi_set:  No font selected");
   }
@@ -547,10 +547,10 @@ void dvi_set (SIGNED_QUAD ch)
      size.  It's keeping me sane to keep *point sizes* of *all* fonts in
      the dev.c file and convert them back if necessary */ 
 
-  dvi_width = tfm_get_width (dev_font_tfm(current_font), ch) *
-    dev_font_size(current_font) / dvi2pts;
-  dev_set_char (ch, dvi_width*dvi2pts);
-  dvi_state.h += dvi_width;
+  width = tfm_get_width (dev_font_tfm(current_font), ch) *
+    dev_font_size(current_font);
+  dev_set_char (dvi_dev_xpos(), dvi_dev_ypos(), ch, width);
+  dvi_state.h += width/dvi2pts;
   if (dvi_debug) {
     fprintf (stderr, "Done\n");
   }
@@ -559,7 +559,7 @@ void dvi_set (SIGNED_QUAD ch)
 void dvi_rule (SIGNED_QUAD width, SIGNED_QUAD height)
 {
   do_moveto (dvi_state.h, dvi_state.v);
-  dev_rule (width*dvi2pts, height*dvi2pts);
+  dev_rule (dvi_dev_xpos(), dvi_dev_ypos(), width*dvi2pts, height*dvi2pts);
 }
 
 static void do_set1(void)
@@ -592,12 +592,13 @@ static void do_putrule(void)
 
 void dvi_put (SIGNED_QUAD ch)
 {
-  double dvi_width;
+  double width;
   if (current_font < 0) {
     ERROR ("dvi_put:  No font selected");
   }
-  dvi_width = tfm_get_width (dev_font_tfm(current_font), ch) * dev_font_size(current_font) / dvi2pts;
-  dev_set_char (ch, dvi_width);
+  width = tfm_get_width (dev_font_tfm(current_font), ch) *
+    dev_font_size(current_font);
+  dev_set_char (dvi_dev_xpos(), dvi_dev_ypos(), ch, width);
   return;
 }
 

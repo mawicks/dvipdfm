@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.29 1998/12/09 21:51:52 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.30 1998/12/10 02:25:33 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -154,8 +154,7 @@ static void text_mode (void)
     reset_text_state();
     break;
   case STRING_MODE:
-    pdf_doc_add_to_page (")", 1);  /*  Fall through */
-    pdf_doc_add_to_page ("]TJ", 3);
+    pdf_doc_add_to_page (")]TJ", 4);  /*  Fall through */
     break;
   }
   motion_state = TEXT_MODE;
@@ -165,8 +164,7 @@ static void graphics_mode (void)
 {
   switch (motion_state) {
   case STRING_MODE:
-    pdf_doc_add_to_page (")", 1); /* Fall through */
-    pdf_doc_add_to_page ("]TJ", 3); /* Fall through */
+    pdf_doc_add_to_page (")]TJ", 4); /* Fall through */
   case TEXT_MODE:
     pdf_doc_add_to_page (" ET", 3);
     break;
@@ -174,8 +172,9 @@ static void graphics_mode (void)
   motion_state = GRAPHICS_MODE;
 }
 
-static void string_mode (void)
+static void string_mode (double xpos, double ypos)
 {
+  double delx, dely;
   switch (motion_state) {
   case NO_MODE:
   case GRAPHICS_MODE:
@@ -184,18 +183,18 @@ static void string_mode (void)
     /* Following may be necessary after a rule (and also after
        specials) */
   case TEXT_MODE:
-    if (ROUND(dvi_dev_xpos()-text_xorigin,0.01) == 0.0 &&
-	(ROUND(dvi_dev_ypos()-text_yorigin-text_leading,0.01) == 0.0)) {
+    delx = ROUND(xpos-text_xorigin, 0.01);
+    if (delx == 0.0 &&
+	(ROUND(ypos-text_yorigin-text_leading,0.01) == 0.0)) {
       sprintf (format_buffer, " T*[");
       text_yorigin += text_leading;
     }
     else {
-      sprintf (format_buffer, " %g %g TD[",
-	       ROUND(dvi_dev_xpos()-text_xorigin,0.01),
-	       ROUND(dvi_dev_ypos()-text_yorigin,0.01));
-      text_leading = ROUND(dvi_dev_ypos()-text_yorigin,0.01);
-      text_xorigin = dvi_dev_xpos();
-      text_yorigin = dvi_dev_ypos();
+      dely = ROUND (ypos-text_yorigin, 0.01);
+      sprintf (format_buffer, " %g %g TD[", delx, dely);
+      text_leading = dely;
+      text_xorigin = xpos;
+      text_yorigin = ypos;
     }
     text_offset = 0.0;
     pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
@@ -484,8 +483,6 @@ MEM_START
   }
   /* Set page size now that we know user had last chance to change
      it */
-  sprintf (format_buffer, "%g 0 0 %g 0 0 cm ", ROUND(72.0/DPI,0.001), ROUND(72.0/DPI,0.001));
-  pdf_doc_this_bop (format_buffer, strlen(format_buffer));
   sprintf (format_buffer, "1 0 0 1 0 %ld cm ", (long) dev_page_height());
   pdf_doc_this_bop (format_buffer, strlen(format_buffer));
   graphics_mode();
@@ -620,7 +617,7 @@ void dev_select_font (int dev_font_id)
    This routine prevents a PDF Tf font selection until there's
    really a character in that font.  */
 
-void dev_need_phys_font (void)
+static void dev_need_phys_font (void)
 {
   if (current_phys_font != current_font &&
       current_font >= 0 &&
@@ -650,7 +647,7 @@ void dev_reselect_font(void)
   current_phys_font = -1;
 }
 
-void dev_set_char (unsigned ch, double width)
+void dev_set_char (double xpos, double ypos, unsigned ch, double width)
 {
   int len;
   if (debug) {
@@ -663,15 +660,15 @@ void dev_set_char (unsigned ch, double width)
   case PHYSICAL:
     dev_need_phys_font(); /* Force a Tf since we are actually trying
 			     to write a character */
-    if (ROUND(dvi_dev_ypos()-text_yorigin,0.01) != 0.0 ||
-	fabs(dvi_dev_xpos()-text_xorigin-text_offset) > current_ptsize)
+    if (ROUND(ypos-text_yorigin,0.01) != 0.0 ||
+	fabs(xpos-text_xorigin-text_offset) > current_ptsize)
       text_mode();
-    string_mode();
-    if (ROUND(dvi_dev_xpos()-text_xorigin-text_offset,0.01) != 0.0) {
+    string_mode(xpos, ypos);
+    if (ROUND(xpos-text_xorigin-text_offset,0.01) != 0.0) {
       sprintf (format_buffer, ")%g(",
-	       ROUND(1000.0/current_ptsize*(text_xorigin+text_offset-dvi_dev_xpos()),1.0));
+	       ROUND(1000.0/current_ptsize*(text_xorigin+text_offset-xpos),1.0));
       pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
-      text_offset = dvi_dev_xpos()-text_xorigin;
+      text_offset = xpos-text_xorigin;
     }
     len = pdfobj_escape_c (format_buffer, ch);
     pdf_doc_add_to_page (format_buffer, len);
@@ -682,17 +679,17 @@ void dev_set_char (unsigned ch, double width)
   }
 }
 
-void dev_rule (double width, double height)
+void dev_rule (double xpos, double ypos, double width, double height)
 {
   if (debug) {
     fprintf (stderr, "(dev_rule)");
   }
   graphics_mode();
   sprintf (format_buffer, " %g %g m %g %g l %g %g l %g %g l b",
-	   ROUND(dvi_dev_xpos(),0.01), ROUND(dvi_dev_ypos(),0.01),
-	   ROUND(dvi_dev_xpos()+width,0.01), ROUND(dvi_dev_ypos(),0.01),
-	   ROUND(dvi_dev_xpos()+width,0.01), ROUND(dvi_dev_ypos()+height,0.01),
-	   ROUND(dvi_dev_xpos(),0.01), ROUND(dvi_dev_ypos()+height,0.01));
+	   ROUND(xpos,0.01), ROUND(ypos,0.01),
+	   ROUND(xpos,0.01), ROUND(ypos,0.01),
+	   ROUND(xpos+width,0.01), ROUND(ypos+height,0.01),
+	   ROUND(xpos,0.01), ROUND(ypos+height,0.01));
   pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
 }
 
