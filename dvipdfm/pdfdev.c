@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.16 1998/12/07 02:52:32 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.17 1998/12/07 18:16:29 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -125,7 +125,6 @@ struct dev_font {
   char short_name[7];	/* Needs to be big enough to hold name "Fxxx"
 			   where xxx is number of largest font */
   char *tex_name;
-  long tex_font_id;
   int tfm_font_id;
   double ptsize;
   pdf_obj *font_resource;
@@ -518,13 +517,13 @@ MEM_END
 #endif
 }
 
-void dev_locate_font (char *tex_name,
-		      unsigned long tex_font_id,
-		      int tfm_font_id,
-		      double ptsize)
+int dev_locate_font (char *tex_name,
+		     int tfm_font_id,
+		     double ptsize)
 {
   /* Since Postscript fonts are scaleable, this font may have already
      been asked for.  Make sure it doesn't already exist. */
+  int result = -1;
   int i;
   if (debug) {
     fprintf (stderr, "dev_locate_font:\n");
@@ -536,7 +535,7 @@ void dev_locate_font (char *tex_name,
       break;
     }
   }
-  if (i == n_dev_fonts) {  /* Font not found, so load it and give it a
+  if (i == n_dev_fonts) {  /* Font *name* not found, so load it and give it a
 			    short name */
     dev_font[i].short_name[0] = 'F';
     sprintf (dev_font[i].short_name+1, "%d", n_dev_fonts+1);
@@ -545,16 +544,24 @@ void dev_locate_font (char *tex_name,
     dev_font[i].font_resource = type1_font_resource (tex_name,
 						     tfm_font_id,
 						     dev_font[i].short_name);
-  } else {	/* Font was found */
+  } else {	/* Font name was found */
     strcpy (dev_font[n_dev_fonts].short_name, dev_font[i].short_name);
     dev_font[n_dev_fonts].font_resource = pdf_link_obj (dev_font[i].font_resource);
   }
-  dev_font[n_dev_fonts].tex_font_id = tex_font_id;
+  /* Note that two entries in dev_font may have the same name and
+     pointsize.  This only comes into play with virtual fonts. 
+     For example, if the dvi file asks for cmr10 at 12pt and
+     one or more vf files also ask for cmr10 at 12pt, multiple entries
+     will be generated in the font table.  Names are unique,
+     so any given name will only be embedded once. The code to make
+     name/ptsize combinations also unique isn't worth the
+     effort for the slight increase in storage requirements. */
+
   dev_font[n_dev_fonts].tfm_font_id = tfm_font_id;
   dev_font[n_dev_fonts].ptsize = ptsize;
   dev_font[n_dev_fonts].tex_name = NEW (strlen(tex_name)+1, char);
   strcpy (dev_font[n_dev_fonts].tex_name, tex_name);
-  n_dev_fonts += 1;
+  return (n_dev_fonts++);
 }
 
 void dev_close_all_fonts(void)
@@ -567,33 +574,28 @@ void dev_close_all_fonts(void)
 }
 
 
-void dev_select_font (long tex_font_id)
+void dev_select_font (int dev_font_id)
 {
-  int i;
   if (debug) {
     fprintf (stderr, "(dev_select_font)");
   }
 #ifdef MEM_DEBUG
   fprintf (debugfile, "(dev_select_font entered)\n");
 #endif
-  for (i=0; i<n_dev_fonts; i++) {
-    if (dev_font[i].tex_font_id == tex_font_id)
-      break;
-  }
-  if (i == n_dev_fonts) {
+  if (dev_font_id < 0 || dev_font_id >= n_dev_fonts) {
     ERROR ("dev_change_to_font: dvi wants a font that isn't loaded");
   }
-  if (current_font != i) {
+  if (current_font != dev_font_id) {
     text_mode();
-    sprintf (format_buffer, " /%s %g Tf", dev_font[i].short_name,
-	     ROUND(dev_font[i].ptsize*DPI/72, 0.01));
+    sprintf (format_buffer, " /%s %g Tf", dev_font[dev_font_id].short_name,
+	     ROUND(dev_font[dev_font_id].ptsize*DPI/72, 0.01));
     pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
     pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
-    current_font = i;
-    current_ptsize = dev_font[i].ptsize;
+    current_font = dev_font_id;
+    current_ptsize = dev_font[dev_font_id].ptsize;
     /* Add to Font list in Resource dictionary for this page */
-    pdf_doc_add_to_page_fonts (dev_font[i].short_name,
-			       pdf_link_obj(dev_font[i].font_resource));
+    pdf_doc_add_to_page_fonts (dev_font[dev_font_id].short_name,
+			       pdf_link_obj(dev_font[dev_font_id].font_resource));
   }
 #ifdef MEM_DEBUG
   fprintf (debugfile, "(dev_select_font left)\n");

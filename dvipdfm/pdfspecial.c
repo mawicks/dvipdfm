@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.23 1998/12/07 05:12:36 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.24 1998/12/07 18:16:29 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -760,7 +760,7 @@ static void do_bead(char **start, char *end)
   }
   if (!error) {
     skip_white (start, end);
-    if (**start == '<')
+    if (**start == '<') {
       if ((info_dict = parse_pdf_dict (start, end)) ==
 	NULL) {
 	fprintf (stderr, "Special: thread: Error in dictionary\n");
@@ -768,6 +768,7 @@ static void do_bead(char **start, char *end)
       }
     } else
       info_dict = pdf_new_dict();
+  }
   if (!error && name && info_dict) {
     /* Does this article exist yet */
     if ((article = lookup_object (name)) == NULL) {

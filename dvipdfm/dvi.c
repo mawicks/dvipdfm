@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.9 1998/12/06 21:15:31 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.10 1998/12/07 18:16:28 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -160,10 +160,11 @@ static UNSIGNED_QUAD media_width, media_height;
 static UNSIGNED_QUAD dvi_unit_num, dvi_unit_den, dvi_mag;
 
 struct font_def {
-  signed long id;
+  signed long tex_id /* id used internally by TeX */;
   unsigned long checksum, size, design_size;
   char *directory, *name;
-  int tfm_id;
+  int tfm_id;  /* id returned by TFM module */
+  int dev_id;  /* id returned by DEV module */
 } font_def[MAX_FONTS];
 
 static void invalid_signature()
@@ -309,7 +310,7 @@ static void dump_font_info (void)
   for (i=0; i<numfonts; i++) {
       fprintf (stderr, "Font: (%s)/", font_def[i].directory);
       fprintf (stderr, "%s, ", font_def[i].name);
-      fprintf (stderr, "ID=%ld, ", font_def[i].id);
+      fprintf (stderr, "ID=%ld, ", font_def[i].tex_id);
       fprintf (stderr, "size= %ld @ ", font_def[i].design_size);
       fprintf (stderr, "%ld\n", font_def[i].size);
   }
@@ -350,16 +351,16 @@ static void get_font_info (void)
     switch (code)
       {
       case FNT_DEF1:
-	font_def[numfonts].id = get_unsigned_byte (dvi_file);
+	font_def[numfonts].tex_id = get_unsigned_byte (dvi_file);
 	break;
       case FNT_DEF2:
-	font_def[numfonts].id = get_unsigned_pair (dvi_file);
+	font_def[numfonts].tex_id = get_unsigned_pair (dvi_file);
 	break;
       case FNT_DEF3:
-	font_def[numfonts].id = get_unsigned_triple (dvi_file);
+	font_def[numfonts].tex_id = get_unsigned_triple (dvi_file);
 	break;
       case FNT_DEF4:
-	font_def[numfonts].id = get_signed_quad (dvi_file);
+	font_def[numfonts].tex_id = get_signed_quad (dvi_file);
 	break;
       default:
 	fprintf (stderr, "Unexpected op code: %3d\n", code);
@@ -489,9 +490,9 @@ static void do_locate_fonts (void)
       font_def[i].tfm_id = tfm_open (font_def[i].name);
     else
       font_def[i].tfm_id = font_def[j].tfm_id;
-    dev_locate_font (font_def[i].name, font_def[i].id, 
-		     font_def[i].tfm_id,
-		     font_def[i].size*dvi2pts);
+    font_def[i].dev_id = dev_locate_font (font_def[i].name,
+					  font_def[i].tfm_id,
+					  font_def[i].size*dvi2pts);
   }
 }
 
@@ -833,14 +834,14 @@ static void do_fnt (SIGNED_QUAD font_id)
 {
   int i;
   for (i=0; i<numfonts; i++) {
-    if (font_def[i].id == font_id) break;
+    if (font_def[i].tex_id == font_id) break;
   }
   if (i == numfonts) {
     fprintf (stderr, "fontid: %ld\n", font_id);
     ERROR ("dvi_do_fnt:  Tried to select a font that hasn't been defined");
   }
   current_font = i;
-  dev_select_font (font_def[i].id);
+  dev_select_font (font_def[current_font].dev_id);
 }
 
 static void do_fnt1(void)

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.6 1998/12/05 11:47:24 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.7 1998/12/07 18:16:28 mwicks Exp $
 
     This is ebb, a bounding box extraction program.
     Copyright (C) 1998  by Mark A. Wicks
@@ -91,7 +91,8 @@ static void write_bb (char *filename, int bbllx, int bblly, int bburx,
 {
   char *bbfilename;
   FILE *bbfile;
-  fprintf (stderr, "okay\n");
+  if (verbose)
+    fprintf (stderr, "okay\n");
   bbfilename = make_bb_filename (filename);
   if ((bbfile = fopen (bbfilename, "w")) == NULL) {
     fprintf (stderr, "Unable to open output file: %s\n", bbfilename);
@@ -107,6 +108,7 @@ static void write_bb (char *filename, int bbllx, int bblly, int bburx,
   fprintf (bbfile, "%%%%BoundingBox: %d %d %d %d\n",
 	   bbllx, bblly, bburx, bbury);
   do_time(bbfile);
+  RELEASE (bbfilename);
   fclose (bbfile);
   return;
 }
@@ -141,7 +143,8 @@ void do_pdf (FILE *file, char *filename)
   if (verbose) {
     fprintf (stderr, "%s looks like a PDF file...", filename);
   }
-  if ((trailer = pdf_open (filename)) == NULL) {
+  /*  if ((trailer = pdf_open (filename)) == NULL) { */
+  if ((trailer = pdf_open ("transistor.pdf")) == NULL) {
     fprintf (stderr, "Corrupt PDF file?\n");
     return;
   };
@@ -154,6 +157,7 @@ void do_pdf (FILE *file, char *filename)
   pdf_release_obj (trailer);
   /* Lookup page tree in catalog */
   page_tree = pdf_deref_obj (pdf_lookup_dict (catalog, "Pages"));
+  pdf_release_obj (catalog);
   /* Media box can be inherited so start looking for it now */
   media_box = pdf_deref_obj (pdf_lookup_dict (page_tree, "MediaBox"));
   while ((kids_ref = pdf_lookup_dict (page_tree, "Kids")) != NULL) {
@@ -237,3 +241,6 @@ pdf_obj *get_reference (char **start, char *end)
 {
   return NULL;
 }
+
+
+

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mem.h,v 1.4 1998/12/06 21:15:31 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mem.h,v 1.5 1998/12/07 18:16:29 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -35,11 +35,12 @@ void release (void *mem, char *function, int line);
 #define MEM_DEBUG 1
 
 #ifdef MEM_DEBUG
+void mem_debug_init(void);
 extern FILE *debugfile;
 #define NEW(n,type) (type *)(new (((size_t) (n))*sizeof(type),__FUNCTION__,__LINE__))
 #define RENEW(p,n,type) (type *)(renew ((p),(n)*sizeof(type),__FUNCTION__,__LINE__))
 #define RELEASE(p) release ((p),__FUNCTION__,__LINE__)
-#define MEM_START fprintf (debugfile, "Entered %s\n", __FUNCTION__);
+#define MEM_START {mem_debug_init();fprintf (debugfile, "Entered %s\n", __FUNCTION__);}
 #define MEM_END fprintf (debugfile, "Leaving %s\n", __FUNCTION__);
 #else /* MEM_DEBUG */
 #define NEW(n,type) (type *)(new (((size_t) (n))*sizeof(type),NULL,0))
