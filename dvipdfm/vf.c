@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/vf.c,v 1.18 1999/08/15 04:54:56 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/vf.c,v 1.19 1999/08/17 17:52:48 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -137,10 +137,11 @@ static void read_a_char_def(FILE *vf_file, int thisfont, unsigned long pkt_len,
   if (debug)
     fprintf (stderr, "read_a_char_def: len=%ld, ch=%ld\n", pkt_len,
 	     ch);
+  /* Skip over the TFM width and ignore it--we already have it somewhere else */
+  get_unsigned_triple (vf_file);
+   
   if (pkt_len > 0) {
     pkt = NEW (pkt_len, unsigned char);
-    /* Skip TFM width--we already have it somewhere else */
-    get_unsigned_triple (vf_file);
     if (fread (pkt, 1, pkt_len, vf_file) != pkt_len)
       ERROR ("VF file ended prematurely.");
     (vf_fonts[thisfont].ch_pkt)[ch] = pkt;

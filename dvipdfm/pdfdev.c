@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.69 1999/08/17 17:23:53 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.70 1999/08/17 17:52:46 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -25,6 +25,7 @@
 #include <math.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdlib.h>
 #include "pdfdev.h"
 #include "pdfdoc.h"
 #include "pdfobj.h"
@@ -473,7 +474,7 @@ void dev_begin_cmyk_color (double c, double m, double y, double k)
   colorstack[num_colors].c1 = c;
   colorstack[num_colors].c2 = m;
   colorstack[num_colors].c3 = y;
-  colorstack[num_colors].c4 = y;
+  colorstack[num_colors].c4 = k;
   colorstack[num_colors].colortype = CMYK;
   num_colors+= 1;
   dev_do_color();
@@ -793,11 +794,22 @@ void dev_rule (mpt_t xpos, mpt_t ypos, mpt_t width, mpt_t height)
     fprintf (stderr, "(dev_rule)");
   }
   graphics_mode();
-  len = sprintf (format_buffer, " %.2f %.2f m %.2f %.2f l %.2f %.2f l %.2f %.2f l b",
-		 xpos*dvi2pts, ypos*dvi2pts,
-		 (xpos+width)*dvi2pts, ypos*dvi2pts,
-		 (xpos+width)*dvi2pts, (ypos+height)*dvi2pts,
-		 xpos*dvi2pts, (ypos+height)*dvi2pts);
+   /* Is using a real stroke the right thing to do?  It seems to preserve
+      the logical meaning of a "rule" as opposed to a filled rectangle.
+      I am assume the reader can more intelligently render a rule than a filled rectangle */
+  if (width> height) {  /* Horizontal stroke? */
+    mpt_t half_height = height/2;
+    len = sprintf (format_buffer, " %.2f w %.2f %.2f m %.2f %.2f l S",
+		   height*dvi2pts,
+		   xpos*dvi2pts, (ypos+half_height)*dvi2pts,
+		   (xpos+width)*dvi2pts, (ypos+half_height)*dvi2pts);
+  } else { /* Vertical stroke */
+    mpt_t half_width = width/2;
+    len = sprintf (format_buffer, " %.2f w %.2f %.2f m %.2f %.2f l S",
+		   width*dvi2pts,
+		   (xpos+half_width)*dvi2pts, ypos*dvi2pts,
+		   (xpos+half_width)*dvi2pts, (ypos+height)*dvi2pts);
+  }
   pdf_doc_add_to_page (format_buffer, len);
 }
 

@@ -1,4 +1,5 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.79 1999/08/17 17:23:53 mwicks Exp $
+
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.80 1999/08/17 17:52:48 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1300,38 +1301,42 @@ int type1_font (const char *tex_name, int tfm_font_id, const char *resource_name
 		    type1_font_descriptor(encoding_id,
 					  type1_fonts[num_type1_fonts].pfb_id,
 					  tfm_font_id));
+    }
       /* If we are embedding this font, it may have been used by another virtual
 	 font and we need to use the same mangled name.  Mangled
-	 named are known only to the pfb module, so we call it to get
+	 names are known only to the pfb module, so we call it to get
 	 the name */
+    if (type1_fonts[num_type1_fonts].pfb_id >= 0) {
       pdf_add_dict (font_resource, 
 		    pdf_new_name ("BaseFont"),
 		    pdf_new_name
 		    (type1_fontname(type1_fonts[num_type1_fonts].pfb_id)));
-
-      /* Otherwise we use the base name */
+	/* Otherwise we use the base name */
     } else {
       pdf_add_dict (font_resource,
 		    pdf_new_name ("BaseFont"),
-		    pdf_new_name (font_record -> font_name));
+		    pdf_new_name (font_record->font_name));  /* fontname is global and set
+								 by scan_afm_file() */
     }
-    firstchar = tfm_get_firstchar(tfm_font_id);
-    pdf_add_dict (font_resource,
-		  pdf_new_name ("FirstChar"),
-		  pdf_new_number (firstchar));
-    lastchar = tfm_get_lastchar(tfm_font_id);
-    pdf_add_dict (font_resource,
-		  pdf_new_name ("LastChar"),
-		  pdf_new_number (lastchar));
-    tmp1 = pdf_new_array ();
-    for (i=firstchar; i<=lastchar; i++) {
-      pdf_add_array (tmp1,
-		     pdf_new_number(ROUND(tfm_get_width(tfm_font_id,i)
-					  *1000.0/font_record->extend,0.01)));
+    fprintf (stderr, "Somehwere.");
+    if (!is_a_base_font (font_record->font_name)) {
+      firstchar = tfm_get_firstchar(tfm_font_id);
+      pdf_add_dict (font_resource,
+		    pdf_new_name ("FirstChar"),
+		    pdf_new_number (firstchar));
+      lastchar = tfm_get_lastchar(tfm_font_id);
+      pdf_add_dict (font_resource,
+		    pdf_new_name ("LastChar"),
+		    pdf_new_number (lastchar));
+      tmp1 = pdf_new_array ();
+      for (i=firstchar; i<=lastchar; i++) {
+	pdf_add_array (tmp1,
+		       pdf_new_number(ROUND(tfm_get_width (tfm_font_id, i)*1000.0,0.01)));
+      }
+      pdf_add_dict (font_resource,
+		    pdf_new_name ("Widths"),
+		    tmp1);
     }
-    pdf_add_dict (font_resource,
-		  pdf_new_name ("Widths"),
-		  tmp1);
     type1_fonts[num_type1_fonts].indirect = pdf_ref_obj(font_resource);
     pdf_release_obj (font_resource);
     result = num_type1_fonts;
