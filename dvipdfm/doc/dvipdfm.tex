@@ -1,4 +1,4 @@
-% $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/doc/dvipdfm.tex,v 1.6 1998/12/04 21:43:38 mwicks Exp $
+% $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/doc/dvipdfm.tex,v 1.7 1998/12/04 21:45:16 mwicks Exp $
 \special{  pdf:  docview <</PageMode /UseOutlines>>}%
 \catcode`\ =11\def\space{ }\catcode`\ =10
 % Page layout
@@ -724,7 +724,8 @@ Note: The object is stored as an XObject and can be redisplayed later by using t
 
 \example
 \begintt
-\special{pdf:epdf yscale 0.50 width 4.0in rotate 45 (circuit.pdf)}
+\special{pdf:epdf yscale 0.50 width 4.0in
+                              rotate 45 (circuit.pdf)}
 \endtt
 
 \subsection{Image}
