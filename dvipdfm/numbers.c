@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/numbers.c,v 1.11.10.3 2000/08/03 02:33:44 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/numbers.c,v 1.11.10.4 2000/08/03 15:36:35 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -265,7 +265,7 @@ int centi_u_to_a (char *s, long int n)
 
 int fixnumtoa (char *s, long int n)
 {
-   int j, nwhole, thresh;
+   int j, thresh;
    char *p = s;
    unsigned long whole_part, frac_part;
    if (n<0) {
