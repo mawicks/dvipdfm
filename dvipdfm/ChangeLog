@@ -1,3 +1,9 @@
+1998-11-30  Mark A. Wicks  <mwicks@odo.kettering.edu>
+
+	* Cleaned up a lot of little things.
+	* Tried to make code 8-bit clean in most places
+	* Added check for timezone in autoconf script.
+
 1998-11-29  Mark A. Wicks  <mwicks@betelgeuse.wicks.net>
 
 	* Added font re-encoding support and created a map file for common
