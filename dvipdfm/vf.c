@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/vf.c,v 1.10 1998/12/14 04:42:58 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/vf.c,v 1.11 1998/12/17 02:01:26 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -68,12 +68,12 @@ struct vf
 struct vf *vf_fonts = NULL;
 int num_vf_fonts = 0, max_vf_fonts = 0;
 
-static void clear_vf_characters(void)
+static void clear_vf_characters(int thisfont)
 {
   int i;
   for (i=0; i<256; i++){
-    (vf_fonts[num_vf_fonts].pkt_len)[i] = 0;
-    (vf_fonts[num_vf_fonts].ch_pkt)[i] = NULL;
+    (vf_fonts[thisfont].pkt_len)[i] = 0;
+    (vf_fonts[thisfont].ch_pkt)[i] = NULL;
   }
   return;
 }
@@ -264,7 +264,7 @@ int vf_locate_font (char *tex_name, mpt_t ptsize)
     thisfont = num_vf_fonts++;
     vf_fonts[thisfont].ptsize = ptsize;
     read_header(vf_file, thisfont);
-    clear_vf_characters();
+    clear_vf_characters(thisfont);
     process_vf_file (vf_file, thisfont);
     fclose (vf_file);
   }
