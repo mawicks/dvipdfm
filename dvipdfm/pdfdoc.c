@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.7 1998/12/03 02:40:39 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.8 1998/12/03 16:30:08 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -54,7 +54,7 @@ static pdf_obj *glob_page_bop, *glob_page_eop;
 static pdf_obj *this_page_bop = NULL, *this_page_eop = NULL;
 static pdf_obj *this_page_beads = NULL;
 static pdf_obj *this_page_annots = NULL;
-static pdf_obj *this_page_xobjects = NULL;
+static pdf_obj *this_page_xobjects = NULL, *this_page_fonts = NULL;;
 static pdf_obj *tmp1, *tmp2;
 
 static int page_count = 0;
@@ -257,11 +257,25 @@ static void start_current_page_resources (void)
   pdf_add_dict (current_page_resources,
 		pdf_new_name ("ProcSet"),
 		tmp1);
+  this_page_fonts = pdf_new_dict ();
+  pdf_add_dict (current_page_resources, 
+		pdf_new_name ("Font"),
+		pdf_ref_obj (this_page_fonts));
   this_page_xobjects = pdf_new_dict ();
   pdf_add_dict (current_page_resources,
 		pdf_new_name ("XObject"),
 		pdf_ref_obj (this_page_xobjects));
   return;
+}
+
+void pdf_doc_add_to_page_fonts (const char *name, pdf_obj
+				   *resource)
+{
+  if (debug) {
+    fprintf (stderr, "(pdf_doc_add_to_page_fonts)");
+  }
+  pdf_add_dict (this_page_fonts,
+		pdf_new_name (name), resource);
 }
 
 void pdf_doc_add_to_page_xobjects (const char *name, pdf_obj
@@ -648,6 +662,10 @@ static void finish_last_page ()
   if (this_page_beads != NULL) {
     pdf_release_obj (this_page_beads);
     this_page_beads = NULL;
+  }
+  if (this_page_fonts != NULL) {
+    pdf_release_obj (this_page_fonts);
+    this_page_fonts = NULL;
   }
   if (this_page_xobjects != NULL) {
     pdf_release_obj (this_page_xobjects);

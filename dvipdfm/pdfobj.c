@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.8 1998/12/03 02:40:39 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.9 1998/12/03 16:30:08 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -756,17 +756,25 @@ void pdf_add_dict (pdf_obj *dict, pdf_obj *key, pdf_obj *value) /* Array is ende
       value -> type > PDF_INDIRECT )) {
     ERROR ("pdf_add_dict: Passed invalid value");
   }
-  data = dict -> data;
-  new_node = NEW (1, pdf_dict);
-  new_node -> key = NULL;
-  new_node -> value = NULL;
-  new_node -> next = NULL;
-  while (data -> key != NULL)
-    data = data -> next;
-  data -> next = new_node;
-  data -> key = key;
-  data -> value = value;
+  /* Don't add key unless it's not already present */
+  if (pdf_lookup_dict (dict, pdf_name_value(key)) == NULL) {
+    data = dict -> data;
+    new_node = NEW (1, pdf_dict);
+    new_node -> key = NULL;
+    new_node -> value = NULL;
+    new_node -> next = NULL;
+    while (data -> key != NULL)
+      data = data -> next;
+    data -> next = new_node;
+    data -> key = key;
+    data -> value = value;
+  }
+  else {
+    pdf_release_obj (value);
+  }
+  return;
 }
+
 
 /* pdf_merge_dict makes a link for each item in dict2 before
    stealing it */

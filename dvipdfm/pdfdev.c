@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.7 1998/12/03 14:42:12 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.8 1998/12/03 16:30:08 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -116,7 +116,6 @@ static double dev_xpos, dev_ypos;
 int n_dev_fonts = 0;
 int current_font = -1;
 double current_ptsize = 1.0;
-static pdf_obj *this_page_fontlist_dict;
 
 #define MAX_DEVICE_FONTS 256
 
@@ -428,7 +427,7 @@ void dev_begin_xform (double xscale, double yscale, double rotate)
 {
   double c, s;
   if (num_transforms >= MAX_TRANSFORMS) {
-    fprintf (stderr, "\ndev_set_color:  Exceeded depth of transformation stack\n");
+    fprintf (stderr, "\ndev_begn_xform:  Exceeded depth of transformation stack\n");
     return;
   }
   c = ROUND (cos(rotate),1e-5);
@@ -475,7 +474,6 @@ void dev_bop (void)
   graphics_mode();
   dev_xpos = 0.0;
   dev_ypos = 0.0;
-  this_page_fontlist_dict = pdf_new_dict ();
   bop_font_reset();
   pdf_doc_add_to_page (" 0 w ", 5);
   dev_do_color();
@@ -494,7 +492,6 @@ void dev_eop (void)
   pdf_doc_this_bop (format_buffer, strlen(format_buffer));
   graphics_mode();
   dev_close_all_xforms();
-  pdf_doc_add_to_page_resources ("Font", this_page_fontlist_dict);
 }
 
 void dev_locate_font (char *tex_name,
@@ -554,12 +551,9 @@ void dev_select_font (long tex_font_id)
   pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
   current_font = i;
   current_ptsize = dev_font[i].ptsize;
-  /* Add to resource list for this page */
-  if (!pdf_lookup_dict (this_page_fontlist_dict, dev_font[i].short_name)) {
-    pdf_add_dict (this_page_fontlist_dict,
-		  pdf_new_name (dev_font[i].short_name),
-		  pdf_link_obj (dev_font[i].font_resource));
-  }
+  /* Add to Font list in Resource dictionary for this page */
+  pdf_doc_add_to_page_fonts (dev_font[i].short_name,
+			     pdf_link_obj(dev_font[i].font_resource));
 }
 
 void dev_set_char (unsigned ch, double width)
