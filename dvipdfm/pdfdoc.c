@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.70 2001/04/14 03:25:00 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.71 2001/06/25 23:12:00 mwicks Exp $
  
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -238,7 +238,7 @@ static char *asn_date (void)
      #define timezone 0l
 #endif /* TM_GM_TOFF */
 #endif /* HAVE_TIMEZONE */
-  static char date_string[22];
+  static char date_string[24];
   time_t current_time;
   struct tm *bd_time;
   if (debug) {
@@ -246,7 +246,7 @@ static char *asn_date (void)
   }
   time(&current_time);
   bd_time = localtime(&current_time);
-  sprintf (date_string, "D:%04d%02d%02d%02d%02d%02d%0+3ld'%02ld'",
+  sprintf (date_string, "D:%04d%02d%02d%02d%02d%02d%+03ld'%02ld'",
 	   bd_time -> tm_year+1900, bd_time -> tm_mon+1, bd_time -> tm_mday,
 	   bd_time -> tm_hour, bd_time -> tm_min, bd_time -> tm_sec,
 	   -timezone/3600, timezone%3600);
