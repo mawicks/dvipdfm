@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.25 1998/12/21 06:27:31 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.26 1998/12/22 04:28:18 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -329,36 +329,33 @@ static void clear_a_pfb (struct a_pfb *pfb)
   }
 }
 
-/* The following variable is used as a second
-   return value from type1_fontfile.  Returning
-   multiple values is always ugly */  
-static _last_pfb_id;
-static int last_pfb_id(void)
+static pdf_obj *type1_fontfile (int pfb_id) 
 {
-  return _last_pfb_id;
+  if (pfb_id >= 0 && pfb_id < num_pfbs)
+    return pdf_link_obj(pfbs[pfb_id].indirect);
+  else
+    return NULL;
 }
 
-pdf_obj *type1_fontfile (const char *pfb_name, int encoding_id)
+static int type1_pfb_id (const char *pfb_name, int encoding_id)
 {
   int i;
-  char *full_pfb_name;
-  fprintf (stderr, "type1_fontfile called with (%s)\n", pfb_name);
-  _last_pfb_id = -1;
-  full_pfb_name = kpse_find_file (pfb_name, kpse_type1_format,
-				  1);
-  if (full_pfb_name == NULL) {
-    fprintf (stderr, "type1_fontfile:  Unable to find binary font file (%s)...Hope that's okay.", pfb_name);
-    return NULL;
-  }
-  if (num_pfbs >= max_pfbs) {
-    max_pfbs += MAX_FONTS;
-    pfbs = RENEW (pfbs, max_pfbs, struct a_pfb);
-  }
   for (i=0; i<num_pfbs; i++) {
     if (pfbs[i].pfb_name && !strcmp (pfbs[i].pfb_name, pfb_name))
       break;
   }
   if (i == num_pfbs) {
+    char *full_pfb_name;
+    full_pfb_name = kpse_find_file (pfb_name, kpse_type1_format,
+				    1);
+    if (full_pfb_name == NULL) {
+      fprintf (stderr, "type1_fontfile:  Unable to find binary font file (%s)...Hope that's okay.", pfb_name);
+      return -1;
+    }
+    if (num_pfbs >= max_pfbs) {
+      max_pfbs += MAX_FONTS;
+      pfbs = RENEW (pfbs, max_pfbs, struct a_pfb);
+    }
     num_pfbs += 1;
     clear_a_pfb (pfbs+i);
     pfbs[i].pfb_name = NEW (strlen(pfb_name)+1, char);
@@ -367,9 +364,7 @@ pdf_obj *type1_fontfile (const char *pfb_name, int encoding_id)
     pfbs[i].indirect = pdf_ref_obj (pfbs[i].direct);
     pfbs[i].encoding_id = encoding_id;
   }
-  _last_pfb_id = i;
-  fprintf (stderr, "returning with id: %d\n", i);
-  return pdf_link_obj(pfbs[i].indirect);
+  return i;
 }
 
 static void do_pfb (const char *pfb_name, pdf_obj *stream)
@@ -559,9 +554,10 @@ static void scan_afm_file (void)
 			cmr, should be set to be symbolic */
 #define NOCLUE 20
 
-pdf_obj *type1_font_descriptor (const char *pfb_name, int encoding_id)
+static pdf_obj *type1_font_descriptor (const char *pfb_name, int encoding_id,
+				int pfb_id)
 {
-  pdf_obj *font_descriptor, *font_descriptor_ref, *fontfile, *tmp1;
+  pdf_obj *font_descriptor, *font_descriptor_ref, *tmp1;
   int flags;
   font_descriptor = pdf_new_dict ();
   pdf_add_dict (font_descriptor,
@@ -606,10 +602,10 @@ pdf_obj *type1_font_descriptor (const char *pfb_name, int encoding_id)
 		pdf_new_name ("StemV"),  /* This is required */
 		pdf_new_number (NOCLUE));
   /* You don't need a fontfile for the standard fonts */
-  if ((fontfile = type1_fontfile (pfb_name, encoding_id)) != NULL) 
+  if (pfb_id >= 0)
     pdf_add_dict (font_descriptor,
 		  pdf_new_name ("FontFile"),
-		  fontfile);
+		  type1_fontfile (pfb_id));
   font_descriptor_ref = pdf_ref_obj (font_descriptor);
   pdf_release_obj (font_descriptor);
   return font_descriptor_ref;
@@ -726,14 +722,13 @@ int type1_font (const char *tex_name, int tfm_font_id, const char *resource_name
       type1_fonts[num_type1_fonts].pfb_id = -1;
       if (font_record -> pfb_name != NULL) {
 	if (!is_a_base_font (fontname)) {
+	  type1_fonts[num_type1_fonts].pfb_id =
+	    type1_pfb_id (font_record -> pfb_name, encoding_id);
 	  pdf_add_dict (font_resource, 
 			pdf_new_name ("FontDescriptor"),
 			type1_font_descriptor(font_record -> pfb_name,
-					      encoding_id));
-	  /* Using last_pfb_id to return the pfb_id is a bit of a hack
-	     There is no good way to return this from
-	     type1_font_descriptor */
-	  type1_fonts[num_type1_fonts].pfb_id = last_pfb_id();
+					      encoding_id,
+					      type1_fonts[num_type1_fonts].pfb_id));
 	}
       }
       pdf_add_dict (font_resource,
@@ -794,19 +789,22 @@ void type1_close_all (void)
   for (i=0; i<num_pfbs; i++) {
     do_pfb (pfbs[i].pfb_name, pfbs[i].direct);
     pdf_release_obj (pfbs[i].direct);
-    fprintf (stderr, "Font name (%s)\n", pfbs[i].pfb_name);
+    fprintf (stderr, "\nUsed letters in font (%s): \n",
+	     pfbs[i].pfb_name);
     RELEASE (pfbs[i].pfb_name);
     for (j=0; j<256; j++) {
       if ((pfbs[i].used_chars)[j]) {
-	fprintf (stderr, "Used %c (%d)\n", j, j);
+	fprintf (stderr, " (%c/%d)", j, j);
       }
     }
+    fprintf (stderr, "\n");
     pdf_release_obj (pfbs[i].indirect);
   }
   RELEASE (pfbs);
   /* Now do encodings.  Clearly many pfbs will map to the same
      encoding.  That's why there is a separate array for encodings */
   for (i=0; i<num_encodings; i++) {
+    fprintf (stderr, "Encoding (%s):\n", encodings[i].enc_name);
     RELEASE (encodings[i].enc_name);
     pdf_release_obj (encodings[i].encoding_ref);
     /* Release glyph names for this encoding */
@@ -815,5 +813,6 @@ void type1_close_all (void)
 	       (encodings[i].glyphs)[j].name, j);
       RELEASE ((encodings[i].glyphs)[j].name);
     }
+    fprintf (stderr, "\n");
   }
 }
