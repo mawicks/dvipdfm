@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.60 1999/09/05 15:00:15 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.61 1999/09/05 23:39:54 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -904,6 +904,66 @@ static void do_bead(char **start, char *end)
     dump (*start, end);
   }
   return;
+}
+
+pdf_obj *embed_image (char *filename, struct xform_info *p,
+		     double x_user, double y_user) 
+{
+  pdf_obj *result = NULL;
+  char *kpse_file_name;
+  FILE *image_file;
+  static char res_name[16];
+  static long next_image = 1;
+  sprintf (res_name, "Im%ld", next_image);
+  if ((kpse_file_name = kpse_find_pict (filename)) &&
+      (image_file = FOPEN (kpse_file_name, FOPEN_RBIN_MODE))) {
+    fprintf (stderr, "(%s", kpse_file_name);
+    if (check_for_jpeg(image_file)) {
+      result = jpeg_start_image(image_file);
+      if (result)
+	finish_image (result, p, res_name);
+    }
+#ifdef HAVE_LIBPNG
+    else if (check_for_png(image_file)) {
+      result = start_png_image (image_file, NULL);
+      if (result)
+	finish_image (result, p, res_name);
+    }
+#endif
+    else if (check_for_pdf (image_file)) {
+      result = pdf_include_page (image_file, p, res_name);
+    }
+    else if (check_for_mp (image_file)) {
+      result = mp_include (image_file, p, res_name, x_user, y_user);
+    }
+    /* Make sure we check for PS *after* checking for MP since
+       MP is a special case of PS */
+    else if (check_for_ps (image_file)) {
+      result = ps_include (kpse_file_name, p,
+			   res_name, x_user, y_user);
+    }
+    else{
+      fprintf (stderr, "\nNot a supported image type.\n");
+    }
+    FCLOSE (image_file);
+    fprintf (stderr, ")");
+  } else {
+      fprintf (stderr, "\nError locating or opening file (%s)\n", filename);
+  }
+  if (result) { /* Put reference to object on page */
+    next_image += 1;
+    pdf_doc_add_to_page_xobjects (res_name, pdf_ref_obj(result));
+    pdf_doc_add_to_page (" q", 2);
+    add_xform_matrix (x_user, y_user, p->xscale, p->yscale, p->rotate);
+    if (p->depth != 0.0)
+      add_xform_matrix (0.0, -p->depth, 1.0, 1.0, 0.0);
+    release_xform_info(p);
+    sprintf (work_buffer, " /%s Do Q", res_name);
+    pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
+  } else {
+    fprintf (stderr, "\npdf: image... inclusion failed.\n");
+  }
+  return result;
 }
 
 static void do_image (char **start, char *end, double x_user, double y_user)
