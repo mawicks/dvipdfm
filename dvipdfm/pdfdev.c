@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.46 1998/12/15 21:31:24 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.47 1998/12/16 03:00:06 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -152,7 +152,6 @@ static void text_mode (void)
   case STRING_MODE:
     pdf_doc_add_to_page (")]TJ", 4);
   case TEXT_MODE:
-    text_offset = 0;
     break;
   case GRAPHICS_MODE:
     pdf_doc_add_to_page (" BT", 3);
@@ -242,41 +241,12 @@ static void dev_set_font (int font_id)
   current_font = font_id;
 }
 
-void dev_set_char (mpt_t xpos, mpt_t ypos, unsigned char ch, mpt_t
-		   width, int font_id)
-{
-  int len = 0;
-  long kern;
-  kern =
-    (1000.0*(text_xorigin+text_offset-xpos))/dev_font[font_id].mptsize;
-  
-  if (font_id != current_font)
-    dev_set_font(font_id); /* Force a Tf since we are actually trying
-			      to write a character */
-  else if (ypos != text_yorigin ||
-	   abs(kern) > 32000) {
-    text_mode();
-    kern = 0;
-  }
-  if (motion_state != STRING_MODE)
-    string_mode(xpos, ypos);
-  else if (kern != 0) {
-    text_offset -= (double) kern*dev_font[font_id].mptsize/1000l;
-    len += sprintf (format_buffer+len, ")%ld(", kern);
-  }
-  len += pdfobj_escape_str (format_buffer+len, FORMAT_BUF_SIZE-len,
-			    &ch, 1);
-  pdf_doc_add_to_page (format_buffer, len);
-  text_offset += width;
-}
-
 void dev_set_string (mpt_t xpos, mpt_t ypos, unsigned char *s, int
 		     length, mpt_t width, int font_id)
 {
   int len = 0;
   long kern;
-  kern =
-    (1000.0*(text_xorigin+text_offset-xpos))/dev_font[font_id].mptsize;
+  kern = (1000.0*(text_xorigin+text_offset-xpos))/dev_font[font_id].mptsize;
   if (font_id != current_font)
     dev_set_font(font_id); /* Force a Tf since we are actually trying
 			       to write a character */
@@ -288,7 +258,7 @@ void dev_set_string (mpt_t xpos, mpt_t ypos, unsigned char *s, int
   if (motion_state != STRING_MODE)
     string_mode(xpos, ypos);
   else if (kern != 0) {
-    text_offset -= (double)kern*dev_font[font_id].mptsize/1000l;
+    text_offset -= kern*(dev_font[font_id].mptsize/1000.0);
     len += sprintf (format_buffer+len, ")%ld(", kern);
   }
   len += pdfobj_escape_str (format_buffer+len, FORMAT_BUF_SIZE-len, s, length);

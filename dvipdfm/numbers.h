@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/numbers.h,v 1.6 1998/12/12 01:37:18 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/numbers.h,v 1.7 1998/12/16 03:00:06 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -57,6 +57,8 @@ extern UNSIGNED_QUAD get_unsigned_quad (FILE *);
 typedef signed long fixword;
 
 extern SIGNED_QUAD sqxfw (SIGNED_QUAD sq, fixword fw);
+extern SIGNED_QUAD axboverc (SIGNED_QUAD n1, SIGNED_QUAD n2,
+			     SIGNED_QUAD div);
 
 #endif /* NUMBERS_H */
 

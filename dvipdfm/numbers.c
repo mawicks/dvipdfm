@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/numbers.c,v 1.7 1998/12/11 21:18:33 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/numbers.c,v 1.8 1998/12/16 03:00:06 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -151,16 +151,56 @@ SIGNED_QUAD sqxfw (SIGNED_QUAD sq, fixword fw)
   return (sign>0)?result:-result;
 }
 
-SIGNED_QUAD _sqxfw (SIGNED_QUAD sq, fixword fw)
+SIGNED_QUAD axboverc (SIGNED_QUAD n1, SIGNED_QUAD n2, SIGNED_QUAD div)
 {
-  int sign=1;
-  if (sq < 0) {
+  int sign = 1;
+  unsigned long a, b, c, d, ad, bd, bc, ac, e, f, g, h, i, j, o;
+  unsigned long high, low;
+  SIGNED_QUAD result = 0;
+  /*  Make positive. */
+  if (n1 < 0) {
     sign = -sign;
-    sq = -sq;
+    n1 = -n1;
   }
-  if (fw < 0) {
+  if (n2 < 0) {
     sign = -sign;
-    fw = -fw;
+    n2 = -n2;
   }
-  return sign*(long)(sq* ( ((double) fw)/(1<<20)+0.5  ));
+  if (div < 0) {
+    sign = -sign;
+    div = -div;
+  }
+  a = ((unsigned long) n1) >> 16u;
+  b = ((unsigned long) n1) & 0xffffu;
+  c = ((unsigned long) n2) >> 16u;
+  d = ((unsigned long) n2) & 0xffffu;
+  ad = a*d; bd = b*d; bc = b*c; ac = a*c;
+  e = bd >> 16u; f = bd & 0xffffu;
+  g = ad >> 16u; h = ad & 0xffffu;
+  i = bc >> 16u; j = bc & 0xffffu;
+  o = e+h+j;
+  high = g+i+(o>>16u)+ac; o &= 0xffffu;
+  low = (o << 16) + f;
+  if (high >= div)
+    ERROR ("Overflow in axboc");
+  {
+    int i;
+    for (i=0; i<32; i++) {
+      high *= 2;
+      result *= 2;
+      if (low >= 0x80000000) {
+	low -= 0x80000000;
+	high += 1;
+      }
+      low *= 2;
+      if (high > div) {
+	high -= div;
+	result += 1;
+      }
+    }
+  }
+  high *= 2;
+  if (high >= div)
+    result += 1;
+  return (sign>0)?result:-result;
 }

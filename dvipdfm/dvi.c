@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.32 1998/12/15 21:31:23 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.33 1998/12/16 03:00:06 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -445,6 +445,7 @@ void dvi_set (SIGNED_QUAD ch)
 {
   mpt_t width;
   struct font_def *p;
+  unsigned char lch = (unsigned char) ch;
   if (current_font < 0) {
     ERROR ("dvi_set:  No font selected");
   }
@@ -459,7 +460,7 @@ void dvi_set (SIGNED_QUAD ch)
   width = sqxfw (p->size, width);
   switch (p->type) {
   case PHYSICAL:
-    dev_set_char (dvi_state.h, -dvi_state.v, ch, width,
+    dev_set_string (dvi_state.h, -dvi_state.v, &lch, 1, width,
 		  p->font_id);
     break;
   case VIRTUAL:    
@@ -471,15 +472,19 @@ void dvi_set (SIGNED_QUAD ch)
 
 void dvi_put (SIGNED_QUAD ch)
 {
+  mpt_t width;
   struct font_def *p;
+  unsigned char lch = (unsigned char) ch;
   if (current_font < 0) {
     ERROR ("dvi_put:  No font selected");
   }
   p = font_def+current_font;
   switch (p->type) {
   case PHYSICAL:
-    dev_set_char (dvi_state.h, -dvi_state.v, ch, 0,
-		  p->font_id);
+    width = tfm_get_fw_width (p->tfm_id, ch);
+    width = sqxfw (p->size, width);
+    dev_set_string (dvi_state.h, -dvi_state.v, &lch, 1, width,
+		    p->font_id);
     break;
   case VIRTUAL:    
     vf_set_char (ch, p->font_id);
