@@ -104,6 +104,8 @@ depend.make:
 @MAINT@	touch config.h.in
 @MAINT@configure: configure.in
 @MAINT@	autoconf
+@MAINT@dist:
+	tar -czf dvipdfm.tar.gz -T distribution-file-list
 @MAINT@dvipdfm-static:  $(objects) Makefile
 	$(CC) -o dvipdfm-static $(objects) --static $(LDFLAGS) $(LIBS)
 @MAINT@ebb-static : $(eobjects) Makefile

@@ -58,6 +58,8 @@ system.h
 t1crypt.c
 t1crypt.h
 t1fonts.map
+thumbnail.c
+thumbnail.h
 tfm.c
 tfm.h
 tpic.c
