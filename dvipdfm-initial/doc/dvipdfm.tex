@@ -1,14 +1,19 @@
-%\special{pdf: bop q 0.6 0.8 1.0 rg 0 0 m 612 0 l 612 792 l 0 792 l b Q  }
-%\special{pdf: bop q 0.6 0.8 1.0 rg 36 36 m 576 36 l 576 756 l 36 756 l b Q  }
-% \special{  pdf:  docinfo <</Producer (Me) /Author (Mark A. Wicks) /Title (Some sort of title.)>>}%
-%\special{  pdf:  docview <</PageMode /UseThumbs>>}%
 \special{  pdf:  docview <</PageMode /UseOutlines>>}%
 \catcode`\ =11\def\space{ }\catcode`\ =10
 % Page layout
+\magnification\magstephalf
 \advance\hoffset by 0.5truein
 \advance\voffset by 0.5truein
 \advance\hsize by -1.0in
 \advance\vsize by -1.0in
+%
+%  Some helpful symbols
+\def\rtm{{\font\r=cmss10 at 4pt
+\font\c=cmsy5
+\setbox0\hbox{\c\char13}\skip0\wd0\box0\setbox0\hbox{\r R}\advance\skip0 by
+\wd0\kern-0.5\skip0\box0}}
+\def\tm{{\font\r=cmss10 at 4pt \hbox{\r TM}}}%
+%
 %
 % Some color definitions
 % 
@@ -16,14 +21,14 @@
   \special{pdf:bc #1}#2\special{pdf:ec}}%
 \def\red#1{\colored{[1 0 0]}{#1}}%
 \def\green#1{\colored{[0 1 0]}{#1}}%
-\def\blue#1{\colored{[0 0 1]}{#1}}%
+\def\blue#1{\colored{[0 0 0.4]}{#1}}%
 \def\yellow#1{\colored{[0.8 0.9 0.1]}{#1}}%
 %
 % Some font definitions
 %
-\font\maintitlefont=cmss12 at 17.28pt
+\font\maintitlefont=cmss12 at 20.74pt
 \font\headingfont=cmss12 at 14.4pt
-\font\versionfont=cmss12
+\font\subheadingfont=cmss12
 %
 % Miscellaneous token lists
 %
@@ -35,6 +40,12 @@
 \newcount\sectioncount\newcount\ssectioncount\newcount\sssectioncount
 \sectioncount0\ssectioncount0\sssectioncount0
 %
+\newskip\indentlevel\indentlevel=\parindent
+\def\beginlist{\advance\leftskip by \indentlevel\advance\rightskip by
+\indentlevel\medskip}
+\def\endlist{\par\advance\leftskip by -\indentlevel\advance\rightskip by
+-\indentlevel\medskip}
+%
 \def\settitle{%
   {\maintitlefont\blue{\the\title}}%
   \special {pdf:  docinfo << /Title (\expandafter\the\title) >>}}%
@@ -44,10 +55,10 @@
   \special {pdf:  docinfo << /Author (\the\author) >>}}%
 %
 \def\setversion{%
-  {\versionfont{\the\version}}%
+  {\subheadingfont{\the\version}}%
 }%
 \def\setdate{%
-  {\versionfont{\the\date}}%
+  {\subheadingfont{\the\date}}%
 }%
 \def\setlink#1{\red{#1}}%
 %  
@@ -67,14 +78,14 @@
 \def\dest#1{\special{pdf:dest (#1) [ @thispage /FitH @ypos ]}}%
 %
 \def\maketitle{\noindent\settitle\hfill\setauthor\par
-          \hrule height 2pt\medskip
-	  \noindent\setversion\hfill\setdate\vskip0.5in}
+          \hrule height 1.0pt\medskip
+          \noindent\setversion\hfill\setdate\vskip0.4in}%
 %
 \def\section#1{\advance\sectioncount by 1\ssectioncount0
-\bigskip\noindent\setheading{\the\sectioncount. #1}\par\nobreak\medskip}%
+\goodbreak\vskip1.5\baselineskip\noindent\setheading{\the\sectioncount. #1}\par\nobreak\medskip}%
 \def\subsection#1{\advance\ssectioncount by 1%
 \bigskip\indent\setsubheading{\the\sectioncount.\the\ssectioncount\
-	  #1}\par\nobreak\medskip}%
+          #1}\par\nobreak\medskip}%
 %
 \def\display#1{\medskip\line{\quad #1\hfil}\medskip}
 \def\example#1{\noindent{\it Example:\par\nobreak\noindent}}
@@ -82,6 +93,7 @@
 \def\newpage{\vfill\eject}
 %
 \def\dvipdfm{{\tt dvipdfm}}%
+\input verbatim
 \def\ttspecial{$\tt\backslash${\tt special}}%
 %
 \title{Dvipdfm User's Manual}
@@ -89,45 +101,63 @@
 \version{Version 0.7dev}
 \date{November, 1998}
 \maketitle
-\section{Background}
-Currently, 
-the most widely accepted method to generate PDF file from \TeX\
-was to use Adobe's Acrobat distiller on a Postscript file produced by {\tt dvips}.
-The hyperlink features are accessed by using \TeX\ \ttspecial s
-to embed pdfmarks in the Postscript produced by {\tt dvips}.
+\section{Introduction}
+This package is a DVI (\TeX) to PDF conversion utility.
+This package has the following features:
+
+\beginlist
+\item{$\bullet$} A user interface replicating much of the
+functionality Adobe Acrobat Distiller$^\rtm$.
+
+\item{$\bullet$} Support for outline (bookmark) entries, named destinations,
+annotations (including forms and widgets).
+
+\item{$\bullet$} Ability to include arbitrary PDF files as encapsulated
+objects.
+
+\item{$\bullet$} Ability to include JPEG images as encapsulated
+objects.
+
+\item{$\bullet$} A color stack.
+\endlist
+Currently, the widely accepted method to generate PDF file from \TeX\
+is to use Distiller$^\rtm$ on a PostScript${\rtm}$
+file produced by {\tt dvips}.
+The hyperlink features are accessed by using \TeX\ \ttspecial primitives
+to embed pdfmarks in the PostScript$^\rtm$ produced by {\tt dvips}.
 H\`an Th\'e Th\`an's PDF\TeX\ project is an alternative solution.
 Although quite good and fairly mature, the PDF\TeX project required
 fairly significant modifications to
 \TeX\ itself to add primitives to support the PDF features.
 This project demonstrates that much of the functionality
 of Acrobat Distiller can be achieved by using a DVI driver.
-The PDF features are activated via \TeX\ \ttspecial s.
+The PDF features are activated via \TeX\ \ttspecial primitives.
 
 From a technical standpoint,
-distiller will probably remain the
+Distiller$^\rtm$ will probably remain the
 best approach for some time.
-However, I have several objections to the use of distiller,
+However, I have several objections to the use of Distiller$^\rtm$
 and feel that this driver provides a viable option.
-One objection is that Acrobat Distiller isn't available for Linux---my principle
+One objection is that Distiller$^\rtm$ isn't available for Linux---my principle
 operating system.
 
 My second objection is philosophical.
 A DVI file is a page description.
 It is essentially a linear program with no branching or decision instructions.
-Postscript is a complete programming language, while PDF is a page description language
+PostScript$^\rtm$ is a complete programming language, while PDF is a page description language
 without any branching or decision capabilities.
-\TeX\ is like postscript (without the graphics)
+\TeX\ is like PostScript$^{\rtm}$ (without the graphics)
 while DVI is like PDF (without the graphics or the hyperlinks).
-Using Acrobat Distiller requires going from page description to program back to page description.
-Pdfmarks are postscript features, which are meant for the distiller, are
-analogous to \TeX \ttspecial s, which are meant for the DVI driver.
+Using Distiller$^{\rtm}$ requires going from page description to program back to page description.
+Pdfmarks are PostScript$^{\rtm}$ features, which are meant for the Distiller$^{\rtm}$, are
+analogous to \TeX \ttspecial primitives, which are meant for the DVI driver.
 It seems natural to go directly from DVI to PDF, where \TeX\ replaces
-postscript and where the DVI driver replaces and implements
-\ttspecial s similar to the {\tt pdfmarks} in Adobe's Acrobat Distiller.
+PostScript$^{\rtm}$ and where the DVI driver replaces and implements
+\ttspecial primitives similar to the {\tt pdfmarks} in Distiller$^\rtm$.
 
 Unfortunately, until graphics software
 begins to produce PDF content streams or encapsulated
-PDF objects, Postscript will remain the easiest
+PDF objects, PostScript$^{\rtm}$ will remain the easiest
 way to include graphics in \TeX\ documents.
 I would hope that in the future, graphics programs
 will produce PDF content streams, or PDF objects that
@@ -136,10 +166,11 @@ of these may be easily included using {\tt dvipdfm}
 or a similar driver.
 
 \section{General Concepts}
-This document describes \dvipdfm\ driver.
-It also servers as an example input file for
-\dvipdfm, accessing some of the hypertext
-features.  It assumes some familiarity with the basic features
+This document describes the \dvipdfm\ driver.
+It also exercises some of the hypertext features
+and serves as a sample input file for
+\dvipdfm.
+It assumes the reader has some familiarity with the basic features
 of the \link{Portable
 Document Format}{pdfmanual}.
 
@@ -161,131 +192,190 @@ User defined variables are references to user defined PDF objects.
 
 
 \section{Dvipdfm Commands}
-All commands are executed via \TeX\ $\tt \backslash${\tt special}s
+All commands are executed via \TeX\ |\special| primitives
 prefixed with {\tt pdf:}, e.g.,
-
-\display{\tt pdf: out 1 << /Title (Introduction) /Dest [ 1 0 R /FitH 234 ] >>
-}
-
-A complete list of commands follows:
-
+\begintt
+\special{ pdf: out 1 << /Title (Introduction)
+                        /Dest [ 1 0 R /FitH 234 ] >>
+\endtt
 \subsection{Ann}
 The {\tt ann} command defines an annotation.  Annotations are typically
 notes, hyperlinks, PDF forms, or PDF widgets.  The {\tt ann} command
 takes the form:
-
-\display{{\tt ann} [{\tt @}{\it name}] {\it dimensions}+ {\it dictionary}}
-
+\beginlist
+{\tt ann} [{\tt @}{\it name}] {\it dimension}+ {\it PDF\_dictionary}
+\endlist
 where name is an optional alphanumeric identifier and dictionary
 is a valid PDF dictionary after variable expansion.
 If {\tt @}{\it name} is specified, it may be used in
 other PDF objects to refer to this annotation.
-One or more {\it dimensions} parameters are required
+One or more {\it dimension} parameters are required
 and each consists of the keyword
 {\tt height}, {\tt width}, or {\tt depth} followed
 by an appropriate length, specified as per \TeX.  Each
 length is a number followed by a unit, such as {\tt pt},
 {\tt in}, or {\tt cm}.  A {\tt pt} is a \TeX pt, not a PDF pt.
-
-\example
-\display{\tt
-  \ttspecial$\{$pdf: ann width 144pt height 10pt depth 2pt }%
-\display{\tt \quad 
-         << /Type /Annot /Subtype /Link /Border [1 0 0] }
-\display{\tt \quad /A << /S /GoTo [ @nextpage /Fit ] >> $\}$ }
-
-
-\subsection{out}
-\display{{\tt out} {\it level} {\it dictionary}}
-
-The parameter {\it level} is an integer representing the level of the outline
-entry (beginning with 1) and {\it dictionary} must contain
+\begintt
+\special{pdf: ann width 144pt height 10pt depth 2pt 
+           << /Type /Annot /Subtype /Link /Border [1 0 0] 
+              /A << /S /GoTo [ @nextpage /Fit ] >> }
+\endtt
+\subsection{Out}
+The |out| (also |outline|) command adds an outline (also called a ``bookmark'') entry
+to the document.
+\beginlist
+{\tt out} {\it number} {\it PDF\_dictionary}
+\endlist
+The parameter {\it level} is an integer representing the
+level of the outline entry (beginning with 1) and
+{\it  PDF\_dictionary} must contain
 the two keys {\tt /Title} and either {\tt /Dest} or {\tt /A}.
 It may also contain the {\tt /AA} key.  These keys are documented
 in the PDF Reference Manual.
+\begintt
+out 1 << /Title (Section 1) /Dest [ @thispage /FitH @ypos ] >>
+\endtt
+Which may be followed by
+\begintt
+out 2 << /Title (Section 1.1) /Dest [ @thispage /FitH @ypos ] >>
+\endtt
+You may not skip levels.  A level~2 outline entry
+must follow a level~1 outline
+entry.  A level~3 outline entry must follow a level~2 outline
+and cannot immediately follow a level 1 outline entry.
 
-\subsection{ARTICLE}
+\subsection{Article}
+The |article| (or |art|) command initializes an article.  An article
+is a collection of boxed regions in the document that should be
+read consecutively.  The |article| command takes the form:
+\beginlist
+{\tt article} {\tt @}{\it name} {\it PDF\_dictionary}
+\endlist
+The {\it name} parameter is required.  The required PDF dictionary 
+is similar to the |docinfo| dictionary and
+should include the |/Title| and |/Author| keys.
+\begintt
+article @somearticle << /Title (Some title) /Author (Me) >>
+\endtt
+\subsection{Bead}
+The |bead| adds a rectangular area to an existing article thread.
+It has the form:
+\beginlist
+{\tt bead} {\tt @}{\it name} {\it dimension}+
+\endlist
+where {\it dimension}+ specified a rectangular area
+in the same manner as for an annotation.  The {\it name}
+must correspond with an existing |article|.
 
-\subsection{DEST}
+\begintt
+bead @someart width 156pt height 20pt \space depth 4pt 
+\endtt
+\subsection{Dest}
+The |dest| command defines a named destination.
+\beginlist
+{\tt dest} {\it PDF\_String} {\it PDF\_Dest}
+\endlist
+The {\it PDF\_String} is a PDF string naming
+the destination.  This string may be used in the destination
+fields of annotations and outline entries to refer to
+this destination.  {\it PDF\_Dest} is a PDF
+destination object (an array).
+\begintt
+dest (listofreferences) [ @thispage /FitH @ypos ]
+\endtt
 
-\subsection{docinfo}
-
+\subsection{Docinfo}
+\beginlist
 {\tt docinfo} {\it dictionary}
-
+\endlist
 The {\tt docinfo} command adds the keys in the specified dictionary to the
 document's Info dictionary.  All keys are optional, but may include
-the keys {\tt Author}, {\tt Title}, {\tt Keywords}, {\tt Subject},
-and {\tt Creator}.
-
+the keys |/Author|, |/Title|, |Keywords|, |Subject|,
+and |Creator|.
 \subsection{docview}
+\beginlist
 {\tt docview} {\it dictionary}
+\endlist
 
 The {\tt docview} command adds the keys in the specified dictionary to the
-document's Catalog dictionary.  All keys are optional, but may include
-the keys {\tt /PageMode},
-{\tt /URI}, {\tt /OpenAction}, {\tt /AA}
-and {\tt ViewerPreferences}.  See the PDF Reference Manual
+document's catalog dictionary.  All keys are optional, but may include
+the keys |/PageMode|,
+|/URI|, |/OpenAction|, |/AA|
+and |ViewerPreferences|.  See the PDF Reference Manual
 for documentation of these keys and additional keys.
-
-\subsection{epdf}
-
-{\tt epdf} [@{\it name}] {\it filename}
-
+\subsection{Epdf}
+\beginlist
+{\tt epdf} [@{\it name}] [{\it dimension}$\|${\it scaling}]+
+ {\it PDF\_String}
+\endlist
 The {\tt epdf} command ``encapsulates'' the first page of a PDF
-file into a PDF XObject.  The resulting XObject is drawn
+file named by {\it PDF\_String}
+into a PDF XObject.  The resulting XObject is drawn
 at the current location of the page.  The current point
 represents the lower left-hand corner of the XObject's coordinate
-system.  The optional @{\tt name} parameter may be used
-to reference this object with other objects.
-It will be expanded to a reference for this object
-within any {\tt special} where a PDF object is expected.
-
-\subsection{obj}
-
-\display{{\tt obj} [@{\it name}] {\it object}}
-
-The {\tt obj} command creates a
-PDF object.  The parameter {\it object} is any valid PDF object.  The parameter @{\it name}
-may be used to refer to this object within other objects.
-It will be expanded within any {\tt special} where a PDF object is expected.
-Typically {\it object} is an array or dictionary.  It may be an empty array or
-dictionary that can be constructed dynamically via the {\tt put} command.
-
+system.  The optional @{\it name} parameter may be used
+to reference this object within other objects.  If a
+{\it dimension} is supplied, the object will be scaled to fit
+that dimension.  A {\it scaling} consists of one of the keywords
+|scale|, |xscale|, or |yscale| followed by a number representing
+the scaling factor.  Both {\it scaling} and {\it dimension}
+parameters can be supplied as long as they are not logically
+inconsistent.
+\begintt
+dpdf yscale 0.50 width 4.0in (circuit.pdf)
+\endtt
+\subsection{Object}
+\beginlist{\tt object} [@{\it name}] {\it object}
+\endlist
+The |object| (also |obj|) command creates a
+PDF object.  The parameter {\it object} is any valid PDF object.  The
+parameter {\it name} may be used to refer to this object within other
+objects. It will be expanded within
+any {\tt special} where a PDF object is
+expected. Typically {\it object} is an array
+or dictionary.  It may be an empty array or
+dictionary that can be constructed dynamically via
+the {\tt put} command.
+\begintt
+object @mydict << /Firstpage @thispage >>
+\endtt
 \subsection{put}
-\display{{\tt put} @{\it name} {\it object}}
-
+\beginlist
+{\tt put} @{\it name} {\it object}
+\endlist
 or 
-
+\beginlist
 {\tt put} @{\it name} {\it dictionary}
-
-The {\tt put} command modifies an existing PDF object created with OBJ.
+\endlist
+The |put| command modifies an existing PDF object created with OBJ.
 The first form is used when @{\tt name} is an array.  The second
 form is used when @{\tt name} is a dictionary.  Arrays are
 incremented one object at a time.  All keys in {\it dictionary}
 are added to the dictionary represented by @{\it name}.
-
+\begintt
+object @mydict << /Nextpage @thispage >>
+\endtt
 \subsection{close}
-
 {\tt close} @{\it name}
-
-The {\tt close} writes a PDF object created with OBJ to the PDF file.
-No further PUT commands may be executed for this object.
+The {\tt close} writes a PDF object created with |obj| to the PDF file.
+No further |put| commands may be executed for this object.
 The object may continue to be referenced using @{\it name}
-indefinitely.
+indefinitely.  If the object is never closed, it will
+be closed when |dvipdfm| finishes processing the document.
 
 \section{Additional functions}
 \subsection{bop}
-
+\beginlist
 {\tt bop} {\tt stream}
-
-The {\tt bop} command specifies a marking stream to be generated at the top of each page.
+\endlist
+The |bop| command specifies a marking
+stream to be generated at the top of each page.
 
 \subsection{eop}
-
+\beginlist
 {\tt eop} {\tt stream}
-
+\endlist
 The {\tt eop} specifies a marking stream to be generated at the top of each page.
-
 
 \newpage
 \section{References}
