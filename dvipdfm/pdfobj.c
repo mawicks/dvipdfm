@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.18 1998/12/10 23:04:29 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.19 1998/12/10 23:06:23 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -860,9 +860,6 @@ pdf_obj *pdf_new_stream (void)
   pdf_add_dict (data->dict,
 		pdf_new_name ("Length"),
 		pdf_ref_obj (data -> length));
-  /*  if ((data -> tmpfile = tmpfile()) == NULL) {
-    ERROR ("pdf_new_stream:  Could not create temporary file");
-    }; */
   data -> stream_length = 0;
   data -> max_length = 0;
   data -> stream = NULL;

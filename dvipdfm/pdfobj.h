@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.h,v 1.9 1998/12/10 23:04:29 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.h,v 1.10 1998/12/10 23:06:24 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -101,8 +101,7 @@ struct pdf_stream
 {
   struct pdf_obj *dict;
   pdf_obj *length;  /* Pointer to an object containing the length of the stream */
-  /*  FILE *tmpfile;   Streams are stored in a temp file */
-  char *stream;
+  char *stream;  /* Actual stream contents stored in "stream" */
   unsigned long stream_length;
   unsigned long max_length;
 };
