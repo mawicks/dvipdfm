@@ -11,5 +11,5 @@ distclean clean: this-distclean
 	  (cd $$d && $(MAKE) $@) ; done;
 this-distclean:
 	rm -f $(CONFIG)
-install:
+uninstall install:
 	cd dvipdfm && $(MAKE) $@

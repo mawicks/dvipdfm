@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfspecial.c,v 1.10 1998/11/23 02:52:55 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfspecial.c,v 1.11 1998/11/26 20:15:12 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -50,6 +50,9 @@ static pdf_obj *lookup_object(char *name);
 static void do_content ();
 static void do_epdf();
 static void do_image();
+static pdf_obj *jpeg_build_object(struct jpeg *jpeg,
+			   double x_user, double y_user,
+			   struct xform_info *p);
 
 static void do_bop(char **start, char *end)
 {
@@ -236,18 +239,20 @@ struct {
 double parse_one_unit (char **start, char *end)
 {
   int i;
-  char *unit_string;
+  char *unit_string, *save = *start;
   skip_white(start, end);
   if ((unit_string = parse_ident(start, end)) == NULL) {
     fprintf (stderr, "\nExpecting a unit here\n");
     dump(*start, end);
   }
-  for (i=0; i<sizeof(dimensions)/sizeof(dimensions[0]); i++) {
+  for (i=0; i<sizeof(units)/sizeof(units[0]); i++) {
     if (!strcmp (units[i].s, unit_string))
       break;
   }
-  if (i == sizeof(dimensions)/sizeof(dimensions[0])) {
-    fprintf (stderr, "%s: Invalid dimension\n", unit_string);
+  if (i == sizeof(units)/sizeof(units[0])) {
+    fprintf (stderr, "\n%s: Invalid unit of measurement\n", unit_string);
+    *start = save; 
+    dump (*start, end);
     release (unit_string);
     return -1.0;
   }
@@ -262,18 +267,22 @@ static int parse_dimension (char **start, char *end,
   char *number_string, *save = *start;
   double units;
   int key;
+  save = *start; 
   skip_white(start, end);
   if ((key = parse_one_dim_word(start, end)) < 0 ||
       (number_string = parse_number(start, end)) == NULL) {
-    *start = save;
     fprintf (stderr, "\nExpecting a dimension keyword and a number here\n");
     dump (*start, end);
+    *start = save;
     return 0;
   }
+  skip_white(start, end);
   if (dimensions[key].hasdimension &&
       (units = parse_one_unit(start, end)) < 0.0) {
     release (number_string);
-    fprintf (stderr, "\nExpecting a units here\n");
+    fprintf (stderr, "\nExpecting a unit here\n");
+    dump (*start, end);
+    *start = save;
     return 0;
   }
   switch (key) {
@@ -331,7 +340,8 @@ static void do_ann(char **start, char *end)
   while ((*start) < end && isalpha (**start)) {
     skip_white(start, end);
     if (!parse_dimension(start, end, p)) {
-      fprintf (stderr, "\nFailed to find a dimension keyword\n");
+      fprintf (stderr, "\nFailed to find a valid dimension here\n");
+      dump (*start, end);
       return;
     }
   }
@@ -376,22 +386,60 @@ static void do_ann(char **start, char *end)
   return;
 }
 
+static void do_bgcolor(char **start, char *end)
+{
+  char *save = *start;
+  pdf_obj *color, *tmp;
+  double r, g, b;
+  skip_white(start, end);
+  if ((color = parse_pdf_object(start, end)) == NULL ) {
+    fprintf (stderr, "\nSpecial: background color: Expecting color specified by an array or number\n");
+    return;
+  }
+  if (color -> type != PDF_ARRAY && 
+      color -> type != PDF_NUMBER ) {
+    fprintf (stderr, "\nSpecial: background color: Expecting color specified by an array or number\n");
+    *start = save;
+    return;
+  }
+  if (color -> type == PDF_ARRAY) {
+    int i;
+    for (i=1; i<=4; i++) {
+      if (pdf_get_array (color, i) == NULL)
+	break;
+    }
+    if (i != 4) {
+      fprintf (stderr, "\nSpecial: begincolor: Expecting color array with three elements\n");
+      return;
+    }
+    r = pdf_number_value (pdf_get_array (color, 1));
+    g = pdf_number_value (pdf_get_array (color, 2));
+    b = pdf_number_value (pdf_get_array (color, 3));
+    dev_bg_color (r, g, b);
+  } else {
+    dev_bg_gray (pdf_number_value (color));
+  }
+  pdf_release_obj (color);
+  return;
+}
+
 static void do_bcolor(char **start, char *end)
 {
   char *save = *start;
   pdf_obj *color_array, *tmp;
   double r, g, b;
   skip_white(start, end);
-  if ((color_array = parse_pdf_object(start, end)) == NULL) {
-    fprintf (stderr, "\nSpecial: begincolor: Expecting color specified by an array\n");
+  if ((color_array = parse_pdf_object(start, end)) == NULL ) {
+    fprintf (stderr, "\nSpecial: begincolor: Expecting color specified by an array or number\n");
     return;
   }
-  if (color_array -> type != PDF_ARRAY) {
-    fprintf (stderr, "\nSpecial: begincolor: Expecting color specified by an array\n");
+  if (color_array -> type != PDF_ARRAY && 
+      color_array -> type != PDF_NUMBER ) {
+    fprintf (stderr, "\nSpecial: begincolor: Expecting color specified by an array or number\n");
     *start = save;
     return;
   }
-  {
+  if (color_array -> type == PDF_ARRAY) {
     int i;
     for (i=1; i<=4; i++) {
       if (pdf_get_array (color_array, i) == NULL)
@@ -405,11 +453,32 @@ static void do_bcolor(char **start, char *end)
     g = pdf_number_value (pdf_get_array (color_array, 2));
     b = pdf_number_value (pdf_get_array (color_array, 3));
     dev_begin_color (r, g, b);
+  } else {
+    dev_begin_gray (pdf_number_value (color_array));
+  }
+  pdf_release_obj (color_array);
+  return;
+}
+
+static void do_bgray(char **start, char *end)
+{
+  char *number_string;
+  skip_white(start, end);
+  if ((number_string = parse_number (start, end)) == NULL) {
+    fprintf (stderr, "\nSpecial: begingray: Expecting a numerical grayscale specification\n");
     return;
   }
+  dev_begin_gray (atof (number_string));
+  release (number_string);
+  return;
 }
 
 static void do_ecolor(void)
+{
+  dev_end_color();
+}
+
+static void do_egray(void)
 {
   dev_end_color();
 }
@@ -454,23 +523,32 @@ static void do_exform(void)
 
 static void do_outline(char **start, char *end)
 {
-  pdf_obj *result;
-  char *level;
+  pdf_obj *level, *result;
+  char *save; 
+  static int lowest_level = 255;
   skip_white(start, end);
-
-  if ((level = parse_ident(start, end)) == NULL ||
-      !is_a_number (level)) {
-    fprintf (stderr, "\nExpecting number for object level\n");
+  save = *start; 
+  if ((level = parse_pdf_object(start, end)) == NULL) {
+    fprintf (stderr, "\nExpecting number for object level.\n");
     dump (*start, end);
     return;
   }
+  if ((level -> type) != PDF_NUMBER) {
+    fprintf (stderr, "\nExpecting number for object level.\n");
+    pdf_release_obj (level);
+    *start = save;
+    return;
+  }
+   /* Make sure we know where the starting level is */
+  if ( (int) pdf_number_value (level) < lowest_level)
+     lowest_level = (int) pdf_number_value (level);
+   
   if ((result = parse_pdf_dict(start, end)) == NULL) {
     fprintf (stderr, "Ignoring invalid dictionary\n");
     return;
   };
   parse_crap(start, end);
-
-  pdf_doc_change_outline_depth (atoi (level));
+  pdf_doc_change_outline_depth ((int)pdf_number_value(level)-lowest_level+1);
   release (level);
   pdf_doc_add_outline (result);
   return;
@@ -773,8 +851,11 @@ static int is_pdf_special (char **start, char *end)
 #define IMAGE 17
 #define BCOLOR 18
 #define ECOLOR 19
-#define BXFORM 20
-#define EXFORM 21
+#define BGRAY  20
+#define EGRAY  21
+#define BGCOLOR 22
+#define BXFORM 23
+#define EXFORM 24
 
 struct pdfmark
 {
@@ -809,6 +890,16 @@ struct pdfmark
   {"ec", ECOLOR},
   {"ecolor", ECOLOR},
   {"endcolor", ECOLOR},
+  {"bg", BGRAY},
+  {"bgray", BGRAY},
+  {"begingray", BGRAY},
+  {"eg", EGRAY},
+  {"egray", EGRAY},
+  {"endgray", EGRAY},
+  {"bgcolor", BGCOLOR},
+  {"bgc", BGCOLOR},
+  {"bbc", BGCOLOR},
+  {"bbg", BGCOLOR},
   {"begintransform", BXFORM},
   {"begintrans", BXFORM},
   {"btrans", BXFORM},
@@ -1034,11 +1125,20 @@ void pdf_parse_special(char *buffer, UNSIGNED_QUAD size, double
   case IMAGE:
     do_image(&start, end, x_user, y_user);
     break;
+  case BGCOLOR:
+    do_bgcolor (&start, end);
+    break;
   case BCOLOR:
     do_bcolor (&start, end);
     break;
   case ECOLOR:
     do_ecolor ();
+    break;
+  case BGRAY:
+    do_bgray (&start, end);
+    break;
+  case EGRAY:
+    do_egray ();
     break;
   case BXFORM:
     do_bxform (&start, end);
@@ -1064,3 +1164,75 @@ void add_xform_matrix (double xoff, double yoff,
   pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
 }
 
+
+static num_images = 0;
+pdf_obj *jpeg_build_object(struct jpeg *jpeg, double x_user, double
+			   y_user, struct xform_info *p)
+{
+  pdf_obj *xobject, *xobj_dict;
+  double xscale, yscale;
+  xobject = pdf_new_stream();
+  sprintf (work_buffer, "Im%d", ++num_images);
+  pdf_doc_add_to_page_xobjects (work_buffer, pdf_ref_obj (xobject));
+  xobj_dict = pdf_stream_dict (xobject);
+
+  pdf_add_dict (xobj_dict, pdf_new_name ("Name"),
+		pdf_new_name (work_buffer));
+  pdf_add_dict (xobj_dict, pdf_new_name ("Type"),
+		pdf_new_name ("XObject"));
+  pdf_add_dict (xobj_dict, pdf_new_name ("Subtype"),
+		pdf_new_name ("Image"));
+  pdf_add_dict (xobj_dict, pdf_new_name ("Width"),
+		pdf_new_number (jpeg -> width));
+  pdf_add_dict (xobj_dict, pdf_new_name ("Height"),
+		pdf_new_number (jpeg -> height));
+  pdf_add_dict (xobj_dict, pdf_new_name ("BitsPerComponent"),
+		pdf_new_number (jpeg -> bits_per_color));
+  if (jpeg->colors == 1)
+    pdf_add_dict (xobj_dict, pdf_new_name ("ColorSpace"),
+		  pdf_new_name ("DeviceGray"));
+  if (jpeg->colors > 1)
+    pdf_add_dict (xobj_dict, pdf_new_name ("ColorSpace"),
+		  pdf_new_name ("DeviceRGB"));
+  pdf_add_dict (xobj_dict, pdf_new_name ("Filter"),
+		pdf_new_name ("DCTDecode"));
+  {
+    int length;
+    rewind (jpeg -> file);
+    while ((length = fread (work_buffer, sizeof (char),
+			    WORK_BUFFER_SIZE, jpeg -> file)) > 0) {
+      pdf_add_stream (xobject, work_buffer, length);
+    }
+  }
+  {
+    xscale = jpeg -> width * dvi_tell_mag() * (72.0 / 100.0);
+    yscale = jpeg -> height * dvi_tell_mag() * (72.0 / 100.0);
+    if (p->scale != 0) {
+      xscale *= p->scale;
+      yscale *= p->scale;;
+    }
+    if (p->xscale != 0) {
+      xscale *= p->xscale;
+    }
+    if (p->yscale != 0) {
+      yscale *= p->yscale;
+    }
+    if (p->width != 0.0) {
+      xscale = p->width;
+      if (p->height == 0.0)
+	yscale = xscale;
+    }
+    if (p->height != 0.0) {
+      yscale = p->height;
+      if (p->width = 0.0)
+	xscale = p->yscale;
+    }
+  }
+  pdf_doc_add_to_page (" q ", 3);
+  add_xform_matrix (x_user, y_user, xscale, yscale, p->rotate);
+  if (p->depth != 0.0)
+    add_xform_matrix (0.0, -p->depth, 1.0, 1.0, 0.0);
+  sprintf (work_buffer, " /Im%d Do Q ", num_images);
+  pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
+  return (xobject);
+}

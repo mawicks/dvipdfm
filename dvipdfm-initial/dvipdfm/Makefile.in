@@ -1,33 +1,41 @@
-progname=dvipdf
+programs = dvipdfm ebb
 CC=@CC@
-INSTALL=@INSTALL@
+install=@INSTALL@
 CFLAGS += @CFLAGS@  @DEFS@ -I../kpathsea/
 LIBDIR = ../kpathsea/kpathsea/STATIC
 INCDIR = ../kpathsea/
 prefix=@prefix@
 datadir=@datadir@
 exec_prefix=@exec_prefix@
-BINDIR=@bindir@
-HEADERS = acdefines.h dvi.h pdflimits.h error.h io.h jpeg.h mem.h numbers.h \
+bindir=@bindir@
+headers = acdefines.h dvi.h pdflimits.h error.h io.h jpeg.h mem.h numbers.h \
 	pdfdev.h pdfdoc.h pdfparse.h pdfspecial.h tfm.h type1.h epdf.h
-SRC = pdfdev.c pdfdoc.c dvi.c io.c mem.c jpeg.c numbers.c pdfobj.c \
-	pdfparse.c pdfspecial.c tfm.c type1.c dvipdf.c epdf.c
-OBJ = pdfdev.o pdfdoc.o dvi.o io.o mem.o jpeg.o numbers.o pdfobj.o \
-        pdfparse.o pdfspecial.o tfm.o type1.o dvipdf.o epdf.o
-CONFIG = config.cache config.status Makefile config.h config.log
-PROGRAMS = dvipdfm
+src = pdfdev.c pdfdoc.c dvi.c io.c mem.c jpeg.c numbers.c pdfobj.c \
+	pdfparse.c pdfspecial.c tfm.c type1.c dvipdfm.c epdf.c
+obj = pdfdev.o pdfdoc.o dvi.o io.o mem.o jpeg.o numbers.o pdfobj.o \
+        pdfparse.o pdfspecial.o tfm.o type1.o dvipdfm.o epdf.o
+config = config.cache config.status Makefile config.h config.log
 default: all
-all:	$(PROGRAMS)
-dvipdfm: $(OBJ)
-	$(CC) $(CFLAGS) -o dvipdfm $(OBJ) -lkpathsea -lm -L$(LIBDIR)
-install: dvipdfm
-	$(INSTALL) dvipdfm $(BINDIR)
+all:	$(programs)
+dvipdfm: $(obj)
+	$(CC) $(LDFLAGS) -o dvipdfm $(obj) -lkpathsea -lm -L$(LIBDIR)
+ebb: ebb.o jpeg.o pdfobj.o mem.o io.o numbers.o pdfparse.o
+	$(CC) $(LDFLAGS) -o ebb $+ -lm
+install: install-exec
+uninstall: uninstall-exec
+install-exec: all
+	for prog in $(programs); \
+	 do $(install) $$prog $(bindir); done
+unintsall-exec:
+	for prog in $(programs); \
+	 do $(install) $$prog $(bindir); done
 distclean: clean
-	rm -f $(CONFIG)
+	rm -f $(config)
 clean:
-	rm -f $(OBJ)
-	rm -f $(PROGRAMS)
-	rm -f ../doc/*.log
+	rm -f *.o
+	rm -f $(programs)
+	rm -f ../doc/*.log ../doc/*.dvi ../doc/*.aux ../doc/dvipdfm.pdf
+	rm -f ../latex-support/*.log ../latex-support/*.dvi ../latex-support/*.aux ../latex-support/readme.pdf
 	rm -f core
-$(OBJ): $(HEADERS)	
+$(obj): $(headers)	
 
