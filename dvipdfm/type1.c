@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.69 1999/07/16 03:33:09 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.70 1999/07/16 11:02:48 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1044,7 +1044,7 @@ static void fill_in_defaults (struct font_record *font_record, const
     RELEASE(font_record->font_name);
     font_record -> font_name = NULL;
   }
-  /* We *must* fill in an afm_name either explicitly or by default */
+  /* We *must* fill in a font_name either explicitly or by default */
   if (font_record -> font_name == NULL) {
     font_record -> font_name = NEW (strlen(tex_name)+1, char);
     strcpy (font_record->font_name, tex_name);
@@ -1148,7 +1148,6 @@ int type1_font (const char *tex_name, int tfm_font_id, const char *resource_name
   if (is_a_base_font(font_record->font_name) ||
       (pfb_id = type1_pfb_id(font_record -> pfb_name, encoding_id,
 			     font_record -> font_name)) >= 0) {
-    fprintf (stderr, "DEBUG:HERE\n");
     /* Looks like we have a physical font.  Allocate storage for it */
     /* Make sure there is enough room in type1_fonts for this entry */
     if (num_type1_fonts >= max_type1_fonts) {
