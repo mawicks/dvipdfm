@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.5 1998/12/02 16:29:29 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.6 1998/12/04 03:55:07 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -876,6 +876,8 @@ static void do_xxx(UNSIGNED_QUAD size)
   for (i=0; i<size; i++) {
     buffer[i] = get_unsigned_byte(dvi_file);
   }
+  if (dvi_debug)
+    fprintf (stderr, "%s\n", buffer);
   dev_do_special (buffer, size);
   release (buffer);
 }
@@ -883,6 +885,8 @@ static void do_xxx(UNSIGNED_QUAD size)
 static void do_xxx1(void)
 {
   SIGNED_QUAD size;
+  if (dvi_debug)
+    fprintf (stderr, "(xxx1)");
   size = get_unsigned_byte(dvi_file);
   do_xxx(size);
 }

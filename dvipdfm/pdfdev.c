@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.9 1998/12/03 22:38:11 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.10 1998/12/04 03:55:08 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -560,13 +560,14 @@ void dev_select_font (long tex_font_id)
    at the beginningg even if it is continuing to set type
    in the current font.  This routine simply reinstantuates
    the current font. */
+
 void dev_reselect_font(void)
 {
   if (current_font >= 0) {
   text_mode();
-  sprintf (format_buffer, " /%s %g Tf ", dev_font[current_font].short_name,
-	   ROUND(dev_font[current_font].ptsize*DPI/72,0.01));
-  pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
+  /*  sprintf (format_buffer, " /%s %g Tf ", dev_font[current_font].short_name,
+      ROUND(dev_font[current_font].ptsize*DPI/72,0.01)); 
+      pdf_doc_add_to_page (format_buffer, strlen(format_buffer)); */
   /* Add to Font list in Resource dictionary for the object (which
      acts like a mini page so it uses pdf_doc_add_to_page_fonts()*/
   pdf_doc_add_to_page_fonts (dev_font[current_font].short_name,

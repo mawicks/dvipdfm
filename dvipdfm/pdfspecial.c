@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.13 1998/12/03 22:38:11 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.14 1998/12/04 03:55:08 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -58,7 +58,7 @@ static pdf_obj *jpeg_build_object(struct jpeg *jpeg,
 static void do_bxobj (char **start, char *end,
 		      double x_user, double y_user);
 static void do_exobj (void);
-static void do_uxobj (char **start, char *end);
+static void do_uxobj (char **start, char *end, double x_user, double y_user);
 
 static void do_bop(char **start, char *end)
 {
@@ -286,7 +286,7 @@ static int parse_dimension (char **start, char *end,
   skip_white(start, end);
   if ((key = parse_one_dim_word(start, end)) < 0 ||
       (number_string = parse_number(start, end)) == NULL) {
-    fprintf (stderr, "\nExpecting a dimension keyword and a number here\n");
+    fprintf (stderr, "\nExpecting a dimension or transformation keyword\nfollowed by a number here:\n");
     dump (*start, end);
     *start = save;
     return 0;
@@ -551,7 +551,7 @@ static void do_bxform (char **start, char *end)
     if (!parse_dimension (start, end, p)) {
       fprintf (stderr, "\nFailed to find transformation parameters\n");
       *start = save;
-      dump (*start, save);
+      dump (*start, end);
       return;
     }
   }
@@ -559,13 +559,13 @@ static void do_bxform (char **start, char *end)
     fprintf (stderr, "\nSpecified dimensions are inconsistent\n");
     fprintf (stderr, "\nSpecial will be ignored\n");
     *start = save;
-    dump (*start, save);
+    dump (*start, end);
     return;
   }
   if (p -> width != 0.0 || p -> height != 0.0 || p -> depth != 0.0) {
     fprintf (stderr, "Special: bt: width, height, and depth are meaningless\n");
     *start = save;
-    dump (*start, save);
+    dump (*start, end);
     return;
   }
   if (p -> scale != 0.0) {
@@ -1012,7 +1012,7 @@ struct pdfmark
   {"endxobj", EXOBJ},
   {"exobj", EXOBJ},
   {"usexobj", UXOBJ},
-  {"usexobj", UXOBJ}
+  {"uxobj", UXOBJ}
 };
 
 static int parse_pdfmark (char **start, char *end)
@@ -1308,7 +1308,7 @@ void pdf_parse_special(char *buffer, UNSIGNED_QUAD size, double
     do_exobj ();
     break;
   case UXOBJ:
-    do_uxobj (&start, end);
+    do_uxobj (&start, end, x_user, y_user);
     break;
   }
 }
@@ -1428,9 +1428,9 @@ static void do_bxobj (char **start, char *end, double x_user, double y_user)
   if (p->width == 0.0 || p->depth+p->height == 0.0) {
     fprintf (stderr, "Special: bxobj: Bounding box has a zero dimension\n");
   }
-  xobject = begin_form_xobj (x_user, y_user-p->depth, x_user+p->width,
-			     y_user+p->height);
-  add_reference (objname, xobject, NULL);
+  xobject = begin_form_xobj (x_user, y_user-p->depth, x_user+p->width, y_user+p->height);
+  add_reference (objname, xobject,
+		 pdf_name_value(pdf_lookup_dict(pdf_stream_dict(xobject), "Name")));
   /* Next line has Same explanation as for do_ann.  Clumsy
      has the desired effect.  This module is done with xobject.
      It's still linked in the doc module, which will release
@@ -1444,7 +1444,7 @@ static void do_exobj (void)
   end_form_xobj();
 }
 
-static void do_uxobj (char **start, char *end)
+static void do_uxobj (char **start, char *end, double x_user, double y_user)
 {
   char *objname, *res_name;
   pdf_obj *xobj_res;
@@ -1463,7 +1463,8 @@ static void do_uxobj (char **start, char *end)
 	     objname);
   }
   release (objname);
-  sprintf (work_buffer, " Do /%s ", res_name);
+  sprintf (work_buffer, " q 1 0 0 1 %g %g cm /%s Do Q ",
+	   ROUND(x_user, 0.1), ROUND(y_user, 0.1), res_name);
   pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
   pdf_doc_add_to_page_xobjects (res_name, xobj_res);
 }

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.12 1998/12/03 22:38:11 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.13 1998/12/04 03:55:08 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -931,11 +931,14 @@ pdf_obj *begin_form_xobj (double bbllx, double bblly, double bburx,
   this_page_contents = pdf_new_stream ();
   /* Make a bounding box for this Xobject */
   bbox = pdf_new_array ();
-  pdf_add_array (tmp1, pdf_new_number (bbllx));
-  pdf_add_array (tmp1, pdf_new_number (bblly));
-  pdf_add_array (tmp1, pdf_new_number (bburx));
-  pdf_add_array (tmp1, pdf_new_number (bbury));
+  pdf_add_array (bbox, pdf_new_number (0.0));
+  pdf_add_array (bbox, pdf_new_number (0.0));
+  pdf_add_array (bbox, pdf_new_number (ROUND(bburx-bbllx,0.1)));
+  pdf_add_array (bbox, pdf_new_number (ROUND(bbury-bblly,0.1)));
   /* Resource is already made, so call doc_make_form_xobj() */
+  sprintf (work_buffer, " 1 0 0 1 %g %g cm ",
+	   ROUND(-bbllx,0.1), ROUND(-bblly,0.1));
+  pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
   doc_make_form_xobj (this_page_contents, bbox,
 		      pdf_ref_obj(current_page_resources));
   /* Make sure the object is self-contained by adding the
