@@ -83,10 +83,8 @@ pdf_obj *pdf_include_page(pdf_obj *trailer, double x_user, double y_user,
 {
   pdf_obj *catalog, *page_tree, *kids_ref, *kids;
   pdf_obj *media_box, *resources, *contents, *contents_ref;
-  pdf_obj *new_resources, *this_form_contents;
-  pdf_obj *tmp1, *tmp2;
-  int i;
-  char *key;
+  pdf_obj *this_form_contents;
+  pdf_obj *tmp1;
   /* Now just lookup catalog location */
   /* Deref catalog */
 

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.4 1998/11/30 03:40:21 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.5 1998/11/30 20:38:25 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -265,7 +265,6 @@ double parse_one_unit (char **start, char *end)
 static int parse_dimension (char **start, char *end,
 			    struct xform_info *p)
 {
-  double dimension;
   char *number_string, *save = *start;
   double units;
   int key;
@@ -321,8 +320,7 @@ static int parse_dimension (char **start, char *end,
   case ROTATE:
     if (p->rotate != 0)
       fprintf (stderr, "\nDuplicate rotation specified\n");
-#define PI (4.0*atan(1.0))
-    p->rotate = atof (number_string) * PI / 180.0;
+    p->rotate = atof (number_string) * M_PI / 180.0;
     break;
   }
   release(number_string);
@@ -332,9 +330,8 @@ static int parse_dimension (char **start, char *end,
 
 static void do_ann(char **start, char *end)
 {
-  pdf_obj *result, *rectangle, *tmp1, *tmp2;
-  char *name, *number_string;
-  int dimension;
+  pdf_obj *result, *rectangle;
+  char *name;
   struct xform_info *p;
   p = new_xform_info();
   skip_white(start, end);
@@ -392,8 +389,7 @@ static void do_ann(char **start, char *end)
 static void do_bgcolor(char **start, char *end)
 {
   char *save = *start;
-  pdf_obj *color, *tmp;
-  double r, g, b;
+  pdf_obj *color;
   skip_white(start, end);
   if ((color = parse_pdf_object(start, end)) == NULL ||
       (color -> type != PDF_ARRAY && 
@@ -437,8 +433,7 @@ static void do_bgcolor(char **start, char *end)
 static void do_bcolor(char **start, char *end)
 {
   char *save = *start;
-  pdf_obj *color_array, *tmp;
-  double r, g, b;
+  pdf_obj *color_array;
   skip_white(start, end);
   if ((color_array = parse_pdf_object(start, end)) == NULL ||
       (color_array -> type != PDF_ARRAY && 
@@ -512,16 +507,22 @@ static void do_bxform (char **start, char *end)
     skip_white (start, end);
     if (!parse_dimension (start, end, p)) {
       fprintf (stderr, "\nFailed to find transformation parameters\n");
+      *start = save;
+      dump (*start, save);
       return;
     }
   }
   if (!validate_image_xform_info (p)) {
     fprintf (stderr, "\nSpecified dimensions are inconsistent\n");
     fprintf (stderr, "\nSpecial will be ignored\n");
+    *start = save;
+    dump (*start, save);
     return;
   }
   if (p -> width != 0.0 || p -> height != 0.0 || p -> depth != 0.0) {
     fprintf (stderr, "Special: bt: width, height, and depth are meaningless\n");
+    *start = save;
+    dump (*start, save);
     return;
   }
   if (p -> scale != 0.0) {
@@ -533,6 +534,7 @@ static void do_bxform (char **start, char *end)
   if (p -> yscale == 0.0)
     p->yscale = 1.0;
   dev_begin_xform (p->xscale, p->yscale, p->rotate);
+  return;
 }
 
 static void do_exform(void)
@@ -576,7 +578,7 @@ static void do_outline(char **start, char *end)
 static void do_article(char **start, char *end)
 {
   char *name, *save = *start;
-  pdf_obj *info_dict, *article_dict;
+  pdf_obj *info_dict;
   skip_white (start, end);
   if (*((*start)++) != '@' || (name = parse_ident(start, end)) == NULL) {
     fprintf (stderr, "Article name expected.\n");
@@ -594,9 +596,8 @@ static void do_article(char **start, char *end)
 
 static void do_bead(char **start, char *end)
 {
-  pdf_obj *bead_dict, *rectangle, *tmp1, *tmp2;
-  char *name, *number_string, *save = *start;
-  int key;
+  pdf_obj *bead_dict, *rectangle;
+  char *name, *save = *start;
   struct xform_info *p;
   skip_white(start, end);
   if (*((*start)++) != '@' || (name = parse_ident(start, end)) == NULL) {
@@ -643,7 +644,7 @@ static void do_bead(char **start, char *end)
 
 static void do_epdf (char **start, char *end, double x_user, double y_user)
 {
-  char *filename, *objname, *number_string;
+  char *filename, *objname;
   pdf_obj *filestring;
   pdf_obj *trailer, *result;
   struct xform_info *p;
@@ -706,7 +707,7 @@ static void do_epdf (char **start, char *end, double x_user, double y_user)
 
 static void do_image (char **start, char *end, double x_user, double y_user)
 {
-  char *filename, *number_string, *objname;
+  char *filename, *objname;
   pdf_obj *filestring, *result;
   struct jpeg *jpeg;
   struct xform_info *p;
@@ -1247,7 +1248,7 @@ pdf_obj *jpeg_build_object(struct jpeg *jpeg, double x_user, double
     }
     if (p->height != 0.0) {
       yscale = p->height;
-      if (p->width = 0.0)
+      if (p->width == 0.0)
 	xscale = p->yscale;
     }
   }

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/jpeg.c,v 1.1 1998/11/27 21:16:37 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/jpeg.c,v 1.2 1998/11/30 20:38:25 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -54,7 +54,6 @@
 
 int check_for_jpeg(FILE *file)
 {
-  UNSIGNED_BYTE byte;
   rewind (file);
   if (get_unsigned_byte (file) != 0xff ||
       get_unsigned_byte (file) != SOI)

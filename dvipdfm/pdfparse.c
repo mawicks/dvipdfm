@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.c,v 1.3 1998/11/30 03:40:21 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.c,v 1.4 1998/11/30 20:38:25 mwicks Exp $
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
 
@@ -162,7 +162,6 @@ pdf_obj *parse_pdf_array (char **start, char *end)
 char *parse_number (char **start, char *end)
 {
   char *number, *save;
-  int length;
   skip_white(start, end);
   save = *start;
   if (*start < end && (**start == '+' || **start == '-')) {
@@ -237,7 +236,6 @@ pdf_obj *parse_pdf_name (char **start, char *end)
 
 char *parse_pdf_reference(char **start, char *end)
 {
-  char *name;
   skip_white(start, end);
   if (**start != '@') {
     fprintf (stderr, "\nPDF Name expected and not found.\n");
@@ -268,7 +266,6 @@ pdf_obj *parse_pdf_null (char **start, char *end)
 {
   char *save = *start;
   char *ident;
-  pdf_obj *result;
   skip_white(start, end);
   ident = parse_ident(start, end);
   if (!strcmp (ident, "null")) {
@@ -308,13 +305,14 @@ int xtod (char c)
 pdf_obj *parse_pdf_hex_string (char **start, char *end)
 {
   pdf_obj *result;
-  char *save, *string;
+  char *save;
+  unsigned char *string;
   int strlength;
   skip_white (start, end);
   if (*start == end || *((*start)++) != '<')
     return NULL;
   save = *start;
-  string = NEW ((end - *start)/2+2, char); /* A little excess here */
+  string = NEW ((end - *start)/2+2, unsigned char); /* A little excess here */
   strlength = 0;
   while (*start < end && **start != '>') {
     string[strlength] = xtod(**start) * 16;
@@ -337,13 +335,14 @@ pdf_obj *parse_pdf_hex_string (char **start, char *end)
 pdf_obj *parse_pdf_string (char **start, char *end)
 {
   pdf_obj *result;
-  char *save, *string;
+  char *save;
+  unsigned char *string;
   int strlength;
   skip_white(start, end);
   if (*start == end || *((*start)++) != '(')
     return NULL;
   save = *start;
-  string = NEW (end - *start, char);
+  string = NEW (end - *start, unsigned char);
   strlength = 0;
   while (*start < end &&
 	 **start != ')') {
@@ -371,6 +370,7 @@ pdf_obj *parse_pdf_string (char **start, char *end)
 	  string[strlength] = 0;
 	  for (i=0; i<3; i++) 
 	    string[strlength] = string[strlength]*8 + (*((*start)++)-'0');
+	  strlength+= 1;
 	}
       }
     else
@@ -389,7 +389,7 @@ pdf_obj *parse_pdf_string (char **start, char *end)
 static pdf_obj *parse_pdf_stream (char **start, char *end, pdf_obj
 				  *dict)
 {
-  pdf_obj *result, *new_dict, *tmp1, *tmp2, *length_obj;
+  pdf_obj *result, *new_dict, *tmp1, *length_obj;
   int length;
   if (pdf_lookup_dict(dict, "F")) {
     fprintf (stderr, "File streams not implemented (yet)");

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.6 1998/11/30 01:45:36 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.7 1998/11/30 20:38:26 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -215,7 +215,7 @@ struct font_record *get_font_record (const char *tex_name)
 
 
 
-static is_a_base_font (char *name)
+static int is_a_base_font (char *name)
 {
   static char *basefonts[] = {
     "Courier",			"Courier-Bold",		"Courier-Oblique",
@@ -257,7 +257,6 @@ static unsigned long do_pfb_segment (FILE *file, int expected_type, pdf_obj *str
 {
   int i, ch, ntotal = 0;
   int stream_type;
-  static char buffer[256];
   unsigned long length;
   if ((ch = fgetc (file)) < 0 || ch != 128){
     fprintf (stderr, "Got %d, expecting 128\n", ch);
@@ -293,7 +292,7 @@ static unsigned long do_pfb_segment (FILE *file, int expected_type, pdf_obj *str
 pdf_obj *type1_fontfile (const char *pfb_name)
 {
   FILE *type1_binary_file;
-  pdf_obj *stream, *stream_dict, *stream_label, *tmp1, *tmp2;
+  pdf_obj *stream, *stream_dict, *stream_label;
   unsigned long length1, length2, length3;
   char *full_pfb_name;
   int ch;
@@ -360,7 +359,7 @@ static char *start;
 static char *end;
 static FILE *type1_afm_file;
 
-static get_afm_token (void)
+static int get_afm_token (void)
 {
   int i;
   if (mfgets (buffer, sizeof(buffer), type1_afm_file)) {
@@ -385,9 +384,8 @@ static double capheight, italicangle;
 static int isfixed;
 static char fontname[256];  /* Make as long as buffer */
 
-static reset_afm_variables (void)
+static void reset_afm_variables (void)
 {
-  int i;
   descent = 0.0; ascent = 0.0;
   bbllx = 0.0; bblly = 0.0;
   bburx = 0.0; bbury = 0.0;
@@ -419,7 +417,7 @@ static void close_afm_file (void)
 
 static void scan_afm_file (void)
 {
-  int token, num_char_metrics;
+  int token;
   while ((token = get_afm_token()) >= 0) {
     skip_white (&start, end); 
     if (start < end)
@@ -575,8 +573,7 @@ pdf_obj *type1_font_resource (const char *tex_name, int tfm_font_id, const char 
 {
   int i;
   int firstchar, lastchar;
-  pdf_obj *font_resource, *font_resource_ref, *font_descriptor, *tmp1,
-    *tmp2;
+  pdf_obj *font_resource, *font_resource_ref, *tmp1;
   pdf_obj *font_encoding_ref;
   struct font_record *font_record;
   font_resource = pdf_new_dict ();

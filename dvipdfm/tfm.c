@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.2 1998/11/29 05:10:08 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.3 1998/11/30 20:38:26 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -64,10 +64,9 @@ struct a_tfm
 struct a_tfm tfm[MAX_FONTS];
 static numtfms = 0; /* numtfms should equal numfonts in dvi.c */
 
-static invalid_tfm_file (void)
+static void invalid_tfm_file (void)
 {
   ERROR ("tfm_open: Something is wrong.  Are you sure this is a valid TFM file?\n");
-  
 }
 
 /* External Routine */
@@ -87,7 +86,7 @@ void tfm_set_debug (void)
 FILE *tfm_file;
 unsigned tfm_file_size;
 
-static sum_of_tfm_sizes (struct a_tfm *a_tfm)
+static unsigned int sum_of_tfm_sizes (struct a_tfm *a_tfm)
 {
   unsigned long result = 6;
   result += (a_tfm -> ec - a_tfm -> bc + 1);
@@ -104,7 +103,7 @@ static sum_of_tfm_sizes (struct a_tfm *a_tfm)
 }
 
 
-static get_sizes (struct a_tfm *a_tfm)
+static void get_sizes (struct a_tfm *a_tfm)
 {
   a_tfm -> wlenfile = get_unsigned_pair (tfm_file);
   a_tfm -> wlenheader = get_unsigned_pair (tfm_file);
@@ -128,9 +127,10 @@ static get_sizes (struct a_tfm *a_tfm)
     fprintf (stderr, "Stated size (words)%d\n", a_tfm -> wlenfile);
     fprintf (stderr, "Actual size (bytes)%d\n", tfm_file_size);
   }
+  return;
 }
 
-static dump_sizes (struct a_tfm *a_tfm)
+static void dump_sizes (struct a_tfm *a_tfm)
 {
   fprintf (stderr, "wlenfile: %d\n", a_tfm -> wlenfile);
   fprintf (stderr, "wlenheader: %d\n", a_tfm -> wlenheader);
@@ -144,38 +144,43 @@ static dump_sizes (struct a_tfm *a_tfm)
   fprintf (stderr, "nkern: %d\n", a_tfm -> nkern);
   fprintf (stderr, "nextens: %d\n", a_tfm -> nextens);
   fprintf (stderr, "nfonparm: %d\n", a_tfm -> nfonparm);
+  return;
 }
 
 
-static get_fix_word_array (SIGNED_QUAD *a_word, int length)
+static void get_fix_word_array (SIGNED_QUAD *a_word, int length)
 {
   unsigned i;
   for (i=0; i< length; i++) {
     a_word[i] = get_signed_quad (tfm_file);
   }
+  return;
 }
 
-static get_unsigned_quad_array (UNSIGNED_QUAD *a_word, int length)
+static void get_unsigned_quad_array (UNSIGNED_QUAD *a_word, int length)
 {
   unsigned i;
   for (i=0; i< length; i++) {
     a_word[i] = get_unsigned_quad (tfm_file);
   }
+  return;
 }
 
-static do_fix_word_array (SIGNED_QUAD **a, UNSIGNED_PAIR len)
+static void do_fix_word_array (SIGNED_QUAD **a, UNSIGNED_PAIR len)
 {
   *a = NEW (len, SIGNED_QUAD);
   get_fix_word_array (*a, len);
+  return;
 }
 
-static do_unsigned_quad_array (UNSIGNED_QUAD **a, UNSIGNED_PAIR len)
+static void do_unsigned_quad_array (UNSIGNED_QUAD **a, UNSIGNED_PAIR len)
 {
   *a = NEW (len, UNSIGNED_QUAD);
   get_unsigned_quad_array (*a, len);
+  return;
 }
 
-static get_arrays (struct a_tfm *a_tfm)
+static void get_arrays (struct a_tfm *a_tfm)
 {
   if (tfm_debug) fprintf (stderr, "Reading %d word header\n",
 			  a_tfm->wlenheader);
@@ -207,12 +212,14 @@ static get_arrays (struct a_tfm *a_tfm)
   if (tfm_debug) fprintf (stderr, "Reading %d fontparms\n",
 			  a_tfm -> nfonparm);
   do_fix_word_array (&(a_tfm -> param), a_tfm -> nfonparm);
+  return;
 }
 
-static get_tfm (struct a_tfm *a_tfm)
+static void get_tfm (struct a_tfm *a_tfm)
 {
   get_sizes (a_tfm);
   get_arrays (a_tfm);
+  return;
 }
 
 /* External Routine */

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.4 1998/11/29 09:21:48 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.5 1998/11/30 20:38:25 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -48,7 +48,7 @@ static struct xref_entry
   unsigned long file_position;
   pdf_obj *pdf_obj;
 } output_xref[PDF_MAX_IND_OBJECTS];
-static unsigned startxref;
+static unsigned long startxref;
 
 static unsigned pdf_root_obj = 0, pdf_info_obj = 0;
 
@@ -140,7 +140,7 @@ static void dump_trailer(void)
   starttrailer = pdf_output_file_position;
   pdf_out (pdf_output_file, "trailer\n", 8);
   pdf_out (pdf_output_file, "<<\n", 3);
-  length = sprintf (format_buffer, "/Size %ld\n",
+  length = sprintf (format_buffer, "/Size %d\n",
 		    next_label);
   pdf_out (pdf_output_file, format_buffer, length);
   if (pdf_root_obj == 0) 
@@ -316,7 +316,7 @@ static void write_indirect (FILE *file, const pdf_indirect *indirect)
     else {
       pdf_obj *clean;
       if (indirect -> dirty_file != pdf_input_file) {
-	fprintf (stderr, "\nwrite_indirect, label=%d, from_file=%x, current_file=%x\n", indirect -> label, indirect->dirty_file, pdf_input_file);
+	fprintf (stderr, "\nwrite_indirect, label=%d, from_file=%p, current_file=%p\n", indirect -> label, indirect->dirty_file, pdf_input_file);
 	ERROR ("write_indirect:  input PDF file doesn't match object");
       }
       clean = pdf_ref_file_obj (indirect -> label);
@@ -431,7 +431,7 @@ pdf_obj *pdf_new_string (const unsigned char *string, unsigned length)
   result -> data = data;
   if (length != 0) {
     data -> length = length;
-    data -> string = NEW (length+1, char);
+    data -> string = NEW (length+1, unsigned char);
     memcpy (data -> string, string, length);
     data -> string[length] = 0;
   } else {
@@ -441,13 +441,12 @@ pdf_obj *pdf_new_string (const unsigned char *string, unsigned length)
   return result;
 }
 
-char *pdf_string_value (pdf_obj *a_pdf_string)
+unsigned char *pdf_string_value (pdf_obj *a_pdf_string)
 {
   pdf_string *data;
   data = a_pdf_string -> data;
   return data -> string;
 }
-
 
 int pdfobj_escape_c (char *buffer, unsigned char ch)
 {
@@ -497,7 +496,7 @@ static void release_string (pdf_string *data)
   free (data);
 }
 
-void pdf_set_string (pdf_obj *object, char *string, unsigned length)
+void pdf_set_string (pdf_obj *object, unsigned char *string, unsigned length)
 {
   pdf_string *data;
   if (object == NULL || object -> type != PDF_STRING) {
@@ -509,7 +508,7 @@ void pdf_set_string (pdf_obj *object, char *string, unsigned length)
   }
   if (length != 0) {
     data -> length = length;
-    data -> string = NEW (length, char);
+    data -> string = NEW (length, unsigned char);
     strncpy (data -> string, string, length);
   } else {
     data -> length = 0;
@@ -521,7 +520,6 @@ int pdf_check_name(const char *name)
 {
   static char *valid_chars =
     "!\"&'*+,-.0123456789:;=?@ABCDEFGHIJKLMNOPQRSTUVWXYZ\\^_`abcdefghijklmnopqrstuvwxyz|~";
-  int i;
   if (strspn (name, valid_chars) == strlen (name))
     return 1;
   else
@@ -844,7 +842,7 @@ pdf_obj *pdf_new_stream (void)
 
 static void write_stream (FILE *file, const pdf_stream *stream)
 {
-  int ch, length = 0, nwritten = 0, lastchar = 0;
+  int length = 0, nwritten = 0, lastchar = 0;
   pdf_write_obj (file, stream -> dict);
   pdf_out (file, "\nstream\n", 8);
   rewind (stream -> tmpfile);
@@ -897,7 +895,6 @@ void pdf_add_stream (pdf_obj *stream, char *stream_data, unsigned length)
 
 void pdf_write_obj (FILE *file, const pdf_obj *object)
 {
-  int length;
   if (object == NULL) {
     ERROR ("pdf_write_obj passed null pointer");
   }
@@ -954,7 +951,6 @@ static void pdf_flush_obj (FILE *file, const pdf_obj *object)
 
 void pdf_release_obj (pdf_obj *object)
 {
-  int length;
   if (object == NULL)
     return;
   if (object -> type > PDF_INDIRECT ||
@@ -996,6 +992,9 @@ void pdf_release_obj (pdf_obj *object)
     case PDF_STREAM:
       release_stream (object -> data);
       break;
+    case PDF_INDIRECT:
+      release_indirect (object -> data);
+      break;
     }
     object -> type = -1;  /* This might help detect freeing already freed objects */
     free (object);
@@ -1035,7 +1034,6 @@ static pdf_file_size = 0;
 static long find_xref(void)
 {
   long currentpos, xref_pos;
-  int length, ch;
   int tries = 0;
   char *start, *end, *number;
   if (debug)
@@ -1070,7 +1068,7 @@ static long find_xref(void)
   release (number);
   if (debug) {
     fprintf (stderr, ")\n");
-    fprintf (stderr, "xref @ %d\n", xref_pos);
+    fprintf (stderr, "xref @ %ld\n", xref_pos);
   }
   return xref_pos;
 }
@@ -1181,7 +1179,7 @@ pdf_obj *pdf_new_ref (int label, int generation)
 
 pdf_obj *pdf_read_object (int obj_no) 
 {
-  long start_pos, end_pos, length;
+  long start_pos, end_pos;
   char *buffer, *number, *parse_pointer, *end;
   pdf_obj *result;
   if (debug) {
@@ -1196,13 +1194,13 @@ pdf_obj *pdf_read_object (int obj_no)
     return NULL;
   }
   if (debug) {
-    fprintf (stderr, "\nobj@%d\n", xref_table[obj_no].position);
+    fprintf (stderr, "\nobj@%ld\n", xref_table[obj_no].position);
   }
   seek_absolute (pdf_input_file, start_pos =
 		 xref_table[obj_no].position);
   end_pos = next_object (obj_no);
   if (debug) {
-    fprintf (stderr, "\nendobj@%d\n", end_pos);
+    fprintf (stderr, "\nendobj@%ld\n", end_pos);
   }
   buffer = NEW (end_pos - start_pos+1, char);
   fread (buffer, sizeof(char), end_pos-start_pos, pdf_input_file);
@@ -1303,7 +1301,7 @@ static int parse_xref (void)
   }
   /* Next line in file has first item and size of table */
   mfgets (work_buffer, WORK_BUFFER_SIZE, pdf_input_file);
-  sscanf (work_buffer, "%ld %d", &first_obj, &num_table_objects);
+  sscanf (work_buffer, "%ld %ld", &first_obj, &num_table_objects);
   if (num_input_objects < first_obj+num_table_objects) {
     extend_xref (first_obj+num_table_objects);
   }
@@ -1318,7 +1316,7 @@ static int parse_xref (void)
     sscanf (work_buffer, "%ld %d", &(xref_table[i].position), 
 	    &(xref_table[i].generation));
     if (0) {
-      fprintf (stderr, "pos: %d gen: %d\n", xref_table[i].position,
+      fprintf (stderr, "pos: %ld gen: %d\n", xref_table[i].position,
 	       xref_table[i].generation);
     }
     if (work_buffer[17] != 'n' && work_buffer[17] != 'f') {
@@ -1397,14 +1395,9 @@ pdf_obj *read_xref (void)
   return main_trailer;
 }
 
-static int num_xobjects = 0;
-
 pdf_obj *pdf_open (char *filename)
 {
-  int i;
-  pdf_obj *tmp1, *tmp2;
   pdf_obj *trailer;
-  char *parse_pointer;
   if ((pdf_input_file = fopen (filename, FOPEN_RBIN_MODE)) == NULL) {
     fprintf (stderr, "Unable to open file name (%s)\n", filename);
     return NULL;
@@ -1434,7 +1427,7 @@ void pdf_close (void)
   int i, done;
   if (debug) {
     fprintf (stderr, "\npdf_close:\n");
-    fprintf (stderr, "pdf_input_file=%x\n", pdf_input_file);
+    fprintf (stderr, "pdf_input_file=%p\n", pdf_input_file);
   }
   
   do {

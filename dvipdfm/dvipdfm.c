@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.3 1998/11/29 21:37:16 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.4 1998/11/30 20:38:24 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -34,6 +34,7 @@
 #include "string.h"
 #include "pdfdoc.h"
 #include "pdfdev.h"
+#include "type1.h"
 
 #ifndef HAVE_BASENAME
 const char *basename (const char *s);

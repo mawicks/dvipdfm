@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.2 1998/11/27 23:35:01 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.3 1998/11/30 20:38:25 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -114,19 +114,6 @@ struct dev_font {
   double ptsize;
   pdf_obj *font_resource;
 } dev_font[MAX_DEVICE_FONTS];
-
-static void no_mode (void)
-{
-  switch (motion_state) {
-  case STRING_MODE:
-    pdf_doc_add_to_page (")", 1); /* Fall through */
-  case LINE_MODE:
-    pdf_doc_add_to_page ("]TJ ", 4); /* Fall through */
-  case TEXT_MODE:
-    pdf_doc_add_to_page (" ET ", 4);
-  }
-  motion_state = NO_MODE;
-}
 
 static void text_mode (void)
 {
@@ -428,7 +415,6 @@ static void dev_clear_xform_stack (void)
 
 void dev_begin_xform (double xscale, double yscale, double rotate)
 {
-#define PI = (4.0*atan (1.0));
   double c, s;
   if (num_transforms >= MAX_TRANSFORMS) {
     fprintf (stderr, "\ndev_set_color:  Exceeded depth of transformation stack\n");
@@ -544,7 +530,6 @@ void dev_locate_font (char *tex_name,
 void dev_select_font (long tex_font_id)
 {
   int i;
-  pdf_obj *tmp1, tmp2;
   if (debug) {
     fprintf (stderr, "(dev_select_font)");
   }
@@ -572,7 +557,6 @@ void dev_select_font (long tex_font_id)
 
 void dev_set_char (unsigned ch, double width)
 {
-  char c;
   int len;
   if (debug) {
     fprintf (stderr, "(dev_set_char (width=%g)", width);
@@ -580,9 +564,8 @@ void dev_set_char (unsigned ch, double width)
       fprintf (stderr, "(%c)", ch);
     fprintf (stderr, ")");
   }
-  c = ch;
   string_mode();
-  len = pdfobj_escape_c (format_buffer, c);
+  len = pdfobj_escape_c (format_buffer, ch);
   pdf_doc_add_to_page (format_buffer, len);
   dev_xpos += width;
 }
@@ -663,7 +646,6 @@ double dev_tell_y (void)
 
 void dev_do_special (char *buffer, UNSIGNED_QUAD size)
 {
-  int i;
   graphics_mode();
   pdf_parse_special (buffer, size, dev_xpos, dev_ypos, dev_xpos, page_height+dev_ypos);
 }

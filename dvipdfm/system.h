@@ -18,7 +18,6 @@ extern void pdf_set_root(pdf_obj *object);
 extern void dev_do_special(char *buffer,unsigned long size);
 extern void pdf_doc_add_to_page_xobjects(const char *name,pdf_obj *resource);
 extern void pdf_doc_add_to_page(char *buffer,unsigned int length);
-static void release_stream(pdf_stream *stream);
 extern struct pdf_obj *parse_pdf_null(char **start ,char *end);
 extern void dvi_do_page(int n);
 extern int dvi_npages(void );

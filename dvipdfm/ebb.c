@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.2 1998/11/30 03:37:04 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.3 1998/11/30 20:38:24 mwicks Exp $
 
     This is ebb, a bounding box extraction program.
     Copyright (C) 1998  by Mark A. Wicks
@@ -143,7 +143,6 @@ void do_pdf (FILE *file, char *filename)
   /* At this point, we should have the media box for the first page */ 
   {
     pdf_obj *bbllx, *bblly, *bburx, *bbury;
-    double width, height;
     if ((bbllx = pdf_get_array (media_box, 1)) == NULL ||
 	(bblly = pdf_get_array (media_box, 2)) == NULL ||
 	(bburx = pdf_get_array (media_box, 3)) == NULL ||
@@ -161,7 +160,7 @@ void do_pdf (FILE *file, char *filename)
 
 FILE *inputfile;
 
-main (int argc, char *argv[]) 
+int main (int argc, char *argv[]) 
 {
   argc -= 1;
   argv += 1;
@@ -199,6 +198,7 @@ main (int argc, char *argv[])
     fprintf (stderr, "Can't handle file type for file named %s\n",
 	     argv[0]);
   }
+  return 0;
 }
 
 /* This is basically a stub so that pdf_special and pdf_doc don't have

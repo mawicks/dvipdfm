@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.1 1998/11/27 21:16:37 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.2 1998/11/30 20:38:24 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -498,7 +498,6 @@ void dvi_init (char *outputfile)
   do_scales();
   if (dvi_debug) fprintf (stderr, "dvi: Initializing output device\n");
   dev_init (outputfile);
-  dev_add_comment (dvi_comment);
   if (dvi_debug) fprintf (stderr, "dvi: locating fonts\n");
   do_locate_fonts();
   if (dvi_debug) fprintf (stderr, "dvi: pdf_init done\n");
@@ -506,6 +505,10 @@ void dvi_init (char *outputfile)
 
 void dvi_complete (void)    
 {
+  /* We add comment in dvi_complete instead of dvi_init so user has
+     a change to overwrite it.  The docinfo dictionary is
+     treated as a write-once record */
+  dev_add_comment (dvi_comment);
   if (dvi_debug) fprintf (stderr, "dvi:  Closing output device...");
   dev_close();
   if (dvi_debug) fprintf (stderr, "dvi:  Output device closed\n");
@@ -536,7 +539,7 @@ static void do_down (SIGNED_QUAD ch)
 
 static void do_set (SIGNED_QUAD ch)
 {
-  double dvi_width, dev_width;
+  double dvi_width;
   if (current_font < 0) {
     ERROR ("do_set:  No font selected");
   }
@@ -547,7 +550,6 @@ static void do_set (SIGNED_QUAD ch)
   if (dvi_debug) {
     fprintf (stderr, "Done\n");
   }
-  /* Move right by the character width */
 }
 
 static void do_rule (SIGNED_QUAD width, SIGNED_QUAD height)
@@ -586,13 +588,17 @@ static void do_putrule(void)
 
 static void do_put (SIGNED_QUAD ch)
 {
+  if (current_font < 0) {
+    ERROR ("do_put:  No font selected");
+  }
   dev_set_char (ch, 0.0);
   do_moveto (dvi_state.h, dvi_state.v); /* Move back */
+  return;
 }
 
 static void do_put1(void)
 {
-  do_set (get_unsigned_byte(dvi_file));
+  do_put (get_unsigned_byte(dvi_file));
 }
 
 static void do_push (void) 

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.3 1998/11/30 03:38:38 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.4 1998/11/30 20:38:25 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -54,7 +54,7 @@ static pdf_obj *this_page_bop = NULL, *this_page_eop = NULL;
 static pdf_obj *this_page_beads = NULL;
 static pdf_obj *this_page_annots = NULL;
 static pdf_obj *this_page_xobjects = NULL;
-static pdf_obj *tmp1, *tmp2, *tmp3;
+static pdf_obj *tmp1, *tmp2;
 
 static int page_count = 0;
 static struct {
@@ -62,10 +62,10 @@ static struct {
   pdf_obj *page_ref;
 } pages[MAX_PAGES];
 
-static start_page_tree (void);
-static create_catalog (void);
-static start_current_page_resources (void);
-static finish_page_tree(void);
+static void start_page_tree (void);
+static void create_catalog (void);
+static void start_current_page_resources (void);
+static void finish_page_tree(void);
 
 static void start_name_tree(void);
 static void finish_name_tree(void);
@@ -88,7 +88,7 @@ void pdf_doc_set_debug(void)
   debug = 1;
 }
 
-static start_page_tree (void)
+static void start_page_tree (void)
 {
   if (debug) {
     fprintf (stderr, "(start_page_tree)");
@@ -107,6 +107,7 @@ static start_page_tree (void)
 		pdf_link_obj (page_tree_label));
   glob_page_bop = pdf_new_stream();
   glob_page_eop = pdf_new_stream();
+  return;
 }
 
 void pdf_doc_bop (char *string, unsigned length)
@@ -134,7 +135,7 @@ void pdf_doc_eop (char *string, unsigned length)
     pdf_add_stream (glob_page_eop, string, length);
 }
 
-static start_outline_tree (void)
+static void start_outline_tree (void)
 {
   if (debug) {
     fprintf (stderr, "(start_outline_tree)");
@@ -147,6 +148,7 @@ static start_outline_tree (void)
   pdf_add_dict (catalog,
 		pdf_new_name ("Outlines"),
 		pdf_ref_obj(outline[outline_depth].entry));
+  return;
 }
 
 static pdf_obj *names_dict;
@@ -180,7 +182,7 @@ static char *asn_date (void)
   }
   time(&current_time);
   bd_time = localtime(&current_time);
-  sprintf (date_string, "D:%04d%02d%02d%02d%02d%02d%0+3d'%02d'",
+  sprintf (date_string, "D:%04d%02d%02d%02d%02d%02d%0+3ld'%02ld'",
 	   bd_time -> tm_year+1900, bd_time -> tm_mon+1, bd_time -> tm_mday,
 	   bd_time -> tm_hour, bd_time -> tm_min, bd_time -> tm_sec,
 	   -timezone/3600, timezone%3600);
@@ -188,9 +190,8 @@ static char *asn_date (void)
 }
 
 #define BANNER "dvipdfm %s, Copyright (C) 1998, by Mark A. Wicks"
-static create_docinfo (void)
+static void create_docinfo (void)
 {
-  pdf_obj *tmp1, *tmp2;
   char *time_string, *banner;
   /* Create an empty Info entry and put
      into root object */
@@ -210,6 +211,7 @@ static create_docinfo (void)
 		pdf_new_name ("CreationDate"),
 		pdf_new_string (time_string, strlen (time_string)));
   pdf_set_info (docinfo);
+  return;
 }
 
 void pdf_doc_merge_with_docinfo (pdf_obj *dictionary)
@@ -222,7 +224,7 @@ void pdf_doc_merge_with_catalog (pdf_obj *dictionary)
   pdf_merge_dict (catalog, dictionary);
 }
 
-static create_catalog (void)
+static void create_catalog (void)
 {
   if (debug) {
     fprintf (stderr, "(create_catalog)");
@@ -242,9 +244,10 @@ static create_catalog (void)
   start_dests_tree();
   finish_name_tree();
   start_articles();
+  return;
 }
 
-static start_current_page_resources (void)
+static void start_current_page_resources (void)
 {
   /* work on resources to put in Pages */
   if (debug) {
@@ -262,6 +265,7 @@ static start_current_page_resources (void)
   pdf_add_dict (current_page_resources,
 		pdf_new_name ("XObject"),
 		pdf_ref_obj (this_page_xobjects));
+  return;
 }
 
 void pdf_doc_add_to_page_xobjects (const char *name, pdf_obj
@@ -278,7 +282,6 @@ void pdf_doc_add_to_page_xobjects (const char *name, pdf_obj
 
 void pdf_doc_add_to_page_resources (const char *name, pdf_obj *resource)
 {
-  pdf_obj *tmp1;
   if (debug) {
     fprintf (stderr, "(pdf_doc_add_to_page_resources)");
   }
@@ -297,7 +300,7 @@ void pdf_doc_add_to_page_annots (pdf_obj *annot)
 }
 
 
-static finish_page_tree(void)
+static void finish_page_tree(void)
 {
   /* Back to work on that page tree */
   if (debug) {
@@ -316,6 +319,7 @@ static finish_page_tree(void)
 		pdf_ref_obj (pages_kids));
   /* Page_Tree is done.  */
   pdf_release_obj (page_tree);
+  return;
 }
 
 void pdf_doc_change_outline_depth(int new_depth)
@@ -438,7 +442,8 @@ static int CDECL cmp_dest (const void *d1, const void *d2)
   int tmp;
   length = MIN (((dest_entry *) d1) -> length, ((dest_entry *) d2) ->
 		length);
-  if (tmp = strncmp (((dest_entry *) d1) -> name, ((dest_entry *) d2) -> name, length))
+  if ((tmp = strncmp (((dest_entry *) d1) -> name, ((dest_entry *) d2)
+		      -> name, length)) != 0)
     return tmp;
   if (((dest_entry *) d1) -> length == ((dest_entry *) d2) -> length)
     return 0;
@@ -447,8 +452,12 @@ static int CDECL cmp_dest (const void *d1, const void *d2)
 
 static void finish_dests_tree (void)
 {
-  pdf_obj *kid, *node, *name_array;
+  pdf_obj *kid, *name_array;
   int i;
+  if (number_dests <= 0){
+    pdf_release_obj (dests_dict);
+    return;
+  }
   name_array = pdf_new_array ();
   qsort(dests, number_dests, sizeof(dests[0]), cmp_dest);
   for (i=0; i<number_dests; i++) {
@@ -664,7 +673,6 @@ pdf_obj *pdf_doc_ref_page (unsigned page_no)
 
 pdf_obj *pdf_doc_this_page (void)
 {
-  pdf_obj *result;
   if (page_count <= 0) {
     ERROR ("Reference to current page, but no pages have been started yet");
   }
@@ -673,7 +681,6 @@ pdf_obj *pdf_doc_this_page (void)
 
 pdf_obj *pdf_doc_prev_page (void)
 {
-  pdf_obj *result;
   if (page_count <= 0) {
     ERROR ("Reference to previous page, but no pages have been started yet");
   }
@@ -682,7 +689,6 @@ pdf_obj *pdf_doc_prev_page (void)
 
 pdf_obj *pdf_doc_next_page (void)
 {
-  pdf_obj *result;
   if (page_count <= 0) {
     ERROR ("Reference to previous page, but no pages have been started yet");
   }

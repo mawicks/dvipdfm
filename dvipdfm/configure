@@ -1898,8 +1898,54 @@ fi
 
 
 
+echo $ac_n "checking whether time.h defines timezone as an external variable""... $ac_c" 1>&6
+echo "configure:1903: checking whether time.h defines timezone as an external variable" >&5
+cat > conftest.$ac_ext <<EOF
+#line 1905 "configure"
+#include "confdefs.h"
+#include <time.h>
+int main() {
+ timezone; 
+; return 0; }
+EOF
+if { (eval echo configure:1912: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest; then
+  rm -rf conftest*
+  echo "$ac_t""yes" 1>&6; cat >> confdefs.h <<\EOF
+#define HAVE_TIMEZONE 1
+EOF
+
+else
+  echo "configure: failed program was:" >&5
+  cat conftest.$ac_ext >&5
+  rm -rf conftest*
+  echo "$ac_t""no" 1>&6
+fi
+rm -f conftest*
+echo $ac_n "checking whether struct tz has tm_gmtoff as a member""... $ac_c" 1>&6
+echo "configure:1926: checking whether struct tz has tm_gmtoff as a member" >&5
+cat > conftest.$ac_ext <<EOF
+#line 1928 "configure"
+#include "confdefs.h"
+#include <time.h>
+int main() {
+struct tm *tp; tp->tm_gmtoff
+; return 0; }
+EOF
+if { (eval echo configure:1935: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+  rm -rf conftest*
+  echo "$ac_t""yes" 1>&6; cat >> confdefs.h <<\EOF
+#define HAVE_TM_GMTOFF 1
+EOF
+
+else
+  echo "configure: failed program was:" >&5
+  cat conftest.$ac_ext >&5
+  rm -rf conftest*
+  echo "$ac_t""no" 1>&6
+fi
+rm -f conftest*
 echo $ac_n "checking size of int""... $ac_c" 1>&6
-echo "configure:1903: checking size of int" >&5
+echo "configure:1949: checking size of int" >&5
 if eval "test \"`echo '$''{'ac_cv_sizeof_int'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -1907,7 +1953,7 @@ else
     { echo "configure: error: can not run test program while cross compiling" 1>&2; exit 1; }
 else
   cat > conftest.$ac_ext <<EOF
-#line 1911 "configure"
+#line 1957 "configure"
 #include "confdefs.h"
 #include <stdio.h>
 main()
@@ -1918,7 +1964,7 @@ main()
   exit(0);
 }
 EOF
-if { (eval echo configure:1922: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest && (./conftest; exit) 2>/dev/null
+if { (eval echo configure:1968: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest && (./conftest; exit) 2>/dev/null
 then
   ac_cv_sizeof_int=`cat conftestval`
 else

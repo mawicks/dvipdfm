@@ -5,6 +5,8 @@ AC_DEFINE(PACKAGE,"dvipdfm")
 AC_DEFINE(VERSION,"0.7.3")
 sinclude(../kpathsea/common.ac)
 
+AC_EXT_TIMEZONE
+AC_TZ_HAS_TM_GMTOFF
 AC_CHECK_SIZEOF(int)
 
 AC_OUTPUT(Makefile)
