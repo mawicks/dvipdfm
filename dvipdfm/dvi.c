@@ -1,5 +1,5 @@
 
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.47 1999/02/21 03:53:18 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.48 1999/02/21 04:35:01 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -63,10 +63,19 @@ struct loaded_font {
 		   or by vf module for (VIRTUAL fonts) */
   int tfm_id;
   mpt_t size;
-  char *name;
   int source;  /* Source is either DVI or VF */
-  signed long tex_id /* id used internally by TeX */;
 } loaded_fonts[MAX_FONTS];
+
+struct font_def
+{
+  mpt_t size;
+  char *name;
+  signed long tex_id;
+  int font_id; /* index of _loaded_ font in loaded_fonts array */
+  int used;
+} *def_fonts = NULL;
+
+static unsigned num_def_fonts = 0, max_def_fonts = 0;
 
 static unsigned char verbose = 0;
 
@@ -203,28 +212,12 @@ static void get_dvi_info (void)
 static void dump_font_info (void)
 {
   unsigned i;
-  fprintf (stderr, "\nFont info\n");
-  for (i=0; i<num_loaded_fonts; i++) {
-    fprintf (stderr, "name: %10s, ", loaded_fonts[i].name);
-    fprintf (stderr, "TeX/DVI ID: %5ld, ", loaded_fonts[i].tex_id);
-    fprintf (stderr, "dev/vf ID: %5d, ", loaded_fonts[i].font_id);
-    fprintf (stderr, "size: %5.2f pt, ", loaded_fonts[i].size*dvi2pts);
-    switch (loaded_fonts[i].type) {
-    case PHYSICAL:
-      fprintf (stderr, "Type: PHYSICAL, ");
-      break;
-    case VIRTUAL:
-      fprintf (stderr, "Type: VIRTUAL, ");
-      break;
-    }
-    switch (loaded_fonts[i].source) {
-    case DVI:
-      fprintf (stderr, "Source: DVI file\n");
-      break;
-    case VF:
-      fprintf (stderr, "Source: VF file\n");
-      break;
-    }
+  fprintf (stderr, "\nDVI file font info\n");
+  for (i=0; i<num_def_fonts; i++) {
+    fprintf (stderr, "name: %10s, ", def_fonts[i].name);
+    fprintf (stderr, "TeX/DVI ID: %5ld, ", def_fonts[i].tex_id);
+    fprintf (stderr, "size: %5.2f pt, ", def_fonts[i].size*dvi2pts);
+    fprintf (stderr, "\n");
   }
 }
 
@@ -233,9 +226,12 @@ static void get_a_font_record (SIGNED_QUAD tex_id)
   UNSIGNED_BYTE dir_length, name_length;
   UNSIGNED_QUAD checksum, size, design_size;
   char *directory, *name;
-  int font_id;
   if (debug) {
     fprintf (stderr, "get_a_font_record: tex_id = %ld\n", tex_id);
+  }
+  if (num_def_fonts >= max_def_fonts) {
+    max_def_fonts += MAX_FONTS;
+    def_fonts = RENEW (def_fonts, max_def_fonts, struct font_def);
   }
   checksum = get_unsigned_quad (dvi_file);
   size = get_unsigned_quad (dvi_file);
@@ -253,12 +249,16 @@ static void get_a_font_record (SIGNED_QUAD tex_id)
     invalid_signature();
   }
   directory[dir_length] = 0;
-  name[name_length] = 0;
-  font_id = dvi_locate_font (name, size);
-  loaded_fonts[font_id].source = DVI;
-  loaded_fonts[font_id].tex_id = tex_id;
   RELEASE (directory);
-  RELEASE (name);
+  name[name_length] = 0;
+  def_fonts[num_def_fonts].name = name;
+  def_fonts[num_def_fonts].size = size;
+  def_fonts[num_def_fonts].tex_id = tex_id;
+  def_fonts[num_def_fonts].used = 0;
+  num_def_fonts +=1;
+  /*  font_id = dvi_locate_font (name, size);
+      loaded_fonts[font_id].source = DVI;
+      loaded_fonts[font_id].tex_id = tex_id; */
   return;
 }
 
@@ -374,8 +374,6 @@ Maybe in the future, I'll substitute some other font.");
     }
   }
   loaded_fonts[thisfont].size = ptsize;
-  loaded_fonts[thisfont].name = NEW (strlen(tex_name)+1, char);
-  strcpy (loaded_fonts[thisfont].name, tex_name);
   if (verbose)
     fprintf (stderr, ">");
   return (thisfont);
@@ -763,17 +761,25 @@ void dvi_set_font (int font_id)
   current_font = font_id;
 }
 
-static void do_fnt (SIGNED_QUAD font_id)
+static void do_fnt (SIGNED_QUAD tex_id)
 {
   int i;
-  for (i=0; i<num_loaded_fonts; i++) {
-    if (loaded_fonts[i].source == DVI && loaded_fonts[i].tex_id == font_id) break;
+  for (i=0; i<num_def_fonts; i++) {
+    if (def_fonts[i].tex_id == tex_id)
+      break;
   }
-  if (i == num_loaded_fonts) {
-    fprintf (stderr, "fontid: %ld\n", font_id);
+  if (i == num_def_fonts) {
+    fprintf (stderr, "fontid: %ld\n", tex_id);
     ERROR ("dvi_do_fnt:  Tried to select a font that hasn't been defined");
   }
-  current_font = i;
+  if (!def_fonts[i].used) {
+    int font_id;
+    font_id = dvi_locate_font (def_fonts[i].name, def_fonts[i].size);
+    loaded_fonts[font_id].source = DVI;
+    def_fonts[i].used = 1;
+    def_fonts[i].font_id = font_id;
+  }
+  current_font = def_fonts[i].font_id;
 }
 
 static void do_fnt1(void)
@@ -1109,9 +1115,11 @@ void dvi_close (void)
 
   /* Do some house cleaning */
   fclose (dvi_file);
-  for (i=0; i<num_loaded_fonts; i++) {
-    RELEASE (loaded_fonts[i].name);
+  for (i=0; i<num_def_fonts; i++) {
+    RELEASE (def_fonts[i].name);
   }
+  if (def_fonts)
+    RELEASE (def_fonts);
   RELEASE (page_loc);
   num_loaded_fonts = 0;
   num_pages = 0;
