@@ -1,5 +1,4 @@
-
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.81 1999/08/17 18:17:36 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.82 1999/08/17 23:44:24 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -967,7 +966,6 @@ static int type1_pfb_id (const char *pfb_name, int encoding_id)
     if (!(full_pfb_name = kpse_find_file (pfb_name, kpse_type1_format,
 				    1)) || 
 	!(pfb_file = FOPEN (full_pfb_name, FOPEN_RBIN_MODE))) {
-      fprintf (stderr, "type1_fontfile:  Unable to find Type 1 font file for (%s)...Hope that's okay.", pfb_name);
       return -1;
     }
     short_fontname = pfb_find_name (pfb_file);

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.71 1999/08/17 18:17:36 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.72 1999/08/17 23:44:23 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -211,18 +211,18 @@ static void string_mode (mpt_t xpos, mpt_t ypos, double slant, double extend)
 
       /* First round dely (it is needed for delx) */
       dely = ypos - text_yorigin;
-      desired_dely = (dely+text_yerror)*dvi2pts;
+      desired_dely = (dely+text_yerror);
       rounded_dely = ROUND(desired_dely,0.01);
       /* Next round delx, precompensating for line transformation matrix */
-      desired_delx = (delx+text_xerror-dely*slant)/extend*dvi2pts;
+      desired_delx = (delx+text_xerror-desired_dely*slant)/extend;
       rounded_delx = ROUND(desired_delx,0.01);
       text_yerror = desired_dely - rounded_dely;
       text_xerror = extend*(desired_delx - rounded_delx)+slant*text_yerror;
       len += sprintf (format_buffer+len, " %.7g %.7g TD[(",
-		      rounded_delx, rounded_dely);
+		      rounded_delx*dvi2pts, rounded_dely*dvi2pts);
       text_leading = dely;
-      text_xorigin = xpos;
-      text_yorigin = ypos;
+      text_xorigin = xpos-text_xerror;
+      text_yorigin = ypos-text_yerror;
     }
     text_offset = 0;
     pdf_doc_add_to_page (format_buffer, len);
@@ -727,8 +727,8 @@ static int locate_pk_font (char *tex_name, mpt_t ptsize)
       dev_font[thisfont].font_resource = pk_font_resource (pk_id);
       dev_font[thisfont].used_chars = pk_font_used (pk_id);
       /* Don't set extend or slant for PK fonts for now... */
-      dev_font[thisfont].extend = 0.0;
-      dev_font[thisfont].slant = 1.0;
+      dev_font[thisfont].slant = 0.0;
+      dev_font[thisfont].extend = 1.0;
       n_phys_fonts +=1 ;
     } else { /* No physical font corresponding to this name */
       thisfont = -1;
@@ -754,6 +754,8 @@ int dev_locate_font (char *tex_name, mpt_t ptsize)
   result = locate_type1_font (tex_name, ptsize);
   /* If not, try to find a pk font */
   if (result < 0)
+    fprintf (stderr, "\nUnable to locate a Type 1 font for (%s)... Hope that's okay.\n",
+	     tex_name);
     result = locate_pk_font (tex_name, ptsize);
   /* Otherwise we are out of luck */
   return result;
