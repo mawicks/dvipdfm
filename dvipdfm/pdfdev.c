@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.25 1998/12/09 04:41:23 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.26 1998/12/09 19:03:02 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -36,6 +36,7 @@
 #include "pdfspecial.h"
 #include "pdflimits.h"
 #include "tfm.h"
+#include "dvi.h"
 #include "vf.h"
 
 /* Internal functions */
@@ -102,7 +103,6 @@ int motion_state = 1; /* Start in graphics mode */
 #define GRAPHICS_MODE 1
 #define TEXT_MODE 2
 #define STRING_MODE 3
-#define LINE_MODE 4
 #define NO_MODE -1
 
 static char format_buffer[256];
@@ -112,13 +112,13 @@ static char format_buffer[256];
     transformation is the only place where the paper size is required.
     Unfortunately, positive is up, which doesn't agree with TeX's convention.  */
 
-static double dev_xpos, dev_ypos; 
 static double text_xorigin = 0.0, text_yorigin = 0.0,
-  text_leading =0.0;
+  text_offset = 0.0, text_leading =0.0;
 
 int n_dev_fonts = 0;
 int n_phys_fonts = 0;
 int current_font = -1;
+int current_phys_font = -1;
 double current_ptsize = 1.0;
 
 #define MAX_DEVICE_FONTS 256
@@ -141,6 +141,7 @@ static void reset_text_state(void)
   text_xorigin = 0.0;
   text_yorigin = 0.0;
   text_leading = 0.0;
+  text_offset = 0.0;
 }
 
 
@@ -154,7 +155,6 @@ static void text_mode (void)
     break;
   case STRING_MODE:
     pdf_doc_add_to_page (")", 1);  /*  Fall through */
-  case LINE_MODE:
     pdf_doc_add_to_page ("]TJ", 3);
     break;
   }
@@ -166,7 +166,6 @@ static void graphics_mode (void)
   switch (motion_state) {
   case STRING_MODE:
     pdf_doc_add_to_page (")", 1); /* Fall through */
-  case LINE_MODE:
     pdf_doc_add_to_page ("]TJ", 3); /* Fall through */
   case TEXT_MODE:
     pdf_doc_add_to_page (" ET", 3);
@@ -185,44 +184,25 @@ static void string_mode (void)
     /* Following may be necessary after a rule (and also after
        specials) */
   case TEXT_MODE:
-    if (ROUND(dev_xpos-text_xorigin,0.01) == 0.0 &&
-	(ROUND(dev_ypos-text_yorigin-text_leading,0.01) == 0.0)) {
+    if (ROUND(dvi_dev_xpos()-text_xorigin,0.01) == 0.0 &&
+	(ROUND(dvi_dev_ypos()-text_yorigin-text_leading,0.01) == 0.0)) {
       sprintf (format_buffer, " T*[");
+      text_yorigin += text_leading;
     }
     else {
       sprintf (format_buffer, " %g %g TD[",
-	       ROUND(dev_xpos-text_xorigin,0.01),
-	       ROUND(dev_ypos-text_yorigin,0.01));
-      text_leading = ROUND(dev_ypos-text_yorigin,0.01);
+	       ROUND(dvi_dev_xpos()-text_xorigin,0.01),
+	       ROUND(dvi_dev_ypos()-text_yorigin,0.01));
+      text_leading = ROUND(dvi_dev_ypos()-text_yorigin,0.01);
+      text_xorigin = dvi_dev_xpos();
+      text_yorigin = dvi_dev_ypos();
     }
-    text_xorigin = dev_xpos;
-    text_yorigin = dev_ypos;
-    pdf_doc_add_to_page (format_buffer, strlen(format_buffer)); /* Fall
-								  through */
-  case LINE_MODE:
+    text_offset = 0.0;
+    pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
     pdf_doc_add_to_page ("(", 1);
     break;
   }
   motion_state = STRING_MODE;
-}
-
-static void line_mode (void)
-{
- switch (motion_state) {
- case NO_MODE:
- case GRAPHICS_MODE:
-   pdf_doc_add_to_page (" BT", 3); /* Fall through */
-   reset_text_state();
- case TEXT_MODE:
-   sprintf (format_buffer, " 1 0 0 1 %g %g Td [",
-	    ROUND(dev_xpos,0.01), ROUND(dev_ypos,0.01));
-   pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
-   break;
- case STRING_MODE:
-   pdf_doc_add_to_page (")", 1);
-   break;
- }
- motion_state = LINE_MODE;
 }
 
 void dev_init (char *outputfile)
@@ -256,6 +236,7 @@ void dev_close (void)
 static void bop_font_reset(void)
 {
   current_font = -1;
+  current_phys_font = -1;
 }
 
 #define GRAY 1
@@ -444,8 +425,8 @@ void dev_begin_xform (double xscale, double yscale, double rotate)
   s = ROUND (sin(rotate),1e-5);
   sprintf (work_buffer, " q %g %g %g %g %g %g cm",
 	   xscale*c, xscale*s, -yscale*s, yscale*c,
-	   ROUND((1.0-xscale*c)*dev_xpos+yscale*s*dev_ypos,0.001),
-	   ROUND(-xscale*s*dev_xpos+(1.0-yscale*c)*dev_ypos,0.001));
+	   ROUND((1.0-xscale*c)*dvi_dev_xpos()+yscale*s*dvi_dev_ypos(),0.001),
+	   ROUND(-xscale*s*dvi_dev_xpos()+(1.0-yscale*c)*dvi_dev_ypos(),0.001));
   pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
   num_transforms += 1;
   return;
@@ -485,8 +466,6 @@ MEM_START
   pdf_doc_new_page ();
   fill_page();
   graphics_mode();
-  dev_xpos = 0.0;
-  dev_ypos = 0.0;
   bop_font_reset();
   pdf_doc_add_to_page ("0 w", 3);
   dev_do_color();
@@ -616,13 +595,15 @@ void dev_select_font (int dev_font_id)
   if (debug) {
     fprintf (stderr, "(dev_select_font)");
   }
-  if (verbose) {
-    fprintf (stderr, "dev_select_font: %d\n", dev_font_id);
+  if (1) {
+    fprintf (stderr, "dev_select_font: oldfont: %d newfont: %d\n",
+	     current_font, dev_font_id);
   }
   if (dev_font_id < 0 || dev_font_id >= n_dev_fonts) {
     ERROR ("dev_change_to_font: dvi wants a font that isn't loaded");
   }
-  if (current_font != dev_font_id &&
+  if (dev_font_id >= 0 && 
+      current_phys_font != dev_font_id &&
       dev_font[dev_font_id].type == PHYSICAL) {
     text_mode();
     sprintf (format_buffer, " /%s %g Tf", dev_font[dev_font_id].short_name,
@@ -631,9 +612,13 @@ void dev_select_font (int dev_font_id)
     /* Add to Font list in Resource dictionary for this page */
     pdf_doc_add_to_page_fonts (dev_font[dev_font_id].short_name,
 			       pdf_link_obj(dev_font[dev_font_id].font_resource));
+    current_phys_font = dev_font_id;
   }
   current_font = dev_font_id;
-  current_ptsize = dev_font[dev_font_id].ptsize;
+  if (dev_font_id >= 0)
+    current_ptsize = dev_font[dev_font_id].ptsize;
+  else
+    current_ptsize = 0.0;
 }
 /* The following routine is here for forms.  Since
    a form is self-contained, it will need its own Tf command
@@ -643,15 +628,15 @@ void dev_select_font (int dev_font_id)
 
 void dev_reselect_font(void)
 {
-  if (current_font >= 0) {
-  text_mode();
-  sprintf (format_buffer, " /%s %g Tf ", dev_font[current_font].short_name,
-	   ROUND(dev_font[current_font].ptsize*DPI/72,0.01)); 
-  pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
-  /* Add to Font list in Resource dictionary for the object (which
-     acts like a mini page so it uses pdf_doc_add_to_page_fonts()*/
-  pdf_doc_add_to_page_fonts (dev_font[current_font].short_name,
-			     pdf_link_obj(dev_font[current_font].font_resource));
+  if (current_phys_font >= 0) {
+    text_mode();
+    sprintf (format_buffer, " /%s %g Tf ", dev_font[current_phys_font].short_name,
+	     ROUND(dev_font[current_phys_font].ptsize*DPI/72,0.01)); 
+    pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
+    /* Add to Font list in Resource dictionary for the object (which
+       acts like a mini page so it uses pdf_doc_add_to_page_fonts()*/
+    pdf_doc_add_to_page_fonts (dev_font[current_phys_font].short_name,
+			       pdf_link_obj(dev_font[current_phys_font].font_resource));
   }
 }
 
@@ -666,10 +651,19 @@ void dev_set_char (unsigned ch, double width)
   }
   switch (dev_font[current_font].type) {
   case PHYSICAL:
+    if (ROUND(dvi_dev_ypos()-text_yorigin,0.01) != 0.0 ||
+	fabs(dvi_dev_xpos()-text_xorigin-text_offset) > current_ptsize)
+      text_mode();
     string_mode();
+    if (ROUND(dvi_dev_xpos()-text_xorigin-text_offset,0.01) != 0.0) {
+      sprintf (format_buffer, ")%g(",
+	       ROUND(1000.0/current_ptsize*(text_xorigin+text_offset-dvi_dev_xpos()),1.0));
+      pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
+      text_offset = dvi_dev_xpos()-text_xorigin;
+    }
     len = pdfobj_escape_c (format_buffer, ch);
     pdf_doc_add_to_page (format_buffer, len);
-    dev_xpos += width;
+    text_offset += width;
     break;
   case VIRTUAL:
     vf_set_char (ch, dev_font[current_font].vf_font_id);
@@ -683,57 +677,11 @@ void dev_rule (double width, double height)
   }
   graphics_mode();
   sprintf (format_buffer, " %g %g m %g %g l %g %g l %g %g l b",
-	   ROUND(dev_xpos,0.01), ROUND(dev_ypos,0.01),
-	   ROUND(dev_xpos+width,0.01), ROUND(dev_ypos,0.01),
-	   ROUND(dev_xpos+width,0.01), ROUND(dev_ypos+height,0.01),
-	   ROUND(dev_xpos,0.01), ROUND(dev_ypos+height,0.01));
+	   ROUND(dvi_dev_xpos(),0.01), ROUND(dvi_dev_ypos(),0.01),
+	   ROUND(dvi_dev_xpos()+width,0.01), ROUND(dvi_dev_ypos(),0.01),
+	   ROUND(dvi_dev_xpos()+width,0.01), ROUND(dvi_dev_ypos()+height,0.01),
+	   ROUND(dvi_dev_xpos(),0.01), ROUND(dvi_dev_ypos()+height,0.01));
   pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
-}
-
-void dev_moveright (double x)
-{
-  if (debug) {
-    fprintf (stderr, "(dev_moveright %g)", x);
-  }
-  /* This moveright is only for text (not rules) 
-     No sense doing this unless in some kind of text mode already.
-     In other words, don't go enter LINE or STRING mode just
-     to do this. A moveright in graphics mode isn't
-     easy to implement in PDF.  The driver should always
-     do an absolute dev_moveto before a rule */
-
-  /* Acrobat reader apparently can't handle large relative motions.
-     Relative motions are used for kerning and interword spacing.
-     If a relative motion is too large, we force textmode() to
-     change it to an absolute motion. */
-
-  if ( fabs(72000.0/current_ptsize*x/DPI) > 1000.0 && 
-       (motion_state == LINE_MODE ||
-	motion_state == STRING_MODE)) {
-    text_mode();
-  }
-  if (
-      motion_state == LINE_MODE ||
-      motion_state == STRING_MODE) { 
-    line_mode();
-    sprintf (format_buffer, "%g",
-	     -ROUND(72000.0/current_ptsize*x/DPI,1.0));
-    pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
-  }
-  dev_xpos += x;
-}
-
-void dev_moveto (double x, double y)
-{
-  if (debug) {
-    fprintf (stderr, "(dev_moveto)");
-  }
-  if (motion_state == LINE_MODE ||
-      motion_state == STRING_MODE) {
-    text_mode();
-  }
-  dev_xpos = x + HOFFSET;
-  dev_ypos = -y - VOFFSET;
 }
 
 /* The following routines tell the coordinates in physical PDF style
@@ -742,17 +690,18 @@ void dev_moveto (double x, double y)
 
 double dev_tell_x (void)
 {
-  return dev_xpos;
+  return dvi_dev_xpos();
 }
 
 double dev_tell_y (void)
 {
-  return dev_page_height()+dev_ypos;
+  return dev_page_height()+dvi_dev_ypos();
 }
 
 
 void dev_do_special (void *buffer, UNSIGNED_QUAD size)
 {
   graphics_mode();
-  pdf_parse_special (buffer, size, dev_xpos, dev_ypos);
+  pdf_parse_special (buffer, size, dvi_dev_xpos(), dvi_dev_ypos());
 }
+

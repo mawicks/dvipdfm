@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.13 1998/12/09 04:04:30 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.14 1998/12/09 19:03:02 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -505,25 +505,33 @@ void dvi_complete (void)
   if (dvi_debug) fprintf (stderr, "dvi:  Output device closed\n");
 }
 
+#define HOFFSET 72.0
+#define VOFFSET 72.0
+double dvi_dev_xpos (void)
+{
+  return dvi_state.h*dvi2pts+HOFFSET;
+}
+
+double dvi_dev_ypos (void)
+{
+  return -(dvi_state.v*dvi2pts+VOFFSET);
+}
 
 static void do_moveto (SIGNED_QUAD x, SIGNED_QUAD y)
 {
   dvi_state.h = x;
   dvi_state.v = y;
   if (dvi_debug) fprintf (stderr, "do_moveto: x = %ld, y = %ld\n", x, y);
-  dev_moveto (x*dvi2pts, y*dvi2pts);
 }
 
 void dvi_right (SIGNED_QUAD x)
 {
   dvi_state.h += x;
-  dev_moveright (x*dvi2pts);
 }
 
 void dvi_down (SIGNED_QUAD y)
 {
   dvi_state.v += y;
-  do_moveto (dvi_state.h, dvi_state.v);
 }
 
 void dvi_set (SIGNED_QUAD ch)
@@ -532,10 +540,6 @@ void dvi_set (SIGNED_QUAD ch)
   if (current_font < 0) {
     ERROR ("dvi_set:  No font selected");
   }
-  /*  dvi_width = tfm_get_width
-      (dev_locate_tfm(current_font)[current_font].tfm_id, ch) *
-      font_def[current_font].size; */
-
   /* The division by dvi2pts seems strange since we actually know the
      "dvi" size of the fonts contained in the DVI file.  In other
      words, we converted from DVI units to pts and back again!
@@ -544,8 +548,8 @@ void dvi_set (SIGNED_QUAD ch)
      the dev.c file and convert them back if necessary */ 
 
   dvi_width = tfm_get_width (dev_font_tfm(current_font), ch) * dev_font_size(current_font) / dvi2pts;
-  dvi_state.h += dvi_width;
   dev_set_char (ch, dvi_width*dvi2pts);
+  dvi_state.h += dvi_width;
   if (dvi_debug) {
     fprintf (stderr, "Done\n");
   }
@@ -587,11 +591,12 @@ static void do_putrule(void)
 
 void dvi_put (SIGNED_QUAD ch)
 {
+  double dvi_width;
   if (current_font < 0) {
     ERROR ("dvi_put:  No font selected");
   }
-  dev_set_char (ch, 0.0);
-  do_moveto (dvi_state.h, dvi_state.v); /* Move back */
+  dvi_width = tfm_get_width (dev_font_tfm(current_font), ch) * dev_font_size(current_font) / dvi2pts;
+  dev_set_char (ch, dvi_width);
   return;
 }
 
