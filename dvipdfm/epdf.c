@@ -143,7 +143,6 @@ pdf_obj *pdf_include_page(pdf_obj *trailer, double x_user, double y_user,
 	     pdf_name_value(pdf_lookup_dict
 			      (pdf_stream_dict(contents), "Name")));
     pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
-    fprintf (stderr, "Check 3\n"); pdf_write_obj (stderr, contents);
     pdf_release_obj (contents);
     pdf_doc_add_to_page (" Q ", 3);
   }

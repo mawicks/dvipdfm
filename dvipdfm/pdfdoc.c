@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.9 1998/12/03 18:04:22 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.10 1998/12/03 19:30:55 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -35,6 +35,7 @@
 #include "pdfdoc.h"
 #include "pdfdev.h"
 #include "numbers.h"
+#include "mfileio.h"
 
 static pdf_obj *catalog = NULL;
 static pdf_obj *docinfo = NULL;
@@ -862,3 +863,86 @@ void pdf_doc_finish ()
   }
   pdf_out_flush ();
 }
+
+
+static pdf_obj *save_page_contents, *save_page_fonts;
+static pdf_obj *save_page_xobjects, *save_page_resources;
+static xobject_pending = 0;
+
+static pdf_obj *build_scale_array (int a, int b, int c, int d, int e, int f)
+{
+  pdf_obj *result;
+  result = pdf_new_array();
+  pdf_add_array (result, pdf_new_number (a));
+  pdf_add_array (result, pdf_new_number (b));
+  pdf_add_array (result, pdf_new_number (c));
+  pdf_add_array (result, pdf_new_number (d));
+  pdf_add_array (result, pdf_new_number (e));
+  pdf_add_array (result, pdf_new_number (f));
+  return result;
+}
+
+/* All this routine does is give the form a name
+   and add a unity scaling matrix. It fills
+   in required fields.  The caller must initialize
+   the stream */
+int num_xobjects = 0;
+void doc_make_form_xobj (pdf_obj *this_form_contents, pdf_obj *bbox,
+			    pdf_obj *resources)
+{
+  pdf_obj *xobj_dict, *tmp1;
+  xobj_dict = pdf_stream_dict (this_form_contents);
+  num_xobjects += 1;
+  sprintf (work_buffer, "Fm%d", num_xobjects);
+  pdf_add_dict (xobj_dict, pdf_new_name ("Name"),
+		pdf_new_name (work_buffer));
+  pdf_add_dict (xobj_dict, pdf_new_name ("Type"),
+		pdf_new_name ("XObject"));
+  pdf_add_dict (xobj_dict, pdf_new_name ("Subtype"),
+		pdf_new_name ("Form"));
+  pdf_add_dict (xobj_dict, pdf_new_name ("BBox"), bbox);
+  pdf_add_dict (xobj_dict, pdf_new_name ("FormType"), 
+		pdf_new_number(1.0));
+  tmp1 = build_scale_array (1, 0, 0, 1, 0, 0);
+  pdf_add_dict (xobj_dict, pdf_new_name ("Matrix"), tmp1);
+  pdf_add_dict (xobj_dict, pdf_new_name ("Resources"), resources);
+  return;
+}
+
+pdf_obj *begin_form_xobj (double bbllx, double bblly, double bburx,
+			  double bbury)
+{
+  if (xobject_pending) {
+    fprintf (stderr, "\nCannot next form XObjects\n");
+    return NULL;
+  }
+  save_page_contents = this_page_contents;
+  save_page_xobjects = this_page_xobjects;
+  save_page_fonts = this_page_fonts;
+  save_page_resources = current_page_resources;
+  this_page_contents = pdf_new_stream ();
+  pdf_add_dict (pdf_stream_dict (this_page_contents),
+		pdf_new_name("Type"), pdf_new_name ("XObject"));
+  pdf_add_dict (pdf_stream_dict (this_page_contents),
+		pdf_new_name("Subtype"), pdf_new_name ("Form"));
+  tmp1 = pdf_new_array ();
+  pdf_add_array (tmp1, pdf_new_number (bbllx));
+  pdf_add_array (tmp1, pdf_new_number (bblly));
+  pdf_add_array (tmp1, pdf_new_number (bburx));
+  pdf_add_array (tmp1, pdf_new_number (bbury));
+  pdf_add_dict (pdf_stream_dict (this_page_contents),
+		pdf_new_name("BBox"), tmp1);
+  pdf_add_dict (pdf_stream_dict (this_page_contents),
+		pdf_new_name("FormType"), pdf_new_number (1.0));
+  tmp1 = pdf_new_array ();
+  pdf_add_array (tmp1, pdf_new_number(1.));
+  pdf_add_array (tmp1, pdf_new_number(0.));
+  pdf_add_array (tmp1, pdf_new_number(0.));
+  pdf_add_array (tmp1, pdf_new_number(1.));
+  pdf_add_array (tmp1, pdf_new_number(0.));
+  pdf_add_array (tmp1, pdf_new_number(0.));
+  pdf_add_dict (pdf_stream_dict (this_page_contents),
+		pdf_new_name("Matrix"), tmp1);
+  return pdf_link_obj (this_page_contents);
+}
+
