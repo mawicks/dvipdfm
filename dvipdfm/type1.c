@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.98 1999/10/08 15:39:34 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.99 1999/10/08 17:26:19 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -377,6 +377,16 @@ static unsigned long get_low_endian_quad (FILE *file)
 }
 
 /* PFB section */
+
+static char partial_enabled = 1;
+
+void type1_disable_partial (void)
+{
+  partial_enabled = 0;
+}
+
+
+
 static unsigned num_pfbs = 0;
 static unsigned max_pfbs = 0;
 struct a_pfb
@@ -391,9 +401,13 @@ struct a_pfb
 static void init_a_pfb (struct a_pfb *pfb)
 {
   int i;
-  pfb -> used_chars = NEW (256, char);
-  for (i=0; i<256; i++) {
-    (pfb->used_chars)[i] = 0;
+  if (partial_enabled) {
+    pfb -> used_chars = NEW (256, char);
+    for (i=0; i<256; i++) {
+      (pfb->used_chars)[i] = 0;
+    }
+  } else {
+    pfb->used_chars = NULL;
   }
   pfb->remap = 0;
   pfb->pfb_name = NULL;
@@ -413,13 +427,6 @@ static void do_a_standard_enc(char **glyphs, char **encoding)
     glyphs[i] = NEW (strlen(encoding[i])+1, char);
     strcpy (glyphs[i], encoding[i]);
   }
-}
-
-static char partial_enabled = 1;
-
-void type1_disable_partial (void)
-{
-  partial_enabled = 0;
 }
 
 static unsigned long parse_header (unsigned char *filtered, unsigned char *buffer,
@@ -1473,7 +1480,8 @@ void type1_close_all (void)
     RELEASE (pfbs[i].pfb_name);
     pdf_release_obj (pfbs[i].indirect);
     RELEASE (pfbs[i].fontname);
-    RELEASE (pfbs[i].used_chars);
+    if (pfbs[i].used_chars)
+      RELEASE (pfbs[i].used_chars);
   }
   RELEASE (pfbs);
   /* Now do encodings.  Clearly many pfbs will map to the same
