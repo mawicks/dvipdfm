@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.61 1999/09/28 01:44:58 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.62 1999/09/28 15:27:17 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -94,7 +94,7 @@ static void set_default_pdf_filename(void)
 }
 static void usage (void)
 {
-   fprintf (stdout, "%s, version %s, Copyright (C) 1998, 1999 by Mark A. Wicks\n", PACKAGE, VERSION);
+   fprintf (stdout, "\n%s, version %s, Copyright (C) 1998, 1999 by Mark A. Wicks\n", PACKAGE, VERSION);
    fprintf (stdout, "dvipdfm comes with ABSOLUTELY NO WARRANTY.\n");
    fprintf (stdout, "This is free software, and you are welcome to redistribute it\n");
    fprintf (stdout, "under certain conditions.  Details are distributed with the software.\n");
