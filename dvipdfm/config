@@ -1,6 +1,12 @@
 % original config -- Made by MAW on 8/31/99
 % Distiller template examples.  Uncomment
-% the appropriate one, or (preferably) create your own
+% the appropriate one, or (preferably) create your own.
+% Put %i in the command line where the input file name should go.
+% Put %o in the command line where the output file name should go.
+% (dvipdfm must be able to supply the output file name to your
+% command line)
+% Put %b in the line somewhere if you want to specify the
+% "base" name of the input file, e.g., "foo" instead of "foo.eps"
 %
 % Note that it's probably a good idea to fully qualify
 % the paths so you can be sure what you are running
