@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.104 2000/10/13 02:13:00 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.105 2000/10/19 19:44:01 mwicks Exp $
  
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -21,7 +21,8 @@
 
 	mwicks@kettering.edu
 */
-	
+
+#include "config.h"
 #include <math.h>
 #include <string.h>
 #include <ctype.h>
@@ -1063,9 +1064,11 @@ int dev_locate_font (const char *tex_name, spt_t ptsize)
     if ((font_id = type1_font (font_name, tfm_id,
 			       short_name, encoding_id, remap))>=0) {
       font_format = TYPE1;
+#ifdef HAVE_TTF_FORMATS
     } else if ((font_id = ttf_font (font_name, tfm_id,
 				    short_name, encoding_id, remap))>=0) {
       font_format = TRUETYPE;
+#endif /* HAVE_TTF_FORMATS */
     } else if ((font_id = pk_font (font_name, ptsize*dvi2pts,
 				   tfm_id,
 				   short_name))>=0) {
@@ -1088,11 +1091,13 @@ int dev_locate_font (const char *tex_name, spt_t ptsize)
 	  type1_font_resource(font_id);
 	dev_font[this_font].used_chars = type1_font_used(font_id);
 	break;
+#ifdef HAVE_TTF_FORMATS
       case TRUETYPE:
 	dev_font[this_font].font_resource =
 	  ttf_font_resource(font_id);
 	dev_font[this_font].used_chars = ttf_font_used(font_id);
 	break;
+#endif /* HAVE_TTF_FORMATS */
       case PK:
 	dev_font[this_font].font_resource = pk_font_resource (font_id);
 	dev_font[this_font].used_chars = pk_font_used(font_id);
@@ -1153,7 +1158,9 @@ void dev_close_all_fonts(void)
   /* Close the various font handlers */
   type1_close_all();
   pk_close_all();
+#ifdef HAVE_TTF_FORMATS   
   ttf_close_all();
+#endif   
 
   /* Now do encodings. */
   encoding_flush_all();
@@ -1182,7 +1189,6 @@ void dev_rule (spt_t xpos, spt_t ypos, spt_t width, spt_t height)
   }
   /* This needs to be quick */
   {
-    len += sprintf (format_buffer+len, " /test gs");
     format_buffer[len++] = ' ';
     len += centi_u_to_a (format_buffer+len, w);
     format_buffer[len++] = ' ';

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ttf.c,v 1.6 2000/10/13 02:13:00 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ttf.c,v 1.7 2000/10/19 19:44:01 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -23,6 +23,11 @@
 */
 
 /* This is tailored for PDF */
+
+#include "config.h"
+
+#ifdef HAVE_TTF_FORMATS
+#include "ttf.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -286,7 +291,6 @@ void read_post_table(FILE *ttf_file, struct table_directory *td)
   }
   return;
 }
-
 
 struct horz_header
 {
@@ -821,7 +825,8 @@ void ttf_flush_all (void)
     do_ttf(i);
     ttf_release (i);
   }
-  RELEASE (ttfs);
+  if (ttfs)
+    RELEASE (ttfs);
 }
 
 struct a_ttf_font
@@ -1011,11 +1016,15 @@ void ttf_close_all (void)
       RELEASE (ttf_fonts[i].used_chars);
     pdf_release_obj (ttf_fonts[i].indirect);
   }
-  RELEASE (ttf_fonts);
+  if (ttf_fonts)
+    RELEASE (ttf_fonts);
   /* Second every distinct ttf name ends up in ttfs.  It is possible
      that two distinct tex names map to the same ttf name.  That's why
      there is a separate array for ttfs */
   /* Read any necessary font files and flush them */
   ttf_flush_all();
 }
+
+
+#endif /* HAVE_TTF_FORMATS */
 

@@ -41,6 +41,10 @@
  version of kpathsea that understands Omega (OFM/OVF) formats */
 #undef HAVE_OMEGA_FORMATS
 
+/* HAVE_TTF_FORMATS - Define if you have a
+ version of kpathsea that understands TrueType (TTF) formats */
+#undef HAVE_TTF_FORMATS
+
 /* HAVE_LIBPNG - Define if you have libpng */
 #undef HAVE_LIBPNG
 

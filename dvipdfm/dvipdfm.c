@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.70 2000/10/13 02:13:00 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.71 2000/10/19 19:44:01 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -27,8 +27,8 @@
 #include <string.h>
 #include <limits.h>
 #include <ctype.h>
-#include "system.h"
 #include "config.h"
+#include "system.h"
 #include "mem.h"
 #include "mfileio.h"
 #include "dvi.h"
@@ -397,6 +397,9 @@ static void do_args (int argc, char *argv[])
 	pdf_obj_set_verbose();
 	pdf_doc_set_verbose();
 	tfm_set_verbose();
+#ifdef HAVE_TTF_FORMATS	 
+	ttf_set_verbose();
+#endif	 
 	break;
       case 'V':
 	{
