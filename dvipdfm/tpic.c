@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tpic.c,v 1.4 1999/01/25 06:44:41 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tpic.c,v 1.5 1999/01/27 04:23:20 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -143,10 +143,11 @@ MEM_START
     pdf_doc_add_to_page (work_buffer, len);
     if (dash_dot != 0.0) {
       if (dash_dot > 0.0) {
-	len = sprintf (work_buffer, " [%.1f %.1f] 0 d", dash_dot, dash_dot/3.0);
+	len = sprintf (work_buffer, " [%.1f %.1f] 0 d",
+		       dash_dot*72.0, dash_dot*36.0);
       } else {
 	len = sprintf (work_buffer, " [%.1f %.1f] 0 d 1 J", pen_size,
-		       -dash_dot);
+		       -dash_dot*72.0);
       }
       pdf_doc_add_to_page (work_buffer, len);
     }
@@ -167,6 +168,57 @@ MEM_START
     pdf_doc_add_to_page (" Q", 2);
   } else {
     fprintf (stderr, "tpic special: fp: Not enough points!\n");
+  }
+MEM_END
+  return;
+}
+static void spline_path (double x_user, double y_user, double dash_dot)
+{
+  int len;
+MEM_START
+  /* Spline is meaningless for path length of less than 3 */
+  if (path_length > 2) {
+    int i;
+    len = sprintf (work_buffer, " q 1.4 M %.2f w", pen_size);
+    pdf_doc_add_to_page (work_buffer, len);
+    if (dash_dot != 0.0) {
+      if (dash_dot > 0.0) {
+	len = sprintf (work_buffer, " [%.1f %.1f] 0 d",
+		       dash_dot*72.0, dash_dot*36.0);
+      } else if (dash_dot < 0.0) {
+	len = sprintf (work_buffer, " [%.1f %.1f] 0 d 1 J", pen_size,
+		       -dash_dot*72.0);
+      }
+      pdf_doc_add_to_page (work_buffer, len);
+    }
+    len = sprintf (work_buffer, " %.2f %.2f m",
+		   x_user+path[0].x, y_user-path[0].y);
+    pdf_doc_add_to_page (work_buffer, len);
+    len = sprintf (work_buffer, " %.2f %.2f l",
+		   x_user+0.5*(path[0].x+path[1].x), 
+		   y_user-0.5*(path[0].y+path[1].y));
+    pdf_doc_add_to_page (work_buffer, len);
+    for (i=1; i<path_length-1; i++) {
+      len = sprintf (work_buffer, " %.2f %.2f %.2f %.2f y",
+		     x_user+path[i].x, y_user-path[i].y,
+		     x_user+0.5*(path[i].x+path[i+1].x),
+		     y_user-0.5*(path[i].y+path[i+1].y));
+      pdf_doc_add_to_page (work_buffer, len);
+    } 
+    len = sprintf (work_buffer, " %.2f %.2f l",
+		   x_user+path[path_length-1].x,
+		   y_user-path[path_length-1].y);
+    pdf_doc_add_to_page (work_buffer, len);
+    {
+      RELEASE (path);
+      path = NULL;
+      path_length = 0;
+      max_path_length = 0;
+    }
+    show_path (0);
+    pdf_doc_add_to_page (" Q", 2);
+  } else {
+    fprintf (stderr, "tpic special: sp: Not enough points!\n");
   }
 MEM_END
   return;
@@ -303,7 +355,7 @@ int tpic_parse_special(char *buffer, UNSIGNED_QUAD size, double
       {
 	char *s;
 	if ((s=parse_number(&buffer, end))) {
-	  flush_path(x_user, y_user, 0, -atof (s));
+	  flush_path(x_user, y_user, 0, atof (s));
 	  RELEASE (s);
 	}
       }
@@ -312,14 +364,20 @@ int tpic_parse_special(char *buffer, UNSIGNED_QUAD size, double
       {
 	char *s;
 	if ((s=parse_number(&buffer, end))) {
-	  flush_path(x_user, y_user, 0, atof (s));
+	  flush_path(x_user, y_user, 0, -atof (s));
 	  RELEASE (s);
 	}
       }
       break;
     case TPIC_SP:
-      flush_path(x_user, y_user, 0, 0.0);
-      break;
+      {
+	char *s;
+	if ((s=parse_number(&buffer, end)))
+	  spline_path (x_user, y_user, atof (s));
+	else
+	  spline_path(x_user, y_user, 0.0);
+	break;
+      }
     case TPIC_AR:
       arc (&buffer, end, x_user, y_user, 0);
       break;
