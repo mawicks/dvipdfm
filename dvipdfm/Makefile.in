@@ -16,7 +16,7 @@ programs=dvipdfm ebb
 scripts=dvipdft
 headers=dvi.h pdflimits.h error.h mfileio.h jpeg.h mem.h numbers.h \
 	pdfdev.h pdfdoc.h pdfparse.h pdfspecial.h tfm.h type1.h epdf.h \
-	vf.h dvicodes.h t1crypt.h pkfont.h tpic.h thumbnail.h htex.h
+	vf.h dvicodes.h t1crypt.h pkfont.h tpic.h thumbnail.h htex.h twiddle.h
 src=pdfdev.c pdfdoc.c dvi.c mfileio.c mem.c jpeg.c numbers.c pdfobj.c \
 	pdfparse.c pdfspecial.c tfm.c type1.c dvipdfm.c epdf.c vf.c \
 	t1crypt.c pkfont.c tpic.c thumbnail.c pngimage.c ebb.c htex.c
@@ -106,11 +106,12 @@ depend.make:
 @MAINT@	autoconf
 @MAINT@dist: depend configure
 	grep VERSION config.h | awk '{ print $$3 }' | sed -e's/"//g' > VERSION
-	/bin/rm -rf dvipdfm
-	mkdir dvipdfm
-	tar -C dvipdfm -zcf ../dvipdfm-`cat VERSION`.tar.gz -T distribution-file-list
-	tar -C dvipdfm -zxf ../dvipdfm-`cat VERSION`.tar.gz
-	tar -zcf ../dvipdfm-`cat VERSION`.tar.gz dvipdfm 
+	/bin/rm -rf ../dvipdfm
+	mkdir ../dvipdfm
+	tar -zcf ../dvipdfm-`cat VERSION`.tar.gz -T distribution-file-list
+	cd ..
+	tar -C ../dvipdfm -zxf ../dvipdfm-`cat VERSION`.tar.gz
+	tar -C .. -zcf ../dvipdfm-`cat VERSION`.tar.gz dvipdfm 
 @MAINT@dvipdfm-static:  $(objects) Makefile
 	$(CC) -o dvipdfm-static $(objects) --static $(LDFLAGS) $(LIBS)
 @MAINT@ebb-static : $(eobjects) Makefile
