@@ -95,7 +95,5 @@ putri8r 8r putri8a
 pzcmi8r 8r pzcmi8a
 % ZapfDingbats
 pzdr none
-cmmib9 cmmi cmmib10 cmmib10
-cmr9  cmtext cmr10 cmr10
+% LaTeX Fonts having short file names
 lcirclew10 none lcirclew lcirclew
-eusm9  cmsy  eusm10 eusm10
