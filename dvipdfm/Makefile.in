@@ -1,4 +1,3 @@
-version = 0.7.1
 ac_include ../make/paths.make
 ac_include ../make/common.make
 ac_include ../make/programs.make

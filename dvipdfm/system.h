@@ -2,7 +2,7 @@
 
 #define _SYSTEM_H_
 
-#include "acdefines.h"
+#include "c-auto.h"
 
 #ifdef KPATHSEA
 #include <kpathsea/config.h>
