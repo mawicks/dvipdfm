@@ -30,6 +30,7 @@ objects=pdfdev.o pdfdoc.o dvi.o mfileio.o mem.o jpeg.o numbers.o pdfobj.o \
 eobjects=ebb.o jpeg.o pdfobj.o mem.o mfileio.o numbers.o pdfparse.o \
 	pngimage.o
 encodings=ot1.enc ot1alt.enc
+mapfiles=cmr.map psbase14.map lw35urw.map lw35urwa.map
 check default all: $(programs)
 ebb: $(eobjects) Makefile
 	$(CC) -o ebb $(eobjects) $(LDFLAGS) $(LIBS)
@@ -72,6 +73,9 @@ install-data:
 	   /bin/rm -f $(dvipdfmdir)/config/config; \
 	   $(INSTALL) -m 644 ./config $(dvipdfmdir)/config; \
 	else true; fi
+	for i in $(mapfiles); \
+	   do $(INSTALL) -m 644 $$i $(dvipdfmdir)/config; \
+	done
 	for i in $(encodings); \
 	   do $(INSTALL) -m 644 $$i $(dvipdfmdir)/base; \
 	done
@@ -100,6 +104,10 @@ uninstall-data:
 	do \
 	    if test -r $(dvipdfmdir)/$$i; then /bin/rm -f $(dvipdfmdir)/$$i; fi; \
 	    if test -r $(dvipdfmdir)/base/$$i; then /bin/rm -f $(dvipdfmdir)/base/$$i; fi; \
+	done
+	for i in $(mapfiles); \
+	do \
+	    if test -r $(dvipdfmdir)/config/$$i; then /bin/rm -f $(dvipdfmdir)/config/$$i; fi; \
 	done
 	for i in base config; \
 	do \

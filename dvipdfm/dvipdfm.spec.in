@@ -45,7 +45,10 @@ make install
 %doc latex-support/mwicks.bb
 %doc latex-support/transistor.bb
 %config /usr/share/texmf/dvipdfm/config/config
-%config /usr/share/texmf/dvipdfm/config/t1fonts.map
+%config /usr/share/texmf/dvipdfm/config/cmr.map
+%config /usr/share/texmf/dvipdfm/config/psbase14.map
+%config /usr/share/texmf/dvipdfm/config/lw35urw.map
+%config /usr/share/texmf/dvipdfm/config/lw35urwa.map
 %config /usr/share/texmf/dvipdfm/base/ot1.enc
 %config /usr/share/texmf/dvipdfm/base/ot1alt.enc
 
