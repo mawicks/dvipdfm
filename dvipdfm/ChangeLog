@@ -1,3 +1,11 @@
+1999-09-19  Mark A. Wicks  <mwicks@betelgeuse.wicks.net>
+       	* Changed version to 0.12.4.
+	* Added link breaking code (aka breaklinks) and additional
+	  \special operators to support them.
+	* Fixed a bug in slanted font code
+	* Fixed a bug in TFM code that won't actually execute
+	  unless you have a defective TFM file.
+
 1999-09-06  Mark A. Wicks  <mwicks@betelgeuse.wicks.net>
 
 	* Added native MetaPost and native support

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.69 1999/09/19 04:56:41 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.70 1999/09/19 15:58:47 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1201,6 +1201,8 @@ static int is_pdf_special (char **start, char *end)
 #define SCOLOR 29
 #define BANN   30
 #define EANN   31
+#define LINK_ANNOT 32
+#define NOLINK_ANNOT 33
 
 struct pdfmark
 {
@@ -1233,6 +1235,8 @@ struct pdfmark
   {"bc", BCOLOR},
   {"bcolor", BCOLOR},
   {"begincolor", BCOLOR},
+  {"link", LINK_ANNOT},
+  {"nolink", NOLINK_ANNOT},
   {"sc", SCOLOR},
   {"scolor", SCOLOR},
   {"setcolor", SCOLOR},
@@ -1501,6 +1505,12 @@ MEM_START
       break;
     case BANN:
       do_bann(&start, end);
+      break;
+    case LINK_ANNOT:
+      dev_link_annot(1);
+      break;
+    case NOLINK_ANNOT:
+      dev_link_annot(0);
       break;
     case EANN:
       do_eann(&start, end);

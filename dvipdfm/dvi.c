@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.61 1999/09/19 04:56:40 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.62 1999/09/19 15:58:46 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -980,8 +980,12 @@ void dvi_do_page(unsigned n)  /* Most of the work of actually interpreting
 	dvi_push();
 	/* The following line needs to go here instead of in
 	   dvi_push() since logical structure of document is
-	   oblivous to virtual fonts. The following line is used to
-	   box up logically conjoined material in annotations */
+	   oblivous to virtual fonts. For example the last line on a
+	   page could be at stack level 3 and the page footer should
+	   be at stack level 3.  However, if the page footer contains
+	   virtual fonts (or other nested constructions), it could
+	   fool the link breaker into thinking it was a continuation
+	   of the link */
 	dev_stack_depth (dvi_stack_depth);
 	break;
       case POP:

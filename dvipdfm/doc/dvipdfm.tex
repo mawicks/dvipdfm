@@ -1,4 +1,4 @@
-% $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/doc/dvipdfm.tex,v 1.24 1999/09/19 05:55:50 mwicks Exp $
+% $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/doc/dvipdfm.tex,v 1.25 1999/09/19 15:58:47 mwicks Exp $
 % \special{ pdf: pagesize width 8.5truein height 11.0truein}
 \special{  pdf:  docview <</PageMode /UseOutlines>>}%
 \catcode`\ =11\def\space{ }\catcode`\ =10
@@ -506,11 +506,35 @@ since there may be more than once instances of the annotation.
 The |beginann| command needs not dimension because |dvipdfm|
 computes the correct bounding box on the fly.
 
+Note:  Link breaking is easily fooled at page breaks.  If you have problems
+with the header or footer wanting to become part of the link, you can
+insert a |nobreak| command at the beginning of the footer and a |break|
+command at the end of the footer.
+
 \subsection{End Annotation}
 \syntax
 {\tt endann}
 \description
 The |endann| (|eann| or |eannot|) terminates a breakable annotation.
+
+\subsection{Break}
+{\tt break}
+\description
+The |break| command instructs the link breaking algorithm to resume its
+operation after a |nobreak| command.
+
+\subsection{Nobreak}
+{\tt nobreak}
+\description
+The |nobreak| command instructs the link breaking algorithm to suspend
+it operation.  This is only required if there is material inserted
+on the page in the {\it middle} of a link.  For example, when a link
+is broken at the end of a page, the header and footer are inserted
+in the middle of the link, but are not part of the link.  Material
+that is inserted between a |nobreak| and |break| will not become
+part of the link.  The |nobreak| and |break| escapes are not necessary
+with the standard LaTeX header and footer lines, but may become necessary
+if these are changed.
 
 \subsection{Dest}
 \syntax

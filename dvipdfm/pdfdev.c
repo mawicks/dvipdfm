@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.94 1999/09/19 06:32:18 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.95 1999/09/19 15:58:47 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -55,8 +55,6 @@ double hoffset = 72.0, voffset=72.0;
 #define DPI 72u 
 
 static double dvi2pts = 0.0;
-static dvi_stack_depth = 0;
-static int dvi_tagged_depth = -1;
 
  /* Acrobat doesn't seem to like coordinate systems
     that involve scalings around 0.01, so we use
@@ -989,10 +987,19 @@ void dev_do_special (void *buffer, UNSIGNED_QUAD size, double x_user,
   }
 }
 
+static dvi_stack_depth = 0;
+static int dvi_tagged_depth = -1;
+static unsigned char link_annot = 1;
+void dev_link_annot (unsigned char flag)
+{
+  link_annot = flag;
+}
+
 void dev_stack_depth (unsigned int depth)
 {
   /* If decreasing below tagged_depth */
-  if (dvi_stack_depth == dvi_tagged_depth &&
+  if (link_annot && 
+      dvi_stack_depth == dvi_tagged_depth &&
       depth == dvi_tagged_depth - 1) {
   /* See if this appears to be the end of a "logical unit"
      that's been broken.  If so, flush the logical unit */
@@ -1023,7 +1030,7 @@ void dev_untag_depth (void)
 void dev_expand_box (mpt_t width, mpt_t height, mpt_t depth)
 {
   double phys_width, phys_height, phys_depth, scale;
-  if (dvi_stack_depth >= dvi_tagged_depth) {
+  if (link_annot && dvi_stack_depth >= dvi_tagged_depth) {
     scale = dvi2pts*dvi_tell_mag();
     phys_width = scale*width;
     phys_height = scale*height;

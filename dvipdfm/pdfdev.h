@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.h,v 1.30 1999/09/19 04:56:41 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.h,v 1.31 1999/09/19 15:58:47 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -81,6 +81,7 @@ extern void dev_tag_depth (void);
 extern void dev_set_box (void);
 extern void dev_untag_depth (void);
 extern void dev_expand_box (mpt_t width, mpt_t height, mpt_t depth);
+extern void dev_link_annot (unsigned char flag);
 #endif /* PDFDEV_H */
 
 
