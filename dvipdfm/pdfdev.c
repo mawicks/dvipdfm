@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.77 1999/08/22 04:21:55 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.78 1999/08/22 15:35:56 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -120,7 +120,7 @@ static char format_buffer[FORMAT_BUF_SIZE];
     Unfortunately, positive is up, which doesn't agree with TeX's convention.  */
 
 static mpt_t text_xorigin = 0, text_yorigin = 0,
-  text_offset = 0, text_leading = 0;
+  text_offset = 0, text_leading = 0, pts2dvi = 0;
 double text_slant = 0.0, text_extend = 1.0;
 double text_xerror = 0.0, text_yerror = 0.0;
 
@@ -213,15 +213,16 @@ static void string_mode (mpt_t xpos, mpt_t ypos, double slant, double extend)
 
       /* First round dely (it is needed for delx) */
       dely = ypos - text_yorigin;
-      desired_dely = (dely+text_yerror);
+      desired_dely = (dely+text_yerror)*dvi2pts;
       rounded_dely = ROUND(desired_dely,0.01);
       /* Next round delx, precompensating for line transformation matrix */
-      desired_delx = ((delx+text_xerror)-desired_dely*slant)/extend;
+      desired_delx = ((delx+text_xerror)*dvi2pts-desired_dely*slant)/extend;
       rounded_delx = ROUND(desired_delx,0.01);
-      text_yerror = (desired_dely - rounded_dely);
-      text_xerror = (extend*(desired_delx - rounded_delx)+slant*text_yerror);
+      /* Estimate errors in DVI units */
+      text_yerror = (desired_dely - rounded_dely)/dvi2pts;
+      text_xerror = (extend/dvi2pts*(desired_delx - rounded_delx)+slant*text_yerror);
       len += sprintf (format_buffer+len, " %.7g %.7g TD[(",
-		      rounded_delx*dvi2pts, rounded_dely*dvi2pts);
+		      rounded_delx, rounded_dely);
       text_leading = dely;
       text_xorigin = xpos-text_xerror;
       text_yorigin = ypos-text_yerror;
@@ -254,8 +255,8 @@ static void dev_set_font (int font_id)
       dev_font[font_id].extend != text_extend) {
     len += sprintf (format_buffer+len, " %.7g 0 %.3g 1 %.7g %.7g Tm",
 		    dev_font[font_id].extend,
-		    dev_font[font_id].slant, text_xorigin*dvi2pts,
-		    text_yorigin*dvi2pts);
+		    dev_font[font_id].slant, ROUND(text_xorigin*dvi2pts,0.01),
+		    ROUND(text_yorigin*dvi2pts,0.01));
      /* There's no longer any uncertainty about where we are */
     text_xerror = 0.0; text_yerror = 0.0;
     text_slant = dev_font[font_id].slant;
@@ -279,8 +280,9 @@ void dev_set_string (mpt_t xpos, mpt_t ypos, unsigned char *s, int
   if (font_id != current_font)
     dev_set_font(font_id); /* Force a Tf since we are actually trying
 			       to write a character */
-  kern = (1000.0/dev_font[font_id].extend*(text_xorigin+text_offset-xpos))/dev_font[font_id].mptsize;
-  if (ypos != text_yorigin ||
+  kern =
+    (1000.0/dev_font[font_id].extend*(text_xorigin+text_offset-xpos))/dev_font[font_id].mptsize;
+  if (labs(ypos-text_yorigin)> pts2dvi/100 ||
 	   abs(kern) > 32000) {
     text_mode();
     kern = 0;
@@ -312,6 +314,11 @@ void dev_set_string (mpt_t xpos, mpt_t ypos, unsigned char *s, int
 void dev_init (double scale, double x_offset, double y_offset)
 {
   dvi2pts = scale;
+  /* Presumably there are many dvi units in one point, so
+     an integer representation is probably okay.  This is
+     only used for some relatively insensitive threshhold tests that
+     need to be fast. */
+  pts2dvi = (long) 1.0/dvi2pts;
   hoffset = x_offset;
   voffset = y_offset;
   if (debug) fprintf (stderr, "dev_init:\n");
