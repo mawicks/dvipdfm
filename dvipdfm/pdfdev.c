@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.63 1999/02/09 03:24:07 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.64 1999/02/21 01:49:07 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -519,6 +519,12 @@ void dev_end_xform (void)
   }
   pdf_doc_add_to_page (" Q", 2);
   num_transforms -= 1;
+  /* Unfortunately, the following two lines are necessary in case of a font or color
+     change inside of the save/restore pair.  Anything that was done
+     there must be redone, so in effect, we make no assumptions about
+     what fonts. We act like we are starting a new page */
+  dev_reselect_font();
+  dev_do_color();
   return;
 }
 
@@ -530,6 +536,8 @@ void dev_close_all_xforms (void)
     num_transforms -= 1;
     pdf_doc_add_to_page (" Q", 2);
   }
+  dev_reselect_font();
+  dev_do_color();
   return;
 }
 

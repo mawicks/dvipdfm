@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tpic.c,v 1.9 1999/02/14 18:32:29 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tpic.c,v 1.10 1999/02/21 01:49:07 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -33,7 +33,7 @@
 
 #define MI2DEV (0.072*dvi_tell_mag())
 
-double pen_size = 14.0;
+double pen_size = 1.0;
 int fill_shape = 0;
 double fill_color = 0.0;
 struct path
@@ -42,11 +42,11 @@ struct path
 } *path = NULL;
 unsigned long path_length = 0, max_path_length = 0;
 
-void tpic_clear_state (void) 
+static void tpic_clear_state (void) 
 {
-  pen_size = 14.0;
   if ((path))
     RELEASE(path);
+  path = NULL;
   path_length = 0;
   max_path_length = 0;
   fill_shape = 0;
@@ -132,6 +132,7 @@ static void show_path (int hidden)
   if (fill_shape)
     fill_shape = 0;
   fill_color = 0.0;
+  fill_shape = 0.0;
 }
 
 
@@ -169,17 +170,12 @@ MEM_START
       len = sprintf (work_buffer, " %.2f %.2f l", x_user+path[i].x, y_user-path[i].y);
       pdf_doc_add_to_page (work_buffer, len);
     } 
-    {
-      RELEASE (path);
-      path = NULL;
-      path_length = 0;
-      max_path_length = 0;
-    }
     show_path (hidden);
     pdf_doc_add_to_page (" Q", 2);
   } else {
     fprintf (stderr, "tpic special: fp: Not enough points!\n");
   }
+  tpic_clear_state();
 MEM_END
   return;
 }
@@ -220,17 +216,12 @@ MEM_START
 		   x_user+path[path_length-1].x,
 		   y_user-path[path_length-1].y);
     pdf_doc_add_to_page (work_buffer, len);
-    {
-      RELEASE (path);
-      path = NULL;
-      path_length = 0;
-      max_path_length = 0;
-    }
     show_path (0);
     pdf_doc_add_to_page (" Q", 2);
   } else {
     fprintf (stderr, "tpic special: sp: Not enough points!\n");
   }
+  tpic_clear_state();
 MEM_END
   return;
 }
@@ -308,6 +299,7 @@ MEM_START
   if (sas) RELEASE(sas);
   if (eas) RELEASE(eas);
 MEM_END
+  tpic_clear_state();
   return;
 }
 
