@@ -53,6 +53,7 @@ install-data:
 	   >/dev/null; then  \
 	   $(INSTALL) ./t1fonts.map $(dvipdfmdir)/t1fonts.map; \
 	else true; fi
+	cp ./ot1.enc $(dvipdfmdir)/ot1.enc
 uninstall-exec:
 	rm -f $(bindir)/$(programs)
 
@@ -66,6 +67,7 @@ uninstall-data:
 	if grep 'original t1fonts.map --' $(dvipdfmdir)/dvipdfm/t1fonts.map \
 	   >/dev/null 2>&1; then rm -f $(dvipdfmdir)/t1fonts.map; \
 	else true; fi
+	rm -f $(dvipdfmdir)/ot1.enc
 #
 # Developer stuff
 #
