@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.48 1998/12/21 02:31:56 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.49 1998/12/21 04:56:02 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -291,7 +291,6 @@ void dev_add_comment (char *comment)
 /*  BOP, EOP, and FONT section.
    BOP and EOP manipulate some of the same data structures
    as the font stuff */ 
-
 
 #define GRAY 1
 #define RGB 2
@@ -591,12 +590,14 @@ int dev_locate_font (char *tex_name, mpt_t ptsize)
   }
   if (i == thisfont) {  /* Font *name* not found, so load it and give it a
 			    new short name */
+    int type1_id = -1;
     dev_font[thisfont].tfm_font_id = tfm_open (tex_name);
+    type1_id = type1_font (tex_name, 
+			   dev_font[thisfont].tfm_font_id,
+			   dev_font[thisfont].short_name);
     /* type1_font_resource on next line always returns an *indirect* obj */ 
-    dev_font[thisfont].font_resource = type1_font_resource (tex_name,
-						     dev_font[thisfont].tfm_font_id,
-						     dev_font[thisfont].short_name);
-    if (dev_font[i].font_resource) { /* If we got one, it must be a physical font */
+    if (type1_id >= 0) { /* If we got one, it must be a physical font */
+      dev_font[thisfont].font_resource = type1_font_resource (type1_id);
       dev_font[i].short_name[0] = 'F';
       sprintf (dev_font[i].short_name+1, "%d", ++n_phys_fonts);
     } else { /* No physical font corresponding to this name */

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.20 1998/12/21 04:06:47 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.21 1998/12/21 04:56:02 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -385,29 +385,6 @@ static void do_pfb (const char *pfb_name, pdf_obj *stream)
   return;
 }
 
-void type1_close_all (void)
-{
-  int i, j;
-  /* Read any necessary font files and flush them */
-  for (i=0; i<num_pfbs; i++) {
-    do_pfb (pfbs[i].pfb_name, pfbs[i].direct);
-    RELEASE (pfbs[i].pfb_name);
-    pdf_release_obj (pfbs[i].direct);
-    pdf_release_obj (pfbs[i].indirect);
-  }
-  RELEASE (pfbs);
-  /* Now do encodings */
-  for (i=0; i<num_encodings; i++) {
-    RELEASE (encodings[i].enc_name);
-    pdf_release_obj (encodings[i].encoding_ref);
-    /* Release glyph names for this encoding */
-    for (j=0; j<256; j++) {
-      fprintf (stderr, "(%s)[%d]", 
-	       (encodings[i].glyphs)[j].name, j);
-      RELEASE ((encodings[i].glyphs)[j].name);
-    }
-  }
-}
 
 #define FONTNAME 1
 #define CAPHEIGHT 2
@@ -648,13 +625,30 @@ static void fill_in_defaults (struct font_record *font_record, const
   return;
 }
 
-pdf_obj *type1_font_resource (const char *tex_name, int tfm_font_id, const char *resource_name)
+struct a_type1_font
 {
-  int i;
+  pdf_obj *indirect;
+  int pfb_id;
+} *type1_fonts;
+int num_type1_fonts = 0, max_type1_fonts = 0;
+
+
+pdf_obj *type1_font_resource (int type1_id)
+{
+  if (type1_id>=0 && type1_id<max_type1_fonts)
+    return pdf_link_obj(type1_fonts[type1_id].indirect);
+  else {
+    ERROR ("Invalid font id in type1_font_resource");
+    return NULL;
+  }
+}
+
+int type1_font (const char *tex_name, int tfm_font_id, const char *resource_name)
+{
+  int i, result = -1;
   int firstchar, lastchar;
   int encoding_id = -1;
   pdf_obj *font_resource, *tmp1, *font_encoding_ref;
-  pdf_obj *result;
   struct font_record *font_record;
   /* font_record should always result in non-null value with default
      values filled in from pdffonts.map if any */
@@ -713,11 +707,17 @@ pdf_obj *type1_font_resource (const char *tex_name, int tfm_font_id, const char 
       pdf_add_dict (font_resource,
 		    pdf_new_name ("Widths"),
 		    tmp1);
-      result = pdf_ref_obj (font_resource);
+      if (num_type1_fonts >= max_type1_fonts) {
+	max_type1_fonts += MAX_FONTS;
+	type1_fonts = RENEW (type1_fonts, max_type1_fonts, struct a_type1_font);
+      }
+      type1_fonts[num_type1_fonts].indirect = pdf_ref_obj(font_resource);
       pdf_release_obj (font_resource);
+      result = num_type1_fonts;
+      num_type1_fonts += 1;
     }
   } else { /* No AFM file.  This isn't fatal.  We still might have a vf! */
-    result = NULL;
+    result = -1;
   }
   if (font_record -> enc_name)
     RELEASE (font_record -> enc_name);
@@ -727,4 +727,34 @@ pdf_obj *type1_font_resource (const char *tex_name, int tfm_font_id, const char 
     RELEASE (font_record -> pfb_name);
   RELEASE (font_record);
   return result;
+}
+
+
+void type1_close_all (void)
+{
+  int i, j;
+  for (i=0; i<num_type1_fonts; i++) {
+    pdf_release_obj (type1_fonts[i].indirect);
+  }
+  RELEASE (type1_fonts);
+
+  /* Read any necessary font files and flush them */
+  for (i=0; i<num_pfbs; i++) {
+    do_pfb (pfbs[i].pfb_name, pfbs[i].direct);
+    RELEASE (pfbs[i].pfb_name);
+    pdf_release_obj (pfbs[i].direct);
+    pdf_release_obj (pfbs[i].indirect);
+  }
+  RELEASE (pfbs);
+  /* Now do encodings */
+  for (i=0; i<num_encodings; i++) {
+    RELEASE (encodings[i].enc_name);
+    pdf_release_obj (encodings[i].encoding_ref);
+    /* Release glyph names for this encoding */
+    for (j=0; j<256; j++) {
+      fprintf (stderr, "(%s)[%d]", 
+	       (encodings[i].glyphs)[j].name, j);
+      RELEASE ((encodings[i].glyphs)[j].name);
+    }
+  }
 }
