@@ -144,7 +144,6 @@ pdf_obj *pdf_stream_dict(pdf_obj *stream);
 
 void pdf_release_obj (pdf_obj *object);
 pdf_obj *pdf_ref_obj (pdf_obj *object);
-pdf_obj *pdf_new_ref (int label, int generation);
 
 void pdf_write_obj (FILE *file, const pdf_obj *object);
 

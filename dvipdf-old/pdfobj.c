@@ -218,19 +218,6 @@ pdf_obj *pdf_link_obj (pdf_obj *object)
   return object;
 }
 
-pdf_obj *pdf_new_ref (int label, int generation) 
-{
-  pdf_obj *result;
-  struct pdf_indirect *indirect;
-  result = pdf_new_obj (PDF_INDIRECT);
-  indirect = NEW (1, struct pdf_indirect);
-  result -> data = indirect;
-  indirect -> label = label;
-  indirect -> generation = generation;
-  indirect -> dirty = 1;  /* Any caller that directly sets his own label
-			     is dirty */
-  return result;
-}
 
 pdf_obj *pdf_ref_obj(pdf_obj *object)
 {
@@ -273,11 +260,16 @@ static void write_indirect (FILE *file, const struct pdf_indirect *indirect)
 {
   int length;
   if (indirect -> dirty) {
-    if (file == stderr) 
+    if (file == stderr) {
       pdf_out (file, "{d}", 3);
-    else
+      length = sprintf (format_buffer, "%d %d R", indirect -> label,
+			indirect -> generation);
+      pdf_out (file, format_buffer, length);
+    }
+    else {
       fprintf (stderr, "\nTried to write a dirty object\n");
-    pdf_out (file, "        0       0    R", 22);
+      pdf_out (file, "        0       0    R", 22);
+    }
   } else {
     length = sprintf (format_buffer, "%d %d R", indirect -> label,
 		      indirect -> generation);
