@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.65 1999/02/21 14:30:21 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.65.2.1 1999/04/08 03:14:42 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -25,6 +25,7 @@
 #include <math.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdlib.h>
 #include "pdfdev.h"
 #include "pdfdoc.h"
 #include "pdfobj.h"
@@ -763,11 +764,19 @@ void dev_rule (mpt_t xpos, mpt_t ypos, mpt_t width, mpt_t height)
     fprintf (stderr, "(dev_rule)");
   }
   graphics_mode();
-  len = sprintf (format_buffer, " %.2f %.2f m %.2f %.2f l %.2f %.2f l %.2f %.2f l b",
-		 xpos*dvi2pts, ypos*dvi2pts,
-		 (xpos+width)*dvi2pts, ypos*dvi2pts,
-		 (xpos+width)*dvi2pts, (ypos+height)*dvi2pts,
-		 xpos*dvi2pts, (ypos+height)*dvi2pts);
+  if (width> height) {
+    mpt_t half_height = height/2;
+    len = sprintf (format_buffer, " %.2f w %.2f %.2f m %.2f %.2f l S",
+		   height*dvi2pts,
+		   xpos*dvi2pts, (ypos+half_height)*dvi2pts,
+		   (xpos+width)*dvi2pts, (ypos+half_height)*dvi2pts);
+  } else {
+    mpt_t half_width = width/2;
+    len = sprintf (format_buffer, " %.2f w %.2f %.2f m %.2f %.2f l S",
+		   width*dvi2pts,
+		   (xpos+half_width)*dvi2pts, ypos*dvi2pts,
+		   (xpos+half_width)*dvi2pts, (ypos+height)*dvi2pts);
+  }
   pdf_doc_add_to_page (format_buffer, len);
 }
 

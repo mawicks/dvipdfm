@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.62 1999/03/08 04:37:22 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.62.2.1 1999/04/08 03:14:42 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1304,22 +1304,24 @@ int type1_font (const char *tex_name, int tfm_font_id, const char *resource_name
 		      pdf_new_name (fontname));  /* fontname is global and set
 						    by scan_afm_file() */
       }
-      firstchar = tfm_get_firstchar(tfm_font_id);
-      pdf_add_dict (font_resource,
-		    pdf_new_name ("FirstChar"),
-		    pdf_new_number (firstchar));
-      lastchar = tfm_get_lastchar(tfm_font_id);
-      pdf_add_dict (font_resource,
-		    pdf_new_name ("LastChar"),
-		    pdf_new_number (lastchar));
-      tmp1 = pdf_new_array ();
-      for (i=firstchar; i<=lastchar; i++) {
-	pdf_add_array (tmp1,
-		       pdf_new_number(ROUND(tfm_get_width (tfm_font_id, i)*1000.0,0.01)));
+      if (!is_a_base_font (fontname)) {
+         firstchar = tfm_get_firstchar(tfm_font_id);
+         pdf_add_dict (font_resource,
+		       pdf_new_name ("FirstChar"),
+		       pdf_new_number (firstchar));
+	 lastchar = tfm_get_lastchar(tfm_font_id);
+	 pdf_add_dict (font_resource,
+		       pdf_new_name ("LastChar"),
+		       pdf_new_number (lastchar));
+	 tmp1 = pdf_new_array ();
+	 for (i=firstchar; i<=lastchar; i++) {
+	    pdf_add_array (tmp1,
+			   pdf_new_number(ROUND(tfm_get_width (tfm_font_id, i)*1000.0,0.01)));
+	 }
+	 pdf_add_dict (font_resource,
+		       pdf_new_name ("Widths"),
+		       tmp1);
       }
-      pdf_add_dict (font_resource,
-		    pdf_new_name ("Widths"),
-		    tmp1);
       type1_fonts[num_type1_fonts].indirect = pdf_ref_obj(font_resource);
       pdf_release_obj (font_resource);
       result = num_type1_fonts;
