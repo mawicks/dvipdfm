@@ -4,6 +4,8 @@
 
 static pdf_obj *font_resource, *fontlist_dict;
 
+char *message = "Computer Modern Roman Fonts";
+
 int main (int argc, char *argv[]) 
 {
   pdf_obj *tmp1;

@@ -284,7 +284,7 @@ static void scan_afm_file (void)
 			cmr, should be set to be symbolic */
 #define NOCLUE 20
 
-#define ROUND(a) (floor((a)+0.5)) 
+#define ROUND(a,p) (floor((a)/(p)+0.5)*p)
 
 pdf_obj *type1_font_descriptor (const char *tex_name)
 {
@@ -303,15 +303,15 @@ pdf_obj *type1_font_descriptor (const char *tex_name)
   }
   pdf_add_dict (font_descriptor,
 		tmp1 = pdf_new_name ("CapHeight"),
-		tmp2 = pdf_new_number (ROUND(capheight)));
+		tmp2 = pdf_new_number (ROUND(capheight,0.01)));
   pdf_release_obj (tmp1); pdf_release_obj (tmp2);
   pdf_add_dict (font_descriptor,
 		tmp1 = pdf_new_name ("Ascent"),
-		tmp2 = pdf_new_number (ROUND(ascent)));
+		tmp2 = pdf_new_number (ROUND(ascent,0.01)));
   pdf_release_obj (tmp1); pdf_release_obj (tmp2);
   pdf_add_dict (font_descriptor,
 		tmp1 = pdf_new_name ("Descent"),
-		tmp2 = pdf_new_number (ROUND(descent)));
+		tmp2 = pdf_new_number (ROUND(descent,0.01)));
   pdf_release_obj (tmp1); pdf_release_obj (tmp2);
   flags = 0;
   if (italicangle != 0.0) flags += ITALIC;
@@ -322,10 +322,10 @@ pdf_obj *type1_font_descriptor (const char *tex_name)
 		tmp2 = pdf_new_number (flags));
   pdf_release_obj (tmp1); pdf_release_obj (tmp2);
   tmp1 = pdf_new_array ();
-  pdf_add_array (tmp1, tmp2 = pdf_new_number (ROUND(bbllx))); pdf_release_obj (tmp2);
-  pdf_add_array (tmp1, tmp2 = pdf_new_number (ROUND(bblly))); pdf_release_obj (tmp2);
-  pdf_add_array (tmp1, tmp2 = pdf_new_number (ROUND(bburx))); pdf_release_obj (tmp2);
-  pdf_add_array (tmp1, tmp2 = pdf_new_number (ROUND(bbury))); pdf_release_obj (tmp2);
+  pdf_add_array (tmp1, tmp2 = pdf_new_number (ROUND(bbllx,1))); pdf_release_obj (tmp2);
+  pdf_add_array (tmp1, tmp2 = pdf_new_number (ROUND(bblly,1))); pdf_release_obj (tmp2);
+  pdf_add_array (tmp1, tmp2 = pdf_new_number (ROUND(bburx,1))); pdf_release_obj (tmp2);
+  pdf_add_array (tmp1, tmp2 = pdf_new_number (ROUND(bbury,1))); pdf_release_obj (tmp2);
   pdf_add_dict (font_descriptor,
 		tmp2 = pdf_new_name ("FontBBox"),
 		tmp1);
@@ -336,12 +336,12 @@ pdf_obj *type1_font_descriptor (const char *tex_name)
   pdf_release_obj (tmp1); pdf_release_obj (tmp2);
   pdf_add_dict (font_descriptor,
 		tmp1 = pdf_new_name ("ItalicAngle"),
-		tmp2 = pdf_new_number (ROUND(italicangle)));
+		tmp2 = pdf_new_number (ROUND(italicangle,1)));
   pdf_release_obj (tmp1); pdf_release_obj (tmp2);
   if (xheight != 0.0) {
     pdf_add_dict (font_descriptor,
 		  tmp1 = pdf_new_name ("XHeight"),
-		  tmp2 = pdf_new_number (ROUND(xheight)));
+		  tmp2 = pdf_new_number (ROUND(xheight,1)));
     pdf_release_obj (tmp1); pdf_release_obj (tmp2);
   }
   pdf_add_dict (font_descriptor,
@@ -393,7 +393,7 @@ pdf_obj *type1_font_resource (const char *tex_name, const char *resource_name)
   pdf_release_obj (tmp1); pdf_release_obj (tmp2);
   tmp1 = pdf_new_array ();
   for (i=firstchar; i<=lastchar; i++) {
-    pdf_add_array (tmp1, tmp2 = pdf_new_number (ROUND(char_widths[i])));
+    pdf_add_array (tmp1, tmp2 = pdf_new_number (ROUND(char_widths[i],0.01)));
         pdf_release_obj (tmp2);
   }
   pdf_add_dict (font_resource,
