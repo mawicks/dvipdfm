@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.67 1999/08/17 11:13:16 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.68 1999/08/17 15:08:56 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -190,7 +190,7 @@ static void graphics_mode (void)
   return;
 }
 
-static void string_mode (mpt_t xpos, mpt_t ypos)
+static void string_mode (mpt_t xpos, mpt_t ypos, double slant)
 {
   mpt_t delx, dely;
   int len = 0;
@@ -207,12 +207,14 @@ static void string_mode (mpt_t xpos, mpt_t ypos)
     {
       double rounded_delx, desired_delx;
       double rounded_dely, desired_dely;
-      desired_delx = delx*dvi2pts+text_xerror;
-      rounded_delx = ROUND(desired_delx,0.01);
-      text_xerror = desired_delx - rounded_delx;
+      /* First round dely (it is needed for delx) */
       dely = ypos - text_yorigin;
       desired_dely = dely*dvi2pts+text_yerror;
       rounded_dely = ROUND(desired_dely,0.01);
+      /* Next round delx */
+      desired_delx = (delx-dely*slant)*dvi2pts+text_xerror;
+      rounded_delx = ROUND(desired_delx,0.01);
+      text_xerror = desired_delx - rounded_delx;
       text_yerror = desired_dely - rounded_dely;
       len += sprintf (format_buffer+len, " %.7g %.7g TD[(",
 		      rounded_delx, rounded_dely);
@@ -281,7 +283,7 @@ void dev_set_string (mpt_t xpos, mpt_t ypos, unsigned char *s, int
     kern = 0;
   }
   if (motion_state != STRING_MODE)
-    string_mode(xpos, ypos);
+    string_mode(xpos, ypos, dev_font[font_id].slant);
   else if (kern != 0) {
     text_offset -= kern*(dev_font[font_id].mptsize/1000.0);
     len += sprintf (format_buffer+len, ")%ld(", kern);
