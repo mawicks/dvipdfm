@@ -6,8 +6,11 @@ srcdir = @srcdir@
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 bindir = @bindir@
+datadir = @datadir@
+texmf = $(datadir)/texmf
+psheaderdir = $(texmf)/dvips
 programs=dvipdfm ebb
-headers = acdefines.h dvi.h pdflimits.h error.h mfileio.h jpeg.h mem.h numbers.h \
+headers = dvi.h pdflimits.h error.h mfileio.h jpeg.h mem.h numbers.h \
 	pdfdev.h pdfdoc.h pdfparse.h pdfspecial.h tfm.h type1.h epdf.h \
 	vf.h dvicodes.h
 src = pdfdev.c pdfdoc.c dvi.c mfileio.c mem.c jpeg.c numbers.c pdfobj.c \
@@ -16,28 +19,27 @@ objects = pdfdev.o pdfdoc.o dvi.o mfileio.o mem.o jpeg.o numbers.o pdfobj.o \
         pdfparse.o pdfspecial.o tfm.o type1.o dvipdfm.o epdf.o vf.o
 eobjects=ebb.o jpeg.o pdfobj.o mem.o mfileio.o numbers.o pdfparse.o
 
-check default all: $(programs) 
-
+check default all: $(programs)
 ebb: $(eobjects)
 	$(CC) -o ebb $(eobjects) $(LIBS)
-
 dvipdfm:  $(objects)
 	$(CC) -o dvipdfm $(objects) $(LIBS)
-clean:
-	rm -f *.o *.dvi *~ *.log 
-	rm -f $(programs)
+include depend.make
+#
+# Install/uninstall
+#
 install: install-exec install-data
 uninstall: uninstall-exec uninstall-data
 install-exec: all
-	$(INSTALL) $(bindir) $(programs)
-install-data:
+	$(INSTALL) $(programs) $(bindir)
 # pdffonts.map.
+install-data:
 	if test ! -r $(psheaderdir)/dvipdfm/pdffonts.map \
 	   || grep 'original pdffonts.map --' $(psheaderdir)/dvipdfm/pdffonts.map \
 	   >/dev/null; then  \
+	   $(INSTALL) -d $(psheaderdir)/dvipdfm ; \
 	   $(INSTALL) ./pdffonts.map $(psheaderdir)/dvipdfm/pdffonts.map; \
 	else true; fi
-
 uninstall-exec:
 	rm -f $(bindir)/$(programs)
 
@@ -45,6 +47,34 @@ uninstall-data:
 	if grep 'original pdffonts.map --' $(psheaderdir)/dvipdfm/pdffonts.map \
 	   >/dev/null 2>&1; then rm -f $(psheaderdir)/dvipdfm/pdffonts.map; \
 	else true; fi
-
-
-
+#
+# Developer stuff
+#
+maintainerclean: clean distclean
+	rm -f c-auto.h.in configure
+distclean: clean
+	rm -f Makefile c-auto.h config.cache confdefs.h
+clean:
+	rm -f $(programs) *.o
+	for i in [. doc latex-support] ; \
+	   do rm -f $$i/*.dvi $$i/*.log $$i/*~; \
+	done
+	rm -f doc/dvipdfm.pdf latex-support/sample.pdf
+TAGS:
+	etags *.[ch]
+depend:
+	rm -f depend.make
+	make depend.make
+depend.make:
+	gcc -MM $(src) > depend.make
+#
+# Autoconf stuff
+#
+Makefile: Makefile.in configure.in
+	$(srcdir)/configure
+c-auto.h: c-auto.h.in configure.in
+	$(srcdir)/configure
+c-auto.h.in: acconfig.h configure.in
+	autoheader
+configure: configure.in
+	autoconf

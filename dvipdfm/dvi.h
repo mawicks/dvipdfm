@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.h,v 1.8 1998/12/12 01:37:18 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.h,v 1.9 1998/12/12 03:35:12 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -63,5 +63,7 @@ extern void dvi_z (SIGNED_QUAD ch);
 extern void dvi_z0(void);
 extern double dvi_dev_xpos(void);
 extern double dvi_dev_ypos(void);
+extern int dvi_npages (void);
+extern void dvi_do_page(int n);
 
 #endif /* _DVI_H_ */

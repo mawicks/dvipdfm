@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.h,v 1.12 1998/12/12 01:37:18 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.h,v 1.13 1998/12/12 03:35:12 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -134,6 +134,10 @@ extern pdf_obj *pdf_new_null (void);
 
 extern pdf_obj *pdf_new_boolean (char value);
 extern void pdf_set_boolean (pdf_obj *object, char value);
+
+extern void pdf_set_info (pdf_obj *object);
+extern void pdf_set_root (pdf_obj *object);
+     
 
 extern pdf_obj *pdf_new_number (double value);
 extern void pdf_set_number (pdf_obj *object, double value);
