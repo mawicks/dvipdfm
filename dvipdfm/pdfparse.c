@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.c,v 1.31 2000/01/19 00:23:47 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.c,v 1.32 2000/02/06 03:23:15 mwicks Exp $
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
 
@@ -380,9 +380,9 @@ int xtod (char c)
   if (c >= '0' && c <= '9')
     return c-'0';
   if (c >= 'A' && c <= 'F')
-    return c-'F';
+    return (c-'A')+10;
   if (c >= 'a' && c <= 'f')
-    return c-'f';
+    return (c-'a')+10;
   return 0;
 }
 
