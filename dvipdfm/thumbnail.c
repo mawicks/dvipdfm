@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/thumbnail.c,v 1.4 1999/08/13 14:14:38 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/thumbnail.c,v 1.5 1999/08/14 01:47:09 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -56,7 +56,7 @@ static char *guess_name (const char *thumb_filename)
 }
 
 
-pdf_obj *do_png (FILE *file)
+pdf_obj *do_png (FILE *file, char *res_name)
 {
   pdf_obj *result = NULL, *dict = NULL;
   png_structp png_ptr;
@@ -84,22 +84,19 @@ pdf_obj *do_png (FILE *file)
     interlace_type = png_get_interlace_type(png_ptr, info_ptr);
     fprintf (stderr,
 	     "w=%ld,h=%ld,c=%d,b=%d\n\n",width,height,color_type,bit_depth);
-    if (color_type != PNG_COLOR_TYPE_PALETTE &&
-	color_type != PNG_COLOR_TYPE_RGB) {
-      fprintf (stderr, "\n\nExpecting color thumbnails\n");
-      return NULL;
-    }
+    /* Convert paletted images to true color */
     if (color_type == PNG_COLOR_TYPE_PALETTE) {
       png_set_expand(png_ptr);
     }
+    /* Limit image component depth to 8 bits */
     if (bit_depth == 16) {
       png_set_strip_16 (png_ptr);
     }
-    png_read_update_info(png_ptr, info_ptr);
   }
   { /* Read the image in raw RGB format */
-    int i, rowbytes;
+    int i, rowbytes, pdf_bit_depth;
     png_bytep *rows;
+    png_read_update_info(png_ptr, info_ptr);
     rows = NEW (height, png_bytep);
     rowbytes = png_get_rowbytes(png_ptr, info_ptr);
     fprintf (stderr, "rowbytes=%d\n", rowbytes);
@@ -113,15 +110,36 @@ pdf_obj *do_png (FILE *file)
 		  pdf_new_number(width));
     pdf_add_dict (dict, pdf_new_name ("Height"),
 		  pdf_new_number(height));
+    if (color_type == PNG_COLOR_TYPE_GRAY) {
+      pdf_bit_depth = bit_depth;
+    } else {
+      pdf_bit_depth = 8;
+    }
     pdf_add_dict (dict, pdf_new_name ("BitsPerComponent"),
-		  pdf_new_number(8.0));
-    pdf_add_dict (dict, pdf_new_name ("ColorSpace"),
-		  pdf_new_name ("DeviceRGB"));
+		  pdf_new_number(pdf_bit_depth));
+    if (color_type == PNG_COLOR_TYPE_GRAY ||
+	color_type == PNG_COLOR_TYPE_GRAY_ALPHA) {
+      pdf_add_dict (dict, pdf_new_name ("ColorSpace"),
+		    pdf_new_name ("DeviceGray"));
+    } else{
+      pdf_add_dict (dict, pdf_new_name ("ColorSpace"),
+		    pdf_new_name ("DeviceRGB"));
+    }
     for (i=0; i<height; i++) {
       pdf_add_stream (result, (char *) rows[i], rowbytes);
       RELEASE (rows[i]);
     }
     RELEASE (rows);
+  }
+  {
+    if (res_name) {
+      pdf_add_dict (dict, pdf_new_name ("Type"),
+		    pdf_new_name ("XObject"));
+      pdf_add_dict (dict, pdf_new_name ("Subtype"),
+		    pdf_new_name ("Image"));
+      pdf_add_dict (dict, pdf_new_name ("Name"),
+		    pdf_new_name (res_name));
+    }
   }
   { /* Cleanup  */
     if (png_ptr)
@@ -157,7 +175,7 @@ pdf_obj *do_thumbnail (const char *thumb_filename)
   }
   rewind (thumb_file);
   fprintf (stderr, "Looks good...\n");
-  if ((image_stream = do_png (thumb_file))) {
+  if ((image_stream = do_png (thumb_file, NULL))) {
     image_ref = pdf_ref_obj (image_stream);
     pdf_release_obj (image_stream);
   } else {

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/thumbnail.h,v 1.1 1999/08/12 04:41:53 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/thumbnail.h,v 1.2 1999/08/14 01:47:09 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -31,5 +31,8 @@
 #include "pdfobj.h"
 
 extern pdf_obj *do_thumbnail (const char *thumb_filename);
+extern pdf_obj *do_pnm (FILE *file, char *res_name);
 
+#define THUMBNAIL 1
+#define IMAGE 2
 #endif /* THUMBNAIL_H */
