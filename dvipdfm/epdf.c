@@ -12,10 +12,10 @@ void do_scaling(pdf_obj *media_box, struct xform_info *p)
 { 
   /* Take care of scaling */
   double bbllx, bblly, bburx, bbury;
-  bbllx = pdf_number_value (pdf_get_array (media_box, 1));
-  bblly = pdf_number_value (pdf_get_array (media_box, 2));
-  bburx = pdf_number_value (pdf_get_array (media_box, 3));
-  bbury = pdf_number_value (pdf_get_array (media_box, 4));
+  bbllx = pdf_number_value (pdf_get_array (media_box, 0));
+  bblly = pdf_number_value (pdf_get_array (media_box, 1));
+  bburx = pdf_number_value (pdf_get_array (media_box, 2));
+  bbury = pdf_number_value (pdf_get_array (media_box, 3));
   xscale = 1.0;
   yscale = 1.0;
   if (p->scale != 0.0) {
@@ -73,7 +73,7 @@ MEM_START
   while ((kids_ref = pdf_lookup_dict (page_tree, "Kids")) != NULL) {
     kids = pdf_deref_obj (kids_ref);
     pdf_release_obj (page_tree);
-    page_tree = pdf_deref_obj (pdf_get_array(kids, 1));
+    page_tree = pdf_deref_obj (pdf_get_array(kids, 0));
     pdf_release_obj (kids);
     /* Replace MediaBox if it's here */
     tmp1 = pdf_deref_obj(pdf_lookup_dict (page_tree, "MediaBox"));
@@ -102,7 +102,7 @@ MEM_START
   /* Arrays of contents must be handled very differently */
   if (contents -> type == PDF_ARRAY) {
     /* For now, we can't handle this so bail out*/
-    int i=1;
+    int i=0;
     if (1) {
       fprintf (stderr, "\nCan't handle content streams with multiple segments\n");
       pdf_release_obj (media_box);

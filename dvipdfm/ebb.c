@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.8 1998/12/12 03:35:12 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.9 1998/12/12 17:02:18 mwicks Exp $
 
     This is ebb, a bounding box extraction program.
     Copyright (C) 1998  by Mark A. Wicks
@@ -164,7 +164,7 @@ void do_pdf (FILE *file, char *filename)
   while ((kids_ref = pdf_lookup_dict (page_tree, "Kids")) != NULL) {
     kids = pdf_deref_obj (kids_ref);
     pdf_release_obj (page_tree);
-    page_tree = pdf_deref_obj (pdf_get_array(kids, 1));
+    page_tree = pdf_deref_obj (pdf_get_array(kids, 0));
     pdf_release_obj (kids);
     /* Replace MediaBox if it's here */
     tmp1 = pdf_deref_obj(pdf_lookup_dict (page_tree, "MediaBox"));
@@ -176,10 +176,10 @@ void do_pdf (FILE *file, char *filename)
   /* At this point, we should have the media box for the first page */ 
   {
     pdf_obj *bbllx, *bblly, *bburx, *bbury;
-    if ((bbllx = pdf_get_array (media_box, 1)) == NULL ||
-	(bblly = pdf_get_array (media_box, 2)) == NULL ||
-	(bburx = pdf_get_array (media_box, 3)) == NULL ||
-	(bbury = pdf_get_array (media_box, 4)) == NULL) {
+    if ((bbllx = pdf_get_array (media_box, 0)) == NULL ||
+	(bblly = pdf_get_array (media_box, 1)) == NULL ||
+	(bburx = pdf_get_array (media_box, 2)) == NULL ||
+	(bbury = pdf_get_array (media_box, 3)) == NULL) {
       fprintf (stderr, "Invalid mediabox\n");
     } else
       write_bb (filename,

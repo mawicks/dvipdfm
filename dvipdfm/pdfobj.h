@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.h,v 1.13 1998/12/12 03:35:12 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.h,v 1.14 1998/12/12 17:02:18 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -84,8 +84,8 @@ typedef struct pdf_name pdf_name;
 
 struct pdf_array
 {
-  pdf_obj *this;
-  struct pdf_array *next;
+  unsigned long max, size;
+  pdf_obj **values;
 };
 typedef struct pdf_array pdf_array;
 

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.21 1998/12/11 21:18:33 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.22 1998/12/12 17:02:18 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -636,31 +636,33 @@ pdf_obj *pdf_new_array (void)
   pdf_array *data;
   result = pdf_new_obj (PDF_ARRAY);
   data = NEW (1, pdf_array);
-  data -> this = NULL;
-  data -> next = NULL;
+  data -> values = NULL;
+  data -> max = 0;
+  data -> size = 0;
   result -> data = data;
   return result;
 }
 
 static void write_array (FILE *file, const pdf_array *array)
 {
-  if (array -> next == NULL) {
+  if (array -> size > 0) {
+    int i;
+    pdf_out_char (file, '[');
+    for (i=0; i<array->size; i++) {
+      if (i != 0)
+	pdf_out_white (file);
+      pdf_write_obj (file, (array->values)[i]);
+    }
+    pdf_out_char (file, ']');
+  } else {
     write_null (file);
-    return;
   }
-  pdf_out_char (file, '[');
-  while (array -> next != NULL) {
-    pdf_write_obj (file, array -> this);
-    array = array -> next;
-    if (array -> next != NULL)
-      pdf_out_white (file);
-  }
-  pdf_out_char (file, ']');
 }
 
 pdf_obj *pdf_get_array (pdf_obj *array, int index)
 {
   pdf_array *data;
+  pdf_obj *result = NULL;;
   if (array == NULL) {
     ERROR ("pdf_get_array: passed NULL object");
   }
@@ -668,24 +670,18 @@ pdf_obj *pdf_get_array (pdf_obj *array, int index)
     ERROR ("pdf_get_array: passed non array object");
   }
   data = array -> data;
-  while (--index > 0 && data -> next != NULL)
-    data = data -> next;
-  if (data -> next == NULL) {
-    return NULL;
+  if (index >= 0 && index < data -> size) {
+    result = (data->values)[index];
   }
-  return data -> this;
+  return result;
 }
-
-
 
 static void release_array (pdf_array *data)
 {
   pdf_array *next;
-  while (data != NULL && data -> next != NULL) {
-    pdf_release_obj (data -> this);
-    next = data -> next;
-    RELEASE (data);
-    data = next;
+  unsigned long i;
+  for (i=0; i<data->size; i++) {
+    pdf_release_obj ((data ->values)[i]);
   }
   RELEASE (data);
 }
@@ -700,13 +696,12 @@ void pdf_add_array (pdf_obj *array, pdf_obj *object) /* Array is ended
      ERROR ("pdf_add_array:  Passed non-array object");
   }
   data = array -> data;
-  new_node = NEW (1, pdf_array);
-  new_node -> this = NULL;
-  new_node -> next = NULL;
-  while (data -> next != NULL)
-    data = data -> next;
-  data -> next = new_node;
-  data -> this = object;
+  if (data -> size >= data -> max) {
+    data->max += ARRAY_ALLOC_SIZE;
+    data->values = RENEW (data->values, data->max, pdf_obj *);
+  }
+  (data->values)[data->size++] = object;
+  return;
 }
 
 

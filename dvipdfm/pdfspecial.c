@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.28 1998/12/12 03:35:12 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.29 1998/12/12 17:02:18 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -494,22 +494,22 @@ static void do_bgcolor(char **start, char *end)
     switch (color -> type) {
       int i;
     case PDF_ARRAY:
-      for (i=1; i<=5; i++) {
+      for (i=0; i<5; i++) {
 	if (pdf_get_array (color, i) == NULL ||
 	    pdf_get_array (color, i) -> type != PDF_NUMBER)
 	  break;
       }
       switch (i) {
-      case 4:
-	dev_bg_rgb_color (pdf_number_value (pdf_get_array (color,1)),
-			  pdf_number_value (pdf_get_array (color,2)),
-			  pdf_number_value (pdf_get_array (color,3)));
+      case 3:
+	dev_bg_rgb_color (pdf_number_value (pdf_get_array (color,0)),
+			  pdf_number_value (pdf_get_array (color,1)),
+			  pdf_number_value (pdf_get_array (color,2)));
 	break;
-      case 5:
-	dev_bg_cmyk_color (pdf_number_value (pdf_get_array (color,1)),
+      case 4:
+	dev_bg_cmyk_color (pdf_number_value (pdf_get_array (color,0)),
+			   pdf_number_value (pdf_get_array (color,1)),
 			   pdf_number_value (pdf_get_array (color,2)),
-			   pdf_number_value (pdf_get_array (color,3)),
-			   pdf_number_value (pdf_get_array (color,4)));
+			   pdf_number_value (pdf_get_array (color,3)));
 	break;
       default:
 	fprintf (stderr, "\nSpecial: begincolor: Expecting either RGB or CMYK color array\n");
@@ -547,22 +547,22 @@ static void do_bcolor(char **start, char *end)
     switch (color -> type) {
       int i;
     case PDF_ARRAY:
-      for (i=1; i<=5; i++) {
+      for (i=0; i<5; i++) {
 	if (pdf_get_array (color, i) == NULL ||
 	    pdf_get_array (color, i) -> type != PDF_NUMBER)
 	  break;
       }
       switch (i) {
-      case 4:
-	dev_begin_rgb_color (pdf_number_value (pdf_get_array (color,1)),
-			     pdf_number_value (pdf_get_array (color,2)),
-			     pdf_number_value (pdf_get_array (color,3)));
+      case 3:
+	dev_begin_rgb_color (pdf_number_value (pdf_get_array (color,0)),
+			     pdf_number_value (pdf_get_array (color,1)),
+			     pdf_number_value (pdf_get_array (color,2)));
 	break;
-      case 5:
-	dev_begin_cmyk_color (pdf_number_value (pdf_get_array (color,1)),
+      case 4:
+	dev_begin_cmyk_color (pdf_number_value (pdf_get_array (color,0)),
+			      pdf_number_value (pdf_get_array (color,1)),
 			      pdf_number_value (pdf_get_array (color,2)),
-			      pdf_number_value (pdf_get_array (color,3)),
-			      pdf_number_value (pdf_get_array (color,4)));
+			      pdf_number_value (pdf_get_array (color,3)));
 	break;
       default:
 	fprintf (stderr, "\nSpecial: begincolor: Expecting either RGB or CMYK color array\n");
