@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.42 1999/08/12 00:24:22 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.43 1999/08/12 03:37:24 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -72,7 +72,6 @@ static rect get_paper_size (char *string)
 
 
 char *dvi_filename = NULL, *pdf_filename = NULL;
-
 static void set_default_pdf_filename(void)
 {
   const char *dvi_base;
@@ -89,7 +88,6 @@ static void set_default_pdf_filename(void)
     strcpy (pdf_filename+strlen(dvi_base)-4, ".pdf");
   }
 }
-
 static void usage (void)
 {
    fprintf (stdout, "%s, version %s, Copyright (C) 1998, 1999 by Mark A. Wicks\n", PACKAGE, VERSION);
@@ -106,6 +104,7 @@ static void usage (void)
    fprintf (stdout, "-p papersize\tSet papersize (letter, legal, ledger, tabloid, a4, or a3) [letter]\n");
    fprintf (stdout, "-r resolution\tSet resolution (in DPI) for raster fonts [600]\n");
    fprintf (stdout, "-s pages\tSelect page ranges (-)\n");
+   fprintf (stdout, "-t      \tEmbed thumbnail images\n");
    fprintf (stdout, "-x dimension\tSet horizontal offset [1.0in]\n");
    fprintf (stdout, "-y dimension\tSet vertical offset [1.0in]\n");
    fprintf (stdout, "-e          \tDisable partial font embedding [default is enabled])\n");
@@ -296,6 +295,11 @@ static void do_args (int argc, char *argv[])
 	    }
 	  }
 	  pop_arg();
+	}
+	break;
+      case 't':
+	{
+	  pdf_doc_enable_thumbnails ();
 	}
 	break;
       case 'p':

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.46 1999/02/21 14:30:22 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.47 1999/08/12 03:37:24 mwicks Exp $
  
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -37,6 +37,7 @@
 #include "pdfdev.h"
 #include "numbers.h"
 #include "mfileio.h"
+#include "thumbnail.h"
 
 static pdf_obj *catalog = NULL;
 static pdf_obj *docinfo = NULL;
@@ -782,6 +783,14 @@ void finish_articles(void)
   }
 }
 
+static thumbnail_opt = 0;
+static char *thumb_basename = NULL;
+
+void pdf_doc_enable_thumbnails(void)
+{
+  thumbnail_opt = 1;
+}
+
 void pdf_doc_finish_page ()
 {
 #ifdef MEM_DEBUG
@@ -845,6 +854,15 @@ MEM_START
   if (current_page_resources != NULL) {
     pdf_release_obj (current_page_resources);
     current_page_resources = NULL;
+  }
+  if (thumbnail_opt) {
+    char *thumb_filename;
+    pdf_obj *thumbnail;
+    thumb_filename = NEW (strlen(thumb_basename)+7, char);
+    sprintf (thumb_filename, "%s.%ld", thumb_basename,
+	     page_count%99999+1L);
+    thumbnail = do_thumbnail (thumb_filename);
+    RELEASE (thumb_filename);
   }
   page_count += 1;
 #ifdef MEM_DEBUG
@@ -963,6 +981,17 @@ void pdf_doc_init (char *filename)
 {
   if (debug) fprintf (stderr, "pdf_doc_init:\n");
   pdf_out_init (filename);
+  /* Create a default name for thumbnail image files */
+  if (thumbnail_opt) {
+    if (!strncmp (".pdf", filename+strlen(filename)-4,4)) {
+      thumb_basename = NEW (strlen(filename)+1-4, char);
+      strncpy (thumb_basename, filename, strlen(filename)-4);
+      thumb_basename[strlen(filename)-4] = 0;
+    } else {
+      thumb_basename = NEW (strlen(filename)+1, char);
+      strcpy (thumb_basename, filename);
+    }
+  }
   make_short_cuts();
   create_docinfo ();
   create_catalog ();
@@ -977,6 +1006,8 @@ void pdf_doc_creator (char *s)
 void pdf_doc_close ()
 {
   if (debug) fprintf (stderr, "pdf_doc_finish:\n");
+  if (thumb_basename)
+    RELEASE (thumb_basename);
   /* Following things were kept around so user can add dictionary
      items */
   finish_docinfo();

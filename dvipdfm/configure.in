@@ -30,6 +30,7 @@ with -L pointing to the directory containing libkpathsea.a
 
 AC_TEXMF_TREE
 AC_HAS_ZLIB
+AC_HAS_LIBPNG
   
 dnl Check for functions
 

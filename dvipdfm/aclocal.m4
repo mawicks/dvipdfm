@@ -52,7 +52,19 @@ AC_TRY_COMPILE([#include <zlib.h>], [z_stream p;],
 LIBS="$LIBS -lz"])],
 [AC_MSG_RESULT(no)])
 AC_CHECK_LIB(z, compress2,
-[AC_DEFINE(HAVE_ZLIB_COMPRESS2) AC_MSG_RESULT(yes)],
+[AC_DEFINE(HAVE_ZLIB_COMPRESS2)],
+[AC_MSG_RESULT(no)])])
+#
+# Check for libpng
+#
+AC_DEFUN(AC_HAS_LIBPNG,
+  [AC_MSG_CHECKING([for png header files])
+LIBS="$LIBS -lm"
+AC_TRY_COMPILE([#include <png.h>], [png_infop p;],
+[AC_MSG_RESULT(yes)
+ AC_CHECK_LIB(png, png_create_read_struct,
+[AC_DEFINE(HAVE_LIBPNG)
+LIBS="$LIBS -lpng"])],
 [AC_MSG_RESULT(no)])])
 #
 # End of local tests

@@ -24,5 +24,8 @@
  version of kpathsea with afm, type1, and vf formats */
 #undef HAVE_KPSE_FORMATS
 
+/* HAVE_LIBPNG - Define if you have libpng */
+#undef HAVE_LIBPNG
+
 
 #endif /* _CONFIG_H */
