@@ -1,5 +1,6 @@
 CC = @CC@
 CFLAGS = @CFLAGS@
+LDFLAGS = @LDFLAGS@
 INSTALL = @INSTALL@
 LIBS = @LIBS@
 srcdir = @srcdir@
@@ -21,9 +22,9 @@ eobjects=ebb.o jpeg.o pdfobj.o mem.o mfileio.o numbers.o pdfparse.o
 
 check default all: $(programs)
 ebb: $(eobjects)
-	$(CC) -o ebb $(eobjects) $(LDFLAGS) $(LIBS)
+	$(CC) -o ebb $(eobjects) $(LIBS)
 dvipdfm:  $(objects)
-	$(CC) -o dvipdfm $(objects) $(LDFLAGS) $(LIBS)
+	$(CC) -o dvipdfm $(objects) $(LIBS)
 include depend.make
 #
 # Install/uninstall
