@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfspecial.c,v 1.10.2.1 1998/11/24 22:10:05 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfspecial.c,v 1.10.2.2 1998/11/24 22:44:28 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -236,7 +236,7 @@ struct {
 double parse_one_unit (char **start, char *end)
 {
   int i;
-  char *unit_string;
+  char *unit_string, *save = *start;
   skip_white(start, end);
   if ((unit_string = parse_ident(start, end)) == NULL) {
     fprintf (stderr, "\nExpecting a unit here\n");
@@ -247,7 +247,9 @@ double parse_one_unit (char **start, char *end)
       break;
   }
   if (i == sizeof(units)/sizeof(units[0])) {
-    fprintf (stderr, "%s: Invalid dimension\n", unit_string);
+    fprintf (stderr, "\n%s: Invalid unit of measurement\n", unit_string);
+    *start = save; 
+    dump (*start, end);
     release (unit_string);
     return -1.0;
   }
@@ -262,18 +264,22 @@ static int parse_dimension (char **start, char *end,
   char *number_string, *save = *start;
   double units;
   int key;
+  save = *start; 
   skip_white(start, end);
   if ((key = parse_one_dim_word(start, end)) < 0 ||
       (number_string = parse_number(start, end)) == NULL) {
-    *start = save;
     fprintf (stderr, "\nExpecting a dimension keyword and a number here\n");
     dump (*start, end);
+    *start = save;
     return 0;
   }
+  skip_white(start, end);
   if (dimensions[key].hasdimension &&
       (units = parse_one_unit(start, end)) < 0.0) {
     release (number_string);
-    fprintf (stderr, "\nExpecting a units here\n");
+    fprintf (stderr, "\nExpecting a unit here\n");
+    dump (*start, end);
+    *start = save;
     return 0;
   }
   switch (key) {
@@ -331,7 +337,8 @@ static void do_ann(char **start, char *end)
   while ((*start) < end && isalpha (**start)) {
     skip_white(start, end);
     if (!parse_dimension(start, end, p)) {
-      fprintf (stderr, "\nFailed to find a dimension keyword\n");
+      fprintf (stderr, "\nFailed to find a valid dimension here\n");
+      dump (*start, end);
       return;
     }
   }
