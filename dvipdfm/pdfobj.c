@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.70 2000/10/13 02:13:00 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.71 2000/10/20 10:39:00 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -754,7 +754,7 @@ pdf_obj *pdf_get_array (pdf_obj *array, unsigned long index)
     ERROR ("pdf_get_array: passed non array object");
   }
   data = array -> data;
-  if (index >= 0 && index < data -> size) {
+  if (index < data -> size) {
     result = (data->values)[index];
   }
   return result;
@@ -1011,16 +1011,15 @@ static void write_stream (FILE *file, pdf_stream *stream)
 #ifdef HAVE_ZLIB
   /* Apply compression filter if requested */
   if ((stream -> _flags & STREAM_COMPRESS) && compression_level > 0) {
-    int z_error;
     buffer_length = filtered_length + filtered_length/1000 + 14;
     buffer = NEW (buffer_length, unsigned char);
 #ifdef HAVE_ZLIB_COMPRESS2    
-    if ((z_error = compress2 (buffer, &buffer_length, filtered,
-			      filtered_length, compression_level)) != 0)
+    if (compress2 (buffer, &buffer_length, filtered,
+		   filtered_length, compression_level))
       ERROR ("Zlib error");
 #else 
-    if ((z_error = compress (buffer, &buffer_length, filtered,
-    		             filtered_length)) != 0)
+    if (compress (buffer, &buffer_length, filtered,
+		  filtered_length))
       ERROR ("Zlib error");
 #endif /* HAVE_ZLIB_COMPRESS2 */
     RELEASE (filtered);
@@ -1351,7 +1350,7 @@ pdf_obj *pdf_ref_file_obj (unsigned long obj_no)
 #ifdef MEM_DEBUG
 MEM_START
 #endif
-  if (obj_no < 0 || obj_no >= num_input_objects) {
+  if (obj_no >= num_input_objects) {
     fprintf (stderr, "\n\npdf_ref_file_obj: nonexistent object\n");
     return NULL;
   }
@@ -1654,7 +1653,7 @@ MEM_START
   }
   pdf_input_file = file;
   if (!check_for_pdf (pdf_input_file)) {
-    fprintf (stderr, "pdf_open: Not a PDF 1.[1-2] file\n");
+    fprintf (stderr, "pdf_open: Not a PDF 1.[1-3] file\n");
     return NULL;
   }
   if ((trailer = read_xref()) == NULL) {

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pngimage.c,v 1.4 2000/10/13 02:13:00 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pngimage.c,v 1.5 2000/10/20 10:39:00 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -53,7 +53,7 @@ pdf_obj *start_png_image (FILE *file, char *res_name)
   png_structp png_ptr;
   png_infop info_ptr;
   unsigned long width, height;
-  unsigned bit_depth, color_type, interlace_type;
+  unsigned bit_depth, color_type;
   rewind (file);
   if (!(png_ptr = png_create_read_struct (PNG_LIBPNG_VER_STRING,    
 					  NULL, NULL, NULL)) ||
@@ -79,7 +79,6 @@ pdf_obj *start_png_image (FILE *file, char *res_name)
     height = png_get_image_height(png_ptr, info_ptr);
     color_type = png_get_color_type(png_ptr, info_ptr);
     bit_depth = png_get_bit_depth(png_ptr, info_ptr);
-    interlace_type = png_get_interlace_type(png_ptr, info_ptr);
     /* Convert paletted images to true color */
     if (color_type == PNG_COLOR_TYPE_PALETTE) {
       png_set_expand(png_ptr);
