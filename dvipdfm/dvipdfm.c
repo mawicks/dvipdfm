@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.12 1998/12/15 21:31:24 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.13 1998/12/17 03:56:27 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -116,6 +116,7 @@ static void usage (void)
 }
 
 static double paper_width = 612.0, paper_height = 792.0;
+static int paper_specified = 0;
 static landscape_mode = 0;
 static ignore_colors = 0;
 static double mag = 1.0, x_offset=72.0, y_offset=72.0;
@@ -227,6 +228,7 @@ static void do_args (int argc, char *argv[])
 	    ERROR ("Missing paper size");
 	  paper_width = paper_size.width;
 	  paper_height = paper_size.height;
+	  paper_specified = 1;
 	  argv += 2;
 	  argc -= 2;
 	}
@@ -308,7 +310,8 @@ int CDECL main (int argc, char *argv[])
     dev_set_page_size (paper_height, paper_width);
   else
     dev_set_page_size (paper_width, paper_height);
-
+  if (paper_specified)
+    dev_page_height();
   for (i=0; i<dvi_npages(); i++) {
     fprintf (stderr, "[%d", i+1);
     dvi_do_page (i);
