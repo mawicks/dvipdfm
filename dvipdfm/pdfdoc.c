@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.47 1999/08/12 03:37:24 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.48 1999/08/13 02:24:31 mwicks Exp $
  
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -105,7 +105,7 @@ static void resize_pages (unsigned long newsize)
 
 static pdf_obj *type_name, *page_name, *pages_name, *contents_name, *annots_name,
   *resources_name, *bead_name, *count_name, *kids_name, *parent_name,
-  *mediabox_name, *limits_name;
+  *mediabox_name, *limits_name, *thumb_name;
 
 static void make_short_cuts(void) 
 {
@@ -123,6 +123,7 @@ static void make_short_cuts(void)
   bead_name = pdf_new_name ("B");
   mediabox_name = pdf_new_name ("MediaBox");
   limits_name = pdf_new_name ("Limits");
+  thumb_name = pdf_new_name ("Thumb");
 }
 static void release_short_cuts(void)
 {
@@ -139,6 +140,7 @@ static void release_short_cuts(void)
   pdf_release_obj (bead_name);
   pdf_release_obj (mediabox_name);
   pdf_release_obj (limits_name);
+  pdf_release_obj (thumb_name);
 }
 
 static void start_page_tree (void)
@@ -863,6 +865,10 @@ MEM_START
 	     page_count%99999+1L);
     thumbnail = do_thumbnail (thumb_filename);
     RELEASE (thumb_filename);
+    if (thumbnail) 
+      pdf_add_dict (pages[page_count].page_dict,
+		    pdf_link_obj (thumb_name),
+		    thumbnail);
   }
   page_count += 1;
 #ifdef MEM_DEBUG

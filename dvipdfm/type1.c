@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.74 1999/08/12 00:31:09 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.75 1999/08/13 02:24:31 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1078,18 +1078,20 @@ static pdf_obj *type1_font_descriptor (int encoding_id, int pfb_id, int tfm_font
 		  pdf_new_name ("Descent"),
 		  pdf_new_number (ROUND(-max_depth,0.01)));
     tmp1 = pdf_new_array ();
-    pdf_add_array (tmp1, pdf_new_number(-0.10*max_width));
+#define MAX(a,b) ((a)>(b)? (a): (b))
+#define MIN(a,b) ((a)>(b)? (b): (a))
+    pdf_add_array (tmp1, pdf_new_number(ROUND(-0.10*max_width,1.0)));
     pdf_add_array (tmp1,
-		   pdf_new_number(-max_depth-0.10*(max_height+max_depth)));
-    pdf_add_array (tmp1, pdf_new_number(1.10*max_width));
-    pdf_add_array (tmp1, pdf_new_number(max_height+0.10*(max_height+max_depth)));
+		   pdf_new_number(ROUND(-max_depth-0.10*(max_height+max_depth),1.0)));
+    pdf_add_array (tmp1,
+		   pdf_new_number(ROUND(MAX(1.10*max_width,1.0),1.0)));
+    pdf_add_array (tmp1,
+		   pdf_new_number(ROUND(MAX(max_height+0.10*(max_height+max_depth),1.0),1.0)));
+    pdf_add_dict (font_descriptor, pdf_new_name ("FontBBox"), tmp1);
     pdf_add_dict (font_descriptor,
-		  pdf_new_name ("FontBBox"),
-		  tmp1);
+		  pdf_new_name ("FontName"),
+		  pdf_new_name (type1_fontname(pfb_id)));
   }
-  pdf_add_dict (font_descriptor,
-		pdf_new_name ("FontName"),
-		pdf_new_name (type1_fontname(pfb_id)));
 #ifndef M_PI
   #define M_PI (4.0*atan(1.0))
 #endif
