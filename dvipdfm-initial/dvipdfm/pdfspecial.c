@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfspecial.c,v 1.10.2.2 1998/11/24 22:44:28 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfspecial.c,v 1.10.2.3 1998/11/25 02:18:42 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -416,7 +416,25 @@ static void do_bcolor(char **start, char *end)
   }
 }
 
+static void do_bgray(char **start, char *end)
+{
+  char *number_string;
+  skip_white(start, end);
+  if ((number_string = parse_number (start, end)) == NULL) {
+    fprintf (stderr, "\nSpecial: begingray: Expecting a numerical grayscale specification\n");
+    return;
+  }
+  dev_begin_gray (atof (number_string));
+  release (number_string);
+  return;
+}
+
 static void do_ecolor(void)
+{
+  dev_end_color();
+}
+
+static void do_egray(void)
 {
   dev_end_color();
 }
@@ -780,8 +798,10 @@ static int is_pdf_special (char **start, char *end)
 #define IMAGE 17
 #define BCOLOR 18
 #define ECOLOR 19
-#define BXFORM 20
-#define EXFORM 21
+#define BGRAY  20
+#define EGRAY  21
+#define BXFORM 22
+#define EXFORM 23
 
 struct pdfmark
 {
@@ -816,6 +836,12 @@ struct pdfmark
   {"ec", ECOLOR},
   {"ecolor", ECOLOR},
   {"endcolor", ECOLOR},
+  {"bg", BGRAY},
+  {"bgray", BGRAY},
+  {"begingray", BGRAY},
+  {"eg", EGRAY},
+  {"egray", EGRAY},
+  {"endgray", EGRAY},
   {"begintransform", BXFORM},
   {"begintrans", BXFORM},
   {"btrans", BXFORM},
@@ -1046,6 +1072,12 @@ void pdf_parse_special(char *buffer, UNSIGNED_QUAD size, double
     break;
   case ECOLOR:
     do_ecolor ();
+    break;
+  case BGRAY:
+    do_bgray (&start, end);
+    break;
+  case EGRAY:
+    do_egray ();
     break;
   case BXFORM:
     do_bxform (&start, end);
