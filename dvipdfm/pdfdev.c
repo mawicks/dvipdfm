@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.101 2000/06/29 12:30:18 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.102 2000/07/24 01:39:51 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -46,6 +46,7 @@
 #include "psspecial.h"
 #include "colorsp.h"
 #include "pdflimits.h"
+#include "twiddle.h"
 
 /* Internal functions */
 static void dev_clear_color_stack (void);
@@ -336,9 +337,14 @@ void dev_set_string (mpt_t xpos, mpt_t ypos, unsigned char *s, int
      null */
   if (dev_font[font_id].used_chars != NULL) {
     int i;
-    for (i=0; i<length; i++){
-      (dev_font[font_id].used_chars)[s[i]] = 1;
-    }
+    if (dev_font[font_id].remap)
+      for (i=0; i<length; i++){
+	(dev_font[font_id].used_chars)[twiddle(s[i])] = 1;
+      }
+    else 
+      for (i=0; i<length; i++){
+	(dev_font[font_id].used_chars)[s[i]] = 1;
+      }
   }
   text_offset += width;
 }

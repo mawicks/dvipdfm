@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.115 2000/07/21 04:19:17 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.116 2000/07/24 01:39:51 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -151,12 +151,13 @@ pdf_obj *find_encoding_differences (pdf_obj *encoding)
 pdf_obj *make_differences_encoding (pdf_obj *encoding)
 {
   int i;
-  int skipping = 0;
+  int skipping = 1;
   pdf_obj *tmp, *result = pdf_new_array ();
   for (i=0; i<256; i++) {
     tmp = pdf_get_array (encoding, i);
     if (tmp && tmp -> type == PDF_NAME) {
-      if (strcmp (".notdef", pdf_name_value (tmp))) {
+      if (strcmp (".notdef", pdf_name_value (tmp))) { /* If not
+							 .notdef */
 	if (skipping) {
 	  pdf_add_array (result, pdf_new_number (i));
 	}
@@ -457,7 +458,6 @@ struct a_pfb
 				   used chars are stored when the
 				   default encoding is used */
   unsigned n_used_glyphs, max_used_glyphs;
-  int remap;
 } *pfbs = NULL;
 
 static void init_a_pfb (struct a_pfb *pfb)
@@ -471,16 +471,13 @@ static void init_a_pfb (struct a_pfb *pfb)
   pfb->direct = NULL;
   pfb->indirect = NULL;
   pfb->descriptor = NULL;
-  pfb -> remap = 0;
+  pfb -> used_def_enc_chars = NULL;
   if (partial_enabled) {
-    pfb -> used_def_enc_chars = NEW (256, char);
     pfb -> int_encoding = NEW (256, char *);
     for (i=0; i<256; i++) {
-      (pfb -> used_def_enc_chars)[i] = 0;
       (pfb -> int_encoding)[i] = NULL;
     }
   } else {
-    pfb -> used_def_enc_chars = NULL;
     pfb -> int_encoding = NULL;
   }
 }
@@ -523,11 +520,9 @@ int CDECL glyph_match (const void *key, const void *v)
 static unsigned long parse_header (unsigned char *filtered, unsigned char *buffer,
 				   unsigned long length, int pfb_id)
 {
-  /* This routine must work correctly if glyphs == NULL.  In this
-     case, the encoding has been specified in the pdffonts.map file
-     and we should eliminate any built-in encoding (other than things
-     like StandardEncoding) in the header to
-     save space */
+  /* If the encoding has been overridden, this routine should eliminate any
+     built-in encoding (other than things like StandardEncoding) in
+     the header to save space */
 
   /* On second thought, that's the way it _should_ work, but the
      reader doesn't seem to agree.  The reader is happy if you don't
@@ -620,6 +615,10 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
 	  state = 1;
 	} else if (state == 0 && !strcmp (ident, "Encoding")) {
 	  state = 2;
+	  if (filtered && !pfbs[pfb_id].used_def_enc_chars) {
+	    filtered_pointer += sprintf ((char *)filtered_pointer,
+					 "/Encoding StandardEncoding readonly ");
+	  }
 	} else if (state == 0 && !strcmp (ident, "FontBBox")) {
 	  state = 6;
 	} else if (state == 0 && !strcmp (ident, "ItalicAngle")) {
@@ -690,19 +689,20 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
 			  replaced with a rewritten entry) */
 	copy = 0;
 	if (filtered && 
-	    ((pfbs[pfb_id].used_def_enc_chars)[last_number] ||
-	     (bsearch (glyph, pfbs[pfb_id].used_glyphs,
-		       pfbs[pfb_id].n_used_glyphs,
-		       sizeof (char *), glyph_match)))) {
-	  filtered_pointer += 
-	    sprintf((char *) filtered_pointer, "dup %d /%s put\n",
-		    pfbs[pfb_id].remap?twiddle(last_number):last_number,
+ 	    pfbs[pfb_id].used_def_enc_chars &&
+ 	    (pfbs[pfb_id].used_def_enc_chars)[last_number]) {
+ 	  filtered_pointer += 
+ 	    sprintf((char *) filtered_pointer, "dup %d /%s put\n",
+		    last_number,
 		    glyph);
 	}
 	/* Add this glyph to the internal encoding table for the pfb
 	 */
 	if (pfbs[pfb_id].int_encoding &&
 	    (!(pfbs[pfb_id].int_encoding)[last_number])) {
+	  if ((pfbs[pfb_id].int_encoding)[last_number]) {
+	    RELEASE ((pfbs[pfb_id].int_encoding)[last_number]);
+	  }
 	  (pfbs[pfb_id].int_encoding)[last_number] = glyph;
 	  glyph = NULL; /* Prevent glyph from being released */
 	}
@@ -778,6 +778,9 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
       }
     }
     skip_white (&start, end);
+    if (state >=2 && state <= 5 && !pfbs[pfb_id].used_def_enc_chars) {
+      lead = start;
+    }
     if (copy && start != lead) { /* Flush everything back to "lead" */
       if (filtered) {
 	memcpy (filtered_pointer, lead, start-lead);
@@ -792,11 +795,19 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
   return filtered? filtered_pointer-filtered: length;
 }
 
-static void dump_glyphs( char **glyphs, int n)
+static void dump_glyphs( char **glyphs, int n, int show_index)
 {
   int i;
-  for (i=0; i<n; i++)
-    fprintf (stderr, "(%d/%s)", i, glyphs[i]);
+  for (i=0; i<n; i++) {
+    if (show_index)
+      fprintf (stderr, "(%d", i);
+    if (glyphs[i])
+      fprintf (stderr, "/%s", glyphs[i]);
+    else
+      fprintf (stderr, "(null)");
+    if (show_index)
+      fprintf (stderr, ")");
+  }
   return;
 }
 static void dump_used( char *used_chars)
@@ -935,15 +946,65 @@ static char *pfb_find_name (FILE *pfb_file)
   return fontname;
 }
 
+static void pfb_add_to_used_glyphs (int pfb_id, char *glyph)
+{
+  if (pfb_id >= 0 && pfb_id < num_pfbs && glyph) {
+    if (pfbs[pfb_id].n_used_glyphs == 0 ||
+	!bsearch (glyph, pfbs[pfb_id].used_glyphs,
+		  pfbs[pfb_id].n_used_glyphs,
+		  sizeof (char *), glyph_match)) {
+      if (pfbs[pfb_id].n_used_glyphs+1 >=
+	  pfbs[pfb_id].max_used_glyphs) {
+	pfbs[pfb_id].max_used_glyphs += 16;
+	pfbs[pfb_id].used_glyphs = RENEW (pfbs[pfb_id].used_glyphs,
+					  pfbs[pfb_id].max_used_glyphs,
+					  char *);
+      }
+      (pfbs[pfb_id].used_glyphs)[pfbs[pfb_id].n_used_glyphs] = 
+	NEW (strlen(glyph)+1, char);
+      strcpy((pfbs[pfb_id].used_glyphs)[pfbs[pfb_id].n_used_glyphs],
+	     glyph);
+      pfbs[pfb_id].n_used_glyphs += 1;
+      qsort (pfbs[pfb_id].used_glyphs, pfbs[pfb_id].n_used_glyphs, 
+	     sizeof (char *), glyph_cmp);
+    }
+  }
+}
 
-static unsigned long do_pfb_header (FILE *file, int pfb_id,
-				    char **glyphs)
+static char *new_used_chars (void)
+{
+  char *result;
+  int i;
+  result = NEW (256, char);
+  for (i=0; i<256; i++) {
+    result[i] = 0;
+  }
+  return result;
+}
+
+/* Mark the character at position "code" as used in the pfb font
+   corresponding to "pfb_id" */
+static void pfb_add_to_used_chars (int pfb_id, unsigned code)
+{
+  if (pfb_id >= 0 && pfb_id < num_pfbs && code < 256) {
+    if (!pfbs[pfb_id].used_def_enc_chars) {
+      pfbs[pfb_id].used_def_enc_chars = new_used_chars();
+    }
+    (pfbs[pfb_id].used_def_enc_chars)[code] = 1;
+  }
+  if (code >= 256)
+    ERROR ("pfb_add_to_used_chars(): code >= 256");
+  return;
+}
+
+static unsigned long do_pfb_header (FILE *file, int pfb_id)
 {
   unsigned char *buffer, *filtered = NULL;
   unsigned long length = 0;
 #ifdef MEM_DEBUG
 MEM_START
 #endif
+  fprintf (stderr, "do_pfb_header()\n");
   buffer = get_pfb_segment (&length, file, ASCII);
   if (partial_enabled) {
     filtered = NEW (length+strlen(pfbs[pfb_id].fontname)+1+1024, unsigned
@@ -968,14 +1029,18 @@ MEM_END
 
 
 static unsigned long parse_body (unsigned char *filtered, unsigned char
-				      *unfiltered, unsigned long length, 
-				      char *used_chars, char **glyphs,
-				      pdf_obj *descriptor)
+				 *unfiltered, unsigned long length, 
+				 char **used_glyphs, unsigned n_used,
+				 pdf_obj *descriptor)
 {
   char *start, *end, *tail, *ident;
   unsigned char *filtered_pointer;
   double last_number = 0.0;
   int state = 0;
+  if (verbose > 2) {
+    fprintf (stderr, "\nSearching for following glyphs in font:\n");
+    dump_glyphs (used_glyphs, n_used, 0);
+  }
   start = (char *) unfiltered, end = (char *) unfiltered+length;
   /* Skip first four bytes */
   tail = start; filtered_pointer = filtered;
@@ -1052,42 +1117,19 @@ static unsigned long parse_body (unsigned char *filtered, unsigned char
      been copied to the output.  The remainder of the routine need not
      be executed if not doing font subsetting */  
   if (filtered) {
-    int nused = 0;
-    int nleft;
-    static char *used_glyphs[256];
-    struct glyph *this_glyph;
-    int i;
-    /* Build an array containing only those glyphs we need to embed */
-    for (i=0; i<256; i++) {
-      /* Don't add any glyph twice */
-      if (used_chars[i] &&
-	  (nused == 0 || /* Calling bsearch is unecessary if nused==0 */
-	  !bsearch (glyphs[i], used_glyphs, nused, sizeof (char *), glyph_match))) {
-	used_glyphs[nused] = glyphs[i];
-	nused += 1;
-	qsort (used_glyphs, nused, sizeof (char *), glyph_cmp);
-      }
-    }
-    /* Add .notdef if it's not already there. We always embed .notdef */
-    if (!bsearch (".notdef", used_glyphs, nused, sizeof (char *),
-		  glyph_match)) {
-      /* We never free the entries of used_glyphs so we can use a
-	 static string */
-      used_glyphs[nused] = ".notdef";
-      nused += 1;
-      qsort (used_glyphs, nused, sizeof (char *), glyph_cmp); 
-    }
-    nleft = nused;
+    unsigned nleft;
+    char **this_glyph;
+    nleft = n_used;
     filtered_pointer += sprintf ((char *) filtered_pointer, " %d",
-				 nused);
+				 n_used);
     skip_white(&start, end);
     /* The following ident *should* be the number of glyphs in this
        file */
     ident = parse_ident (&start, end);
     if (verbose>1) {
-      fprintf (stderr, "\nEmbedding %d of %s glyphs", nused,ident);
+      fprintf (stderr, "\nEmbedding %d of %s glyphs\n", n_used, ident);
     }
-    if (ident == NULL || !is_an_int (ident) || nused > atof (ident)) 
+    if (ident == NULL || !is_an_int (ident) || n_used > atof (ident)) 
       ERROR ("More glyphs needed than present in file");
     RELEASE (ident);
     tail = start;
@@ -1102,7 +1144,9 @@ static unsigned long parse_body (unsigned char *filtered, unsigned char
       tail = start;
       start += 1;
       glyph = parse_ident (&start, end);
-      this_glyph = bsearch (glyph, used_glyphs, nused, sizeof (char *), glyph_match);
+      this_glyph = bsearch (glyph, used_glyphs, n_used, sizeof (char
+								*),
+			    glyph_match);
       /* Get the number that should follow the glyph name */
       skip_white(&start, end);
       ident = parse_ident (&start, end);
@@ -1145,8 +1189,7 @@ static unsigned long parse_body (unsigned char *filtered, unsigned char
   return (filtered? filtered_pointer-filtered: length);
 }
 
-static unsigned long do_pfb_body (FILE *file, int pfb_id,
-				  char **glyphs)
+static unsigned long do_pfb_body (FILE *file, int pfb_id)
 {
   int i;
   unsigned char *buffer=NULL, *filtered=NULL;
@@ -1161,13 +1204,13 @@ static unsigned long do_pfb_body (FILE *file, int pfb_id,
   for (i=0; i<length; i++) {
     buffer[i] = t1_decrypt(buffer[i]);
   }
-  if (partial_enabled && glyphs != NULL) {
-    /* Now we do the partial embedding */
+  if (partial_enabled) {
     filtered = NEW (length, unsigned char);
   }
   length = parse_body (filtered, buffer, length, 
-		       pfbs[pfb_id].used_chars,
-		       glyphs, pfbs[pfb_id].descriptor);
+	 	       pfbs[pfb_id].used_glyphs,
+		       pfbs[pfb_id].n_used_glyphs,
+		       pfbs[pfb_id].descriptor);
   /* And reencrypt the whole thing */
   t1_crypt_init (EEKEY);
   for (i=0; i<length; i++) {
@@ -1284,7 +1327,7 @@ static void type1_start_font_descriptor (int pfb_id)
   return;
 }
 
-static int pfb_get_id (const char *pfb_name, int remap)
+static int pfb_get_id (const char *pfb_name)
 {
   int i;
   for (i=0; i<num_pfbs; i++) {
@@ -1315,7 +1358,6 @@ static int pfb_get_id (const char *pfb_name, int remap)
       pfbs[i].fontname = NEW (strlen(short_fontname)+8, char);
       strcpy (pfbs[i].fontname, short_fontname);
       mangle_fontname(pfbs[i].fontname);
-      pfbs[i].remap = remap;
     }
     else {
       pfbs[i].fontname = NEW (strlen(short_fontname)+1, char);
@@ -1335,7 +1377,7 @@ static void pfb_release (int id)
     RELEASE (pfbs[id].pfb_name);
     pdf_release_obj (pfbs[id].indirect);
     RELEASE (pfbs[id].fontname);
-    if (pfbs[id].used_chars)
+    if (pfbs[id].used_def_enc_chars)
       RELEASE (pfbs[id].used_def_enc_chars);
     if (pfbs[id].int_encoding){
       int i;
@@ -1344,7 +1386,14 @@ static void pfb_release (int id)
 	  RELEASE ((pfbs[id].int_encoding)[i]);
       }
       RELEASE (pfbs[id].int_encoding);
-   }
+    }
+    if (pfbs[id].used_glyphs) {
+      unsigned i;
+      for (i=0; i<pfbs[id].n_used_glyphs; i++) {
+	RELEASE ((pfbs[id].used_glyphs)[i]);
+      }
+      RELEASE (pfbs[id].used_glyphs);
+    }
   }
 }
 
@@ -1377,25 +1426,29 @@ static void do_pfb (int pfb_id)
     return;
   }
   /* Following section doesn't hide PDF stream structure very well */
-  if (!partial_enabled) {
-    length1 = do_pfb_header (type1_binary_file, pfb_id, NULL);
-    length2 = do_pfb_body (type1_binary_file, pfb_id, NULL);
+  length1 = do_pfb_header (type1_binary_file, pfb_id);
+  /* The following section seems determines which, if any,
+     glyphs were used via the internal encoding, which hasn't
+     been known until now.*/
+  if (partial_enabled) {
+    int j;
+    if (verbose > 2) {
+      fprintf (stderr, "Default encoding:\n");
+      dump_glyphs (pfbs[pfb_id].int_encoding, 256, 1);
+    }
+    if (pfbs[pfb_id].used_def_enc_chars) {
+      if (verbose > 2)
+	fprintf (stderr, "\nRetaining portion of default encoding:\n");
+      for (j=0; j<256; j++) {
+	if ((pfbs[pfb_id].used_def_enc_chars)[j]) {
+	  if (verbose > 2)
+	    fprintf (stderr, "(%d/%s)", j, (pfbs[pfb_id].int_encoding)[j]);
+	  pfb_add_to_used_glyphs (pfb_id, (pfbs[pfb_id].int_encoding)[j]);
+	}
+      }
+    }
   }
-  else if (partial_enabled && pfbs[pfb_id].encoding_id >= 0) {
-    length1 = do_pfb_header (type1_binary_file, pfb_id,
-			     NULL);
-    length2 = do_pfb_body (type1_binary_file, pfb_id,
-			   (encodings[pfbs[pfb_id].encoding_id]).glyphs);
-  }
-  else if (partial_enabled && pfbs[pfb_id].encoding_id < 0) {
-    char **glyphs = NEW (256, char *);
-    length1 = do_pfb_header (type1_binary_file, pfb_id,
-			     glyphs);
-    length2 = do_pfb_body (type1_binary_file, pfb_id,
-			   glyphs);
-    release_glyphs (glyphs);
-    RELEASE (glyphs);
-  }
+  length2 = do_pfb_body (type1_binary_file, pfb_id);
   length3 = do_pfb_trailer (type1_binary_file, pfbs[pfb_id].direct);
   if ((ch = fgetc (type1_binary_file)) != 128 ||
       (ch = fgetc (type1_binary_file)) != 3)
@@ -1438,12 +1491,8 @@ int num_type1_fonts = 0, max_type1_fonts = 0;
 
 static void init_a_type1_font (struct a_type1_font *type1_font) 
 {
-  int i;
   if (partial_enabled) {
-    type1_font -> used_chars = NEW (256, char);
-    for (i=0; i<256; i++) {
-      (type1_font->used_chars)[i] = 0;
-    }
+    type1_font -> used_chars = new_used_chars ();
   } else {
     type1_fonts->used_chars = NULL;
   }
@@ -1524,7 +1573,6 @@ int type1_font (const char *tex_name, int tfm_font_id, char *resource_name)
   int i, result = -1;
   int tfm_firstchar, tfm_lastchar;
   int pdf_firstchar, pdf_lastchar;
-  int encoding_id = -1;
   int pfb_id = -1;
   pdf_obj *font_resource, *tmp1, *font_encoding_ref;
   struct font_record *font_record;
@@ -1560,21 +1608,20 @@ int type1_font (const char *tex_name, int tfm_font_id, char *resource_name)
     type1_fonts[num_type1_fonts].encoding_id = -1;
   }
   if ((font_record && is_a_base_font(font_record->font_name)) ||
-      (pfb_id = pfb_get_id(font_record? font_record -> font_name: tex_name,
-			   font_record? font_record -> remap: 0)) >= 0) {
+      (pfb_id = pfb_get_id(font_record? font_record -> font_name:
+			   tex_name)) >= 0) {
     /* Looks like we have a physical font (either a reader font or a
        Type 1 font binary file).  */
     init_a_type1_font (type1_fonts+num_type1_fonts);
     type1_fonts[num_type1_fonts].pfb_id = pfb_id;
     type1_fonts[num_type1_fonts].extend = font_record? font_record -> extend: 1.0;
     type1_fonts[num_type1_fonts].slant = font_record? font_record -> slant: 0.0;
-    type1_fonts[num_type1_fonts].remap = font_record? font_record ->
-      remap: 0;
+    type1_fonts[num_type1_fonts].remap = font_record? font_record -> remap: 0;
 
     /* Allocate a dictionary for the physical font */
     font_resource = pdf_new_dict ();
-    if (encoding_id >= 0) {
-      font_encoding_ref = pdf_link_obj(encodings[encoding_id].encoding_ref);
+    if (type1_fonts[num_type1_fonts].encoding_id >= 0) {
+      font_encoding_ref = pdf_link_obj(encodings[type1_fonts[num_type1_fonts].encoding_id].encoding_ref);
       pdf_add_dict (font_resource,
 		    pdf_new_name ("Encoding"),
 		    font_encoding_ref);
@@ -1634,7 +1681,7 @@ int type1_font (const char *tex_name, int tfm_font_id, char *resource_name)
       for (i=pdf_firstchar; i<=pdf_lastchar; i++) {
 	if (partial_enabled && type1_fonts[num_type1_fonts].remap) {
 	  int t;
-	  if ((t=twiddle(i)) <= tfm_lastchar && t>=tfm_firstchar)
+	  if ((t=untwiddle(i)) <= tfm_lastchar && t>=tfm_firstchar)
 	    pdf_add_array (tmp1,
 			   pdf_new_number(ROUND(tfm_get_width
 						(tfm_font_id,t)*1000.0,0.01)));
@@ -1660,43 +1707,6 @@ int type1_font (const char *tex_name, int tfm_font_id, char *resource_name)
   return result;
 }
 
-static void pfb_add_to_used_glyphs (int pfb_id, char *glyph)
-{
-  if (pfb_id >= 0 && pfb_id < num_pfbs) {
-    if (!bsearch (glyph, pfbs[pfb_id].used_glyphs,
-		  pfbs[pfb_id].n_used_glyphs,
-		  sizeof (char *), glyph_match)) {
-      pfbs[pfb_id].n_used_glyphs += 1;
-      if (pfbs[pfb_id].n_used_glyphs >=
-	  pfbs[pfb_id].max_used_glyphs) {
-	pfbs[pfb_id].max_used_glyphs += 16;
-	pfbs[pfb_id].used_glyphs = RENEW (pfbs[pfb_id].used_glyphs,
-					  pfbs[pfb_id].max_used_glyphs,
-					  char *);
-      }
-      (pfbs[pfb_id].used_glyphs)[pfbs[pfb_id].n_used_glyphs] = 
-	NEW (strlen(glyph)+1, char);
-      strcpy((pfbs[pfb_id].used_glyphs)[pfbs[pfb_id].n_used_glyphs],
-	     glyph);
-      qsort (pfbs[pfb_id].used_glyphs, pfbs[pfb_id].n_used_glyphs, 
-	     sizeof (char *), glyph_cmp);
-    }
-  }
-}
-
-
-/* Mark the character at position "code" as used in the pfb font
-   corresponding to "pfb_id" */
-
-static void pfb_add_to_used_chars (int pfb_id, unsigned code)
-{
-  if (pfb_id >= 0 && pfb_id < num_pfbs && code < 256) {
-    (pfbs[pfb_id].used_def_enc_chars)[code] = 1;
-  }
-  if (code >= 256)
-    ERROR ("pfb_add_to_used_chars(): code >= 256");
-  return;
-}
 
 void type1_close_all (void)
 {
@@ -1714,6 +1724,8 @@ void type1_close_all (void)
        to be added to the used_glyphs array in the corresponding pfb
     */
     if (partial_enabled) {
+      /* We always consider .notdef to be used */
+      pfb_add_to_used_glyphs (type1_fonts[i].pfb_id, ".notdef");
       for (j=0; j<256; j++) {
 	char *glyph;
 	if (type1_fonts[i].pfb_id >= 0 &&
@@ -1729,7 +1741,8 @@ void type1_close_all (void)
 	  pfb_add_to_used_chars (type1_fonts[i].pfb_id, j);
       }
     }
-    RELEASE (type1_fonts[i].used_chars);
+    if (type1_fonts[i].used_chars)
+      RELEASE (type1_fonts[i].used_chars);
     pdf_release_obj (type1_fonts[i].indirect);
   }
   RELEASE (type1_fonts);

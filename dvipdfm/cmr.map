@@ -18,21 +18,21 @@
 % not use to higher positions.  This seems to fix a variety of problems
 %
 cmr10 ot1r -r
-cmr12 ot1r -r
-cmr17 ot1r -r
-cmr6 ot1r -r
-cmr7 ot1r -r
-cmr8 ot1r -r
-cmr9 ot1r -r
+cmr12 ot1r
+cmr17 ot1r
+cmr6 ot1r
+cmr7 ot1r
+cmr8 ot1r
+cmr9 ot1r
 % cmr5 is encoded somewhat differently
 cmr5 -r
 % Bold
-cmbx10 ot1r -r
-cmbx12 ot1r -r
-cmbx6 ot1r -r
-cmbx7 ot1r -r
-cmbx8 ot1r -r
-cmbx9 ot1r -r
+cmbx10 ot1
+cmbx12 ot1
+cmbx6 ot1
+cmbx7 ot1
+cmbx8 ot1
+cmbx9 ot1
 % Symbol fonts are remapped, but not reencoded
 cmex10 -r
 cmbsy10 -r
