@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfspecial.c,v 1.10 1998/11/23 02:52:55 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfspecial.c,v 1.10.2.1 1998/11/24 22:10:05 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -242,11 +242,11 @@ double parse_one_unit (char **start, char *end)
     fprintf (stderr, "\nExpecting a unit here\n");
     dump(*start, end);
   }
-  for (i=0; i<sizeof(dimensions)/sizeof(dimensions[0]); i++) {
+  for (i=0; i<sizeof(units)/sizeof(units[0]); i++) {
     if (!strcmp (units[i].s, unit_string))
       break;
   }
-  if (i == sizeof(dimensions)/sizeof(dimensions[0])) {
+  if (i == sizeof(units)/sizeof(units[0])) {
     fprintf (stderr, "%s: Invalid dimension\n", unit_string);
     release (unit_string);
     return -1.0;
