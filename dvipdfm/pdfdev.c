@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.95 1999/09/19 15:58:47 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.96 1999/09/22 02:35:33 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -128,11 +128,9 @@ static mpt_t text_xorigin = 0, text_yorigin = 0,
 double text_slant = 0.0, text_extend = 1.0;
 double text_xerror = 0.0, text_yerror = 0.0;
 
-int n_dev_fonts = 0;
-int n_phys_fonts = 0;
+unsigned  n_dev_fonts = 0;
+unsigned  n_phys_fonts = 0;
 int current_font = -1;
-
-#define MAX_DEVICE_FONTS 256
 
 #define PHYSICAL 1
 #define VIRTUAL 2
@@ -149,7 +147,17 @@ static struct dev_font {
   char *used_chars;
   double extend, slant;
   int remap;
-} dev_font[MAX_DEVICE_FONTS];
+} *dev_font = NULL;
+
+static unsigned max_device_fonts = 0;
+
+void need_more_dev_fonts (unsigned n)
+{
+  if (n_dev_fonts + n > max_device_fonts) {
+    max_device_fonts += MAX_FONTS;
+    dev_font = RENEW (dev_font, max_device_fonts, struct dev_font);
+  }
+}
 
 /*
  * reset_text_state() outputs a BT
@@ -774,8 +782,7 @@ static int locate_type1_font (char *tex_name, mpt_t ptsize)
   }
   if (ptsize == 0)
     ERROR ("dev_locate_font called with point size of zero");
-  if (n_dev_fonts == MAX_DEVICE_FONTS)
-    ERROR ("dev_locate_font:  Tried to load too many fonts\n");
+  need_more_dev_fonts(1);
   thisfont = n_dev_fonts;
   for (i=0; i<thisfont; i++) {
     if (dev_font[i].tex_name && strcmp (tex_name, dev_font[i].tex_name) == 0) {
@@ -828,6 +835,7 @@ static int locate_type1_font (char *tex_name, mpt_t ptsize)
     dev_font[thisfont].mptsize = ptsize;
     dev_font[thisfont].ptsize = ROUND(ptsize*dvi2pts,0.01);
     dev_font[thisfont].tex_name = NEW (strlen(tex_name)+1, char);
+    dev_font[thisfont].used_on_this_page = 0;
     strcpy (dev_font[thisfont].tex_name, tex_name);
     n_dev_fonts +=1;
   }
@@ -846,8 +854,7 @@ static int locate_pk_font (char *tex_name, mpt_t ptsize)
   }
   if (ptsize == 0)
     ERROR ("locate_pk_font called with point size of zero");
-  if (n_dev_fonts == MAX_DEVICE_FONTS)
-    ERROR ("locate_pk_fontt:  Tried to load too many fonts\n");
+  need_more_dev_fonts (1);
   thisfont = n_dev_fonts;
   for (i=0; i<thisfont; i++) {
     /* For pk fonts, both name *and* ptsize must match */
@@ -928,10 +935,11 @@ void dev_close_all_fonts(void)
     pdf_release_obj (dev_font[i].font_resource);
     RELEASE (dev_font[i].tex_name);
   }
+  if (dev_font)
+    RELEASE (dev_font);
   type1_close_all();
   pk_close_all();
 }
-
 
 void dev_rule (mpt_t xpos, mpt_t ypos, mpt_t width, mpt_t height)
 {
