@@ -60,9 +60,9 @@ maintainerclean: clean distclean
 distclean: clean
 	rm -f Makefile c-auto.h config.cache confdefs.h
 clean:
-	rm -f $(programs) *.o
+	rm -f $(programs) *.o *.pdf
 	for i in . doc latex-support ; \
-	   do rm -f $$i/*.dvi $$i/*.log $$i/*~ $$i/*.out; \
+	   do rm -f $$i/*.dvi $$i/*.log $$i/*~ $$i/*.out $$i/*.aux ; \
 	done
 	rm -f doc/dvipdfm.pdf latex-support/sample.pdf
 TAGS:	$(src)

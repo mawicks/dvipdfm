@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.44 1998/12/26 03:54:56 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.45 1998/12/26 04:53:34 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -299,6 +299,12 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
 			  unsigned long length, int pfb_id,
 			  char **glyphs)
 {
+  /* This routine must work correctly if glyphs == NULL.  In this
+     case, the encoding has been specified in the pdffonts.map file
+     and we should eliminate any built-in encoding (other than things
+     like StandardEncoding) in the header to
+     save space */
+
   unsigned char *filtered_pointer;
   int state = 0;
   char *start, *end, *lead, *saved_lead = NULL;
@@ -308,7 +314,7 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
 #ifdef MEM_DEBUG
   MEM_START
 #endif
-  {
+  if (glyphs) {
     int i;
     for (i=0; i<256; i++) {
       glyphs[i] = NEW (strlen (".notdef")+1, char); 
@@ -382,10 +388,10 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
 	  lead = NULL;
 	  state = 3;
 	} else if (state == 2 &&
-		   !strcmp (ident, "StandardEncoding")) {
+		   !strcmp (ident, "StandardEncoding") && glyphs) {
 	  do_a_standard_enc(glyphs, standardencoding);
 	} else if (state == 2 &&
-		   !strcmp (ident, "ISOLatin1Encoding")) {
+		   !strcmp (ident, "ISOLatin1Encoding") && glyphs) {
 	  do_a_standard_enc(glyphs, isoencoding);
 	}
 	RELEASE (ident);
@@ -416,7 +422,7 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
     case 5:
       ident = parse_ident (&start, end);
       if (ident != NULL && !strcmp (ident, "put") && 
-	  (int) last_number < 256 && (int) last_number >= 0) {
+	  (int) last_number < 256 && (int) last_number >= 0 && glyphs) {
 	if (glyphs[last_number] != NULL) 
 	  RELEASE (glyphs[last_number]);
 	glyphs[last_number] = glyph;
@@ -822,14 +828,18 @@ static void do_pfb (int pfb_id)
     ERROR ("This existed when I checked it earlier!");
     return;
   }
-  /* Following line doesn't hide PDF stream structure very well */
-  if (pfbs[pfb_id].encoding_id >= 0) {
+  /* Following section doesn't hide PDF stream structure very well */
+  if (!partial_enabled) {
+    length1 = do_pfb_header (type1_binary_file, pfb_id, NULL);
+    length2 = do_pfb_body (type1_binary_file, pfb_id, NULL);
+  }
+  else if (partial_enabled && pfbs[pfb_id].encoding_id >= 0) {
     length1 = do_pfb_header (type1_binary_file, pfb_id,
 			     NULL);
     length2 = do_pfb_body (type1_binary_file, pfb_id,
 			   (encodings[pfbs[pfb_id].encoding_id]).glyphs);
   }
-  else {
+  else if (partial_enabled && pfbs[pfb_id].encoding_id < 0) {
     char **glyphs = NEW (256, char *);
     length1 = do_pfb_header (type1_binary_file, pfb_id,
 			     glyphs);
