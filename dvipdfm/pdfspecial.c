@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.10 1998/12/03 18:04:23 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.11 1998/12/03 20:19:48 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -44,7 +44,7 @@
 #define verbose 0
 #define debug 0
 
-static void add_reference (char *name, pdf_obj *object);
+static void add_reference (char *name, pdf_obj *object, char *res_name);
 static void release_reference (char *name);
 static pdf_obj *lookup_reference(char *name);
 static pdf_obj *lookup_object(char *name);
@@ -406,7 +406,7 @@ static void do_ann(char **start, char *end)
   pdf_doc_add_to_page_annots (pdf_ref_obj (result));
 
   if (name != NULL) {
-    add_reference (name, result);
+    add_reference (name, result, NULL);
     /* An annotation is treated differently from a cos object.
        The previous line adds both a direct link and an indirect link
        to "result".  For cos objects this prevents the direct link
@@ -630,7 +630,7 @@ static void do_article(char **start, char *end)
     return;
   }
   pdf_doc_start_article (name, pdf_link_obj(info_dict));
-  add_reference (name, info_dict);
+  add_reference (name, info_dict, NULL);
   release (name);
   parse_crap(start, end);
   return;
@@ -673,7 +673,7 @@ static void do_bead(char **start, char *end)
   /* Does this article exist yet */
   if ((article = lookup_object (name)) == NULL) {
     pdf_doc_start_article (name, pdf_link_obj (info_dict));
-    add_reference (name, info_dict);
+    add_reference (name, info_dict, NULL);
   } else {
     pdf_merge_dict (article, info_dict);
     pdf_release_obj (info_dict);
@@ -743,7 +743,7 @@ static void do_epdf (char **start, char *end, double x_user, double y_user)
     return;
   }
   if (objname != NULL) {
-    add_reference (objname, result);
+    add_reference (objname, result, NULL);
     /* An annotation is treated differently from a cos object.
        The previous line adds both a direct link and an indirect link
        to "result".  For cos objects this prevents the direct link
@@ -806,7 +806,7 @@ static void do_image (char **start, char *end, double x_user, double y_user)
     return;
   }
   if (objname != NULL) {
-    add_reference (objname, result);
+    add_reference (objname, result, NULL);
     /* An annotation is treated differently from a cos object.
        The previous line adds both a direct link and an indirect link
        to "result".  For cos objects this prevents the direct link
@@ -894,7 +894,7 @@ static void do_obj(char **start, char *end)
   parse_crap(start, end);
   
   if (name != NULL) {
-    add_reference (name, result);
+    add_reference (name, result, NULL);
     release (name);
   }
   return;
@@ -1033,13 +1033,14 @@ static int parse_pdfmark (char **start, char *end)
 struct named_reference 
 {
   char *name;
+  char *res_name;
   pdf_obj *object_ref;
   pdf_obj *object;
 } named_references[MAX_NAMED_REFERENCES];
 
 static unsigned number_named_references = 0;
 
-static void add_reference (char *name, pdf_obj *object)
+static void add_reference (char *name, pdf_obj *object, char *res_name)
 {
   int i;
   for (i=0; i<number_named_references; i++) {
@@ -1054,6 +1055,13 @@ static void add_reference (char *name, pdf_obj *object)
 							(name)+1,
 							char);
   strcpy (named_references[number_named_references].name, name);
+  if (res_name != NULL && strlen(res_name) != 0) {
+    named_references[number_named_references].res_name=NEW(strlen(name)+1, char);
+    strcpy (named_references[number_named_references].res_name,
+	    res_name);
+  } else {
+    named_references[number_named_references].res_name = NULL;
+  }
   named_references[number_named_references].object_ref = pdf_ref_obj(object);
   named_references[number_named_references].object = object;
   number_named_references+=1;

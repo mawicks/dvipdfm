@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.10 1998/12/03 19:30:55 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.11 1998/12/03 20:19:48 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -71,7 +71,7 @@ static void finish_building_page_tree(void);
 static void start_name_tree(void);
 static void start_dests_tree(void);
 static void finish_dests_tree(void);
-
+static void finish_pending_xobjects(void);
 static void start_articles(void);
 
 static verbose = 0;
@@ -620,6 +620,7 @@ void finish_articles(void)
 
 static void finish_last_page ()
 {
+  finish_pending_xobjects();
   /* Flush this page */
   /* Page_count is the index of the current page, starting at 1 */
   if (page_count > 0) {
@@ -865,10 +866,6 @@ void pdf_doc_finish ()
 }
 
 
-static pdf_obj *save_page_contents, *save_page_fonts;
-static pdf_obj *save_page_xobjects, *save_page_resources;
-static xobject_pending = 0;
-
 static pdf_obj *build_scale_array (int a, int b, int c, int d, int e, int f)
 {
   pdf_obj *result;
@@ -909,40 +906,58 @@ void doc_make_form_xobj (pdf_obj *this_form_contents, pdf_obj *bbox,
   return;
 }
 
+static pdf_obj *save_page_contents, *save_page_fonts;
+static pdf_obj *save_page_xobjects, *save_page_resources;
+static xobject_pending = 0;
+
 pdf_obj *begin_form_xobj (double bbllx, double bblly, double bburx,
 			  double bbury)
 {
+  pdf_obj *bbox;
   if (xobject_pending) {
     fprintf (stderr, "\nCannot next form XObjects\n");
     return NULL;
   }
-  save_page_contents = this_page_contents;
+  xobject_pending = 1;
+  /* This is a hack.  We basically treat an xobj as a separate mini
+     page unto itself.  Save all the page structures and reinitialize them. */
+  save_page_resources = current_page_resources;
   save_page_xobjects = this_page_xobjects;
   save_page_fonts = this_page_fonts;
-  save_page_resources = current_page_resources;
+  save_page_contents = this_page_contents;
+  start_current_page_resources(); /* Starts current_page_resources,
+				     this_page_xobjects, and this_page_fonts */
   this_page_contents = pdf_new_stream ();
-  pdf_add_dict (pdf_stream_dict (this_page_contents),
-		pdf_new_name("Type"), pdf_new_name ("XObject"));
-  pdf_add_dict (pdf_stream_dict (this_page_contents),
-		pdf_new_name("Subtype"), pdf_new_name ("Form"));
-  tmp1 = pdf_new_array ();
+  /* Make a bounding box for this Xobject */
+  bbox = pdf_new_array ();
   pdf_add_array (tmp1, pdf_new_number (bbllx));
   pdf_add_array (tmp1, pdf_new_number (bblly));
   pdf_add_array (tmp1, pdf_new_number (bburx));
   pdf_add_array (tmp1, pdf_new_number (bbury));
-  pdf_add_dict (pdf_stream_dict (this_page_contents),
-		pdf_new_name("BBox"), tmp1);
-  pdf_add_dict (pdf_stream_dict (this_page_contents),
-		pdf_new_name("FormType"), pdf_new_number (1.0));
-  tmp1 = pdf_new_array ();
-  pdf_add_array (tmp1, pdf_new_number(1.));
-  pdf_add_array (tmp1, pdf_new_number(0.));
-  pdf_add_array (tmp1, pdf_new_number(0.));
-  pdf_add_array (tmp1, pdf_new_number(1.));
-  pdf_add_array (tmp1, pdf_new_number(0.));
-  pdf_add_array (tmp1, pdf_new_number(0.));
-  pdf_add_dict (pdf_stream_dict (this_page_contents),
-		pdf_new_name("Matrix"), tmp1);
+  /* Resource is already made, so call doc_make_form_xobj() */
+  doc_make_form_xobj (this_page_contents, bbox,
+		      pdf_ref_obj(current_page_resources));
   return pdf_link_obj (this_page_contents);
 }
 
+void end_form_xobj (void)
+{
+  xobject_pending = 0;
+  pdf_release_obj (current_page_resources);
+  pdf_release_obj (this_page_xobjects);
+  pdf_release_obj (this_page_fonts);
+  pdf_release_obj (this_page_contents);
+  current_page_resources = save_page_resources;
+  this_page_xobjects = save_page_xobjects;
+  this_page_fonts = save_page_fonts;
+  this_page_contents = save_page_contents;
+  return;
+}
+
+void finish_pending_xobjects (void)
+{
+  if (xobject_pending) {
+    fprintf (stderr, "\nFinishing a pending form XObject at end of page\n");
+    end_form_xobj();
+  }
+}
