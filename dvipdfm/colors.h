@@ -38,7 +38,7 @@ struct color_by_name {
   {"Violet", {CMYK, 0.79, 0.88, 0, 0}},
   {"RoyalPurple", {CMYK, 0.75, 0.90, 0, 0}},
   {"BlueViolet", {CMYK, 0.86, 0.91, 0, 0.04}},
-  {"Periwinkle ", {CMYK, 0.57, 0.55, 0, 0}},
+  {"Periwinkle", {CMYK, 0.57, 0.55, 0, 0}},
   {"CadetBlue", {CMYK, 0.62, 0.57, 0.23, 0}},
   {"CornflowerBlue", {CMYK, 0.65, 0.13, 0, 0}},
   {"MidnightBlue", {CMYK, 0.98, 0.13, 0, 0.43}},

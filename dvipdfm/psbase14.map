@@ -35,11 +35,20 @@ phvrrn8r  8r	Helvetica		-e 0.82
 psyr	none	Symbol
 psyro	none	Symbol -s 0.167
 
+% Raw Symbol
+rpsyr	none	Symbol
+
 % Times
 ptmr8r 8r Times-Roman
 ptmb8r 8r Times-Bold
-ptmbi8r 8r Times-Italic
+ptmbi8r 8r Times-BoldItalic
 ptmri8r 8r Times-Italic
+
+% Raw Times
+rptmr   none Times-Roman
+rptmb   none Times-Bold
+rptmbi  none Times-BoldItalic
+rptmri  none Times-Italic
 %
 ptmbo8r 8r Times-Bold -s 0.167
 ptmro8r 8r Times-Roman -s 0.167
