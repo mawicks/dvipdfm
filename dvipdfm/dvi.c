@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.53 1999/03/23 01:54:26 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.54 1999/03/23 15:26:20 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -463,9 +463,7 @@ void dvi_set (SIGNED_QUAD ch)
     break;
   case VIRTUAL:
     {
-      int save_current_font = current_font;
       vf_set_char (ch, p->font_id);
-      current_font = save_current_font;
       break;
     }
   }
@@ -540,7 +538,10 @@ void dvi_push (void)
     fprintf (stderr, "Pushing onto stack of depth %d\n",
 	     dvi_stack_depth);
   }
-  dvi_stack[dvi_stack_depth++] = dvi_state;
+  if (dvi_stack_depth < DVI_MAX_STACK_DEPTH)
+    dvi_stack[dvi_stack_depth++] = dvi_state;
+  else
+    ERROR ("DVI stack exceeded");
 }
 
 void dvi_pop (void)
@@ -1141,14 +1142,18 @@ void dvi_close (void)
    is determined by the virtual font header, which
    may be undefined */
 
-  static int saved_dvi_font;
+static int saved_dvi_font[MAX_VF_NESTING];
+static int num_saved_fonts = 0;
 
 void dvi_vf_init (int dev_font_id)
 {
   dvi_push ();
   dvi_state.w = 0; dvi_state.x = 0;
   dvi_state.y = 0; dvi_state.z = 0;
-  saved_dvi_font = current_font;
+  if (num_saved_fonts < MAX_VF_NESTING) {
+    saved_dvi_font[num_saved_fonts++] = current_font;
+  } else
+    ERROR ("Virtual font nested too deep");
   current_font = dev_font_id;
 }
 
@@ -1156,6 +1161,8 @@ void dvi_vf_init (int dev_font_id)
 void dvi_vf_finish (void)
 {
   dvi_pop();
-  current_font = saved_dvi_font;
+  if (num_saved_fonts > 0) 
+    current_font = saved_dvi_font[--num_saved_fonts];
+  else
+    ERROR ("Tried to pop an empty font stack");
 }
-
