@@ -54,7 +54,7 @@ mandir = ${prefix}/man/man$(manext)
 # corresponding changes to texmf.in or texmf.cnf yourself.
 
 # The root of the main tree.
-texmf = /usr/share/texmf
+texmf = /usr/lib/texmf
 
 # The directory used by varfonts.
 vartexfonts = /var/tmp/texfonts
