@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/psimage.h,v 1.1 1999/09/01 00:55:11 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/psimage.h,v 1.2 1999/09/05 02:56:36 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -35,4 +35,5 @@ extern pdf_obj *ps_include (char *file_name,
 			   double x_user, double y_user);
 
 extern int check_for_ps (FILE *image_file);
+extern void psimage_close (void);
 #endif

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/htex.c,v 1.3 1999/08/30 02:20:33 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/htex.c,v 1.4 1999/09/05 02:56:36 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -92,47 +92,6 @@ static int parse_html_tag (char **start, char *end)
   return result;
 }
 
-char *parse_key (char **start, char *end)
-{
-  char *save;
-  char *result = NULL;
-  int len;
-  /* Just skip over any non '=' */
-  skip_white (start, end);
-  save = *start;
-  while ((*start)++ < end && **start != '=');
-  if (*start < end) {
-    len = *start-save;
-    result = NEW (len+1, char);
-    strncpy (result, save, len);
-    result[len] = 0;
-    downcase (result);
-    (*start)++;
-  }
-  return result;
-}
-
-char *parse_value (char **start, char *end)
-{
-  char *field;
-  char *result = NULL;
-  int len;
-  skip_white (start, end);
-  if (*start < end && *((*start)++) == '"') {
-    field = *start;
-    while (*start < end && **start != '"')
-      (*start)++;
-    if (*start < end) {
-      len = *start-field;
-      result = NEW (len+1, char);
-      strncpy (result, field, *start-field);
-      result[len] = 0;
-      (*start)++;
-    }
-  }
-  return result;
-}
-
 static pending = 0;
 char *pending_value;
 double pending_x, pending_y;
@@ -161,6 +120,8 @@ void html_start_anchor (char *key, char *value)
     if (value)
       RELEASE (value);
   }
+  if (key)
+    RELEASE (key);
 }
 
 void html_make_dest (char *name) 
@@ -236,7 +197,6 @@ void html_end_anchor (void)
   switch (pending_type) {
   case NAME:
     html_make_dest (pending_value);
-    RELEASE (pending_value);
     break;
   case HREF:
     html_make_link (pending_value, pending_x, pending_y, dev_phys_x(),
@@ -246,6 +206,8 @@ void html_end_anchor (void)
     fprintf (stderr, "html_end_anchor:  Uh Oh!  This can't happen\n");
     exit(1);
   }
+  if (pending_value)
+    RELEASE (pending_value);
 }
 
 void html_set_base (char *value)
@@ -272,28 +234,21 @@ int htex_parse_special(char *buffer, UNSIGNED_QUAD size)
       htmltag = parse_html_tag(&buffer, end);
       switch (htmltag) {
       case ANCHOR:
-	skip_white (&buffer, end);
-	key = parse_key (&buffer, end);
-	skip_white (&buffer, end);
-	value = parse_value (&buffer, end);
-	html_start_anchor (key, value);
-	RELEASE (key);
+	parse_key_val (&buffer, end, &key, &value);
+	if (key && value)
+	  html_start_anchor (key, value);
 	break;
       case IMAGE:
 	fprintf (stderr, "\nImage html tag not yet implemented\n");
-	skip_white (&buffer, end);
-	key = parse_key (&buffer, end);
-	skip_white (&buffer, end);
-	value = parse_value (&buffer, end);
+	parse_key_val (&buffer, end, &key, &value);
 	RELEASE (key);
 	RELEASE (value);
 	break;
       case BASE:
-	skip_white (&buffer, end);
-	key = parse_key (&buffer, end);
-	skip_white (&buffer, end);
-	value = parse_value (&buffer, end);
-	html_set_base (value);
+	parse_key_val (&buffer, end, &key, &value);
+	if (key && value)
+	  html_set_base (value);
+	RELEASE (key);
 	break;
       case END_ANCHOR:
 	html_end_anchor ();
