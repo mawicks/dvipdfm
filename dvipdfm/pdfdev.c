@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.96 1999/09/22 02:35:33 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.97 1999/09/26 00:22:30 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -807,8 +807,8 @@ static int locate_type1_font (char *tex_name, mpt_t ptsize)
       dev_font[thisfont].remap = type1_font_remap (type1_id);
       n_phys_fonts +=1 ;
     } else { /* No physical font corresponding to this name */
-      thisfont = -1;
       dev_font[thisfont].short_name[0] = 0;
+      thisfont = -1;
     }
   } else {	/* Font name was already in table*/
     /* Copy the parts that do not depend on point size */
@@ -835,8 +835,14 @@ static int locate_type1_font (char *tex_name, mpt_t ptsize)
     dev_font[thisfont].mptsize = ptsize;
     dev_font[thisfont].ptsize = ROUND(ptsize*dvi2pts,0.01);
     dev_font[thisfont].tex_name = NEW (strlen(tex_name)+1, char);
-    dev_font[thisfont].used_on_this_page = 0;
     strcpy (dev_font[thisfont].tex_name, tex_name);
+    /* The value in used_on_this_page is incorrect if the font has
+       already been used on the page in a different point size.  It's
+       too hard to do right.  The only side effect is that the
+       font name will be added to the page resource dict twice.
+       Since only one name can exist in the dict, it really makes no
+       difference. */
+    dev_font[thisfont].used_on_this_page = 0;
     n_dev_fonts +=1;
   }
   return (thisfont);
@@ -845,8 +851,9 @@ static int locate_type1_font (char *tex_name, mpt_t ptsize)
 static int locate_pk_font (char *tex_name, mpt_t ptsize)
      /* Here, the ptsize is in device units, currently millipts */
 {
-  /* Since Postscript fonts are scaleable, this font may have already
-     been asked for in some other point size.  Make sure it doesn't already exist. */
+  /* This routine is different thanthat for Type 1 fonts.  PK fonts
+     are assumed not to be scaleable and so the same name at a
+     different point size should be treated as a separate font */
   int i, thisfont;
   if (debug) {
     fprintf (stderr, "locate_pk_font: fontname: (%s) ptsize: %ld, id: %d\n",
@@ -880,17 +887,17 @@ static int locate_pk_font (char *tex_name, mpt_t ptsize)
       /* Don't set extend or slant for PK fonts for now... */
       dev_font[thisfont].slant = 0.0;
       dev_font[thisfont].extend = 1.0;
-      n_phys_fonts +=1 ;
-    } else { /* No physical font corresponding to this name */
-      thisfont = -1;
-      dev_font[thisfont].short_name[0] = 0;
-    }
-    if (thisfont >=0) {
       dev_font[thisfont].mptsize = ptsize;
       dev_font[thisfont].ptsize = ROUND(ptsize*dvi2pts,0.01);
       dev_font[thisfont].tex_name = NEW (strlen(tex_name)+1, char);
+      dev_font[thisfont].used_on_this_page = 0;
       strcpy (dev_font[thisfont].tex_name, tex_name);
-      n_dev_fonts +=1;
+      n_dev_fonts +=1; /* For non rescaleable fonts, dev_fonts and
+			  phys_fonts have the same number */
+      n_phys_fonts +=1 ;
+    } else { /* No physical font corresponding to this name */
+      dev_font[thisfont].short_name[0] = 0;
+      thisfont = -1;
     }
   } else {
     thisfont = i;
