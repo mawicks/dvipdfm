@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.70 1999/07/16 11:02:48 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.71 1999/07/16 18:57:20 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -478,6 +478,7 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
   return filtered_pointer-filtered;
 }
 
+
 static void dump_glyphs( char **glyphs)
 {
   int i;
@@ -550,6 +551,72 @@ static unsigned int glyph_length (char **glyphs)
     result += strlen (glyphs[i]);
   }
   return result;
+}
+
+static char *pfb_find_name (FILE *pfb_file) 
+{
+#ifdef MEM_DEBUG
+  MEM_START
+#endif
+  unsigned char *buffer;
+  unsigned long length;
+  char *start, *end, *fontname;
+  int state = 0;
+  buffer = get_pfb_segment (&length, pfb_file, ASCII);
+  /* State definitions 
+     state 0: Initial state
+     state 1: Saw /FontName */
+  start = (char *) buffer;
+  end = start+length;
+  skip_white (&start, end);
+  fontname = NULL;
+  while (start < end && fontname == NULL) {
+    char *ident;
+    pdf_obj *pdfobj;
+    switch (*start) {
+      /* Ignore arrays and procedures */
+    case '[':
+    case ']':  
+    case '{':
+    case '}':
+      if (state == 1) {
+	ERROR ("Garbage following /FontName");
+      }
+      break;
+    case '(':
+      pdfobj = parse_pdf_string (&start, end);
+      if (pdfobj == NULL) {
+	ERROR ("parse_header:  Error parsing a string in pfb header");
+      }
+      if (state == 1) { /* This string must be the font name */
+	char *tmp = pdf_string_value (pdfobj);
+	fontname = NEW (strlen(tmp)+1, char);
+	memcpy (fontname, tmp, strlen(tmp)+1);
+      }
+      pdf_release_obj (pdfobj);
+      break;
+    case '/':
+      start += 1;
+      ident = parse_ident (&start, end);
+      if (state == 0 && !strcmp (ident, "FontName")) {
+	state = 1;
+      } else if (state == 1) {
+	fontname = NEW (strlen(ident)+1, char);
+	memcpy (fontname, ident, strlen(ident)+1);
+      }
+      RELEASE (ident);
+      break;
+    default:
+      ident = parse_ident (&start, end);
+      RELEASE (ident);
+      break;
+    }
+  }
+#ifdef MEM_DEBUG
+  MEM_END
+#endif /* MEM_DEBUG */
+    fprintf (stderr, "find_name returning %s\n", fontname);
+  return fontname;
 }
 
 
@@ -827,21 +894,24 @@ static void mangle_fontname(char *fontname)
   fontname[6] = '+';
 }
 
-static int type1_pfb_id (const char *pfb_name, int encoding_id, char *fontname)
+static int type1_pfb_id (const char *pfb_name, int encoding_id)
 {
   int i;
   for (i=0; i<num_pfbs; i++) {
     if (pfbs[i].pfb_name && !strcmp (pfbs[i].pfb_name, pfb_name))
       break;
   }
-  if (i == num_pfbs) {
-    char *full_pfb_name;
-    full_pfb_name = kpse_find_file (pfb_name, kpse_type1_format,
-				    1);
-    if (full_pfb_name == NULL) {
+  if (i == num_pfbs) { /* This font not previously called for */
+    FILE *pfb_file;
+    char *full_pfb_name, *short_fontname;
+    if (!(full_pfb_name = kpse_find_file (pfb_name, kpse_type1_format,
+				    1)) || 
+	!(pfb_file = fopen (full_pfb_name, FOPEN_RBIN_MODE))) {
       fprintf (stderr, "type1_fontfile:  Unable to find binary font file (%s)...Hope that's okay.", pfb_name);
       return -1;
     }
+    short_fontname = pfb_find_name (pfb_file);
+    fclose (pfb_file);
     if (num_pfbs >= max_pfbs) {
       max_pfbs += MAX_FONTS;
       pfbs = RENEW (pfbs, max_pfbs, struct a_pfb);
@@ -854,13 +924,13 @@ static int type1_pfb_id (const char *pfb_name, int encoding_id, char *fontname)
     pfbs[i].indirect = pdf_ref_obj (pfbs[i].direct);
     pfbs[i].encoding_id = encoding_id;
     if (partial_enabled) {
-      pfbs[i].fontname = NEW (strlen(fontname)+8, char);
-      strcpy (pfbs[i].fontname, fontname);
+      pfbs[i].fontname = NEW (strlen(short_fontname)+8, char);
+      strcpy (pfbs[i].fontname, short_fontname);
       mangle_fontname(pfbs[i].fontname);
     }
     else {
-      pfbs[i].fontname = NEW (strlen(fontname)+1, char);
-      strcpy (pfbs[i].fontname, fontname);
+      pfbs[i].fontname = NEW (strlen(short_fontname)+1, char);
+      strcpy (pfbs[i].fontname, short_fontname);
     }
   }
   return i;
@@ -930,21 +1000,6 @@ static void do_pfb (int pfb_id)
     fprintf (stderr, "Embedded size: %ld bytes\n", length1+length2+length3);
   return;
 }
-
-
-#define FONTNAME 1
-#define OTHER        99
-
-static struct {
-  char *string, value;
-} parse_table[] = 
-{  {"FontName", FONTNAME },
-};
-
-
-static char buffer[256];
-static char *start;
-static char *end;
 
 #define FIXED_WIDTH 1
 #define SERIF 2
@@ -1146,8 +1201,7 @@ int type1_font (const char *tex_name, int tfm_font_id, const char *resource_name
 	   is_a_base_font(font_record->font_name));
   
   if (is_a_base_font(font_record->font_name) ||
-      (pfb_id = type1_pfb_id(font_record -> pfb_name, encoding_id,
-			     font_record -> font_name)) >= 0) {
+      (pfb_id = type1_pfb_id(font_record -> pfb_name, encoding_id)) >= 0) {
     /* Looks like we have a physical font.  Allocate storage for it */
     /* Make sure there is enough room in type1_fonts for this entry */
     if (num_type1_fonts >= max_type1_fonts) {
