@@ -1,0 +1,45 @@
+version = 0.7.1
+ac_include ../make/paths.make
+ac_include ../make/common.make
+ac_include ../make/programs.make
+ac_include ../make/texi.make
+prog_cflags = -DKPATHSEA 
+programs=dvipdfm ebb
+headers = acdefines.h dvi.h pdflimits.h error.h io.h jpeg.h mem.h numbers.h \
+	pdfdev.h pdfdoc.h pdfparse.h pdfspecial.h tfm.h type1.h epdf.h
+src = pdfdev.c pdfdoc.c dvi.c io.c mem.c jpeg.c numbers.c pdfobj.c \
+	pdfparse.c pdfspecial.c tfm.c type1.c dvipdfm.c epdf.c
+objects = pdfdev.o pdfdoc.o dvi.o io.o mem.o jpeg.o numbers.o pdfobj.o \
+        pdfparse.o pdfspecial.o tfm.o type1.o dvipdfm.o epdf.o
+eobjects=ebb.o jpeg.o pdfobj.o mem.o io.o numbers.o pdfparse.o
+
+check default all: $(programs) 
+
+ebb:$(kpathsea) $(eobjects)
+	$(kpathsea_link) $(eobjects) $(LOADLIBES)
+
+dvipdfm:$(kpathsea) $(objects)
+	$(kpathsea_link) $(objects) $(LOADLIBES)
+
+ac_include ../make/tkpathsea.make
+
+
+install: install-exec 
+uninstall: uninstall-exec 
+
+install-exec: all
+	$(SHELL) $(top_srcdir)/../mkinstalldirs $(bindir) 
+	$(INSTALL_LIBTOOL_PROG) $(bindir) $(programs)
+
+uninstall-exec:
+	rm -f $(bindir)/$(programs)
+
+
+ac_include ../make/dist.make
+ac_include ../make/config.make
+ac_include ../make/clean.make
+ac_include ../make/rdepend.make
+ac_include depend.make
+
+
+

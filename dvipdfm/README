@@ -1,0 +1,53 @@
+   This is dvipdfm, a DVI to PDF translator.  I wrote this mainly as
+exercise to get at the features of PDF I wanted to experiment with. You're
+probably wondering why I don't use PDFTeX.  I am a bit of a purist and I
+would rather use TeX unmodified as Donald Knuth left it.
+You can get it or the manual from
+
+    http://odo.kettering.edu/dvipdfm
+
+or if you prefer FTP:
+
+    ftp://ftp.kettering.edu/pub/outgoing/mwicks/dvipdfm
+    
+   Features:
+      - TeX \special's that approximate the functionality 
+        of the PostScript pdfmarks used by Adobe's
+	Acrobat Distiller.  Links, outlines, articles, and named
+	destinations are supported, for example.
+	
+      - Ability to include PDF files and JPEG files
+        as embedded images.  For PDF files, only the first
+        page is included.  Resources will be embedded from
+	the original file as necessary.  File inclusion
+	does not work for PDF files that store the page
+	contents in several segments in an array.
+	
+      - Support for arbitrary linear graphics transformations.
+        Any material on the page can be scaled and rotated.
+
+      - A color stack accessible via \special's.
+
+      - Beginning of page (BOP) and end of page (EOP)
+        \special's for placing arbitrary PDF stream
+	graphics on every page.
+	
+
+   Limitations (at present):
+
+      - No Virtual font support in this version. This means that the
+	"times", "palatino", and similar packages that require virtual
+	fonts will not work correctly.  Virtual font support is in
+	progress and this should be supported soon. 
+
+      - No output PDF stream compression.  Input PDF files
+        may be contain compressed streams, however.
+        Flate compression of PDF output streams will be
+	supported in a future version.
+	
+      - This code is in its infancy.  It has worked flawlessly
+        for me, but YMMV.
+	
+   Mark A. Wicks
+   Kettering University
+   mwicks@kettering.edu
