@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.102.4.3 2000/08/02 15:44:08 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.102.4.4 2000/08/03 02:33:44 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -194,9 +194,9 @@ static void reset_text_state(void)
     len += sprintf (format_buffer+len, " %.7g 0 %.3g 1 ",
 		    dev_font[current_font].extend,
 		    dev_font[current_font].slant);
-    len += centi_u_to_a (format_buffer+len, IDIV (text_xorigin, CENTI_PDF_U));
+    len += centi_u_to_a (format_buffer+len, IDIVRND (text_xorigin, CENTI_PDF_U));
     format_buffer[len++] = ' ';
-    len += centi_u_to_a (format_buffer+len, IDIV (text_yorigin, CENTI_PDF_U));
+    len += centi_u_to_a (format_buffer+len, IDIVRND (text_yorigin, CENTI_PDF_U));
     format_buffer[len++] = ' ';
     format_buffer[len++] = 'T';
     format_buffer[len++] = 'm';
@@ -256,17 +256,17 @@ static void string_mode (spt_t xpos, spt_t ypos, double slant, double extend)
       /* First round dely (it is needed for delx) */
       dely = ypos - text_yorigin;
       desired_dely = (dely+text_yerror);
-      rounded_dely = IDIV(desired_dely, CENTI_PDF_U) * CENTI_PDF_U;
+      rounded_dely = IDIVRND(desired_dely, CENTI_PDF_U) * CENTI_PDF_U;
       /* Next round delx, precompensating for line transformation matrix */
       desired_delx = ((delx+text_xerror)-desired_dely*slant)/extend;
-      rounded_delx = IDIV (desired_delx, CENTI_PDF_U) * CENTI_PDF_U;
+      rounded_delx = IDIVRND(desired_delx, CENTI_PDF_U) * CENTI_PDF_U;
       /* Estimate errors in DVI units */
       text_yerror = (desired_dely - rounded_dely);
       text_xerror = (extend*(desired_delx - rounded_delx)+slant*text_yerror);
       format_buffer[len++] = ' ';
-      len += centi_u_to_a (format_buffer+len, IDIV (rounded_delx, CENTI_PDF_U));
+      len += centi_u_to_a (format_buffer+len, rounded_delx/CENTI_PDF_U);
       format_buffer[len++] = ' ';
-      len += centi_u_to_a (format_buffer+len, IDIV (rounded_dely, CENTI_PDF_U));
+      len += centi_u_to_a (format_buffer+len, rounded_dely/CENTI_PDF_U);
       pdf_doc_add_to_page (format_buffer, len);
       len = 0;
       pdf_doc_add_to_page (" TD[(", 5);
@@ -296,7 +296,7 @@ static void dev_set_font (int font_id)
   int len = 0;
   text_mode();
   len = sprintf (format_buffer, "/%s ", dev_font[font_id].short_name);
-  len += centi_u_to_a (format_buffer+len, IDIV(dev_font[font_id].sptsize, CENTI_PDF_U));
+  len += centi_u_to_a (format_buffer+len, IDIVRND(dev_font[font_id].sptsize, CENTI_PDF_U));
   format_buffer[len++] = ' ';
   format_buffer[len++] = 'T';
   format_buffer[len++] = 'f';
@@ -305,9 +305,9 @@ static void dev_set_font (int font_id)
     len += sprintf (format_buffer+len, " %.7g 0 %.3g 1 ",
 		    dev_font[font_id].extend,
 		    dev_font[font_id].slant);
-    len += centi_u_to_a (format_buffer+len, IDIV(text_xorigin, CENTI_PDF_U));
+    len += centi_u_to_a (format_buffer+len, IDIVRND(text_xorigin, CENTI_PDF_U));
     format_buffer[len++] = ' ';
-    len += centi_u_to_a (format_buffer+len, IDIV(text_yorigin, CENTI_PDF_U));
+    len += centi_u_to_a (format_buffer+len, IDIVRND(text_yorigin, CENTI_PDF_U));
     format_buffer[len++] = ' ';
     format_buffer[len++] = 'T';
     format_buffer[len++] = 'm';
@@ -345,7 +345,7 @@ void dev_set_string (spt_t xpos, spt_t ypos, unsigned char *s, int
     (1000.0/dev_font[font_id].extend*(text_xorigin+text_offset-xpos))/dev_font[font_id].sptsize;
   
   if (labs(ypos-text_yorigin) > CENTI_PDF_U || /* CENTI_PDF_U is smallest resolvable dimension */
-      abs(kern) > 10000) { /* Some PDF Readers fail on large kerns */
+      abs(kern) > 32000) { /* Some PDF Readers fail on large kerns */
     text_mode();
     kern = 0;
   }
