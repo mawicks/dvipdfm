@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/thumbnail.c,v 1.5 1999/08/14 01:47:09 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/thumbnail.c,v 1.6 1999/08/14 03:50:17 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -55,6 +55,18 @@ static char *guess_name (const char *thumb_filename)
   return tmpname;
 }
 
+static unsigned char sigbytes[4];
+int check_for_png (FILE *png_file) 
+{
+  fprintf (stderr, "check_for_png\n");
+  rewind (png_file);
+  if (fread (sigbytes, 1, sizeof(sigbytes), png_file) !=
+      sizeof(sigbytes) ||
+      (!png_check_sig (sigbytes, sizeof(sigbytes))))
+    return 0;
+  else
+    return 1;
+}
 
 pdf_obj *do_png (FILE *file, char *res_name)
 {
@@ -63,7 +75,7 @@ pdf_obj *do_png (FILE *file, char *res_name)
   png_infop info_ptr;
   unsigned long width, height;
   unsigned bit_depth, color_type, interlace_type;
-  
+  rewind (file);
   if (!(png_ptr = png_create_read_struct (PNG_LIBPNG_VER_STRING,    
 					  NULL, NULL, NULL)) ||
       !(info_ptr = png_create_info_struct (png_ptr))) {
@@ -77,6 +89,13 @@ pdf_obj *do_png (FILE *file, char *res_name)
   /* Read PNG header */
   png_read_info (png_ptr, info_ptr);
   {
+    png_color_16 default_background;
+    png_color_16p file_background;
+
+    default_background.red=255; default_background.green=255;
+    default_background.blue=255; default_background.gray=0;
+    default_background.index = 0;
+
     width = png_get_image_width(png_ptr, info_ptr);
     height = png_get_image_height(png_ptr, info_ptr);
     color_type = png_get_color_type(png_ptr, info_ptr);
@@ -91,6 +110,13 @@ pdf_obj *do_png (FILE *file, char *res_name)
     /* Limit image component depth to 8 bits */
     if (bit_depth == 16) {
       png_set_strip_16 (png_ptr);
+    }
+    if (png_get_bKGD(png_ptr, info_ptr, &file_background)) {
+      png_set_background(png_ptr, file_background,
+			 PNG_BACKGROUND_GAMMA_FILE, 1, 1.0);
+    } else {
+      png_set_background(png_ptr, &default_background,
+			 PNG_BACKGROUND_GAMMA_SCREEN, 0, 1.0);
     }
   }
   { /* Read the image in raw RGB format */
@@ -149,7 +175,6 @@ pdf_obj *do_png (FILE *file, char *res_name)
 }
 
 
-static unsigned char sigbytes[4];
 
 pdf_obj *do_thumbnail (const char *thumb_filename) 
 {

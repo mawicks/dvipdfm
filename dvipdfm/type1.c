@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.75 1999/08/13 02:24:31 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.76 1999/08/14 03:50:17 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -275,6 +275,7 @@ struct font_record *get_font_record (const char *tex_name)
       if (start < end && 
 	  (number = parse_number(&start, end))) {
 	result -> slant = atof (number);
+	RELEASE (number);
       } else {
 	fprintf (stderr, "\n\nMissing slant value in map file for %s\n\n",
 		 tex_name);
@@ -286,6 +287,7 @@ struct font_record *get_font_record (const char *tex_name)
       if (start < end && 
 	  (number = parse_number(&start, end))) {
 	result -> extend = atof (number);
+	RELEASE (number);
       } else {
 	fprintf (stderr, "\n\nMissing extend value in map file for %s\n\n",
 		 tex_name);
@@ -373,7 +375,6 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
   char *start, *end, *lead, *saved_lead = NULL;
   int last_number = 0;
   char *glyph = NULL;
-
 #ifdef MEM_DEBUG
   MEM_START
 #endif
@@ -600,13 +601,13 @@ static unsigned int glyph_length (char **glyphs)
 
 static char *pfb_find_name (FILE *pfb_file) 
 {
-#ifdef MEM_DEBUG
-  MEM_START
-#endif
   unsigned char *buffer;
   unsigned long length;
   char *start, *end, *fontname;
   int state = 0;
+#ifdef MEM_DEBUG
+  MEM_START
+#endif
   buffer = get_pfb_segment (&length, pfb_file, ASCII);
   /* State definitions 
      state 0: Initial state
@@ -656,7 +657,9 @@ static char *pfb_find_name (FILE *pfb_file)
       RELEASE (ident);
       break;
     }
+    skip_white (&start, end);
   }
+  RELEASE (buffer);
 #ifdef MEM_DEBUG
   MEM_END
 #endif /* MEM_DEBUG */
@@ -669,6 +672,9 @@ static unsigned long do_pfb_header (FILE *file, int pfb_id,
 {
   unsigned char *buffer, *filtered;
   unsigned long length;
+#ifdef MEM_DEBUG
+MEM_START
+#endif
   buffer = get_pfb_segment (&length, file, ASCII);
   if (partial_enabled) {
     filtered = NEW (length+strlen(pfbs[pfb_id].fontname)+1, unsigned char);
@@ -679,6 +685,9 @@ static unsigned long do_pfb_header (FILE *file, int pfb_id,
     pdf_add_stream (pfbs[pfb_id].direct, (char *) buffer, length);
   }
   RELEASE (buffer);
+#ifdef MEM_DEBUG
+MEM_END
+#endif
   return length;
 }
 
@@ -864,6 +873,9 @@ static unsigned long do_pfb_body (FILE *file, int pfb_id,
   int i;
   unsigned char *buffer=NULL, *filtered=NULL;
   unsigned long length=0;
+#ifdef MEM_DEBUG
+  MEM_START
+#endif
   buffer = get_pfb_segment (&length, file, BINARY);
   if (partial_enabled && glyphs != NULL) {
     /* For partial font embedding we need to decrypt the binary
@@ -886,6 +898,9 @@ static unsigned long do_pfb_body (FILE *file, int pfb_id,
   }
   pdf_add_stream (pfbs[pfb_id].direct, (char *) buffer, length);
   RELEASE (buffer);
+#ifdef MEM_DEBUG
+  MEM_START
+#endif
   return length;
 }
 
@@ -970,6 +985,7 @@ static int type1_pfb_id (const char *pfb_name, int encoding_id)
     if (partial_enabled) {
       pfbs[i].fontname = NEW (strlen(short_fontname)+8, char);
       strcpy (pfbs[i].fontname, short_fontname);
+      RELEASE (short_fontname);
       mangle_fontname(pfbs[i].fontname);
     }
     else {

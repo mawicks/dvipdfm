@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/jpeg.c,v 1.6 1999/02/21 14:30:20 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/jpeg.c,v 1.7 1999/08/14 03:50:16 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -107,27 +107,17 @@ int jpeg_headers (struct jpeg *jpeg)
   return 0;			/* Not reached */
 }
 
-struct jpeg *jpeg_open (char *filename)
+struct jpeg *jpeg_open (FILE *file)
 {
   struct jpeg *jpeg;
-  FILE *file;
-  if (verbose) {
-    fprintf (stderr, "Opening image file %s\n", filename);
-  }
-  if ((file = fopen (filename, FOPEN_RBIN_MODE)) == NULL) {
-    fprintf (stderr, "\nUnable to open file named %s\n", filename);
-    return NULL;
-  }
   if (!check_for_jpeg(file)) {
-    fprintf (stderr, "\n%s: Not a JPEG file\n", filename);
-    fclose (file);
+    fprintf (stderr, "\nNot a JPEG file\n");
     return NULL;
   }
   jpeg = NEW (1, struct jpeg);
   jpeg -> file = file;
   if (!jpeg_headers(jpeg)) {
-    fprintf (stderr, "\n%s: Corrupt JPEG file?\n", filename);
-    fclose (file);
+    fprintf (stderr, "\nCorrupt JPEG file?\n");
     RELEASE (jpeg);
     return NULL;
   }
@@ -139,7 +129,6 @@ void jpeg_close (struct jpeg *jpeg)
   if (jpeg == NULL) {
     fprintf (stderr, "jpeg_closed: passed invalid pointer\n");
   }
-  fclose (jpeg -> file);
   RELEASE (jpeg);
   return;
 }

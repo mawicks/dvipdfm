@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/thumbnail.h,v 1.2 1999/08/14 01:47:09 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/thumbnail.h,v 1.3 1999/08/14 03:50:17 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -30,9 +30,12 @@
 #include <stdio.h>
 #include "pdfobj.h"
 
+#include "config.h"
+#ifdef HAVE_LIBPNG
 extern pdf_obj *do_thumbnail (const char *thumb_filename);
-extern pdf_obj *do_pnm (FILE *file, char *res_name);
+extern pdf_obj *do_png (FILE *file, char *res_name);
+extern int check_for_png (FILE *file);
+#endif
 
-#define THUMBNAIL 1
-#define IMAGE 2
 #endif /* THUMBNAIL_H */
+

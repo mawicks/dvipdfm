@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/jpeg.h,v 1.4 1999/02/21 14:30:20 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/jpeg.h,v 1.5 1999/08/14 03:50:16 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -39,7 +39,7 @@ struct jpeg
   unsigned colors;
 };
 
-extern struct jpeg *jpeg_open (char *filename);
+extern struct jpeg *jpeg_open (FILE *file);
 extern int jpeg_headers (struct jpeg *jpeg);
 extern void jpeg_close (struct jpeg *jpeg);
 extern int check_for_jpeg (FILE *file);

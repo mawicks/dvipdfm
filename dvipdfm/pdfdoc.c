@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.49 1999/08/13 14:14:38 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.50 1999/08/14 03:50:16 mwicks Exp $
  
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -112,6 +112,9 @@ static pdf_obj *type_name, *page_name, *pages_name, *contents_name, *annots_name
 
 static void make_short_cuts(void) 
 {
+#ifdef MEM_DEBUG
+MEM_START
+#endif
   /* Define some shorthand for names that will conserve memory (and time)
      (similar to the latex \@ne trick */
   type_name = pdf_new_name("Type");
@@ -127,6 +130,9 @@ static void make_short_cuts(void)
   mediabox_name = pdf_new_name ("MediaBox");
   limits_name = pdf_new_name ("Limits");
   thumb_name = pdf_new_name ("Thumb");
+#ifdef MEM_DEBUG
+MEM_END
+#endif
 }
 static void release_short_cuts(void)
 {
@@ -992,6 +998,9 @@ void pdf_doc_add_to_page (char *buffer, unsigned length)
 
 void pdf_doc_init (char *filename) 
 {
+#ifdef MEM_DEBUG
+  MEM_START
+#endif
   if (debug) fprintf (stderr, "pdf_doc_init:\n");
   pdf_out_init (filename);
 #ifdef HAVE_LIBPNG
@@ -1010,6 +1019,9 @@ void pdf_doc_init (char *filename)
   make_short_cuts();
   create_docinfo ();
   create_catalog ();
+#ifdef MEM_DEBUG
+  MEM_END
+#endif
 }
 
 void pdf_doc_creator (char *s)

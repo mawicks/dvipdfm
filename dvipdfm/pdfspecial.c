@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.42 1999/02/21 14:30:23 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.43 1999/08/14 03:50:16 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -42,6 +42,12 @@
 #include "jpeg.h"
 #include "epdf.h"
 
+#include "config.h"
+#ifdef HAVE_LIBPNG
+#include <png.h>
+#include "thumbnail.h"
+#endif
+
 #define verbose 0
 #define debug 0
 
@@ -54,9 +60,9 @@ static void do_content (char **start, char *end, double x_user, double
 			y_user);
 static void do_epdf(char **start, char *end, double x_user, double y_user);
 static void do_image(char **start, char *end, double x_user, double y_user);
-static pdf_obj *jpeg_build_object(struct jpeg *jpeg,
-			   double x_user, double y_user,
-			   struct xform_info *p);
+static pdf_obj *jpeg_start_image (FILE *file);
+static void finish_image (pdf_obj *image_res, double x_user, double
+			  y_user, struct xform_info *p);
 static void do_bxobj (char **start, char *end,
 		      double x_user, double y_user);
 static void do_exobj (void);
@@ -883,7 +889,6 @@ static void do_image (char **start, char *end, double x_user, double y_user)
 {
   char *filename = NULL, *objname = NULL, *save;
   pdf_obj *filestring = NULL, *result = NULL;
-  struct jpeg *jpeg;
   int error = 0;
   struct xform_info *p;
 #ifdef MEM_DEBUG
@@ -913,20 +918,30 @@ MEM_START
   }
   if (!error) {
     char *kpse_file_name;
-    if ((kpse_file_name = kpse_find_pict (filename))) {
+    FILE *image_file;
+    if ((kpse_file_name = kpse_find_pict (filename)) &&
+	(image_file = fopen (kpse_file_name, FOPEN_RBIN_MODE))) {
       fprintf (stderr, "(%s", kpse_file_name);
-      if ((jpeg = jpeg_open(kpse_file_name)) != NULL) {
-	result = jpeg_build_object(jpeg, x_user, y_user, p);
-	fprintf (stderr, ")");
-	jpeg_close (jpeg);
-      } else {
-	fprintf (stderr, "\nError trying to include JPEG file.\n");
-	error = 1;
+      if (check_for_jpeg(image_file)) {
+	result = jpeg_start_image(image_file);
       }
+#ifdef HAVE_LIBPNG
+      else if (check_for_png(image_file)) {
+	result = do_png (image_file, NULL);
+      }
+#endif
+      else{
+	fprintf (stderr, "\nNot a supported image type.\n");
+      }
+      fclose (image_file);
+      fprintf (stderr, ")");
     } else {
-      fprintf (stderr, "\nError locating file (%s)\n", filename);
+      fprintf (stderr, "\nError locating or opening file (%s)\n", filename);
       error = 1;
     }
+  }
+  if (result) {
+    finish_image (result, x_user, y_user, p);
   }
   release_xform_info(p);
   if (objname != NULL && result != NULL) {
@@ -1486,22 +1501,13 @@ void add_xform_matrix (double xoff, double yoff,
 
 
 static num_images = 0;
-pdf_obj *jpeg_build_object(struct jpeg *jpeg, double x_user, double
-			   y_user, struct xform_info *p)
+pdf_obj *jpeg_start_image(FILE *file)
 {
   pdf_obj *xobject, *xobj_dict;
-  double xscale, yscale;
+  struct jpeg *jpeg;
+  jpeg = jpeg_open (file);
   xobject = pdf_new_stream(0);
-  sprintf (work_buffer, "Im%d", ++num_images);
-  pdf_doc_add_to_page_xobjects (work_buffer, pdf_ref_obj (xobject));
   xobj_dict = pdf_stream_dict (xobject);
-
-  pdf_add_dict (xobj_dict, pdf_new_name ("Name"),
-		pdf_new_name (work_buffer));
-  pdf_add_dict (xobj_dict, pdf_new_name ("Type"),
-		pdf_new_name ("XObject"));
-  pdf_add_dict (xobj_dict, pdf_new_name ("Subtype"),
-		pdf_new_name ("Image"));
   pdf_add_dict (xobj_dict, pdf_new_name ("Width"),
 		pdf_new_number (jpeg -> width));
   pdf_add_dict (xobj_dict, pdf_new_name ("Height"),
@@ -1524,9 +1530,30 @@ pdf_obj *jpeg_build_object(struct jpeg *jpeg, double x_user, double
       pdf_add_stream (xobject, work_buffer, length);
     }
   }
+  jpeg_close (jpeg);
+  return (xobject);
+}
+
+void finish_image (pdf_obj *image_res, double x_user, double y_user,
+		   struct xform_info *p)
+{
+  pdf_obj *image_dict;
+  double xscale, yscale;
+  sprintf (work_buffer, "Im%d", ++num_images);
+  pdf_doc_add_to_page_xobjects (work_buffer, pdf_ref_obj (image_res));
+  image_dict = pdf_stream_dict (image_res);
+  pdf_add_dict (image_dict, pdf_new_name ("Name"),
+		pdf_new_name (work_buffer));
+  pdf_add_dict (image_dict, pdf_new_name ("Type"),
+		pdf_new_name ("XObject"));
+  pdf_add_dict (image_dict, pdf_new_name ("Subtype"),
+		pdf_new_name ("Image"));
   {
-    xscale = jpeg -> width * dvi_tell_mag() * (72.0 / 100.0);
-    yscale = jpeg -> height * dvi_tell_mag() * (72.0 / 100.0);
+    int width, height;
+    width = pdf_number_value(pdf_lookup_dict (image_dict, "Width"));
+    height = pdf_number_value(pdf_lookup_dict (image_dict, "Height"));
+    xscale = width * dvi_tell_mag() * (72.0 / 100.0);
+    yscale = height * dvi_tell_mag() * (72.0 / 100.0);
     if (p->scale != 0) {
       xscale *= p->scale;
       yscale *= p->scale;;
@@ -1554,7 +1581,7 @@ pdf_obj *jpeg_build_object(struct jpeg *jpeg, double x_user, double
     add_xform_matrix (0.0, -p->depth, 1.0, 1.0, 0.0);
   sprintf (work_buffer, " /Im%d Do Q", num_images);
   pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
-  return (xobject);
+  return;
 }
 
 static void do_bxobj (char **start, char *end, double x_user, double y_user)
