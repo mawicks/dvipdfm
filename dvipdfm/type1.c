@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.90 1999/09/15 22:13:12 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.91 1999/09/20 18:16:28 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -43,7 +43,8 @@
 #include "t1crypt.h"
 #include "twiddle.h"
 
-static const char *map_filename = "t1fonts.map";
+#define DEFAULT_MAP_FILE "t1fonts.map"
+static char *map_filename = NULL;
 static unsigned char verbose = 0;
 
 void type1_set_verbose(void)
@@ -87,7 +88,10 @@ int num_encodings = 0, max_encodings=0;
 
 void type1_set_mapfile (const char *name)
 {
-  map_filename = name;
+  if (name) {
+    map_filename = NEW (strlen(name), char);
+    strcpy (map_filename, name);
+  }
   return;
 }
 
@@ -227,6 +231,9 @@ struct font_record *get_font_record (const char *tex_name)
   struct font_record *result;
   static char first = 1;
   char *full_map_filename, *start, *end = NULL, *record_name;
+  if (!map_filename) {
+    type1_set_mapfile (DEFAULT_MAP_FILE);
+  }
   result = new_font_record ();
   if (first) {
     first = 0;
@@ -511,10 +518,13 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
       ident = parse_ident (&start, end);
       /* Here we either decide to keep or remove the encoding entry */
       if (ident != NULL && !strcmp (ident, "put") && 
-	  (int) last_number < 256 && (int) last_number >= 0 && glyphs) {
-	if (glyphs[last_number] != NULL) 
-	  RELEASE (glyphs[last_number]);
-	glyphs[last_number] = glyph;
+	  (int) last_number < 256 && (int) last_number >= 0) {
+	if (glyphs) {
+	  if (glyphs[last_number] != NULL) 
+	    RELEASE (glyphs[last_number]);
+	  glyphs[last_number] = glyph;
+	} else
+	  RELEASE (glyph);
 	if ((pfbs[pfb_id].used_chars)[last_number]) {
 	  filtered_pointer += 
 	    sprintf((char *) filtered_pointer, "dup %d /%s put\n",
@@ -1006,7 +1016,6 @@ static int type1_pfb_id (const char *pfb_name, int encoding_id, int remap)
     if (partial_enabled) {
       pfbs[i].fontname = NEW (strlen(short_fontname)+8, char);
       strcpy (pfbs[i].fontname, short_fontname);
-      RELEASE (short_fontname);
       mangle_fontname(pfbs[i].fontname);
       pfbs[i].remap = remap;
     }
@@ -1014,6 +1023,8 @@ static int type1_pfb_id (const char *pfb_name, int encoding_id, int remap)
       pfbs[i].fontname = NEW (strlen(short_fontname)+1, char);
       strcpy (pfbs[i].fontname, short_fontname);
     }
+    if (short_fontname)
+      RELEASE (short_fontname);
   }
   return i;
 }
@@ -1456,4 +1467,8 @@ void type1_close_all (void)
 
   if (mapfile)
     FCLOSE (mapfile);
+  if (map_filename) {
+    RELEASE (map_filename);
+  }
 }
+
