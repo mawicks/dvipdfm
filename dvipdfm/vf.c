@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/vf.c,v 1.6 1998/12/09 20:56:58 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/vf.c,v 1.7 1998/12/09 21:51:52 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -917,3 +917,34 @@ void vf_set_char(int ch, int vf_font)
   return;
 }
 
+
+void vf_close_all_fonts(void)
+{
+  unsigned long i;
+  int j;
+  dev_font *one_font;
+#ifdef MEM_DEBUG
+MEM_START
+#endif
+  for (i=0; i<num_vf_fonts; i++) {
+    /* Release the packet for each character */
+    for (j=0; j<256; j++) {
+      if ((vf_fonts[i].ch_pkt)[j] != NULL)
+	RELEASE ((vf_fonts[i].ch_pkt)[j]);
+    }
+    /* Release each font record */
+    for (j=0; j<vf_fonts[i].num_dev_fonts; j++) {
+      one_font = &(vf_fonts[i].dev_fonts)[j];
+      RELEASE (one_font -> directory);
+      RELEASE (one_font -> name);
+    }
+    if (vf_fonts[i].dev_fonts != NULL)
+      RELEASE (vf_fonts[i].dev_fonts);
+  }
+  if (vf_fonts != NULL)
+    RELEASE (vf_fonts);
+#ifdef MEM_DEBUG
+MEM_END
+#endif
+  return;
+}

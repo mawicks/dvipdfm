@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.12 1998/12/08 06:19:36 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.13 1998/12/09 21:51:52 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -125,6 +125,7 @@ pdf_obj *get_encoding (const char *enc_name)
     pdf_obj *junk_obj, *encoding, *differences;
     buffer = NEW (filesize, char); 
     fread (buffer, sizeof (char), filesize, encfile);
+    fclose (encfile);
     start = buffer;
     end = buffer + filesize;
     start[filesize-1] = 0;
@@ -141,6 +142,7 @@ pdf_obj *get_encoding (const char *enc_name)
       fprintf (stderr, "%s: ", enc_name);
       ERROR ("Can't find an encoding in this file!\n");
     }
+    RELEASE (buffer);
     differences = find_encoding_differences (encoding);
     pdf_release_obj (encoding);
     result = pdf_new_dict();
@@ -153,7 +155,6 @@ pdf_obj *get_encoding (const char *enc_name)
   }
   result_ref = pdf_ref_obj (result);
   pdf_release_obj (result);
-
   encodings[num_encodings].encoding_ref = result_ref;
   encodings[num_encodings].enc_name = NEW (strlen(enc_name)+1, char);
   strcpy (encodings[num_encodings].enc_name, enc_name);
@@ -162,6 +163,14 @@ pdf_obj *get_encoding (const char *enc_name)
   return pdf_link_obj(result_ref);
 }
 
+void type1_close_all_encodings (void)
+{
+  int i;
+  for (i=0; i<num_encodings; i++) {
+    RELEASE (encodings[i].enc_name);
+    pdf_release_obj (encodings[i].encoding_ref);
+  }
+}
 
 struct font_record *get_font_record (const char *tex_name)
 {
@@ -195,15 +204,14 @@ struct font_record *get_font_record (const char *tex_name)
       continue;
     if ((record_name = parse_ident (&start, end)) == NULL)
       continue;
-    if (strcmp (record_name, tex_name)) {
+    if (!strcmp (record_name, tex_name)) {
       RELEASE (record_name);
-      continue;
+      break;
     }
-    break;
+    RELEASE (record_name);
   }
   if (start == NULL)
     return result;
-  result = NEW (1, struct font_record);
   skip_white (&start, end);
   result -> enc_name = parse_ident (&start, end); /* May be null */  
   skip_white (&start, end);

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.h,v 1.2 1998/11/29 21:37:17 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.h,v 1.3 1998/12/09 21:51:52 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -33,5 +33,6 @@ pdf_obj *type1_font_descriptor (const char *tex_name);
 pdf_obj *type1_font_resource (const char *tex_name, int tfm_font_id,
 			      const char *resource_name);
 void type1_set_mapfile (const char *name);
+void type1_close_all_encodings (void);
 
 #endif /* TYPE1_H */
