@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.102.4.2 2000/08/02 03:27:59 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.102.4.3 2000/08/02 15:44:08 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -116,6 +116,13 @@ static char format_buffer[FORMAT_BUF_SIZE];
 
 #define PDF_U 65800L
 #define CENTI_PDF_U 658
+#define PDF_U_TO_A_PTS 1.0002773
+
+double pdf_dev_scale (void)
+{
+  return  PDF_U_TO_A_PTS;
+}
+
 
  /* Device coordinates are relative to upper left of page.  One of the
     first things appearing in the page stream is a coordinate transformation

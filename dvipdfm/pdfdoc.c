@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.67 2000/07/13 00:27:51 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.67.4.1 2000/08/02 15:44:08 mwicks Exp $
  
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -194,7 +194,7 @@ void pdf_doc_set_origin (double x, double y)
   static char first = 1;
   if (first) {
     len = sprintf (work_buffer, "%g 0 0 %g %g %g cm\n",
-		   dvi_tell_mag(), dvi_tell_mag(),
+		   dvi_tell_mag()*pdf_dev_scale(), dvi_tell_mag()*pdf_dev_scale(),
 		   x, y);
     pdf_add_stream (coord_xform_stream, work_buffer, len);
     first = 0;
