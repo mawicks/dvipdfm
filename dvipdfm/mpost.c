@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.28 2000/05/14 16:52:33 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.29 2000/06/26 04:13:04 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -169,10 +169,12 @@ static int mp_parse_headers (FILE *image_file, struct xform_info *p)
 	(lly = parse_number (&start, end)) &&
 	(urx = parse_number (&start, end)) &&
 	(ury = parse_number (&start, end))) {
-      p->llx = atof (llx);
-      p->lly = atof (lly);
-      p->urx = atof (urx);
-      p->ury = atof (ury);
+      /* Set the crop box to the true bounding box specified in the
+	 file */
+      p->c_llx = atof (llx);
+      p->c_lly = atof (lly);
+      p->c_urx = atof (urx);
+      p->c_ury = atof (ury);
     } else{
       fprintf (stderr, "\nMissing expected number in bounding box specification:\n");
       dump (start, end);
@@ -1270,9 +1272,9 @@ pdf_obj *mp_include (FILE *image_file,  struct xform_info *p,
    rewind (image_file);
    if (mp_parse_headers (image_file, p)) {
       /* Looks like an MP file.  Setup xobj "capture" */
-     pdf_scale_image (p, (p->urx)-(p->llx), (p->ury)-(p->lly));
-     xobj = begin_form_xobj (p->llx,p->lly, p->llx, p->lly,
-			     p->urx, p->ury, res_name);
+     pdf_scale_image (p);
+     xobj = begin_form_xobj (p->u_llx,p->u_lly, p->c_llx, p->c_lly,
+			     p->c_urx, p->c_ury, res_name);
      if (!xobj)
        return NULL;
      /* Flesh out the contents */
@@ -1295,9 +1297,9 @@ struct xform_info *texfig_info (void)
   p -> user_bbox = 1;
   p -> width = fig_width;
   p -> height = fig_height;
-  p -> llx = fig_llx;
-  p -> lly = fig_lly;
-  p -> urx = fig_urx;
-  p -> ury = fig_ury;
+  p -> u_llx = fig_llx;
+  p -> u_lly = fig_lly;
+  p -> u_urx = fig_urx;
+  p -> u_ury = fig_ury;
   return p;
 }

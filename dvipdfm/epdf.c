@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/epdf.c,v 1.20 1999/09/10 00:33:57 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/epdf.c,v 1.21 2000/06/26 04:13:04 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -109,24 +109,24 @@ MEM_START
        The bounding box is the box the image is scaled to */
     /* If user did not supply bounding box, use media_box
        (which may really be cropbox) as bounding box */
-    if (!p->user_bbox) {
-      p->llx = pdf_number_value (pdf_get_array (media_box, 0));
-      p->lly = pdf_number_value (pdf_get_array (media_box, 1));
-      p->urx = pdf_number_value (pdf_get_array (media_box, 2));
-      p->ury = pdf_number_value (pdf_get_array (media_box, 3));
-    }
-    /* Adjust scaling information as necessary */
-    pdf_scale_image (p, (p->urx)-(p->llx), (p->ury)-(p->lly));
-    /* If the user specified a bounding box, override both
-       mediabox and cropbox since the bounding becomes the crop box. */
-    if (p->clip && p->user_bbox) {
-      pdf_release_obj (media_box);
-      media_box = pdf_new_array ();
-      pdf_add_array (media_box, pdf_new_number (p->llx));
-      pdf_add_array (media_box, pdf_new_number (p->lly));
-      pdf_add_array (media_box, pdf_new_number (p->urx));
-      pdf_add_array (media_box, pdf_new_number (p->ury));
-    }
+    /* Set the crop box parameters in the xform_info structure */
+    p->c_llx = pdf_number_value (pdf_get_array (media_box, 0));
+    p->c_lly = pdf_number_value (pdf_get_array (media_box, 1));
+    p->c_urx = pdf_number_value (pdf_get_array (media_box, 2));
+    p->c_ury = pdf_number_value (pdf_get_array (media_box, 3));
+
+    /* Adjust scaling and clipping information as necessary */
+    pdf_scale_image (p);
+
+    /* Set the media box to whatever pdf_scale_image() decided
+       for the crop box (which may be unchanged) */
+    pdf_release_obj (media_box);
+    media_box = pdf_new_array ();
+    pdf_add_array (media_box, pdf_new_number (p->c_llx));
+    pdf_add_array (media_box, pdf_new_number (p->c_lly));
+    pdf_add_array (media_box, pdf_new_number (p->c_urx));
+    pdf_add_array (media_box, pdf_new_number (p->c_ury));
+
     if ((contents =
 	 pdf_deref_obj(pdf_lookup_dict(page_tree,"Contents")))==NULL) {
       fprintf (stderr, "\nNo Contents found\n");
@@ -137,7 +137,7 @@ MEM_START
   /* Arrays of contents must be handled very differently (not implemented) */
   if (contents && contents -> type != PDF_ARRAY) {
     doc_make_form_xobj (contents, media_box,
-			p->llx, p->lly, 1.0, 1.0,
+			p->u_llx, p->u_lly, 1.0, 1.0,
 			resources, res_name);
   } else {
     fprintf (stderr, "\nIgnoring stream with with multiple segments\n");

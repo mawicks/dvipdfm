@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.75 2000/05/14 16:52:34 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.76 2000/06/26 04:13:04 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -435,11 +435,11 @@ static int parse_dimension (char **start, char *end,
 	  (lly = parse_number (start, end)) &&
 	  (urx = parse_number (start, end)) &&
 	  (ury = parse_number (start, end))) {
-	p->llx = atof (llx);
-	p->lly = atof (lly);
-	p->urx = atof (urx);
-	p->ury = atof (ury);
-	p->user_bbox = 1; /* Flag to indicate that this was specified */
+	p->u_llx = atof (llx);
+	p->u_lly = atof (lly);
+	p->u_urx = atof (urx);
+	p->u_ury = atof (ury);
+	p->user_bbox = 1; /* Flag to indicate that user specified a bbox */
       } else {
 	fprintf (stderr, "\nExpecting four numbers following \"bbox\" specification.\n");
 	error = 1; /* Flag error, but don't break until we get a
@@ -1682,8 +1682,7 @@ pdf_obj *jpeg_start_image(FILE *file)
   return (xobject);
 }
 
-void pdf_scale_image (struct xform_info *p, double nat_width, double
-		      nat_height)
+void pdf_scale_image (struct xform_info *p)
 {
   double xscale = 1.0, yscale = 1.0;
   if (p->scale != 0) {
@@ -1732,7 +1731,11 @@ static void finish_image (pdf_obj *image_res, struct xform_info *p,
     height = pdf_number_value(pdf_lookup_dict (image_dict, "Height"));
     /* Following routine sets xscale and yscale to a fraction of
        their natural values */
-    pdf_scale_image (p, width*(72.0/100.0), height*(72.0)/100.0);
+    p->c_llx = 0;
+    p->c_lly = 0;
+    p->c_urx = width*(72.0/100.0);
+    p->c_ury = height*(72.0/100.0);
+    pdf_scale_image (p);
     /* Since bitmapped images are always 1x1 in PDF, we must rescale
        again */
     p->xscale *= width*(72.0/100.0);

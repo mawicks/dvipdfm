@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/psspecial.c,v 1.9 2000/02/06 03:04:16 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/psspecial.c,v 1.10 2000/06/26 04:13:04 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -120,19 +120,19 @@ static int parse_psfile (char **start, char *end, double x_user, double y_user)
 	      break;
 	    case LLX:
 	      p -> user_bbox = 1;
-	      p -> llx = atof(val);
+	      p -> u_llx = atof(val);
 	      break;
 	    case LLY:
 	      p -> user_bbox = 1;
-	      p -> lly = atof(val);
+	      p -> u_lly = atof(val);
 	      break;
 	    case URX:
 	      p -> user_bbox = 1;
-	      p -> urx = atof(val);
+	      p -> u_urx = atof(val);
 	      break;
 	    case URY:
 	      p -> user_bbox = 1;
-	      p -> ury = atof(val);
+	      p -> u_ury = atof(val);
 	      break;
 	    case RWI:
 	      p -> width = atof(val)/10.0;
