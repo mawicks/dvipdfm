@@ -10,9 +10,9 @@
 % also say "none", in the PFB field, for example
 % to say that no PFB should be loaded 
 % CharterBT-Bold
-bchb8r 8r bbchb8a
+bchb8r 8r bchb8a
 % CharterBT-BoldItalic
-bchbi8r 8r bbchbi8a
+bchbi8r 8r bchbi8a
 % CharterBT-Roman
 bchr8r 8r bchr8a
 % CharterBT-Italic
