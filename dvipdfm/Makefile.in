@@ -71,7 +71,7 @@ depend.make:
 #
 # Autoconf stuff
 #
-Makefile: Makefile.in configure.in
+Makefile: Makefile.in configure
 	$(srcdir)/configure
 c-auto.h: c-auto.h.in configure.in
 	$(srcdir)/configure
