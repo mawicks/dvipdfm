@@ -13,15 +13,28 @@ It should compile without libpng, but you will lose the ability
 to include thumbnails and png images.
 
    1.  Unbundle the gzip'ed tar file.
+   
    2.  Before compiling, set the CPPFLAGS, CFLAGS, and LDFLAGS environment
        variables with any options you want and also any -I or -L options
        required to locate kpathsea.  CPPFLAGS should probably contain -I
        pointing at the directory containing tex-file.h LDFLAGS should
        probably contain -L pointing at the directory containing
-       libkpathsea.a 3.  Type "./configure" in the dvipdfm directory along
-       with any necessary options, e.g., "--prefix=PATH". 4.  Type "make" in
-       the dvipdfm directory. 5.  If all goes well, type "make install" in
-       the dvipdfm directory.
+       libkpathsea.a
+
+   3.  Type "./configure" in the dvipdfm directory along with any necessary
+       options, e.g., "--prefix=PATH".  Make sure you specify the path
+       to the directory containing your TeX tree root using --datadir=PATH,
+       e.g., if your TeX tree in contained in /usr/share/texmf, you
+       should supply the option --datadir=/usr/share to the configure
+       script.
+
+   4.  Type "make" in the dvipdfm directory.
+
+   5.  If all goes well, type "make install" in the dvipdfm directory.
+
+   6.  Run "mktexlsr" or its equivalent depending on your TeX distribution.
+       Even if you installed dvipdfm on a Unix system as an ordinary user,
+       you should run mktexlsr to hash your "local" tex files.
 
    I have installed this cleanly myself on Solaris 2.5 and RedHat Linux 5.1
 (upgraded to tetex-0.9). It has been compiled on various platforms by
