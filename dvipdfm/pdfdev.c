@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.82 1999/08/30 17:57:51 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.83 1999/08/30 18:03:09 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -617,7 +617,11 @@ MEM_START
   /* This shouldn't be necessary because line widths are now
      explicitly set for each rule */
   /*  pdf_doc_add_to_page ("0 w", 3); */
-  dev_do_color();
+  if (num_colors > 0)
+    dev_do_color();  /* This needn't be called unless there has
+			been a color change.  The  default color at the
+			top of a page is zero. */
+
 #ifdef MEM_DEBUG
 MEM_END
 #endif
