@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.30 1999/01/25 03:52:31 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.31 1999/01/25 22:41:43 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -107,6 +107,7 @@ static void usage (void)
    fprintf (stderr, "\t-l \t\tLandscape mode\n");
    fprintf (stderr, "\t-m number\tSet additional magnification\n");
    fprintf (stderr, "\t-p papersize\tSet papersize (letter, legal, ledger, tabloid, a4, or a3) [letter]\n");
+   fprintf (stderr, "\t-r resolution\tSet resolution (in DPI) for raster fonts [600]\n");
    fprintf (stderr, "\t-x dimension\tSet horizontal offset [1.0in]\n");
    fprintf (stderr, "\t-y dimension\tSet vertical offset [1.0in]\n");
    fprintf (stderr, "\t-e          \tDisable partial font embedding [default is enabled])\n");

@@ -3,7 +3,7 @@
 #
 AC_DEFUN(AC_EXT_TIMEZONE,
 [AC_MSG_CHECKING([whether time.h defines timezone as an external variable])
-AC_TRY_LINK([#include <time.h>], [ timezone; ],
+AC_TRY_LINK([#include <time.h>], [ -timezone; ],
 	[AC_MSG_RESULT(yes); AC_DEFINE(HAVE_TIMEZONE)], [AC_MSG_RESULT(no)])])
 AC_DEFUN(AC_HAVE_BASENAME,
        [AC_MSG_CHECKING([whether basename is in either libgen.h or string.h])
@@ -47,11 +47,13 @@ AC_DEFUN(AC_HAS_ZLIB,
   [AC_MSG_CHECKING([for zlib header files])
 AC_TRY_COMPILE([#include <zlib.h>], [z_stream p;],
 [AC_MSG_RESULT(yes)
- AC_CHECK_LIB(z, deflateEnd,
+ AC_CHECK_LIB(z, compress,
 [AC_DEFINE(HAVE_ZLIB)
 LIBS="$LIBS -lz"])],
+[AC_MSG_RESULT(no)])
+AC_CHECK_LIB(z, compress2,
+[AC_DEFINE(HAVE_ZLIB_COMPRESS2) AC_MSG_RESULT(yes)],
 [AC_MSG_RESULT(no)])])
 #
 # End of local tests
 #
-

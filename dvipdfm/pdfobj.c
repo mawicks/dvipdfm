@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.43 1999/01/22 04:04:53 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.44 1999/01/25 22:41:44 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -107,6 +107,10 @@ void pdf_obj_set_compression (int level)
   else {
     ERROR("set_compression: compression level");
   }
+#ifndef HAVE_ZLIB_COMPRESS2
+  if (level != 0) 
+    fprintf (stderr, "Unable to set compression level--your zlib doesn't have compress2()\n");
+#endif
   return;
 }
 
@@ -963,10 +967,15 @@ static void write_stream (FILE *file, pdf_stream *stream)
     int z_error;
     buffer_length = filtered_length + filtered_length/1000 + 14;
     buffer = NEW (buffer_length, unsigned char);
+#ifdef HAVE_ZLIB_COMPRESS2    
     if ((z_error = compress2 (buffer, &buffer_length, filtered,
-			      filtered_length, compression_level)) != 0) {
+			      filtered_length, compression_level)) != 0)
       ERROR ("Zlib error");
-    }
+#else 
+    if ((z_error = compress (buffer, &buffer_length, filtered,
+    		             filtered_length)) != 0)
+      ERROR ("Zlib error");
+#endif /* HAVE_ZLIB_COMPRESS2 */
     RELEASE (filtered);
     filtered = buffer;
     compression_saved += (filtered_length-buffer_length)-strlen("/Filter [/FlateDecode]\n");
