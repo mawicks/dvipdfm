@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.95 1999/09/28 04:09:08 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.96 1999/09/28 04:43:52 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -752,14 +752,21 @@ static unsigned long do_pfb_header (FILE *file, int pfb_id,
 				    char **glyphs)
 {
   unsigned char *buffer, *filtered;
-  unsigned long length;
+  unsigned long length = 0;
 #ifdef MEM_DEBUG
 MEM_START
 #endif
   buffer = get_pfb_segment (&length, file, ASCII);
   if (partial_enabled) {
-    filtered = NEW (length+strlen(pfbs[pfb_id].fontname)+1, unsigned char);
+    fprintf (stderr, "\npfbs[pfb_id].fontname = %s\n",
+	     pfbs[pfb_id].fontname);
+    filtered = NEW (length+strlen(pfbs[pfb_id].fontname)+1, unsigned
+		    char);
+    fprintf (stderr, "\nbefore parse_header, length=%ld, namelen=%d\n",
+	     length, strlen(pfbs[pfb_id].fontname));
     length = parse_header (filtered, buffer, length, pfb_id, glyphs);
+    fprintf (stderr, "\nafter parse_header, length=%ld\n",
+	     length);
     pdf_add_stream (pfbs[pfb_id].direct, (char *) filtered, length);
     RELEASE (filtered);
   } else {
@@ -1397,7 +1404,7 @@ int type1_font (const char *tex_name, int tfm_font_id, char *resource_name)
 		    pdf_new_name ("BaseFont"),
 		    pdf_new_name (font_record?font_record->font_name:tex_name));
     }
-    if (!is_a_base_font (font_record?font_record->font_name: tex_name)) {
+    if (!(font_record && is_a_base_font (font_record->font_name))) {
       tfm_firstchar = tfm_get_firstchar(tfm_font_id);
       tfm_lastchar = tfm_get_lastchar(tfm_font_id);
       if (partial_enabled && type1_fonts[num_type1_fonts].remap) {
