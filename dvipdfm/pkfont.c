@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pkfont.c,v 1.2 1999/01/19 02:53:13 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pkfont.c,v 1.3 1999/01/24 18:19:41 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -216,14 +216,6 @@ char *pk_font_used (int pk_id)
   }
 }
 
-#define PK_XXX1 240
-#define PK_XXX2 241
-#define PK_XXX3 242
-#define PK_XXX4 243
-#define PK_YYY 244
-#define PK_POST 245
-#define PK_NO_OP 246
-#define PK_PRE 247
 
 static FILE *pk_file;
 
@@ -233,6 +225,18 @@ static void do_skip(unsigned long length)
   for (i=0; i<length; i++) 
     fgetc (pk_file);
   return;
+}
+
+static void add_raster_data (pdf_obj *glyph, long w, long h, int
+			     dyn_f, unsigned char *pk_data)
+{
+  long i, w_bytes;
+  int len;
+  w_bytes = (w%8 == 0)? w/8: (w/8+1);
+  for (i=0; i<h*w_bytes; i++) {
+    len = sprintf (work_buffer, "%c", 255);
+    pdf_add_stream (glyph, (char *) work_buffer, len);
+  }
 }
 
 static void do_preamble(void)
@@ -323,12 +327,32 @@ static void do_character (unsigned char flag, int pk_id, pdf_obj *char_procs)
       urx = (w-hoff)*pix2charu;
       ury = voff*pix2charu;
       glyph = pdf_new_stream(0);
+      /* The following line is a "metric" for the PDF reader */
       len = sprintf (work_buffer, "%.2f %.2f %.2f %.2f %.2f %.2f d1",
 		     char_width, 0.0,
 		     llx, lly, urx, ury);
       pdf_add_stream (glyph, work_buffer, len);
+      /* For now add an outline box for debugging purposes */
       len = sprintf (work_buffer, " %.2f %.2f m %.2f %.2f l %.2f %.2f l %.2f %.2f l s",
 	       llx, lly, urx, lly, urx, ury, llx, ury);
+      pdf_add_stream (glyph, work_buffer, len);
+      /* Scale and translate origin to lower left corner for raster data */
+      len = sprintf (work_buffer, " q %.2f 0 0 %.2f %.2f %.2f cm",
+		     w*pix2charu, h*pix2charu, llx, lly);
+      pdf_add_stream (glyph, work_buffer, len);
+      {
+	unsigned char *pk_data;
+	len = sprintf (work_buffer, "\nBI\n/W %ld\n/H %ld\n/IM true\n/BPC 1\n",
+		       w, h);
+	pdf_add_stream (glyph, work_buffer, len);
+	len = sprintf (work_buffer, "ID ");
+	pdf_add_stream (glyph, work_buffer, len);
+	pk_data = NEW (packet_length, unsigned char);
+	fread (pk_data, 1, packet_length, pk_file);
+	add_raster_data (glyph, w, h, dyn_f, pk_data);
+	RELEASE (pk_data);
+      }
+      len = sprintf (work_buffer, "\nEI\nQ");
       pdf_add_stream (glyph, work_buffer, len);
       sprintf (work_buffer, "x%x", (int)code%256);
       pdf_add_dict (char_procs, pdf_new_name (work_buffer),
@@ -338,10 +362,19 @@ static void do_character (unsigned char flag, int pk_id, pdf_obj *char_procs)
   } else {
     /*    fprintf (stderr, "\nSkipping code=%ld, length=%ld\n", code,
 	  packet_length);  */
+    do_skip (packet_length);
   }
   /* For now, we are ignoring everything */
-  do_skip (packet_length);
 }
+
+#define PK_XXX1 240
+#define PK_XXX2 241
+#define PK_XXX3 242
+#define PK_XXX4 243
+#define PK_YYY 244
+#define PK_POST 245
+#define PK_NO_OP 246
+#define PK_PRE 247
 
 static void embed_pk_font (int pk_id)
 {
