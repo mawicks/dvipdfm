@@ -23,18 +23,45 @@ pncro8r   8r        uncr8a       -s 0.167
 %
 % Palatino
 %
-pplb8r    8r        uplb8
-pplbi8r   8r        uplbi8a
-pplr8r    8r        uplr8a
-pplri8r   8r        uplri8a
-pplbo8r   8r        uplb8a      -s 0.167
-pplbu8r   8r        uplbi8a     -s -0.1763
-pplr8rn   8r        uplr8a      -e 0.82
-pplro8r   8r        uplr8a      -s 0.167
-pplrr8re  8r        uplr8a      -e 1.2
-pplru8r   8r        uplri8a     -s -0.1763
+pplb8r    8r        uplb8	% Palatino Bold
+pplbi8r   8r        uplbi8a	% Palatino Bold Italic
+pplr8r    8r        uplr8a	% Palatino Roman
+pplri8r   8r        uplri8a	% Palatino Roman Italic
+pplbo8r   8r        uplb8a      -s 0.167	% Palatino Bold Oblique
+pplbu8r   8r        uplbi8a     -s -0.1763	% Palatino Bold Italic
+pplr8rn   8r        uplr8a      -e 0.82		% Palatino Roman Narrow
+pplro8r   8r        uplr8a      -s 0.167	% Palatino Roman Oblique
+pplrr8re  8r        uplr8a      -e 1.2		% Palatino Roman Extended
+pplru8r   8r        uplri8a     -s -0.1763	
 %
 % ZapfChancery
 %
 pzcmi8r   8r        uzcmi8a
 %
+%  Bookman
+%
+pbkd8r	8r	ubkd8a	% Bookman Demi
+pbkdi8r 8r	ubkdi8a % Bookman Demi Italic
+pbkl8r	8r	ubkl8a  % Bookman Light
+pbkli8r	8r	ubkli8a % Bookman Light Italic
+%
+pbkdo8r	8r	ubkd8a	-s 0.167 % Bookman Oblique
+pbklo8r	8r	ubkl8a	-s 0.167 % Bookman Light Oblique
+%
+% AvantGarde
+%
+pagd8r	8r	uagd8a	% AvantGarde Demi
+pagdo8r	8r	uagdo8a	% AvantGarde Oblique
+pagk8r	8r	uagk8a	% AvantGarde Book
+pagko8a	8r	uagko8a	% AvantGarde Book Oblique
+%
+% New Century Schoolbook
+%
+pncr8r	8r	uncr8a	% New Century Schoolbook Roman
+pncri8r	8r	uncri8a % New Century Schoolbook Italic
+pncb8r 	8r	uncb8a % New Century Schoolbook Bold
+pncbi8r	8r	uncbi8a	% New Century Schoolbook Bold Italic
+%
+pncbo8r	8r	uncb8a -s 0.167 % New Century Schoolbook Bold Oblique
+pncro8r	8r	uncr8a -s 0.167 % New Century Schoolbook Roman Oblique
+
