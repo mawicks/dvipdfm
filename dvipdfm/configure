@@ -520,7 +520,7 @@ fi
 
 
 cat >> confdefs.h <<\EOF
-#define VERSION "0.8dev"
+#define VERSION "pre0.8"
 EOF
 
 cat >> confdefs.h <<\EOF

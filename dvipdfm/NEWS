@@ -1,3 +1,11 @@
+December 14, 1998.
+
+   Version 0.8 supports virtual fonts.  Much of the code has been
+reorganized and rewritten.  It is nearly an order of magnitude faster than
+earlier versions.  Version 0.8 no longer requires the kpath source
+tree.  Instead it uses an installed version of libkpathsea and its
+headers.
+
 Nov. 28, 1998
    Encoding support now works.  There is a font map file for
 the more common PostScript fonts.

@@ -1,14 +1,18 @@
 Installation:
 
-   To compile and install this package, you need the standard TeX (texk)
-source tree.  Specifically, you need kpathsea along with its make/autoconf
-directories. 
+   To compile and install this package, you an *installed* version
+of the kpathsea library.  Specificically, this means the kpathsea
+headers must be in your preprocessor search path (-I) and the kpathsea
+library must be your linker search path (-L).
    
-   1.  Unbundle the gzip'ed tar file inside the texk toplevel directory.
-   2.  Type "./configure" in the dvipdfm directory along with 
+   1.  Unbundle the gzip'ed tar file.
+   2.  Set the CFLAGS and LDFLAGS environment variables
+       with any options you want any any -I or -L options
+       required to locate kpathsea.
+   3.  Type "./configure" in the dvipdfm directory along with 
        any necessary options, e.g., "--prefix=PATH".
-   3.  Type "make" in the dvipdfm directory.
-   4.  If all goes well, type "make install" in the dvipdfm directory.
+   4.  Type "make" in the dvipdfm directory.
+   5.  If all goes well, type "make install" in the dvipdfm directory.
    
    I have installed this cleanly on Solaris 2.5 and RedHat Linux 5.1.
 I have been using it primarily under Linux.
