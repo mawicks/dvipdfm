@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.20 1998/12/11 03:34:29 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.21 1998/12/11 21:18:32 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -129,6 +129,7 @@
 #include "pdfdev.h"
 #include "tfm.h"
 #include "mem.h"
+#include "dvi.h"
 
 /* External functions defined in this file:
       dvi_set_verbose ()   - Enable verbose progress reporting
@@ -407,7 +408,7 @@ error_t dvi_open (char * filename)
   return (NO_ERROR);
 }
 
-error_t dvi_close (void)
+void dvi_close (void)
 {
   int i;
   
@@ -423,7 +424,6 @@ error_t dvi_close (void)
   dvi_file = NULL;
   dev_close_all_fonts();
   tfm_close_all();
-  return (NO_ERROR);
 }
 
 /* The section below this line deals with the actual processing of the
@@ -522,16 +522,14 @@ double dvi_dev_ypos (void)
   return -(dvi_state.v*dvi2pts+VOFFSET);
 }
 
-#define HOFFSET_MPT 72000
-#define VOFFSET_MPT 72000
 static mpt_t dvi_dev_xpos_mpt (void)
 {
-  return (mpt_t) sqxfw (dvi_state.h,dvi2mpts) + HOFFSET_MPT;
+  return (mpt_t) sqxfw (dvi_state.h,dvi2mpts);
 }
 
 static mpt_t dvi_dev_ypos_mpt (void)
 {
-  return (mpt_t) -(sqxfw (dvi_state.v,dvi2mpts)+VOFFSET_MPT);
+  return (mpt_t) -(sqxfw (dvi_state.v,dvi2mpts));
 }
 
 static void do_moveto (SIGNED_QUAD x, SIGNED_QUAD y)
@@ -549,6 +547,29 @@ void dvi_right (SIGNED_QUAD x)
 void dvi_down (SIGNED_QUAD y)
 {
   dvi_state.v += y;
+}
+
+static void do_string (unsigned char *s, int len)
+{
+  mpt_t width = 0;
+  int tfm_id;
+  int i;
+  if (current_font < 0) {
+    ERROR ("dvi_set:  No font selected");
+  }
+  /* The division by dvi2pts seems strange since we actually know the
+     "dvi" size of the fonts contained in the DVI file.  In other
+     words, we converted from DVI units to pts and back again!
+     The problem comes from fonts defined in VF files where we don't know the DVI
+     size.  It's keeping me sane to keep *point sizes* of *all* fonts in
+     the dev.c file and convert them back if necessary */ 
+  tfm_id = dev_font_tfm(current_font);
+  for (i=0; i<len; i++) {
+    width += tfm_get_fw_width(tfm_id, s[i]);
+  }
+  width = sqxfw (dev_font_mptsize(current_font), width);
+  dev_set_string (dvi_dev_xpos_mpt(), dvi_dev_ypos_mpt(), s, len, width);
+  dvi_state.h += sqxfw(width,mpts2dvi);
 }
 
 void dvi_set (SIGNED_QUAD ch)
@@ -585,7 +606,8 @@ void dvi_put (SIGNED_QUAD ch)
 void dvi_rule (SIGNED_QUAD width, SIGNED_QUAD height)
 {
   do_moveto (dvi_state.h, dvi_state.v);
-  dev_rule (dvi_dev_xpos(), dvi_dev_ypos(), width*dvi2pts, height*dvi2pts);
+  dev_rule (dvi_dev_xpos_mpt(), dvi_dev_ypos_mpt(), 
+	    sqxfw (width, dvi2mpts), sqxfw (height, dvi2mpts));
 }
 
 static void do_set1(void)
@@ -955,6 +977,9 @@ static void do_eop(void)
   dev_eop();
 }
 
+#define S_BUFFER_SIZE 1024
+static unsigned char s_buffer[S_BUFFER_SIZE];
+static s_len = 0;
 
 void dvi_do_page(int n)  /* Most of the work of actually interpreting
 			    the dvi file is here. */
@@ -966,11 +991,20 @@ void dvi_do_page(int n)  /* Most of the work of actually interpreting
   seek_absolute (dvi_file, page_loc[n]);
   dvi_stack_depth = 0;
   while (1) {
-    opcode = fgetc (dvi_file);
-    if (opcode <= SET_CHAR_127) {
-      dvi_set (opcode);
-      continue;
+    /* The most like opcodes are individual setchars.  These are
+       buffered for speed */
+    s_len = 0;
+    while (s_len < S_BUFFER_SIZE && (opcode = fgetc (dvi_file)) <=
+	   SET_CHAR_127) {
+      s_buffer[s_len++] = opcode;
     }
+    if (s_len > 0) {
+      do_string (s_buffer, s_len);
+    }
+    if (s_len == S_BUFFER_SIZE)
+      continue;
+    /* If we are here, we have an opcode that is something
+       other than SET_CHAR */
     if (opcode >= FNT_NUM_0 && opcode <= FNT_NUM_63) {
       do_fnt (opcode - FNT_NUM_0);
       continue;

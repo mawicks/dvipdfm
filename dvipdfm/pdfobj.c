@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.20 1998/12/11 03:34:30 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.21 1998/12/11 21:18:33 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -40,7 +40,8 @@ FILE *pdf_output_file = NULL;
 FILE *pdf_input_file = NULL;
 unsigned long pdf_output_file_position = 0;
 int pdf_output_line_position = 0;
-char format_buffer[256];
+#define FORMAT_BUF_SIZE 256
+char format_buffer[FORMAT_BUF_SIZE];
 
 static struct xref_entry 
 {
@@ -464,42 +465,45 @@ void *pdf_string_value (pdf_obj *a_pdf_string)
   return data -> string;
 }
 
-int pdfobj_escape_c (char *buffer, unsigned char ch)
+int pdfobj_escape_str (char *buffer, int bufsize, unsigned char *s, int len)
 {
-  int result;
-  /* Exit this routine as fast as possible for printable characters */
-  if (isprint (ch) && ch != '(' && ch != ')' && ch != '\\') {
-    buffer[0] = ch;
-    result = 1;
-  }
-  else {
-    buffer[0] = '\\';
-    switch (ch) {
-    case '(':
-      buffer[1] = '(';
-      result = 2;
-    case ')':
-      buffer[1] = ')';
-      result = 2;
-    case '\\':
-      buffer[1] = '\\';
-      result = 2;
-    default:
-      result = sprintf (buffer+1, "%03o", ch)+1;
+  int result = 0, i;
+  for (i=0; i<len; i++) {
+    /* Exit as fast as possible for printable characters */
+    if (isprint(s[i]) && s[i] != '(' && s[i] != ')' && s[i] != '\\') {
+      buffer[result++] = s[i];
     }
+    else {
+      buffer[result++] = '\\';
+      switch (s[i]) {
+      case '(':
+	buffer[result++] = '(';
+	break;
+      case ')':
+	buffer[result++] = ')';
+	break;
+      case '\\':
+	buffer[result++] = '\\';
+	break;
+      default:
+	result += sprintf (buffer+result, "%03o", s[i]);
+	break;
+      }
+    }
+    if (result+4 > bufsize)
+      ERROR ("pdfobj_escape_str: Buffer overflow");
   }
   return result;
 }
 
+
 static void write_string (FILE *file, const pdf_string *string)
 {
   unsigned char *s = string -> string;
-  int i, count;
+  int count;
   pdf_out_char (file, '(');
-  for (i=0; i< string -> length; i++) {
-    count = pdfobj_escape_c (format_buffer, s[i]);
-    pdf_out (file, format_buffer, count);
-  }
+  count = pdfobj_escape_str (format_buffer, FORMAT_BUF_SIZE, s, string ->length);
+  pdf_out (file, format_buffer, count);
   pdf_out_char (file, ')');
 }
 

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.34 1998/12/11 05:59:14 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.35 1998/12/11 21:18:33 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -43,9 +43,10 @@
 static void dev_clear_color_stack (void);
 static void dev_clear_xform_stack (void);
 
-#define HOFFSET 72.0
-#define VOFFSET 72.0
+#define HOFFSET 72
+#define VOFFSET 72
 #define DPI 72u 
+
  /* Acrobat doesn't seem to like coordinate systems
     that involve scalings around 0.01, so we use
     a scaline of 1.0.  In other words, device units = pts */ 
@@ -104,7 +105,8 @@ unsigned long dev_tell_ydpi(void)
 
 int motion_state = GRAPHICS_MODE; /* Start in graphics mode */
 
-static char format_buffer[256];
+#define FORMAT_BUF_SIZE 256
+static char format_buffer[FORMAT_BUF_SIZE];
 
  /* Device coordinates are relative to upper left of page.  One of the
     first things appearing in the page stream is a coordinate transformation
@@ -250,7 +252,7 @@ static void dev_need_phys_font (void)
   }
 }
 
-void dev_set_char (mpt_t xpos, mpt_t ypos, unsigned ch, mpt_t width)
+void dev_set_char (mpt_t xpos, mpt_t ypos, unsigned char ch, mpt_t width)
 {
   int len = 0;
   switch (dev_font[current_font].type) {
@@ -267,12 +269,46 @@ void dev_set_char (mpt_t xpos, mpt_t ypos, unsigned ch, mpt_t width)
 	       (int)((text_xorigin+text_offset-xpos)/current_ptsize));
       text_offset = xpos-text_xorigin;
     }
-    len += pdfobj_escape_c (format_buffer+len, ch);
+    len += pdfobj_escape_str (format_buffer+len, FORMAT_BUF_SIZE-len,
+			      &ch, 1);
     pdf_doc_add_to_page (format_buffer, len);
     text_offset += width;
     break;
   case VIRTUAL:
     vf_set_char (ch, dev_font[current_font].vf_font_id);
+  }
+}
+
+void dev_set_string (mpt_t xpos, mpt_t ypos, unsigned char *s, int length, mpt_t width)
+{
+  int len = 0, i;
+  switch (dev_font[current_font].type) {
+  case PHYSICAL:
+    dev_need_phys_font(); /* Force a Tf since we are actually trying
+			     to write a character */
+    if (ypos != text_yorigin ||
+	abs(xpos-text_xorigin-text_offset) > current_mptsize)
+      text_mode();
+    if (motion_state != STRING_MODE)
+      string_mode(xpos, ypos);
+    if (abs (xpos-text_xorigin-text_offset) > 10) {
+      len += sprintf (format_buffer+len, ")%d(",
+	       (int)((text_xorigin+text_offset-xpos)/current_ptsize));
+      text_offset = xpos-text_xorigin;
+    }
+    len += pdfobj_escape_str (format_buffer+len, FORMAT_BUF_SIZE-len, s, length);
+    pdf_doc_add_to_page (format_buffer, len);
+    text_offset += width;
+    break;
+  case VIRTUAL:
+    /* Unfortunately, there seems to be no good way to stream
+       virtual characters so we revert back to the dvi_set single character
+       routine.  This is a very ugly loop between the dvi stuff and the
+       dev stuff. */
+    dvi_push();
+    for (i=0; i<length; i++)
+      dvi_set (s[i]);
+    dvi_pop();
   }
 }
 
@@ -303,11 +339,6 @@ void dev_close (void)
    BOP and EOP manipulate some of the same data structures
    as the font stuff */ 
 
-static void bop_font_reset(void)
-{
-  current_font = -1;
-  current_phys_font = -1;
-}
 
 #define GRAY 1
 #define RGB 2
@@ -494,10 +525,10 @@ void dev_begin_xform (double xscale, double yscale, double rotate)
   }
   c = ROUND (cos(rotate),1e-5);
   s = ROUND (sin(rotate),1e-5);
-  sprintf (work_buffer, " q %.2f %.2f %.2f %.2f %.2f %.2f cm",
+  sprintf (work_buffer, " q %g %g %g %g %.2f %.2f cm",
 	   xscale*c, xscale*s, -yscale*s, yscale*c,
-	   ROUND((1.0-xscale*c)*dvi_dev_xpos()+yscale*s*dvi_dev_ypos(),0.001),
-	   ROUND(-xscale*s*dvi_dev_xpos()+(1.0-yscale*c)*dvi_dev_ypos(),0.001));
+	   (1.0-xscale*c)*dvi_dev_xpos()+yscale*s*dvi_dev_ypos(),
+	   -xscale*s*dvi_dev_xpos()+(1.0-yscale*c)*dvi_dev_ypos());
   pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
   num_transforms += 1;
   return;
@@ -525,6 +556,47 @@ void dev_close_all_xforms (void)
   return;
 }
 
+
+/* The following routine is here for forms.  Since
+   a form is self-contained, it will need its own Tf command
+   at the beginningg even if it is continuing to set type
+   in the current font.  This routine simply forces reinstantiation
+   of the current font. */
+void dev_reselect_font(void)
+{
+  int i;
+  current_phys_font = -1;
+  for (i=0; i<n_dev_fonts; i++) {
+    dev_font[i].used_on_this_page = 0;
+  }
+}
+
+static void bop_font_reset(void)
+{
+  current_font = -1;
+  dev_reselect_font();
+}
+
+void dev_select_font (int dev_font_id)
+{
+  if (debug) {
+    fprintf (stderr, "(dev_select_font)");
+  }
+  if (debug) {
+    fprintf (stderr, "dev_select_font: oldfont: %d newfont: %d\n",
+	     current_font, dev_font_id);
+  }
+  if (dev_font_id < 0 || dev_font_id >= n_dev_fonts) {
+    ERROR ("dev_change_to_font: dvi wants a font that isn't loaded");
+  }
+  current_font = dev_font_id;
+  if (dev_font_id >= 0) {
+    current_ptsize = dev_font[dev_font_id].ptsize;
+    current_mptsize = dev_font[dev_font_id].mptsize;
+  }
+  else
+    current_ptsize = 0.0;
+}
 
 void dev_bop (void)
 {
@@ -555,7 +627,8 @@ MEM_START
   }
   /* Set page size now that we know user had last chance to change
      it */
-  sprintf (format_buffer, "1 0 0 1 0 %ld cm ", (long) dev_page_height());
+  sprintf (format_buffer, "1 0 0 1 %.2f %.2f cm ",
+	   (double) HOFFSET, (double) dev_page_height()-VOFFSET);
   pdf_doc_this_bop (format_buffer, strlen(format_buffer));
   graphics_mode();
   dev_close_all_xforms();
@@ -667,55 +740,19 @@ void dev_close_all_fonts(void)
   vf_close_all_fonts();
 }
 
-void dev_select_font (int dev_font_id)
-{
-  if (debug) {
-    fprintf (stderr, "(dev_select_font)");
-  }
-  if (debug) {
-    fprintf (stderr, "dev_select_font: oldfont: %d newfont: %d\n",
-	     current_font, dev_font_id);
-  }
-  if (dev_font_id < 0 || dev_font_id >= n_dev_fonts) {
-    ERROR ("dev_change_to_font: dvi wants a font that isn't loaded");
-  }
-  current_font = dev_font_id;
-  if (dev_font_id >= 0) {
-    current_ptsize = dev_font[dev_font_id].ptsize;
-    current_mptsize = dev_font[dev_font_id].mptsize;
-  }
-  else
-    current_ptsize = 0.0;
-}
 
-/* The following routine is here for forms.  Since
-   a form is self-contained, it will need its own Tf command
-   at the beginningg even if it is continuing to set type
-   in the current font.  This routine simply forces reinstantiation
-   of the current font. */
-
-void dev_reselect_font(void)
-{
-  int i;
-  current_phys_font = -1;
-  for (i=0; i<n_dev_fonts; i++) {
-    dev_font[i].used_on_this_page = 0;
-  }
-}
-
-
-void dev_rule (double xpos, double ypos, double width, double height)
+void dev_rule (mpt_t xpos, mpt_t ypos, mpt_t width, mpt_t height)
 {
   int len = 0;
   if (debug) {
     fprintf (stderr, "(dev_rule)");
   }
   graphics_mode();
-  len = sprintf (format_buffer, " %.2g %.2f m %.2f %.2f l %.2f %.2f l %.2f %.2f l b",
-		 ROUND(xpos,0.01), ROUND(ypos,0.01),
-		 ROUND(xpos+width,0.01), ROUND(ypos,0.01),
-		 ROUND(xpos+width,0.01), ROUND(ypos+height,0.01),
-		 ROUND(xpos,0.01), ROUND(ypos+height,0.01));
+  len = sprintf (format_buffer, " %.2f %.2f m %.2f %.2f l %.2f %.2f l %.2f %.2f l b",
+		 xpos/1000.0, ypos/1000.0,
+		 (xpos+width)/1000.0, ypos/1000.0,
+		 (xpos+width)/1000.0, (ypos+height)/1000.0,
+		 xpos/1000.0, (ypos+height)/1000.0);
   pdf_doc_add_to_page (format_buffer, len);
 }
 

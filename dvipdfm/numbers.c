@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/numbers.c,v 1.6 1998/12/11 03:34:29 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/numbers.c,v 1.7 1998/12/11 21:18:33 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -164,4 +164,3 @@ SIGNED_QUAD _sqxfw (SIGNED_QUAD sq, fixword fw)
   }
   return sign*(long)(sq* ( ((double) fw)/(1<<20)+0.5  ));
 }
-
