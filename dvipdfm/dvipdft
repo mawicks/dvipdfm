@@ -19,20 +19,31 @@ fi
 # Loop over all arguments except the last one
 USERARGS=$@
 ARGS=
+PDFFILENAME=
 while [ $# -ne 1 ]
 do
    ARGS="$ARGS $1"
+   if [ "$1" = "-o" ]
+   then
+      PDFFILENAME=`echo $2 | sed -e's/\.pdf//g'`
+      ARGS="$ARGS $2"
+      shift
+   fi
    shift
 done
 FILENAME=$1
+if [ -z "$PDFFILENAME" ] 
+then
+  PDFFILENAME=$FILENAME
+fi
 
 # Run dvipdfm with the fastest options for the first pass
 if dvipdfm $ARGS -e -z0 $FILENAME
 then
-   if gs -r12 -dNOPAUSE -dBATCH -sDEVICE=png16 -sOutputFile=$TMP/$FILENAME.%d $FILENAME.pdf
+   if gs -r12 -dNOPAUSE -dBATCH -sDEVICE=png16 -sOutputFile=$TMP/$PDFFILENAME.%d $PDFFILENAME.pdf
    then
 #  Run dvipdfm with the users specified options for the last pass
-echo $@
+      echo dvipdfm -dt $USERARGS;
       dvipdfm -dt $USERARGS;
    fi   
 fi   

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.83 1999/08/21 14:13:22 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.84 1999/08/21 19:30:04 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -41,6 +41,7 @@
 #include "pdfparse.h"
 #include "pdflimits.h"
 #include "t1crypt.h"
+#include "twiddle.h"
 
 static const char *map_filename = "t1fonts.map";
 static unsigned char verbose = 0;
@@ -509,8 +510,6 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
       break;
     case 5:
       ident = parse_ident (&start, end);
-      fprintf (stderr, "state=5,ident=%s,num=%d,glyphs=%p\n", ident,
-	       last_number,glyphs);
       /* Here we either decide to keep or remove the encoding entry */
       if (ident != NULL && !strcmp (ident, "put") && 
 	  (int) last_number < 256 && (int) last_number >= 0 && glyphs) {
@@ -518,8 +517,11 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
 	  RELEASE (glyphs[last_number]);
 	glyphs[last_number] = glyph;
 	if ((pfbs[pfb_id].used_chars)[last_number]) {
-	  fprintf (stderr, "USED\n");
-	  lead = saved_lead;
+	  filtered_pointer += 
+	    sprintf((char *) filtered_pointer, "dup %d /%s put\n",
+		    pfbs[pfb_id].remap?twiddle(last_number):last_number,
+		    glyph);
+	  /* lead = saved_lead; */
 	}
       } else {
 	RELEASE (glyph);
@@ -694,8 +696,6 @@ static unsigned long do_pfb_header (FILE *file, int pfb_id,
 #ifdef MEM_DEBUG
 MEM_START
 #endif
-  fprintf (stderr, "pfb_header: pfb_id=%d,glyphs=%p\n", pfb_id,
-	   glyphs);
   buffer = get_pfb_segment (&length, file, ASCII);
   if (partial_enabled) {
     filtered = NEW (length+strlen(pfbs[pfb_id].fontname)+1, unsigned char);
@@ -1194,6 +1194,7 @@ struct a_type1_font
   pdf_obj *indirect;
   int pfb_id;
   double slant, extend;
+  int remap;
 } *type1_fonts;
 int num_type1_fonts = 0, max_type1_fonts = 0;
 
@@ -1224,6 +1225,16 @@ double type1_font_extend (int type1_id)
   else {
     ERROR ("Invalid font id in type1_font_extend");
     return 1.0;
+  }
+}
+
+int type1_font_remap (int type1_id)
+{
+  if (type1_id>=0 && type1_id<max_type1_fonts)
+    return (partial_enabled && type1_fonts[type1_id].remap);
+  else {
+    ERROR ("Invalid font id in type1_font_remap");
+    return 0;
   }
 }
 
@@ -1265,7 +1276,8 @@ static int is_a_base_font (char *name)
 int type1_font (const char *tex_name, int tfm_font_id, const char *resource_name)
 {
   int i, result = -1;
-  int firstchar, lastchar;
+  int tfm_firstchar, tfm_lastchar;
+  int pdf_firstchar, pdf_lastchar;
   int encoding_id = -1;
   int pfb_id = -1;
   pdf_obj *font_resource, *tmp1, *font_encoding_ref;
@@ -1304,6 +1316,7 @@ int type1_font (const char *tex_name, int tfm_font_id, const char *resource_name
     type1_fonts[num_type1_fonts].pfb_id = pfb_id;
     type1_fonts[num_type1_fonts].extend = font_record -> extend;
     type1_fonts[num_type1_fonts].slant = font_record -> slant;
+    type1_fonts[num_type1_fonts].remap = font_record -> remap;
     
     /* Allocate a dictionary for the physical font */
     font_resource = pdf_new_dict ();
@@ -1346,18 +1359,42 @@ int type1_font (const char *tex_name, int tfm_font_id, const char *resource_name
 								 by scan_afm_file() */
     }
     if (!is_a_base_font (font_record->font_name)) {
-      firstchar = tfm_get_firstchar(tfm_font_id);
+      tfm_firstchar = tfm_get_firstchar(tfm_font_id);
+      tfm_lastchar = tfm_get_lastchar(tfm_font_id);
+      if (partial_enabled && type1_fonts[num_type1_fonts].remap) {
+	unsigned char t;
+	pdf_firstchar=255; pdf_lastchar=0;
+	for (i=tfm_firstchar; i<=tfm_lastchar; i++) {
+	  if ((t=twiddle(i)) < pdf_firstchar)
+	    pdf_firstchar = t;
+	  if (t > pdf_lastchar)
+	    pdf_lastchar = t;
+	}
+      } else {
+	pdf_firstchar = tfm_firstchar;
+	pdf_lastchar = tfm_lastchar;
+      }
       pdf_add_dict (font_resource,
 		    pdf_new_name ("FirstChar"),
-		    pdf_new_number (firstchar));
-      lastchar = tfm_get_lastchar(tfm_font_id);
+		    pdf_new_number (pdf_firstchar));
       pdf_add_dict (font_resource,
 		    pdf_new_name ("LastChar"),
-		    pdf_new_number (lastchar));
+		    pdf_new_number (pdf_lastchar));
       tmp1 = pdf_new_array ();
-      for (i=firstchar; i<=lastchar; i++) {
-	pdf_add_array (tmp1,
-		       pdf_new_number(ROUND(tfm_get_width (tfm_font_id, i)*1000.0,0.01)));
+      for (i=pdf_firstchar; i<=pdf_lastchar; i++) {
+	if (partial_enabled && type1_fonts[num_type1_fonts].remap) {
+	  int t;
+	  if ((t=twiddle(i)) <= tfm_lastchar && t>=tfm_firstchar)
+	    pdf_add_array (tmp1,
+			   pdf_new_number(ROUND(tfm_get_width
+						(tfm_font_id,t)*1000.0,0.01)));
+	  else
+	    pdf_add_array (tmp1,
+			   pdf_new_number(0.0));
+	} else
+	  pdf_add_array (tmp1,
+			 pdf_new_number(ROUND(tfm_get_width
+					      (tfm_font_id, i)*1000.0,0.01)));
       }
       pdf_add_dict (font_resource,
 		    pdf_new_name ("Widths"),

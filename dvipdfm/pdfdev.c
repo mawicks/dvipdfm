@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.75 1999/08/18 03:51:55 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.76 1999/08/21 19:30:02 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -144,6 +144,7 @@ static struct dev_font {
   pdf_obj *font_resource;
   char *used_chars;
   double extend, slant;
+  int remap;
 } dev_font[MAX_DEVICE_FONTS];
 
 static void reset_text_state(void)
@@ -290,7 +291,9 @@ void dev_set_string (mpt_t xpos, mpt_t ypos, unsigned char *s, int
     text_offset -= kern*dev_font[font_id].extend*(dev_font[font_id].mptsize/1000.0);
     len += sprintf (format_buffer+len, ")%ld(", kern);
   }
-  len += pdfobj_escape_str (format_buffer+len, FORMAT_BUF_SIZE-len, s, length);
+  len += pdfobj_escape_str (format_buffer+len, FORMAT_BUF_SIZE-len, s,
+			    length,
+			    dev_font[font_id].remap);
   pdf_doc_add_to_page (format_buffer, len);
 
   /* Record characters used for partial font embedding */
@@ -656,6 +659,7 @@ static int locate_type1_font (char *tex_name, mpt_t ptsize)
       dev_font[thisfont].used_chars = type1_font_used (type1_id);
       dev_font[thisfont].slant = type1_font_slant (type1_id);
       dev_font[thisfont].extend = type1_font_extend (type1_id);
+      dev_font[thisfont].remap = type1_font_remap (type1_id);
       n_phys_fonts +=1 ;
     } else { /* No physical font corresponding to this name */
       thisfont = -1;
@@ -668,6 +672,7 @@ static int locate_type1_font (char *tex_name, mpt_t ptsize)
     dev_font[thisfont].used_chars = dev_font[i].used_chars;
     dev_font[thisfont].slant = dev_font[i].slant;
     dev_font[thisfont].extend = dev_font[i].extend;
+    dev_font[thisfont].remap = dev_font[i].remap;
     strcpy (dev_font[thisfont].short_name, dev_font[i].short_name);
     dev_font[thisfont].font_resource = pdf_link_obj
       (dev_font[i].font_resource);

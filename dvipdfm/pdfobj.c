@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.52 1999/08/15 04:54:55 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.53 1999/08/21 19:30:03 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -25,6 +25,7 @@
 	
 #include <ctype.h>
 #include <string.h>
+#include "system.h"
 #include "pdflimits.h"
 #include "config.h"
 #include "pdfobj.h"
@@ -33,7 +34,7 @@
 #include "mfileio.h"
 #include "pdfspecial.h"
 #include "pdfparse.h"
-#include "system.h"
+#include "twiddle.h"
 
 #ifdef HAVE_ZLIB
 #include <zlib.h>
@@ -501,14 +502,21 @@ void *pdf_string_value (pdf_obj *a_pdf_string)
   return data -> string;
 }
 
-int pdfobj_escape_str (char *buffer, int bufsize, unsigned char *s, int len)
+/* This routine escapes non printable characters and control
+   characters in an output string.  It optionally remaps
+   the problem characters in the encoding */
+
+int pdfobj_escape_str (char *buffer, int bufsize, unsigned char *s,
+		       int len, int remap)
 {
   int result = 0, i;
+  unsigned char ch;
   for (i=0; i<len; i++) {
+    ch = remap? twiddle(s[i]): s[i];
     /* Exit as fast as possible for printable characters */
     if (result+4 > bufsize)
       ERROR ("pdfobj_escape_str: Buffer overflow");
-    switch (s[i]) {
+    switch (ch) {
     case '(':
       buffer[result++] = '\\';
       buffer[result++] = '(';
@@ -522,11 +530,11 @@ int pdfobj_escape_str (char *buffer, int bufsize, unsigned char *s, int len)
       buffer[result++] = '\\';
       break;
     default:
-      if (isprint (s[i]))
-	buffer[result++] = s[i];
+      if (isprint (ch))
+	buffer[result++] = ch;
       else {
 	buffer[result++] = '\\';
-	result += sprintf (buffer+result, "%03o", s[i]);
+	result += sprintf (buffer+result, "%03o", ch);
       }
       break;
     }
@@ -548,7 +556,7 @@ static void write_string (FILE *file, const pdf_string *string)
      handled as quickly as possible since there are so many of them.  */ 
   for (i=0; i<string->length; i++) {
     count = pdfobj_escape_str (format_buffer, FORMAT_BUF_SIZE, s+i,
-			       1);
+			       1, 0);
     pdf_out (file, format_buffer, count);
   }
   pdf_out_char (file, ')');

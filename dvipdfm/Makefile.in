@@ -24,7 +24,7 @@ objects=pdfdev.o pdfdoc.o dvi.o mfileio.o mem.o jpeg.o numbers.o pdfobj.o \
         pdfparse.o pdfspecial.o tfm.o type1.o dvipdfm.o epdf.o vf.o \
 	t1crypt.o pkfont.o tpic.o thumbnail.o pngimage.o htex.o
 eobjects=ebb.o jpeg.o pdfobj.o mem.o mfileio.o numbers.o pdfparse.o pngimage.o 
-
+encodings=ot1.enc ot1alt.enc
 check default all: $(programs)
 ebb: $(eobjects) Makefile
 	$(CC) -o ebb $(eobjects) $(LDFLAGS) $(LIBS)
@@ -54,10 +54,9 @@ install-data:
 	   >/dev/null; then  \
 	   $(INSTALL) ./t1fonts.map $(dvipdfmdir)/t1fonts.map; \
 	else true; fi
-	cp ./ot1.enc $(dvipdfmdir)/ot1.enc
+	cp $(encodings) $(dvipdfmdir)/
 uninstall-exec:
 	rm -f $(bindir)/$(programs) $(bindir)/$(scripts)
-
 uninstall-data:
 	if grep 'original pdffonts.map --' $(psheaderdir)/dvipdfm/pdffonts.map \
 	   >/dev/null 2>&1; then rm -f $(psheaderdir)/dvipdfm/pdffonts.map; \
@@ -68,7 +67,7 @@ uninstall-data:
 	if grep 'original t1fonts.map --' $(dvipdfmdir)/dvipdfm/t1fonts.map \
 	   >/dev/null 2>&1; then rm -f $(dvipdfmdir)/t1fonts.map; \
 	else true; fi
-	rm -f $(dvipdfmdir)/ot1.enc
+	cd $(dvipdfmdir); rm -f $(encodings)
 #
 # Developer stuff
 #
