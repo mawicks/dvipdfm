@@ -66,6 +66,7 @@ mpost.h
 numbers.c
 numbers.h
 ot1.enc
+ot1r.enc
 ot1alt.enc
 pdfdev.c
 pdfdev.h

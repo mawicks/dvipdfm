@@ -18,21 +18,21 @@
 % not use to higher positions.  This seems to fix a variety of problems
 %
 cmr10 ot1r -r
-cmr12 ot1r
-cmr17 ot1r
-cmr6 ot1r
-cmr7 ot1r
-cmr8 ot1r
-cmr9 ot1r
+cmr12 ot1r -r
+cmr17 ot1r -r
+cmr6 ot1r -r
+cmr7 ot1r -r
+cmr8 ot1r -r
+cmr9 ot1r -r
 % cmr5 is encoded somewhat differently
 cmr5 -r
 % Bold
-cmbx10 ot1
-cmbx12 ot1
-cmbx6 ot1
-cmbx7 ot1
-cmbx8 ot1
-cmbx9 ot1
+cmbx10 ot1r -r
+cmbx12 ot1r -r 
+cmbx6 ot1r -r
+cmbx7 ot1r -r
+cmbx8 ot1r -r
+cmbx9 ot1r -r
 % Symbol fonts are remapped, but not reencoded
 cmex10 -r
 cmbsy10 -r
@@ -80,22 +80,22 @@ cmmi7 -r
 cmmi6 -r
 cmmi5 -r
 % Misc
-cmb10 ot1 -r
-cmbxsl10 ot1 -r
+cmb10 ot1r -r
+cmbxsl10 ot1r -r
 cmbxti10 ot1alt -r
-cmdunh10 ot1 -r
+cmdunh10 ot1r -r
 cmff10  ot1alt -r
 cmfi10 ot1alt -r
 cmfib8 ot1alt -r
-cmssbx10 ot1 -r
-cmssdc10 ot1 -r
-cmssq8 ot1 -r
-cmssqi8 ot1 -r
+cmssbx10 ot1r -r
+cmssdc10 ot1r -r
+cmssq8 ot1r -r
+cmssqi8 ot1r -r
 cmu10 ot1alt -r
-cmvtt10 ot1 -r
-lcmss8 ot1 -r
-lcmssb8 ot1 -r
-lcmssi8 ot1 -r
+cmvtt10 ot1r -r
+lcmss8 ot1r -r
+lcmssb8 ot1r -r
+lcmssi8 ot1r -r
 % tt fonts
 cmtt10 -r
 cmtt12 -r
@@ -108,28 +108,28 @@ cmti7 ot1alt -r
 cmti8 ot1alt -r
 cmti9 ot1alt -r
 % Slanted
-cmsl10 ot1 -r
-cmsl12 ot1 -r
-cmsl8 ot1 -r
-cmsl9 ot1 -r
+cmsl10 ot1r -r
+cmsl12 ot1r -r
+cmsl8 ot1r -r
+cmsl9 ot1r -r
 % Roman sans serif
-cmss10 ot1 -r
-cmss12 ot1 -r
-cmss17 ot1 -r
-cmss8 ot1 -r
-cmss9 ot1 -r
+cmss10 ot1r -r
+cmss12 ot1r -r
+cmss17 ot1r -r
+cmss8 ot1r -r
+cmss9 ot1r -r
 % Sans Serif
-cmssi10 ot1 -r
-cmssi12 ot1 -r
-cmssi17 ot1 -r
-cmssi8 ot1 -r
-cmssi9 ot1 -r
+cmssi10 ot1r -r
+cmssi12 ot1r -r
+cmssi17 ot1r -r
+cmssi8 ot1r -r
+cmssi9 ot1r -r
 %
 % LaTeX Fonts here too.  They don't
 % seem to fit anywhere else.
 %
-lcirclew10 none lcirclew -r
-lcircle10 none lcircle1 -r
+lcirclew10 default lcirclew -r
+lcircle10 default lcircle1 -r
 line10 -r
 
 %
@@ -137,6 +137,6 @@ line10 -r
 %
 eurmo10  default  eurm10 -s 0.167 -r
 eurbo10  default  eurb10 -s 0.167 -r
-rsfs5    none  rsfs5
-rsfs7    none  rsfs7
-rsfs10   none  rsfs10%
+rsfs5    default  rsfs5
+rsfs7    default  rsfs7
+rsfs10   default  rsfs10%
