@@ -12,7 +12,7 @@ datadir=@datadir@
 texmf=@TEXMF@
 dvipdfmdir=$(texmf)/dvipdfm
 psheaderdir=$(texmf)/dvips
-programs=dvipdfm ebb ttfdump
+programs=dvipdfm ebb
 headers=dvi.h pdflimits.h error.h mfileio.h jpeg.h mem.h numbers.h \
 	pdfdev.h pdfdoc.h pdfparse.h pdfspecial.h tfm.h type1.h epdf.h \
 	vf.h dvicodes.h t1crypt.h pkfont.h tpic.h
@@ -23,13 +23,10 @@ objects=pdfdev.o pdfdoc.o dvi.o mfileio.o mem.o jpeg.o numbers.o pdfobj.o \
         pdfparse.o pdfspecial.o tfm.o type1.o dvipdfm.o epdf.o vf.o \
 	t1crypt.o pkfont.o tpic.o
 eobjects=ebb.o jpeg.o pdfobj.o mem.o mfileio.o numbers.o pdfparse.o
-tobjects=ttfdump.o mfileio.o mem.o numbers.o
 
 check default all: $(programs)
 ebb: $(eobjects) Makefile
 	$(CC) -o ebb $(eobjects) $(LDFLAGS) $(LIBS)
-ttfdump: $(tobjects) Makefile
-	$(CC) -o ttfdump $(tobjects) $(LDFLAGS) $(LIBS)
 dvipdfm:  $(objects) Makefile
 	$(CC) -o dvipdfm $(objects) $(LDFLAGS) $(LIBS)
 include depend.make
