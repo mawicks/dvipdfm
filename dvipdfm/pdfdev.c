@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.23 1998/12/08 21:59:48 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.24 1998/12/09 04:04:30 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -76,7 +76,7 @@ double dev_page_height(void)
   return page_height;
 }
 
-static int debug = 0, verbose = 1;
+static int debug = 0, verbose = 0;
 
 void dev_set_verbose (void)
 {
@@ -516,17 +516,15 @@ MEM_END
 #endif
 }
 
-int dev_locate_font (char *tex_name,
-		     int tfm_font_id,
-		     double ptsize)
+int dev_locate_font (char *tex_name, double ptsize)
      /* Here, the ptsize is 1/72 of inch */ 
 {
   /* Since Postscript fonts are scaleable, this font may have already
      been asked for.  Make sure it doesn't already exist. */
   int i, thisfont;
   if (verbose) {
-    fprintf (stderr, "dev_locate_font: fontname: (%s) tfm_id: %d ptsize: %g\n",
-	     tex_name, tfm_font_id, ptsize);
+    fprintf (stderr, "dev_locate_font: fontname: (%s) ptsize: %g\n",
+	     tex_name, ptsize);
     fprintf (stderr, "dev_locate_font: dev_id: %d\n", n_dev_fonts);
   }
   if (n_dev_fonts == MAX_DEVICE_FONTS)
@@ -541,18 +539,16 @@ int dev_locate_font (char *tex_name,
   }
   if (i == thisfont) {  /* Font *name* not found, so load it and give it a
 			    new short name */
-    fprintf (stderr, "New font\n");
+    dev_font[thisfont].tfm_font_id = tfm_open (tex_name);
     /* type1_font_resource on next line always returns an *indirect* obj */ 
-    dev_font[i].font_resource = type1_font_resource (tex_name,
-						     tfm_font_id,
-						     dev_font[i].short_name);
+    dev_font[thisfont].font_resource = type1_font_resource (tex_name,
+						     dev_font[thisfont].tfm_font_id,
+						     dev_font[thisfont].short_name);
     if (dev_font[i].font_resource) { /* If we got one, it must be a physical font */
-      fprintf (stderr, "Found physical font\n");
-      dev_font[i].type = PHYSICAL;
       dev_font[i].short_name[0] = 'F';
       sprintf (dev_font[i].short_name+1, "%d", ++n_phys_fonts);
+      dev_font[i].type = PHYSICAL;
     } else { /* No physical font, see if we can locate a virtual one */
-      fprintf (stderr, "Trying virtual font\n");
       dev_font[i].vf_font_id = vf_font_locate (tex_name, ptsize);
       if (dev_font[i].vf_font_id < 0) {
 	fprintf (stderr, "%s: Can't locate an AFM or VF file\n", tex_name);
@@ -563,15 +559,14 @@ Maybe in the future, I'll substitute some other font.");
     }
   } else {	/* Font name was found */
     dev_font[thisfont].type = dev_font[i].type;
+    dev_font[thisfont].tfm_font_id = dev_font[i].tfm_font_id;
     switch (dev_font[i].type) {
     case PHYSICAL:
-      fprintf (stderr, "Old physical font\n");
       strcpy (dev_font[thisfont].short_name, dev_font[i].short_name);
       dev_font[thisfont].font_resource = pdf_link_obj
 	(dev_font[i].font_resource);
       break;
     case VIRTUAL:
-      fprintf (stderr, "Old virtual font\n");
       dev_font[thisfont].vf_font_id = dev_font[i].vf_font_id;
       break;
     }
@@ -585,13 +580,20 @@ Maybe in the future, I'll substitute some other font.");
      name/ptsize combinations also unique isn't worth the
      effort for the slight increase in storage requirements. */
 
-  dev_font[thisfont].tfm_font_id = tfm_font_id;
   dev_font[thisfont].ptsize = ptsize;
   dev_font[thisfont].tex_name = NEW (strlen(tex_name)+1, char);
   strcpy (dev_font[thisfont].tex_name, tex_name);
-  fprintf (stderr, "Leaving dev_locate_font with thisfont = %d\n",
-	   thisfont);
   return (thisfont);
+}
+
+int dev_font_tfm (int dev_font_id)
+{
+  return dev_font[dev_font_id].tfm_font_id;
+}
+
+double dev_font_size (int dev_font_id)
+{
+  return dev_font[dev_font_id].ptsize;
 }
 
 void dev_close_all_fonts(void)
@@ -658,24 +660,14 @@ void dev_set_char (unsigned ch, double width)
   }
   switch (dev_font[current_font].type) {
   case PHYSICAL:
-    fprintf (stderr, "Trying to set c=");
-    if (isprint (ch))
-      fprintf (stderr, "(%c) in PF %d\n", ch, current_font);
-    else
-      fprintf (stderr, "[%d] in PF %d\n", ch, current_font);
     string_mode();
     len = pdfobj_escape_c (format_buffer, ch);
     pdf_doc_add_to_page (format_buffer, len);
+    dev_xpos += width;
     break;
   case VIRTUAL:
-    fprintf (stderr, "Trying to set c=");
-    if (isprint (ch))
-      fprintf (stderr, "(%c) in VF %d\n", ch, current_font);
-    else
-      fprintf (stderr, "[%d] in VF %d\n", ch, current_font);
-    vf_set_char (ch, current_font);
+    vf_set_char (ch, dev_font[current_font].vf_font_id);
   }
-  dev_xpos += width;
 }
 
 void dev_rule (double width, double height)

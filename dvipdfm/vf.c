@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/vf.c,v 1.3 1998/12/08 21:59:48 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/vf.c,v 1.4 1998/12/09 04:04:30 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -40,7 +40,7 @@
 #define TEXPT2PT (72.0/72.27)
 #define FW2PT (TEXPT2PT/((double)(FIX_WORD_BASE)))
 
-static verbose = 1;
+static verbose = 0;
 struct font_def {
   signed long font_id /* id used internally in vf file */;
   unsigned long checksum, size, design_size;
@@ -75,7 +75,6 @@ static void clear_vf_characters(void)
   }
   return;
 }
-
 
 static int read_header(FILE *vf_file, int thisfont) 
 {
@@ -138,14 +137,6 @@ static void read_a_char_def(FILE *vf_file, int thisfont, unsigned long pkt_len,
     if (fread (pkt, 1, pkt_len, vf_file) != pkt_len)
       ERROR ("VF file ended prematurely.");
     (vf_fonts[thisfont].ch_pkt)[ch] = pkt;
-    {
-      int i;
-      fputc ('[', stderr);
-      for (i=0; i<pkt_len; i++) {
-	fputc (pkt[i], stderr);
-      }
-      fprintf (stderr, "]\n");
-    }
   }
   (vf_fonts[thisfont].pkt_len)[ch] = pkt_len;
   return;
@@ -184,7 +175,6 @@ static void read_a_font_def(FILE *vf_file, signed long font_id, int thisfont)
   dev_font->tfm_id = tfm_open (dev_font -> name);
   dev_font->dev_id =
     dev_locate_font (dev_font->name, 
-		     dev_font->tfm_id,
 		     ((double)dev_font->design_size)*FW2PT*vf_fonts[thisfont].mag);
   if (verbose) {
     fprintf (stderr, "[%s/%s]\n", dev_font -> directory, dev_font -> name);
@@ -201,22 +191,18 @@ void process_vf_file (FILE *vf_file, int thisfont)
     code = get_unsigned_byte (vf_file);
     switch (code) {
     case FNT_DEF1:
-      fprintf (stderr, "FNT_DEF1\n");
       font_id = get_unsigned_byte (vf_file);
       read_a_font_def (vf_file, font_id, thisfont);
       break;
     case FNT_DEF2:
-      fprintf (stderr, "FNT_DEF2\n");
       font_id = get_unsigned_pair (vf_file);
       read_a_font_def (vf_file, font_id, thisfont);
       break;
     case FNT_DEF3:
-      fprintf (stderr, "FNT_DEF3\n");
       font_id = get_unsigned_triple(vf_file);
       read_a_font_def (vf_file, font_id, thisfont);
       break;
     case FNT_DEF4:
-      fprintf (stderr, "FNT_DEF4\n");
       font_id = get_signed_quad(vf_file);
       read_a_font_def (vf_file, font_id, thisfont);
       break;
@@ -224,14 +210,12 @@ void process_vf_file (FILE *vf_file, int thisfont)
       if (code < 242) {
 	long ch;
 	/* For a short packet, code is the pkt_len */
-	fprintf (stderr, "CHAR_PKT[%d]\n", code);
 	ch = get_unsigned_byte (vf_file);
 	read_a_char_def (vf_file, thisfont, code, ch);
 	break;
       }
       if (code == 243) {
 	unsigned long pkt_len, ch;
-	fprintf (stderr, "LONG CHAR_PKT\n");
 	pkt_len = get_unsigned_quad(vf_file);
 	ch = get_unsigned_quad (vf_file);
 	if (ch < 256) 
@@ -241,7 +225,6 @@ void process_vf_file (FILE *vf_file, int thisfont)
 	break;
       }
       if (code == POST) {
-	fprintf (stderr, "POST\n");
 	eof = 1;
 	break;
       }
@@ -371,7 +354,7 @@ static SIGNED_TRIPLE signed_triple(unsigned char **start, unsigned char *end)
       triple = triple*0x100 + next_byte();
     }
     if (triple >= 0x800000l) 
-      triple -= 0x1000000l;
+       triple -= 0x1000000l;
   } else
     ERROR ("Premature end of DVI byte stream in VF font\n");
   return (SIGNED_TRIPLE) triple;
@@ -411,7 +394,6 @@ static UNSIGNED_QUAD unsigned_quad(unsigned char **start, unsigned char *end)
 static void vf_set (SIGNED_QUAD ch)
 {
   /* Defer to the dvi_set() defined in dvi.c */
-  fprintf (stderr, "vf_set: %ld\n", ch);
   dvi_set (ch);
   return;
 }
@@ -450,7 +432,6 @@ static void vf_put1(unsigned char **start, unsigned char *end)
   dvi_put (unsigned_byte(start, end));
   return;
 }
-
 
 static void vf_push(void)
 {
@@ -491,7 +472,7 @@ static void vf_right3(unsigned char **start, unsigned char *end, double fw2dvi)
 
 static void vf_right4(unsigned char **start, unsigned char *end, double fw2dvi)
 {
-  vf_right (signed_triple (start, end), fw2dvi);
+  vf_right (signed_quad (start, end), fw2dvi);
   return;
 }
 
@@ -765,15 +746,13 @@ void vf_set_char(int ch, int vf_font)
   unsigned char *start, *end;
   int default_font = -1;
   double fw2dvi;
-  fprintf (stderr, "vf_set_char: ch=%d vf_font=%d\n", ch, vf_font);
   if (vf_font < num_vf_fonts) {
     /* Initialize to the first font or -1 if undefined */
     fw2dvi = vf_set_scale(vf_font);
     if (vf_fonts[vf_font].num_dev_fonts > 0)
       default_font = ((vf_fonts[vf_font].dev_fonts)[0]).dev_id;
-    fprintf (stderr, "Setting default font: %d\n", default_font);
-    dvi_vf_init ();
-    dev_select_font (default_font);
+    dvi_vf_init (default_font);
+    /*    dev_select_font (default_font); */
     start = (vf_fonts[vf_font].ch_pkt)[ch];
     end = start + (vf_fonts[vf_font].pkt_len)[ch];
     while (start < end) {

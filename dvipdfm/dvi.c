@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.12 1998/12/08 21:59:48 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.13 1998/12/09 04:04:30 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -163,7 +163,6 @@ struct font_def {
   signed long tex_id /* id used internally by TeX */;
   unsigned long checksum, size, design_size;
   char *directory, *name;
-  int tfm_id;  /* id returned by TFM module */
   int dev_id;  /* id returned by DEV module */
 } font_def[MAX_FONTS];
 
@@ -470,7 +469,7 @@ double dvi_unit_size(void)
 
 static void do_locate_fonts (void) 
 {
-  int i, j;
+  int i;
   for (i=0; i<numfonts; i++) {
     if (dvi_verbose) { 
     fprintf (stderr, "<%s @ %gpt>",
@@ -478,17 +477,7 @@ static void do_locate_fonts (void)
     }
     /* Only need to read tfm once for the same name.  Check to see
        if it already exists */
-    for (j=0; j<i; j++) {
-      if (!strcmp (font_def[i].name, font_def[j].name)) 
-	break;
-    }
-    if (j == i)
-      font_def[i].tfm_id = tfm_open (font_def[i].name);
-    else
-      font_def[i].tfm_id = font_def[j].tfm_id;
-    font_def[i].dev_id = dev_locate_font (font_def[i].name,
-					  font_def[i].tfm_id,
-					  font_def[i].size*dvi2pts);
+    font_def[i].dev_id = dev_locate_font (font_def[i].name, font_def[i].size*dvi2pts);
   }
 }
 
@@ -543,8 +532,18 @@ void dvi_set (SIGNED_QUAD ch)
   if (current_font < 0) {
     ERROR ("dvi_set:  No font selected");
   }
-  /*  dvi_width = tfm_get_width (font_def[current_font].tfm_id, ch) * font_def[current_font].design_size; */
-  dvi_width = tfm_get_width (font_def[current_font].tfm_id, ch) * font_def[current_font].size;
+  /*  dvi_width = tfm_get_width
+      (dev_locate_tfm(current_font)[current_font].tfm_id, ch) *
+      font_def[current_font].size; */
+
+  /* The division by dvi2pts seems strange since we actually know the
+     "dvi" size of the fonts contained in the DVI file.  In other
+     words, we converted from DVI units to pts and back again!
+     The problem comes from fonts defined in VF files where we don't know the DVI
+     size.  It's keeping me sane to keep *point sizes* of *all* fonts in
+     the dev.c file and convert them back if necessary */ 
+
+  dvi_width = tfm_get_width (dev_font_tfm(current_font), ch) * dev_font_size(current_font) / dvi2pts;
   dvi_state.h += dvi_width;
   dev_set_char (ch, dvi_width*dvi2pts);
   if (dvi_debug) {
@@ -835,8 +834,10 @@ static void do_fnt (SIGNED_QUAD font_id)
     fprintf (stderr, "fontid: %ld\n", font_id);
     ERROR ("dvi_do_fnt:  Tried to select a font that hasn't been defined");
   }
-  current_font = i;
-  dev_select_font (font_def[current_font].dev_id);
+  /*  current_font = i; */
+  current_font = font_def[i].dev_id;
+  /*  dev_select_font (font_def[current_font].dev_id); */
+  dev_select_font (current_font);
 }
 
 static void do_fnt1(void)
@@ -1138,15 +1139,23 @@ void dvi_do_page(int n)  /* Most of the work of actually interpreting
    is determined by the virtual font header, which
    may be undefined */
 
-void dvi_vf_init ()
+static int saved_dvi_font;
+
+void dvi_vf_init (int dev_font_id)
 {
   dvi_push ();
-  dvi_state.v = 0; dvi_state.w = 0;
+  dvi_state.w = 0; dvi_state.x = 0;
   dvi_state.y = 0; dvi_state.z = 0;
+  saved_dvi_font = current_font;
+  current_font = dev_font_id;
+  dev_select_font (current_font);
 }
 
 /* After VF subroutine is finished, we simply pop the DVI stack */
 void dvi_vf_finish (void)
 {
   dvi_pop();
+  current_font = saved_dvi_font;
+  dev_select_font (current_font);
 }
+
