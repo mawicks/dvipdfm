@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.54 1998/12/31 18:41:57 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.55 1999/01/01 02:27:49 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -201,12 +201,16 @@ static void string_mode (mpt_t xpos, mpt_t ypos)
       text_yorigin += text_leading;
     }
     else {
+      double rounded_delx;
+      double rounded_dely;
+      rounded_delx = ROUND(delx*dvi2pts,0.01);
       dely = ypos - text_yorigin;
+      rounded_dely = ROUND(dely*dvi2pts,0.01);
       len += sprintf (format_buffer+len, " %.7g %.7g TD[(",
-		      ROUND(delx*dvi2pts,0.01), ROUND(dely*dvi2pts,0.01));
+		      rounded_delx, rounded_dely);
       text_leading = dely;
-      text_xorigin = xpos;
-      text_yorigin = ypos;
+      text_xorigin += (mpt_t) (rounded_delx/dvi2pts);
+      text_yorigin += (mpt_t) (rounded_dely/dvi2pts);
     }
     text_offset = 0;
     pdf_doc_add_to_page (format_buffer, len);
