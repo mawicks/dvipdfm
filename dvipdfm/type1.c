@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.107 2000/07/10 04:33:29 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.108 2000/07/11 21:14:16 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -44,8 +44,7 @@
 #include "twiddle.h"
 
 #define DEFAULT_MAP_FILE "t1fonts.map"
-static void type1_fill_font_descriptor (pdf_obj *descriptor, int
-					pfb_id);
+static void type1_start_font_descriptor (int pfb_id);
 
 static unsigned char verbose = 0, really_quiet = 0;
 
@@ -388,8 +387,6 @@ void type1_disable_partial (void)
   partial_enabled = 0;
 }
 
-
-
 static unsigned num_pfbs = 0;
 static unsigned max_pfbs = 0;
 struct a_pfb
@@ -453,7 +450,8 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
 
   unsigned char *filtered_pointer;
   int state = 0;
-  char *start, *end, *lead, *saved_lead = NULL;
+  char *start, *end, *lead;
+  int copy = 1;
   int last_number = 0;
   char *glyph = NULL;
 #ifdef MEM_DEBUG
@@ -466,16 +464,29 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
       strcpy (glyphs[i], ".notdef");
     }
   }
+  /* This routine uses a state machine parser rather than trying to
+     interpret Postcript the way mpost.c does.  There are only
+     a few key parameters it is trying to find */
+
   /* State definitions 
      state 0: Initial state
      state 1: Saw /FontName
      state 2: Saw /Encoding
      state 3: Saw "dup" in state 2
      state 4: Saw a number in state 3
-     state 5: Saw a /glyphname in state 4 */
+     state 5: Saw a /glyphname in state 4
+     state 6: Saw a /FontBBox in state 0
+     state 7: Saw a '{' or a '[' in state 6  
+     state 8: Saw a '}' or a ']' in state 6  */
+  /* As the parser operates, start always points to the next point in
+     the buffer */
   start = (char *) buffer;
   end = start+length;
   filtered_pointer = filtered;
+  /* When the parser decides to keep text, the text
+     between lead and start is copied to the output buffer.  To
+     keep a block of text from being copied, the parser simply
+     sets copy = 0 */
   lead = start;
   skip_white (&start, end);
   if (lead != start) {
@@ -483,15 +494,15 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
     filtered_pointer += start-lead;
   }
   while (start < end) {
-    char *save, *ident;
+    char *ident;
     pdf_obj *pdfobj;
+    copy = 1; /* By default, we copy most things */
     switch (state) {
       /* First three states are very similar.  In most cases we just
 	 ignore other postscript junk and don't change state */
     case 0:
     case 1:
     case 2:
-      lead = start;
       switch (*start) {
 	/* Ignore arrays and procedures */
       case '[':
@@ -511,7 +522,8 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
 	if (state == 1) {
 	  filtered_pointer += sprintf ((char *)filtered_pointer, "/%s ",
 				       pfbs[pfb_id].fontname);
-	  lead = NULL; /* Means don't copy current input to output */
+	  copy = 0; /* Don't copy old string to output */
+	  lead = start; /* Forget what we've seen */
 	  state = 0;
 	}
 	if (state >= 2)
@@ -524,22 +536,23 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
 	  state = 1;
 	} else if (state == 0 && !strcmp (ident, "Encoding")) {
 	  state = 2;
+	} else if (state == 0 && !strcmp (ident, "FontBBox")) {
+	  state = 6;
 	} else if (state == 1) {
 	  filtered_pointer += sprintf ((char *)filtered_pointer, "/%s ",
 				       pfbs[pfb_id].fontname);
-	  lead = NULL; /* Means don't copy current input to output */
+	  copy = 0;	/* Don't copy old string to putput */
+	  lead = start;	/* Forget the name we've seen  */
 	  state = 0;
 	}
 	RELEASE (ident);
 	break;
       default:
-	save = start;
 	ident = parse_ident (&start, end);
 	if (state == 2 &&
 	    !strcmp (ident, "dup")) {
-	  saved_lead = save; /* Save this because we may need it
-				 later */
-	  lead = NULL;
+	  copy = 0;	/* Don't copy this to output buffer until we
+			   know if we want to keep it */  
 	  state = 3;
 	} else if (state == 2 &&
 		   !strcmp (ident, "StandardEncoding") && glyphs) {
@@ -556,10 +569,10 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
       ident = parse_ident (&start, end);
       if (is_an_int (ident)) {
 	last_number = (int) atof (ident);
+	copy = 0;	/* We still don't know if we want to keep it */
 	state = 4;
       } else {
-	lead = saved_lead;
-	state = 2;
+	state = 2;	/* Contents back to "lead" will be flushed */
       }
       RELEASE (ident);
       break;
@@ -567,9 +580,11 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
       if (*start == '/') {
 	start += 1;
 	glyph = parse_ident (&start, end);
+	copy = 0;	/* We still don't know if we want to keep it.
+			 Wait for a complete sequence before making
+			 that decision */
 	state = 5;
       } else {
-	lead = saved_lead;
 	state = 2;
       }
       break;
@@ -578,9 +593,11 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
       /* Here we either decide to keep or remove the encoding entry */
       if (ident != NULL && !strcmp (ident, "put") && 
 	  (int) last_number < 256 && (int) last_number >= 0) {
+	copy = 0;
+	lead = start;  /* Either remove or replace this entry */
 	if ((pfbs[pfb_id].used_chars)[last_number]) {
 	  filtered_pointer += 
-	    sprintf((char *) filtered_pointer, "dup %d /%s put\n",
+	    sprintf((char *) filtered_pointer, "\ndup %d /%s put",
 		    pfbs[pfb_id].remap?twiddle(last_number):last_number,
 		    glyph);
 	}
@@ -590,8 +607,6 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
 	  glyphs[last_number] = glyph;
 	  glyph = NULL; /* Don't free glyph later */
 	}
-      } else {
-	lead = saved_lead;
       }
       if (glyph)
 	RELEASE (glyph);
@@ -599,9 +614,43 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
 	RELEASE (ident);
       state = 2;
       break;
+    case 6:
+      switch (*start) {
+      case '[':
+      case '{': 
+	start += 1 ;
+	state = 7;
+	break;
+      default:
+	state = 0;	/* Something's probably wrong */
+	fprintf (stderr, "\nUnexpected token after FontBBox.  Struggling along\n");
+      }
+    case 7:
+      switch (*start) {
+      case '[':
+      case '{':
+	start += 1 ;
+	state = 0;
+	break;
+      case '(':
+      case '}':
+      case ']':
+      case '/':
+	state = 0;	/* Something's probably wrong */
+	fprintf (stderr, "\nUnexpected token in FontBBox array.  Struggling along\n");
+	break;
+      default:
+	ident = parse_ident (&start, end);
+	if (ident != NULL && is_a_number (ident)) {
+	  pdf_obj *tmp = pdf_lookup_dict (pfbs[pfb_id].descriptor,
+					  "FontBBox");
+	  pdf_add_array (tmp, pdf_new_number (atof (ident)));
+	  RELEASE (ident);
+	}
+      }
     }
     skip_white (&start, end);
-    if (lead) {
+    if (copy && start != lead) { /* Flush everything back to "lead" */
       memcpy (filtered_pointer, lead, start-lead);
       filtered_pointer += start-lead;
       lead = start;
@@ -1046,6 +1095,65 @@ static void mangle_fontname(char *fontname)
   fontname[6] = '+';
 }
 
+#define FIXED_WIDTH 1
+#define SERIF 2
+#define STANDARD 32
+#define ITALIC 64
+#define SYMBOLIC 4   /* Fonts that don't have Adobe encodings (e.g.,
+			cmr, should be set to be symbolic */
+#define STEMV 80
+
+/* This routine builds a default font descriptor with dummy values
+   filled in for the required keys.  As the pfb file is parsed,
+   any values that are found are rewritten.  By doing this,
+   all the required fields are found in the font descriptor
+   even if the pfb is somewhat defective. This approach is
+   conservative, with the cost of keeping the names around in memory 
+   for a while.
+*/
+
+static void type1_start_font_descriptor (int pfb_id)
+{
+  pdf_obj *tmp1;
+  pfbs[pfb_id].descriptor = pdf_new_dict ();
+  pdf_add_dict (pfbs[pfb_id].descriptor,
+		pdf_new_name ("Type"),
+		pdf_new_name ("FontDescriptor"));
+  /* For now, insert dummy values */
+  pdf_add_dict (pfbs[pfb_id].descriptor,
+		pdf_new_name ("CapHeight"),
+		pdf_new_number (0.0));
+  pdf_add_dict (pfbs[pfb_id].descriptor,
+		pdf_new_name ("Ascent"),
+		pdf_new_number (0.0));
+  pdf_add_dict (pfbs[pfb_id].descriptor,
+		pdf_new_name ("Descent"),
+		pdf_new_number (0.0));
+  tmp1 = pdf_new_array ();
+  pdf_add_dict (pfbs[pfb_id].descriptor, pdf_new_name ("FontBBox"), tmp1);
+  pdf_add_dict (pfbs[pfb_id].descriptor,
+		pdf_new_name ("FontName"),
+		pdf_new_name (type1_fontname(pfb_id)));
+
+  pdf_add_dict (pfbs[pfb_id].descriptor,
+		pdf_new_name ("ItalicAngle"),
+		pdf_new_number(0.0));
+  pdf_add_dict (pfbs[pfb_id].descriptor,
+		pdf_new_name ("StemV"),  /* StemV is required, StemH
+					    is not */
+		pdf_new_number (STEMV)); /* Use a default value */
+  /* You don't need a fontfile for the standard fonts */
+  if (pfb_id >= 0)
+    pdf_add_dict (pfbs[pfb_id].descriptor,
+		  pdf_new_name ("FontFile"),
+		  type1_fontfile (pfb_id));
+
+  pdf_add_dict (pfbs[pfb_id].descriptor,
+		pdf_new_name ("Flags"),
+		pdf_new_number (SYMBOLIC));  /* Treat all fonts as symbolic */
+  return;
+}
+
 static int type1_pfb_id (const char *pfb_name, int encoding_id, int remap)
 {
   int i;
@@ -1074,7 +1182,6 @@ static int type1_pfb_id (const char *pfb_name, int encoding_id, int remap)
     pfbs[i].direct = pdf_new_stream(STREAM_COMPRESS);
     pfbs[i].indirect = pdf_ref_obj (pfbs[i].direct);
     pfbs[i].encoding_id = encoding_id;
-    pfbs[i].descriptor = pdf_new_dict ();
     if (partial_enabled) {
       pfbs[i].fontname = NEW (strlen(short_fontname)+8, char);
       strcpy (pfbs[i].fontname, short_fontname);
@@ -1085,6 +1192,7 @@ static int type1_pfb_id (const char *pfb_name, int encoding_id, int remap)
       pfbs[i].fontname = NEW (strlen(short_fontname)+1, char);
       strcpy (pfbs[i].fontname, short_fontname);
     }
+    type1_start_font_descriptor(i);
     if (short_fontname)
       RELEASE (short_fontname);
   }
@@ -1151,90 +1259,10 @@ static void do_pfb (int pfb_id)
 		pdf_new_number (length2));
   pdf_add_dict (stream_dict, pdf_new_name("Length3"),
 		pdf_new_number (length3));
-  /* Finally, make the descriptor */
-  type1_fill_font_descriptor (pfbs[pfb_id].descriptor, pfb_id);
+  /* Finally, flush the descriptor */
   pdf_release_obj (pfbs[pfb_id].descriptor);
   if (verbose > 1)
     fprintf (stderr, "Embedded size: %ld bytes\n", length1+length2+length3);
-  return;
-}
-
-
-#define FIXED_WIDTH 1
-#define SERIF 2
-#define STANDARD 32
-#define ITALIC 64
-#define SYMBOLIC 4   /* Fonts that don't have Adobe encodings (e.g.,
-			cmr, should be set to be symbolic */
-#define STEMV 80
-
-static void type1_fill_font_descriptor (pdf_obj *font_descriptor, int pfb_id)
-{
-  pdf_obj *tmp1;
-  int flags;
-  double italic_angle;
-  pdf_add_dict (font_descriptor,
-		pdf_new_name ("Type"),
-		pdf_new_name ("FontDescriptor"));
-  /* For now, insert dummy values */
-  pdf_add_dict (font_descriptor,
-		pdf_new_name ("CapHeight"),
-		pdf_new_number (1000.0));
-  {
-    double max_height, max_depth, max_width;
-    max_height = 1000.0;
-    max_depth = -1000.0;
-    max_width = 1000.0;
-    pdf_add_dict (font_descriptor,
-		  pdf_new_name ("Ascent"),
-		  pdf_new_number (ROUND(max_height,0.01)));
-    pdf_add_dict (font_descriptor,
-		  pdf_new_name ("Descent"),
-		  pdf_new_number (ROUND(-max_depth,0.01)));
-    tmp1 = pdf_new_array ();
-    pdf_add_array (tmp1, pdf_new_number(-1000.0));
-    pdf_add_array (tmp1,
-		   pdf_new_number(-1000.0));
-    pdf_add_array (tmp1,
-		   pdf_new_number(1000.0));
-    pdf_add_array (tmp1,
-		   pdf_new_number(1000.0));
-    pdf_add_dict (font_descriptor, pdf_new_name ("FontBBox"), tmp1);
-    pdf_add_dict (font_descriptor,
-		  pdf_new_name ("FontName"),
-		  pdf_new_name (type1_fontname(pfb_id)));
-  }
-#ifndef M_PI
-  #define M_PI (4.0*atan(1.0))
-#endif
-  italic_angle = 0.0;
-  pdf_add_dict (font_descriptor,
-		pdf_new_name ("ItalicAngle"),
-		pdf_new_number(italic_angle));
-  pdf_add_dict (font_descriptor,
-		pdf_new_name ("XHeight"),
-		pdf_new_number (500.0));
-  pdf_add_dict (font_descriptor,
-		pdf_new_name ("StemV"),  /* This is required */
-		pdf_new_number (STEMV));
-  /* You don't need a fontfile for the standard fonts */
-  if (pfb_id >= 0)
-    pdf_add_dict (font_descriptor,
-		  pdf_new_name ("FontFile"),
-		  type1_fontfile (pfb_id));
-
-  /* Take care of flags */
-  {
-    flags = 0;
-    if (italic_angle != 0.0)
-      flags += ITALIC;
-/*  if (tfm_is_fixed_width(tfm_font_id)) */
-       flags += FIXED_WIDTH;
-    flags += SYMBOLIC;
-    pdf_add_dict (font_descriptor,
-		  pdf_new_name ("Flags"),
-		  pdf_new_number (flags));
-  }
   return;
 }
 
