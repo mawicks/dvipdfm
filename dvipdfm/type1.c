@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.109 2000/07/11 22:28:48 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.110 2000/07/12 00:05:07 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -44,7 +44,6 @@
 #include "twiddle.h"
 
 #define DEFAULT_MAP_FILE "t1fonts.map"
-static void type1_start_font_descriptor (int pfb_id);
 
 static unsigned char verbose = 0, really_quiet = 0;
 
@@ -429,6 +428,13 @@ static void do_a_standard_enc(char **glyphs, char **encoding)
     strcpy (glyphs[i], encoding[i]);
   }
 }
+#define FIXED_WIDTH 1
+#define SERIF 2
+#define STANDARD 32
+#define ITALIC 64
+#define SYMBOLIC 4   /* Fonts that don't have Adobe encodings (e.g.,
+			cmr, should be set to be symbolic */
+#define STEMV 80
 
 static unsigned long parse_header (unsigned char *filtered, unsigned char *buffer,
 			  unsigned long length, int pfb_id,
@@ -474,10 +480,10 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
      state 2: Saw /Encoding
      state 3: Saw "dup" in state 2
      state 4: Saw a number in state 3
-     state 5: Saw a /glyphname in state 4
-     state 6: Saw a /FontBBox in state 0
+     state 5: Saw /glyphname in state 4
+     state 6: Saw /FontBBox in state 0
      state 7: Saw a '{' or a '[' in state 6  
-     state 8: Saw a '}' or a ']' in state 6  */
+     state 8: Saw /ItalicAngle in state 0 */
   /* As the parser operates, start always points to the next point in
      the buffer */
   start = (char *) buffer;
@@ -538,6 +544,8 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
 	  state = 2;
 	} else if (state == 0 && !strcmp (ident, "FontBBox")) {
 	  state = 6;
+	} else if (state == 0 && !strcmp (ident, "ItalicAngle")) {
+	  state = 8;
 	} else if (state == 1) {
 	  filtered_pointer += sprintf ((char *)filtered_pointer, "/%s ",
 				       pfbs[pfb_id].fontname);
@@ -620,7 +628,6 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
       state = 2;
       break;
     case 6:
-      fprintf (stderr, "\nstate=6\n");
       switch (*start) {
       case '[':
       case '{': 
@@ -629,32 +636,59 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
 	break;
       default:
 	state = 0;	/* Something's probably wrong */
-	fprintf (stderr, "\nUnexpected token after FontBBox.  Struggling along\n");
+	fprintf (stderr, "\nUnexpected token after FontBBox.   Struggling along\n");
+	dump (start, end);
       }
+      break;
     case 7:
-      fprintf (stderr, "\nstate=7\n");
       switch (*start) {
-      case '[':
-      case '{':
+      case ']':
+      case '}':
 	start += 1 ;
 	state = 0;
 	break;
+      case '{':
+      case '[':
       case '(':
-      case '}':
-      case ']':
       case '/':
 	state = 0;	/* Something's probably wrong */
 	fprintf (stderr, "\nUnexpected token in FontBBox array.  Struggling along\n");
+	dump (start, end);
 	break;
       default:
 	ident = parse_ident (&start, end);
-	fprintf (stderr, "\nbstate=7,ident=%s\n", ident);
 	if ((ident) && is_a_number (ident)) {
 	  pdf_obj *tmp = pdf_lookup_dict (pfbs[pfb_id].descriptor,
 					  "FontBBox");
 	  pdf_add_array (tmp, pdf_new_number (atof (ident)));
-	  RELEASE (ident);
 	}
+	if (ident)
+	  RELEASE (ident);
+      }
+      break;
+    case 8:
+      switch (*start) {
+      case '{': case '}': case '[': case ']': case '/':
+	state = 0;
+	break;
+      default:
+	ident = parse_ident (&start, end);
+	if ((ident) && is_a_number (ident)) {
+	  double italic = atof(ident);
+	  if (italic != 0.0) {
+	    int flags = (int) pdf_number_value(pdf_lookup_dict (pfbs[pfb_id].descriptor,
+								"Flags"));
+	    pdf_add_dict (pfbs[pfb_id].descriptor, 
+			  pdf_new_name ("ItalicAngle"),
+			  pdf_new_number (italic));
+	    pdf_add_dict (pfbs[pfb_id].descriptor,
+			  pdf_new_name ("Flags"),
+			  pdf_new_number (flags+ITALIC));
+	  }
+	}
+	if (ident)
+	  RELEASE (ident);
+	state = 0;
       }
     }
     skip_white (&start, end);
@@ -1103,13 +1137,6 @@ static void mangle_fontname(char *fontname)
   fontname[6] = '+';
 }
 
-#define FIXED_WIDTH 1
-#define SERIF 2
-#define STANDARD 32
-#define ITALIC 64
-#define SYMBOLIC 4   /* Fonts that don't have Adobe encodings (e.g.,
-			cmr, should be set to be symbolic */
-#define STEMV 80
 
 /* This routine builds a default font descriptor with dummy values
    filled in for the required keys.  As the pfb file is parsed,
@@ -1130,13 +1157,13 @@ static void type1_start_font_descriptor (int pfb_id)
   /* For now, insert dummy values */
   pdf_add_dict (pfbs[pfb_id].descriptor,
 		pdf_new_name ("CapHeight"),
-		pdf_new_number (0.0));
+		pdf_new_number (850.0)); /* This number is arbitrary */
   pdf_add_dict (pfbs[pfb_id].descriptor,
 		pdf_new_name ("Ascent"),
-		pdf_new_number (0.0));
+		pdf_new_number (850.0));	/* This number is arbitrary */
   pdf_add_dict (pfbs[pfb_id].descriptor,
 		pdf_new_name ("Descent"),
-		pdf_new_number (0.0));
+		pdf_new_number (-200.0));
   tmp1 = pdf_new_array ();
   pdf_add_dict (pfbs[pfb_id].descriptor, pdf_new_name ("FontBBox"), tmp1);
   pdf_add_dict (pfbs[pfb_id].descriptor,
