@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.77 2000/06/28 02:53:17 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.78 2000/06/28 04:02:16 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1003,7 +1003,9 @@ pdf_obj *embed_image (char *filename, struct xform_info *p,
 			   res_name, x_user, y_user);
     }
     else{
-      fprintf (stderr, "\nNot a supported image type.\n");
+      fprintf (stderr, "<?>");
+      result = ps_include (kpse_file_name, p,
+			   res_name, x_user, y_user);
     }
     FCLOSE (image_file);
     fprintf (stderr, ")");
