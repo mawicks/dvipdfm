@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.53 1998/12/24 05:12:46 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.54 1998/12/31 18:41:57 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -202,8 +202,8 @@ static void string_mode (mpt_t xpos, mpt_t ypos)
     }
     else {
       dely = ypos - text_yorigin;
-      len += sprintf (format_buffer+len, " %.2f %.2f TD[(",
-		      delx*dvi2pts, dely*dvi2pts);
+      len += sprintf (format_buffer+len, " %.7g %.7g TD[(",
+		      ROUND(delx*dvi2pts,0.01), ROUND(dely*dvi2pts,0.01));
       text_leading = dely;
       text_xorigin = xpos;
       text_yorigin = ypos;
@@ -230,7 +230,7 @@ static void dev_set_font (int font_id)
 {
   int len = 0;
   text_mode();
-  len = sprintf (format_buffer, " /%s %.2f Tf", dev_font[font_id].short_name,
+  len = sprintf (format_buffer, "/%s %.6g Tf", dev_font[font_id].short_name,
 		 dev_font[font_id].ptsize);
   pdf_doc_add_to_page (format_buffer, len);
   /* Add to Font list in Resource dictionary for this page */
@@ -604,6 +604,8 @@ int dev_locate_font (char *tex_name, mpt_t ptsize)
 			    new short name */
     int type1_id = -1;
     dev_font[thisfont].tfm_font_id = tfm_open (tex_name);
+    dev_font[i].short_name[0] = 'F';
+    sprintf (dev_font[i].short_name+1, "%d", n_phys_fonts+1);
     type1_id = type1_font (tex_name, 
 			   dev_font[thisfont].tfm_font_id,
 			   dev_font[thisfont].short_name);
@@ -611,10 +613,10 @@ int dev_locate_font (char *tex_name, mpt_t ptsize)
     if (type1_id >= 0) { /* If we got one, it must be a physical font */
       dev_font[thisfont].font_resource = type1_font_resource (type1_id);
       dev_font[thisfont].used_chars = type1_font_used (type1_id);
-      dev_font[i].short_name[0] = 'F';
-      sprintf (dev_font[i].short_name+1, "%d", ++n_phys_fonts);
+      n_phys_fonts +=1 ;
     } else { /* No physical font corresponding to this name */
       thisfont = -1;
+      dev_font[thisfont].short_name[0] = 0;
     }
   } else {	/* Font name was already in table*/
     /* Copy the parts that do not depend on point size */
@@ -636,7 +638,7 @@ int dev_locate_font (char *tex_name, mpt_t ptsize)
 
   if (thisfont >=0) {
     dev_font[thisfont].mptsize = ptsize;
-    dev_font[thisfont].ptsize = ptsize*dvi2pts;
+    dev_font[thisfont].ptsize = ROUND(ptsize*dvi2pts,0.01);
     dev_font[thisfont].tex_name = NEW (strlen(tex_name)+1, char);
     strcpy (dev_font[thisfont].tex_name, tex_name);
     n_dev_fonts +=1;

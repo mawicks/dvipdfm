@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.46 1998/12/30 19:36:11 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.47 1998/12/31 18:41:57 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -1057,7 +1057,7 @@ static pdf_obj *type1_font_descriptor (const char *pfb_name, int encoding_id,
   flags = 0;
   if (italicangle != 0.0) flags += ITALIC;
   if (isfixed) flags += FIXED_WIDTH;
-  flags += STANDARD;
+  flags += SYMBOLIC;
   pdf_add_dict (font_descriptor,
 		pdf_new_name ("Flags"),
 		pdf_new_number (flags));
