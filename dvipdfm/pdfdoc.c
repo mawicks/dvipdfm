@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.37 1999/01/06 02:40:29 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.38 1999/01/06 02:54:04 mwicks Exp $
  
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -771,14 +771,13 @@ void finish_articles(void)
   }
 }
 
-
-static void finish_last_page ()
+void pdf_doc_finish_page ()
 {
 #ifdef MEM_DEBUG
 MEM_START
 #endif  
   if (debug) {
-    fprintf (stderr, "(finish_last_page)");
+    fprintf (stderr, "(pdf_doc_finish_page)");
   }
   finish_pending_xobjects();
   /* Flush this page */
@@ -932,9 +931,6 @@ MEM_START
   if (page_count >= max_pages) {
     resize_pages(max_pages+PAGES_ALLOC_SIZE);
   }
-  if (this_page_contents != NULL) {
-    finish_last_page();
-  }
   /* Was this page already instantiated by a forward reference to it? */
   if (pages[page_count].page_ref == NULL) {
     /* If not, create it. */
@@ -983,9 +979,6 @@ void pdf_doc_creator (char *s)
 void pdf_doc_close ()
 {
   if (debug) fprintf (stderr, "pdf_doc_finish:\n");
-  if (this_page_contents != NULL) {
-    finish_last_page();
-  }
   /* Following things were kept around so user can add dictionary
      items */
   finish_docinfo();
