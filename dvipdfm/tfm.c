@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.28 1999/09/22 02:26:17 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.28.8.1 2000/07/24 23:37:27 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -40,28 +40,25 @@ static char tfm_debug = 0;
 
 struct a_tfm
 {
-  UNSIGNED_PAIR wlenfile;
-  UNSIGNED_PAIR wlenheader;
-  UNSIGNED_PAIR bc;
-  UNSIGNED_PAIR ec;
-  UNSIGNED_PAIR nwidths;
-  UNSIGNED_PAIR nheights;
-  UNSIGNED_PAIR ndepths;
-  UNSIGNED_PAIR nitcor;
-  UNSIGNED_PAIR nlig;
-  UNSIGNED_PAIR nkern;
-  UNSIGNED_PAIR nextens;
-  UNSIGNED_PAIR nfonparm;
+  UNSIGNED_QUAD wlenfile;
+  UNSIGNED_QUAD wlenheader;
+  UNSIGNED_QUAD bc;
+  UNSIGNED_QUAD ec;
+  UNSIGNED_QUAD nwidths;
+  UNSIGNED_QUAD nheights;
+  UNSIGNED_QUAD ndepths;
+  UNSIGNED_QUAD nitcor;
+  UNSIGNED_QUAD nlig;
+  UNSIGNED_QUAD nkern;
+  UNSIGNED_QUAD nextens;
+  UNSIGNED_QUAD nfonparm;
+  UNSIGNED_QUAD font_direction;	/* Used only in OFMs.  TFMs don't have
+				 this field*/
   SIGNED_QUAD *header;
   UNSIGNED_QUAD *char_info;
   SIGNED_QUAD *width;
   SIGNED_QUAD *height;
   SIGNED_QUAD *depth;
-  SIGNED_QUAD *italic;
-  SIGNED_QUAD *lig_kern;
-  SIGNED_QUAD *kern;
-  SIGNED_QUAD *exten;
-  SIGNED_QUAD *param;
   char *tex_name;
   fixword *unpacked_widths;
   fixword *unpacked_heights;
@@ -81,7 +78,12 @@ static void need_more_tfms (unsigned n)
 
 static void invalid_tfm_file (void)
 {
-  ERROR ("tfm_open: Something is wrong.  Are you sure this is a valid TFM file?\n");
+  ERROR ("Something is wrong.  Are you sure this is a valid TFM file?\n");
+}
+
+static void invalid_ofm_file (void)
+{
+  ERROR ("Something is wrong.  Are you sure this is a valid OFM file?\n");
 }
 
 /* External Routine */
@@ -97,11 +99,7 @@ void tfm_set_debug (void)
   tfm_debug = 1;
 }
 
-
-FILE *tfm_file;
-unsigned tfm_file_size;
-
-static unsigned int sum_of_tfm_sizes (struct a_tfm *a_tfm)
+static UNSIGNED_PAIR sum_of_tfm_sizes (struct a_tfm *a_tfm)
 {
   unsigned long result = 6;
   result += (a_tfm -> ec - a_tfm -> bc + 1);
@@ -117,8 +115,25 @@ static unsigned int sum_of_tfm_sizes (struct a_tfm *a_tfm)
   return result;
 }
 
+static SIGNED_QUAD sum_of_ofm_sizes (struct a_tfm *a_tfm)
+{
+  unsigned long result = 14;
+  result += 2*(a_tfm -> ec - a_tfm -> bc + 1);
+  result += a_tfm -> wlenheader;
+  result += a_tfm -> nwidths;
+  result += a_tfm -> nheights;
+  result += a_tfm -> ndepths;
+  result += a_tfm -> nitcor;
+  result += 2*(a_tfm -> nlig);
+  result += a_tfm -> nkern;
+  result += 2*(a_tfm -> nextens);
+  result += a_tfm -> nfonparm;
+  return result;
+}
 
-static void get_sizes (struct a_tfm *a_tfm)
+
+static void get_sizes (FILE *tfm_file, SIGNED_QUAD tfm_file_size,
+		       struct a_tfm *a_tfm)
 {
   a_tfm -> wlenfile = get_unsigned_pair (tfm_file);
   a_tfm -> wlenheader = get_unsigned_pair (tfm_file);
@@ -139,31 +154,65 @@ static void get_sizes (struct a_tfm *a_tfm)
     invalid_tfm_file();
   if (tfm_debug) {
     fprintf (stderr, "Computed size (words)%d\n", sum_of_tfm_sizes (a_tfm));
-    fprintf (stderr, "Stated size (words)%d\n", a_tfm -> wlenfile);
-    fprintf (stderr, "Actual size (bytes)%d\n", tfm_file_size);
+    fprintf (stderr, "Stated size (words)%ld\n", a_tfm -> wlenfile);
+    fprintf (stderr, "Actual size (bytes)%ld\n", tfm_file_size);
+  }
+  return;
+}
+
+static void ofm_get_sizes (FILE *ofm_file,  UNSIGNED_QUAD ofm_file_size,
+			   struct a_tfm *a_tfm)
+{
+  SIGNED_QUAD level;
+  if ((level = get_signed_quad(ofm_file)) != 0) {
+    ERROR ("OFM Level > 0.  Can't handle this file");
+  }
+  a_tfm -> wlenfile = get_signed_quad (ofm_file);
+  a_tfm -> wlenheader = get_signed_quad (ofm_file);
+  a_tfm -> bc = get_signed_quad (ofm_file);
+  a_tfm -> ec = get_signed_quad (ofm_file);
+  if (a_tfm -> ec < a_tfm -> bc)
+    invalid_ofm_file();
+  a_tfm -> nwidths = get_signed_quad (ofm_file);
+  a_tfm -> nheights = get_signed_quad (ofm_file);
+  a_tfm -> ndepths = get_signed_quad (ofm_file);
+  a_tfm -> nitcor = get_signed_quad (ofm_file);
+  a_tfm -> nlig = get_signed_quad (ofm_file);
+  a_tfm -> nkern = get_signed_quad (ofm_file);
+  a_tfm -> nextens = get_signed_quad (ofm_file);
+  a_tfm -> nfonparm = get_signed_quad (ofm_file);
+  a_tfm -> font_direction = get_signed_quad (ofm_file);
+  if ( a_tfm -> wlenfile != ofm_file_size/4 ||
+      sum_of_ofm_sizes (a_tfm) != a_tfm -> wlenfile)
+    invalid_ofm_file();
+  if (tfm_debug) {
+    fprintf (stderr, "Computed size (words)%ld\n", sum_of_ofm_sizes (a_tfm));
+    fprintf (stderr, "Stated size (words)%ld\n", a_tfm -> wlenfile);
+    fprintf (stderr, "Actual size (bytes)%ld\n", ofm_file_size);
   }
   return;
 }
 
 static void dump_sizes (struct a_tfm *a_tfm)
 {
-  fprintf (stderr, "wlenfile: %d\n", a_tfm -> wlenfile);
-  fprintf (stderr, "wlenheader: %d\n", a_tfm -> wlenheader);
-  fprintf (stderr, "bc: %d\n", a_tfm -> bc);
-  fprintf (stderr, "ec: %d\n", a_tfm -> ec);
-  fprintf (stderr, "nwidths: %d\n", a_tfm -> nwidths);
-  fprintf (stderr, "nheights: %d\n", a_tfm -> nheights);
-  fprintf (stderr, "ndepths: %d\n", a_tfm -> ndepths);
-  fprintf (stderr, "nitcor: %d\n", a_tfm -> nitcor);
-  fprintf (stderr, "nlig: %d\n", a_tfm -> nlig);
-  fprintf (stderr, "nkern: %d\n", a_tfm -> nkern);
-  fprintf (stderr, "nextens: %d\n", a_tfm -> nextens);
-  fprintf (stderr, "nfonparm: %d\n", a_tfm -> nfonparm);
+  fprintf (stderr, "wlenfile: %ld\n", a_tfm -> wlenfile);
+  fprintf (stderr, "wlenheader: %ld\n", a_tfm -> wlenheader);
+  fprintf (stderr, "bc: %ld\n", a_tfm -> bc);
+  fprintf (stderr, "ec: %ld\n", a_tfm -> ec);
+  fprintf (stderr, "nwidths: %ld\n", a_tfm -> nwidths);
+  fprintf (stderr, "nheights: %ld\n", a_tfm -> nheights);
+  fprintf (stderr, "ndepths: %ld\n", a_tfm -> ndepths);
+  fprintf (stderr, "nitcor: %ld\n", a_tfm -> nitcor);
+  fprintf (stderr, "nlig: %ld\n", a_tfm -> nlig);
+  fprintf (stderr, "nkern: %ld\n", a_tfm -> nkern);
+  fprintf (stderr, "nextens: %ld\n", a_tfm -> nextens);
+  fprintf (stderr, "nfonparm: %ld\n", a_tfm -> nfonparm);
   return;
 }
 
 
-static void get_fix_word_array (SIGNED_QUAD *a_word, int length)
+static void get_fix_word_array (FILE *tfm_file, SIGNED_QUAD *a_word,
+				SIGNED_QUAD length)
 {
   unsigned i;
   for (i=0; i< length; i++) {
@@ -172,7 +221,8 @@ static void get_fix_word_array (SIGNED_QUAD *a_word, int length)
   return;
 }
 
-static void get_unsigned_quad_array (UNSIGNED_QUAD *a_word, int length)
+static void get_unsigned_quad_array (FILE *tfm_file, UNSIGNED_QUAD *a_word,
+				     SIGNED_QUAD length)
 {
   unsigned i;
   for (i=0; i< length; i++) {
@@ -181,61 +231,25 @@ static void get_unsigned_quad_array (UNSIGNED_QUAD *a_word, int length)
   return;
 }
 
-static void do_fix_word_array (SIGNED_QUAD **a, UNSIGNED_PAIR len)
+static void do_fix_word_array (FILE *tfm_file, SIGNED_QUAD **a, SIGNED_QUAD len)
 {
   if (len != 0) {
     *a = NEW (len, SIGNED_QUAD);
-    get_fix_word_array (*a, len);
+    get_fix_word_array (tfm_file, *a, len);
   } else
     *a = NULL;
   return;
 }
 
-static void do_unsigned_quad_array (UNSIGNED_QUAD **a, UNSIGNED_PAIR len)
+static void do_unsigned_quad_array (FILE *tfm_file, UNSIGNED_QUAD **a, UNSIGNED_PAIR len)
 {
   if (len != 0) {
     *a = NEW (len, UNSIGNED_QUAD);
-    get_unsigned_quad_array (*a, len);
+    get_unsigned_quad_array (tfm_file, *a, len);
   } else
     *a = NULL;
   return;
 }
-
-static void get_arrays (struct a_tfm *a_tfm)
-{
-  if (tfm_debug) fprintf (stderr, "Reading %d word header\n",
-			  a_tfm->wlenheader);
-  do_fix_word_array (&(a_tfm -> header), a_tfm -> wlenheader);
-  if (tfm_debug) fprintf (stderr, "Reading %d char_infos\n",
-			  (a_tfm->ec)-(a_tfm->bc)+1);
-  do_unsigned_quad_array (&(a_tfm -> char_info), (a_tfm->ec)-(a_tfm->bc)+1);
-  if (tfm_debug) fprintf (stderr, "Reading %d widths\n",
-			  a_tfm -> nwidths);
-  do_fix_word_array (&(a_tfm -> width), a_tfm -> nwidths);
-  if (tfm_debug) fprintf (stderr, "Reading %d heights\n",
-			  a_tfm -> nheights);
-  do_fix_word_array (&(a_tfm -> height), a_tfm -> nheights);
-  if (tfm_debug) fprintf (stderr, "Reading %d depths\n",
-			  a_tfm -> ndepths);
-  do_fix_word_array (&(a_tfm -> depth), a_tfm -> ndepths);
-  if (tfm_debug) fprintf (stderr, "Reading %d italic corrections\n",
-			  a_tfm -> nitcor);
-  do_fix_word_array (&(a_tfm -> italic), a_tfm -> nitcor);
-  if (tfm_debug) fprintf (stderr, "Reading %d ligatures\n",
-			  a_tfm -> nlig);
-  do_fix_word_array (&(a_tfm -> lig_kern), a_tfm -> nlig);
-  if (tfm_debug) fprintf (stderr, "Reading %d kerns\n",
-			  a_tfm -> nkern);
-  do_fix_word_array (&(a_tfm -> kern), a_tfm -> nkern);
-  if (tfm_debug) fprintf (stderr, "Reading %d extens\n",
-			  a_tfm -> nextens);
-  do_fix_word_array (&(a_tfm -> exten), a_tfm -> nextens);
-  if (tfm_debug) fprintf (stderr, "Reading %d fontparms\n",
-			  a_tfm -> nfonparm);
-  do_fix_word_array (&(a_tfm -> param), a_tfm -> nfonparm);
-  return;
-}
-
 static void unpack_widths(struct a_tfm *a_tfm)
 {
   int i;
@@ -287,13 +301,89 @@ static void unpack_depths(struct a_tfm *a_tfm)
   return;
 }
 
-static void get_tfm (struct a_tfm *a_tfm)
+static void get_arrays (FILE *tfm_file, struct a_tfm *a_tfm)
 {
-  get_sizes (a_tfm);
-  get_arrays (a_tfm);
+  if (tfm_debug) fprintf (stderr, "Reading %ld word header\n",
+			  a_tfm->wlenheader);
+  do_fix_word_array (tfm_file, &(a_tfm -> header), a_tfm -> wlenheader);
+  if (tfm_debug) fprintf (stderr, "Reading %ld char_infos\n",
+			  (a_tfm->ec)-(a_tfm->bc)+1);
+  do_unsigned_quad_array (tfm_file, &(a_tfm -> char_info), (a_tfm->ec)-(a_tfm->bc)+1);
+  if (tfm_debug) fprintf (stderr, "Reading %ld widths\n",
+			  a_tfm -> nwidths);
+  do_fix_word_array (tfm_file, &(a_tfm -> width), a_tfm -> nwidths);
+  if (tfm_debug) fprintf (stderr, "Reading %ld heights\n",
+			  a_tfm -> nheights);
+  do_fix_word_array (tfm_file, &(a_tfm -> height), a_tfm -> nheights);
+  if (tfm_debug) fprintf (stderr, "Reading %ld depths\n",
+			  a_tfm -> ndepths);
+  do_fix_word_array (tfm_file, &(a_tfm -> depth), a_tfm -> ndepths);
   unpack_widths (a_tfm);
   unpack_heights (a_tfm);
   unpack_depths (a_tfm);
+  return;
+}
+
+static void do_ofm_char_info (FILE *tfm_file, struct a_tfm *a_tfm,
+			      UNSIGNED_QUAD num_chars)
+{
+  unsigned i;
+  if (num_chars != 0) {
+    a_tfm -> unpacked_widths = NEW (num_chars, fixword);
+    a_tfm -> unpacked_heights = NEW (num_chars, fixword);
+    a_tfm -> unpacked_depths = NEW (num_chars, fixword);
+  }
+  for (i=0; i<num_chars; i++) {
+    UNSIGNED_PAIR width;
+    UNSIGNED_BYTE height;
+    UNSIGNED_BYTE depth;
+    width = get_unsigned_pair (tfm_file);
+    height = get_unsigned_byte (tfm_file);
+    depth = get_unsigned_byte (tfm_file);
+    /* Ignore remaining quad */
+    get_unsigned_quad (tfm_file);
+    (a_tfm->unpacked_widths)[i] = (a_tfm->width)[width];
+    (a_tfm->unpacked_heights)[i] = (a_tfm->height)[height];
+    (a_tfm->unpacked_depths)[i] = (a_tfm->depth)[depth];
+  }
+}
+
+
+static void ofm_get_arrays (FILE *tfm_file, struct a_tfm *a_tfm)
+{
+  if (tfm_debug) fprintf (stderr, "Reading %ld word header\n",
+			  a_tfm->wlenheader);
+  do_fix_word_array (tfm_file, &(a_tfm -> header), a_tfm -> wlenheader);
+  if (tfm_debug) fprintf (stderr, "Reading %ld char_infos\n",
+			  (a_tfm->ec)-(a_tfm->bc)+1);
+  do_ofm_char_info (tfm_file, a_tfm, (a_tfm->ec)-(a_tfm->bc)+1);
+  if (tfm_debug) fprintf (stderr, "Reading %ld widths\n",
+			  a_tfm -> nwidths);
+  do_fix_word_array (tfm_file, &(a_tfm -> width), a_tfm -> nwidths);
+  if (tfm_debug) fprintf (stderr, "Reading %ld heights\n",
+			  a_tfm -> nheights);
+  do_fix_word_array (tfm_file, &(a_tfm -> height), a_tfm -> nheights);
+  if (tfm_debug) fprintf (stderr, "Reading %ld depths\n",
+			  a_tfm -> ndepths);
+  do_fix_word_array (tfm_file, &(a_tfm -> depth), a_tfm -> ndepths);
+  return;
+}
+
+
+
+static void get_ofm (FILE *ofm_file, UNSIGNED_QUAD ofm_file_size,
+		     struct a_tfm *a_tfm)
+{
+  ofm_get_sizes (ofm_file, ofm_file_size, a_tfm);
+  ofm_get_arrays (ofm_file, a_tfm);
+  return;
+}
+
+static void get_tfm (FILE *tfm_file, UNSIGNED_QUAD tfm_file_size,
+		     struct a_tfm *a_tfm)
+{
+  get_sizes (tfm_file, tfm_file_size, a_tfm);
+  get_arrays (tfm_file, a_tfm);
   return;
 }
 
@@ -301,7 +391,9 @@ static void get_tfm (struct a_tfm *a_tfm)
 
 int tfm_open (const char *tfm_name)
 {
+  FILE *tfm_file;
   int i;
+  UNSIGNED_QUAD tfm_file_size;
   char *full_tfm_file_name;
   for (i=0; i<numtfms; i++) {
     if (!strcmp (tfm_name, tfm[i].tex_name))
@@ -323,7 +415,7 @@ int tfm_open (const char *tfm_name)
     }
     tfm[numtfms].tex_name = NEW (strlen(tfm_name)+1, char);
     strcpy (tfm[numtfms].tex_name, tfm_name);
-    get_tfm (&tfm[numtfms]);
+    get_tfm (tfm_file, tfm_file_size, &tfm[numtfms]);
     FCLOSE (tfm_file);
     if (tfm_verbose) {
       dump_sizes (&tfm[numtfms]);
@@ -348,16 +440,6 @@ void tfm_close_all(void)
       RELEASE (tfm[i].height);
     if (tfm[i].depth)
       RELEASE (tfm[i].depth);
-    if (tfm[i].italic)
-      RELEASE (tfm[i].italic);
-    if (tfm[i].lig_kern)
-      RELEASE (tfm[i].lig_kern);
-    if (tfm[i].kern)
-      RELEASE (tfm[i].kern);
-    if (tfm[i].exten)
-      RELEASE (tfm[i].exten);
-    if (tfm[i].param)
-      RELEASE (tfm[i].param);
     RELEASE (tfm[i].tex_name);
     RELEASE (tfm[i].unpacked_widths);
     RELEASE (tfm[i].unpacked_heights);
@@ -409,27 +491,6 @@ fixword tfm_get_fw_depth (int font_id, UNSIGNED_BYTE ch)
   if (tfm[font_id].unpacked_depths)
     return (tfm[font_id].unpacked_depths)[ch];
   return 0;
-}
-
-double tfm_get_it_slant (int font_id)
-{
-  if (tfm[font_id].param)
-    return (double) (tfm[font_id].param[0] / FWBASE);
-  else return 0.0;
-}
-
-double tfm_get_space (int font_id)
-{
-  if (tfm[font_id].param)
-    return (double) (tfm[font_id].param)[1] / FWBASE;
-  else return 0.0;
-}
-
-double tfm_get_x_height (int font_id)
-{
-  if (tfm[font_id].param)
-    return (double) (tfm[font_id].param)[4] / FWBASE;
-  else return 0.0;
 }
 
 fixword tfm_string_width (int font_id, unsigned char *s, unsigned len)
