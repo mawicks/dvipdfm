@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.56 1999/01/01 18:06:00 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.57 1999/01/05 03:10:01 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -198,12 +198,7 @@ static void string_mode (mpt_t xpos, mpt_t ypos)
        specials) */
   case TEXT_MODE:
     delx = xpos - text_xorigin;
-    if (delx == 0 &&
-	(abs (ypos-text_yorigin-text_leading) < 10)) {
-      len += sprintf (format_buffer+len, " T*[(");
-      text_yorigin += text_leading;
-    }
-    else {
+    {
       double rounded_delx, desired_delx;
       double rounded_dely, desired_dely;
       desired_delx = delx*dvi2pts+text_xerror;
