@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.33 1998/12/23 02:02:19 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.34 1998/12/23 02:37:24 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -286,11 +286,24 @@ static void clear_a_pfb (struct a_pfb *pfb)
   }
 }
 
+void parse_glyphs (unsigned char *buffer, unsigned long length,
+		   struct glyph *glyphs) 
+{
+  char *start, *end;
+  start = buffer, end = start+length;
+  int i = 0;
+  for (i=0; i<256; i++) {
+    glyphs[i].name = NULL;
+    glyphs[i].position = i;
+  }
+  
+}
+
 #define ASCII 1
 #define BINARY 2
 
 static unsigned long do_pfb_header (FILE *file, pdf_obj *stream,
-				    struct glyph *glyph)
+				    struct glyph *glyphs)
 {
   int i, ch;
   int stream_type;
@@ -313,6 +326,10 @@ static unsigned long do_pfb_header (FILE *file, pdf_obj *stream,
 	buffer[i] = '\n';  /* May not be portable to non-Unix
 			      systems */
     }
+    if (glyphs != NULL) {
+      parse_glyphs (buffer, length, glyphs);
+    }
+    
     pdf_add_stream (stream, (char *) buffer, nread);
   } else {
     fprintf (stderr, "Found only %ld out of %ld bytes\n", nread, length);
@@ -597,8 +614,9 @@ static void do_pfb (int pfb_id)
 			   (encodings[pfbs[pfb_id].encoding_id]).glyphs);
   }
   else {
+    struct glyph *glyphs = NEW (256, struct glyph);
     length1 = do_pfb_header (type1_binary_file, pfbs[pfb_id].direct,
-			     NULL);
+			     glyphs);
     length2 = do_pfb_body (type1_binary_file, pfb_id,
 			   NULL);
   }
