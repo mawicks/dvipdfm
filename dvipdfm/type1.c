@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.43 1998/12/26 03:35:12 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.44 1998/12/26 03:54:56 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -401,6 +401,7 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
 	lead = saved_lead;
 	state = 2;
       }
+      RELEASE (ident);
       break;
     case 4:
       if (*start == '/') {
@@ -528,9 +529,9 @@ int glyph_match (const void *key, const void *v)
   return (strcmp (key, s));
 }
 
-static unsigned long do_partial (unsigned char *filtered, unsigned char
-			*unfiltered, unsigned long length, 
-			char *chars_used, char **glyphs)
+static unsigned long do_partial_body (unsigned char *filtered, unsigned char
+				      *unfiltered, unsigned long length, 
+				      char *chars_used, char **glyphs)
 {
   char *start, *end, *tail, *ident;
   unsigned char *filtered_pointer;
@@ -582,23 +583,24 @@ static unsigned long do_partial (unsigned char *filtered, unsigned char
   }
   if (start >= end)
     ERROR ("Unexpected end of binary portion of PFB file");
-  /* At this point, we just before the beginning of the glyphs, just after
-     the word /CharStrings */
+  /* Copy what we have so far over to the new buffer */
+  memcpy (filtered_pointer, tail, start-tail);
+  /* Advance pointer into new buffer */
+  filtered_pointer += (start-tail);
+  /* At this point, start is positioned just before the beginning of the glyphs, just after
+     the word /CharStrings.  The earlier portion of the input buffer has
+     been copied to the output */
   {
     int nused = 0;
     int nleft;
     static char *used_glyphs[256];
     struct glyph *this_glyph;
     int i;
-    /* Copy what we have so far over to the new buffer */
-    memcpy (filtered_pointer, tail, start-tail);
-    /* Advance pointer into new buffer */
-    filtered_pointer += (start-tail);
     /* Build an array containing only those glyphs we need to embed */
     for (i=0; i<256; i++) {
       /* Don't add any glyph twice */
       if (chars_used[i] &&
-	  (nused == 0 ||
+	  (nused == 0 || /* Calling bsearch is unecessary if nused==0 */
 	  !bsearch (glyphs[i], used_glyphs, nused, sizeof (char *), glyph_match))) {
 	used_glyphs[nused] = glyphs[i];
 	nused += 1;
@@ -615,7 +617,7 @@ static unsigned long do_partial (unsigned char *filtered, unsigned char
       qsort (used_glyphs, nused, sizeof (char *), glyph_cmp); 
     }
     nleft = nused;
-    fprintf (stderr, "\nEmbedding %d glyphs\n", nleft);
+    fprintf (stderr, "\nEmbedding %d glyphs\n", nused);
     filtered_pointer += sprintf ((char *) filtered_pointer, " %d",
 				 nused);
     skip_white(&start, end);
@@ -666,7 +668,7 @@ static unsigned long do_partial (unsigned char *filtered, unsigned char
       ERROR ("Premature end of glyph definitions in font file");
     }
     if (nleft != 0)
-      ERROR ("Didn't find all the required glyphs in a font");
+      ERROR ("Didn't find all the required glyphs in the font");
     /* Include the rest of the file verbatim */
     memcpy (filtered_pointer, start, end-start);
     filtered_pointer += end-start;
@@ -704,9 +706,9 @@ static unsigned long do_pfb_body (FILE *file, int pfb_id,
 	buffer[i] = decrypt(buffer[i]);
       }
       /* Now we do the partial embedding */
-      length = do_partial (filtered, buffer, length, 
-			   pfbs[pfb_id].used_chars,
-			   glyphs);
+      length = do_partial_body (filtered, buffer, length, 
+				pfbs[pfb_id].used_chars,
+				glyphs);
       /* And reencrypt the whole thing */
       crypt_init (EEKEY);
       for (i=0; i<length; i++) {
