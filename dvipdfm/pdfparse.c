@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.c,v 1.15 1998/12/23 00:31:51 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.c,v 1.16 1998/12/23 06:52:41 mwicks Exp $
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
 
@@ -87,9 +87,9 @@ int is_a_number(const char *s)
 {
   int i;
   for (i=0; i<strlen(s); i++) {
-    if (i == 0 && *s == '-')
+    if (i == 0 && s[i] == '-')
       continue;
-    if (!isdigit (*s))
+    if (!isdigit (s[i]))
       return 0;
   }
   return 1;
@@ -363,6 +363,7 @@ pdf_obj *parse_pdf_hex_string (char **start, char *end)
 pdf_obj *parse_pdf_string (char **start, char *end)
 {
   pdf_obj *result;
+  int balance = 0;
   char *save;
   unsigned char *string;
   int strlength;
@@ -372,8 +373,9 @@ pdf_obj *parse_pdf_string (char **start, char *end)
   save = *start;
   string = NEW (end - *start, unsigned char);
   strlength = 0;
+  balance = 0;
   while (*start < end &&
-	 **start != ')') {
+	 (**start != ')' || balance > 0)) {
     if (**start == '\\')
       switch (*(++(*start))) {
       case 'n':
@@ -401,8 +403,13 @@ pdf_obj *parse_pdf_string (char **start, char *end)
 	  strlength+= 1;
 	}
       }
-    else
+    else {
+      if (**start == '(')
+	balance += 1;
+      if (**start == ')')
+	balance -= 1;
       string[strlength++] = *((*start)++);
+    }
   }
   if (*start >= end) {
     fprintf (stderr, "\nString object ended prematurely\n");

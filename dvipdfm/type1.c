@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.34 1998/12/23 02:37:24 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.35 1998/12/23 06:52:41 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -54,15 +54,13 @@ struct font_record
   char *enc_name;
 };
 
-struct glyph 
-{
-  char *name;
-  int position;
-};
-
 struct encoding {
-  struct glyph glyphs[256];
   char *enc_name;
+  /* The following array isn't very efficient. It is constructed
+     by peeling the names from the encoding object.  It makes
+     it easier to construct an array in this format when the
+     encoding must be obtained directly from the PFB file */
+  char *glyphs[256];
   pdf_obj *encoding_ref;
 } encodings[MAX_ENCODINGS];
 int num_encodings = 0;
@@ -100,24 +98,15 @@ pdf_obj *find_encoding_differences (pdf_obj *encoding)
   return result;
 }
 
-int CDECL cmp_glyph(const void *g1, const void *g2) 
-{
-  return strcmp(((struct glyph *) g1) -> name, ((struct glyph *) g2) ->
-		name);
-}
-
-static void save_glyphs (struct glyph *glyph, pdf_obj *encoding)
+static void save_glyphs (char **glyph, pdf_obj *encoding)
 {
   int i;
   char *glyph_name;
   for (i=0; i<256; i++) {
     glyph_name = pdf_string_value (pdf_get_array(encoding, i));
-    glyph[i].name = NEW (strlen(glyph_name)+1, char);
-    strcpy (glyph[i].name, glyph_name);
-    glyph[i].position = i;
+    glyph[i] = NEW (strlen(glyph_name)+1, char);
+    strcpy (glyph[i], glyph_name);
   }
-  qsort (glyph, 256, sizeof(struct glyph), cmp_glyph);
-  return;
 }
 
 int get_encoding (const char *enc_name)
@@ -177,8 +166,7 @@ int get_encoding (const char *enc_name)
     }
     RELEASE (buffer);
     differences = find_encoding_differences (encoding);
-    /* Save glyph positions in a format easier for partial font
-       embedding */
+    /* Put the glyph names into a conventional array */
     save_glyphs (encodings[num_encodings].glyphs, encoding);
     pdf_release_obj (encoding);
     result = pdf_new_dict();
@@ -189,12 +177,15 @@ int get_encoding (const char *enc_name)
     pdf_add_dict (result, pdf_new_name ("Differences"),
 		  differences);
   }
-  result_ref = pdf_ref_obj (result);
-  pdf_release_obj (result);
-  encodings[num_encodings].encoding_ref = result_ref;
-  encodings[num_encodings].enc_name = NEW (strlen(enc_name)+1, char);
-  strcpy (encodings[num_encodings].enc_name, enc_name);
-  return num_encodings++;
+  {
+    result_ref = pdf_ref_obj (result);
+    pdf_release_obj (result);
+    encodings[num_encodings].encoding_ref = result_ref;
+    encodings[num_encodings].enc_name = NEW (strlen(enc_name)+1, char);
+    strcpy (encodings[num_encodings].enc_name, enc_name);
+    return num_encodings++;
+  }
+  
 }
 
 struct font_record *get_font_record (const char *tex_name)
@@ -286,24 +277,112 @@ static void clear_a_pfb (struct a_pfb *pfb)
   }
 }
 
-void parse_glyphs (unsigned char *buffer, unsigned long length,
-		   struct glyph *glyphs) 
+static void parse_glyphs (unsigned char *buffer, unsigned long length,
+			  char **glyphs)
 {
-  char *start, *end;
-  start = buffer, end = start+length;
+  char *start, *end, *ident;
+  double last_number = 0.0;
+  char *glyph = NULL;
   int i = 0;
+  fprintf (stderr, "parse_glyphs:\n");
+  start = (char *) buffer;
+  end = start+length;
   for (i=0; i<256; i++) {
-    glyphs[i].name = NULL;
-    glyphs[i].position = i;
+    glyphs[i] = strcpy (NEW (strlen(".notdef")+1, char),
+			     ".notdef");
   }
-  
+  {
+    /* State definitions 
+       state 0: Initial state
+       state 1: Saw /Encoding 
+       state 2: Saw a number after 1
+       state 3: Saw a /glyphname after 2 */
+    pdf_obj *pdfobj;
+    int state = 0;
+    skip_white (&start, end);
+    while (start < end) {
+      switch (state) {
+      case 0:
+      case 1:
+	switch (*start) {
+	case '[':
+	case ']':  
+	case '{':
+	case '}':
+	  start += 1;
+	  if (state >= 1)
+	    state = 1;
+	  break;
+	case '(':
+	  pdfobj = parse_pdf_string (&start, end);
+	  if (pdfobj == NULL) {
+	    ERROR ("parse_glyphs:  Error reading encoding from pfb header");
+	  }
+	  pdf_release_obj (pdfobj);
+	  if (state >= 1)
+	    state = 1;
+	  break;
+	case '/':
+	  start += 1;
+	  ident = parse_ident (&start, end);
+	  if (!strcmp (ident, "Encoding")) {
+	    state = 1;
+	  }
+	  RELEASE (ident);
+	  break;
+	default:
+	  ident = parse_ident (&start, end);
+	  if (state == 1 && 
+	      is_a_number (ident)) {
+	    last_number = atof (ident);
+	    state = 2;
+	  }
+	  RELEASE (ident);
+	  break;
+	}
+	break;
+      case 2:
+	if (*start == '/') {
+	  start += 1;
+	  glyph = parse_ident (&start, end);
+	  state = 3;
+	} else {
+	  state = 1;
+	}
+	break;
+      case 3:
+	ident = parse_ident (&start, end);
+	if (ident != NULL && !strcmp (ident, "put") && 
+	    (int) last_number <= 256 && (int) last_number >= 0) {
+	  if (glyphs[(int)last_number] != NULL) 
+	    RELEASE (glyphs[(int)last_number]);
+	  glyphs[(int)last_number] = glyph;
+	  fprintf (stderr, "Setting glyph (%s) to pos %d\n", glyph,
+		   (int)last_number);
+	}
+	else {
+	  RELEASE (glyph);
+	}
+	state = 1;
+	break;
+      }
+      skip_white (&start, end);
+    }
+  }
+  {
+    int i;
+    for (i=0; i<256; i++) {
+      fprintf (stderr, "(%d) = (%s)\n", i, glyphs[i]);
+    }
+    fprintf (stderr, "Leaving parse_glyphs\n");
+  }
 }
-
+  
 #define ASCII 1
 #define BINARY 2
 
 static unsigned long do_pfb_header (FILE *file, pdf_obj *stream,
-				    struct glyph *glyphs)
+				    char **glyphs)
 {
   int i, ch;
   int stream_type;
@@ -339,14 +418,25 @@ static unsigned long do_pfb_header (FILE *file, pdf_obj *stream,
   return length;
 }
 
-int CDECL search_glyph(const void *key, const void *glyph) 
+
+int glyph_cmp (const void *v1, const void *v2)
 {
-  return strcmp(key, ((struct glyph *) glyph) ->name);
+  char *s1, *s2;
+  s1 = *((char **) v1);
+  s2 = *((char **) v2);
+  return (strcmp (s1, s2));
+}
+
+int glyph_match (const void *key, const void *v)
+{
+  char *s;
+  s = *((char **) v);
+  return (strcmp (key, s));
 }
 
 static unsigned long do_partial (unsigned char *filtered, unsigned char
 			*unfiltered, unsigned long length, 
-			char *chars_used, struct glyph *glyphs)
+			char *chars_used, char **glyphs)
 {
   char *start, *end, *tail, *ident;
   unsigned char *filtered_pointer;
@@ -357,6 +447,7 @@ static unsigned long do_partial (unsigned char *filtered, unsigned char
   start += 4;
   /* Skip everything up to the charstrings section */
   while (start < end) {
+    pdf_obj *pdfobj;
     skip_white (&start, end);
     switch (*start) {
     case '[':
@@ -364,6 +455,10 @@ static unsigned long do_partial (unsigned char *filtered, unsigned char
     case '{':
     case '}':
       start += 1;
+      continue;
+    case '(':
+      pdfobj = parse_pdf_string (&start, end);
+      pdf_release_obj (pdfobj);
       continue;
     case '/':
       start += 1;
@@ -396,16 +491,25 @@ static unsigned long do_partial (unsigned char *filtered, unsigned char
   /* At this point, we just before the beginning of the glyphs, just after
      the word /CharStrings */
   {
-    int nused = 1; /* We always embed .notdef regardless */
+    int nused = 0;  /* We always embed .notdef regardless */
+    int nleft;
+    static char *used_glyphs[256];
     struct glyph *this_glyph;
     int i;
     /* Copy what we have so far over to the new buffer */
     memcpy (filtered_pointer, tail, start-tail);
     /* Advance pointer into new buffer */
     filtered_pointer += (start-tail);
-    /* Find out how many glyphs we are going to embed */
-    for (i=0; i<256; i++) nused += chars_used[i];
-    fprintf (stderr, "\nEmbedding %d glyphs\n", nused);
+    /* Build an array containing only those glyphs we need to embed */
+    for (i=0; i<256; i++) {
+      if (chars_used[i]) {
+	used_glyphs[nused] = glyphs[i];
+	nused += 1;
+      }
+    }
+    nleft = nused+1; /* Add one for .notdef */
+    qsort (used_glyphs, nused, sizeof (char *), glyph_cmp);
+    fprintf (stderr, "\nEmbedding %d glyphs\n", nleft);
     filtered_pointer += sprintf ((char *) filtered_pointer, " %d",
 				 nused);
     skip_white(&start, end);
@@ -427,7 +531,7 @@ static unsigned long do_partial (unsigned char *filtered, unsigned char
       start += 1;
       glyph = parse_ident (&start, end);
       fprintf (stderr, "(%s...", glyph);
-      this_glyph = bsearch (glyph, glyphs, 256, sizeof (struct glyph), search_glyph);
+      this_glyph = bsearch (glyph, used_glyphs, nused, sizeof (char *), glyph_match);
       /* Get the number that should follow the glyph name */
       ident = parse_ident (&start, end);
       if (!is_a_number (ident))
@@ -446,12 +550,12 @@ static unsigned long do_partial (unsigned char *filtered, unsigned char
       ident = parse_ident (&start, end);
       RELEASE (ident);
       skip_white (&start, end);
-      if ((this_glyph && chars_used[this_glyph->position]) ||
+      if (this_glyph ||
 	  !strcmp (glyph, ".notdef")) {
 	fprintf (stderr, "embedded)");
 	memcpy (filtered_pointer, tail, start-tail);
 	filtered_pointer += start-tail;
-	nused--;
+	nleft--;
       } else {
 	fprintf (stderr, "skipped)");
       }
@@ -460,7 +564,7 @@ static unsigned long do_partial (unsigned char *filtered, unsigned char
     if (start >= end) {
       ERROR ("Premature end of glyph definitions in font file");
     }
-    if (nused == 0)
+    if (nleft == 0)
       fprintf (stderr, "\nNo Missing Glyphs\n");
     else
       ERROR ("Didn't find all the required glyphs");
@@ -473,7 +577,7 @@ static unsigned long do_partial (unsigned char *filtered, unsigned char
 
 
 static unsigned long do_pfb_body (FILE *file, int pfb_id,
-				  struct glyph *glyphs)
+				  char **glyphs)
 {
   int i, ch;
   int stream_type;
@@ -614,7 +718,7 @@ static void do_pfb (int pfb_id)
 			   (encodings[pfbs[pfb_id].encoding_id]).glyphs);
   }
   else {
-    struct glyph *glyphs = NEW (256, struct glyph);
+    char **glyphs = NEW (256, char *);
     length1 = do_pfb_header (type1_binary_file, pfbs[pfb_id].direct,
 			     glyphs);
     length2 = do_pfb_body (type1_binary_file, pfb_id,
@@ -1085,7 +1189,7 @@ void type1_close_all (void)
     pdf_release_obj (encodings[i].encoding_ref);
     /* Release glyph names for this encoding */
     for (j=0; j<256; j++) {
-      RELEASE ((encodings[i].glyphs)[j].name);
+      RELEASE ((encodings[i].glyphs)[j]);
     }
   }
 }
