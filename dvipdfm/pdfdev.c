@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.78 1999/08/22 15:35:56 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.79 1999/08/25 03:52:00 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -51,6 +51,11 @@ double hoffset = 72.0, voffset=72.0;
 #define DPI 72u 
 
 static double dvi2pts = 0.0;
+
+double dev_dvi2pts (void)
+{
+  return dvi2pts;
+}
 
  /* Acrobat doesn't seem to like coordinate systems
     that involve scalings around 0.01, so we use
@@ -658,8 +663,7 @@ static int locate_type1_font (char *tex_name, mpt_t ptsize)
     dev_font[i].short_name[0] = 'F';
     sprintf (dev_font[i].short_name+1, "%d", n_phys_fonts+1);
     type1_id = type1_font (tex_name, 
-			   dev_font[thisfont].tfm_font_id,
-			   dev_font[thisfont].short_name);
+			   dev_font[thisfont].tfm_font_id);
     /* type1_font_resource on next line always returns an *indirect* obj */ 
     if (type1_id >= 0) { /* If we got one, it must be a physical font */
       dev_font[thisfont].font_resource = type1_font_resource (type1_id);

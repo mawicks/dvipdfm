@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.2 1999/08/24 03:38:04 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.3 1999/08/25 03:52:00 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -22,11 +22,18 @@
 	mwicks@kettering.edu
 */
 
+#include <stdlib.h>
+
 #include "mfileio.h"
 #include "pdfobj.h"
 #include "pdfspecial.h"
 #include "mpost.h"
 #include "string.h"
+#include "pdfparse.h"
+#include "mem.h"
+#include "pdflimits.h"
+#include "error.h"
+#include "pdfdev.h"
 
 int check_for_mp (FILE *image_file) 
 {
@@ -47,10 +54,114 @@ int check_for_mp (FILE *image_file)
   fprintf (stderr, "\nMetapost file\n");
   return 1;
 }
+static struct mp_fonts 
+{
+  char *tex_name;
+  int font_id;
+  double pt_size;
+} mp_fonts[MAX_FONTS];
+int n_mp_fonts = 0;
+
+int mp_locate_font (char *tex_name, double pt_size)
+{
+  int result, i;
+  for (i=0; i<n_mp_fonts; i++) {
+    if (!strcmp (tex_name, mp_fonts[i].tex_name) &&
+	mp_fonts[i].pt_size == pt_size)
+      break;
+  }
+  if (n_mp_fonts >= MAX_FONTS) {
+    ERROR ("Too many fonts in mp_locate_font()");
+  }
+  if (i == n_mp_fonts) {
+    n_mp_fonts += 1;
+    mp_fonts[i].tex_name = NEW (strlen(tex_name), char);
+    strcpy (mp_fonts[i].tex_name, tex_name);
+    mp_fonts[i].pt_size = pt_size;
+    /* The following line is a bit of a kludge.  MetaPost inclusion
+       was an afterthought */
+    mp_fonts[i].font_id = dev_locate_font (tex_name,
+					   pt_size/dev_dvi2pts());
+    result = mp_fonts[i].font_id;
+  } else 
+    result = -1;
+  fprintf (stderr, "mp_locate_font() =%d\n", result);
+  return result;
+}
+
+static double bbllx, bblly, bburx, bbury;
+int mp_parse_headers (FILE *image_file)
+{
+  char *start, *end, *token, *name;
+  mfgets (work_buffer, WORK_BUFFER_SIZE, image_file);
+  /* Presumably already checked file, so press on */
+  mfgets (work_buffer, WORK_BUFFER_SIZE, image_file);
+  if (strncmp (work_buffer, "%%BoundingBox:", strlen("%%BoundingBox")))
+    return 0;
+  start = work_buffer + strlen("%%BoundingBox:");
+  end = start+strlen(start);
+  skip_white (&start, end);
+  /* Expect 4 numbers or fail */
+  if ((token = parse_number (&start, end))) {
+    skip_white (&start, end);
+    bbllx = atof (token);
+    RELEASE(token);
+  } else
+    return 0;
+  if ((token = parse_number (&start, end))) {
+    skip_white (&start, end);
+    bblly = atof (token);
+    RELEASE(token);
+  } else
+    return 0;
+  if ((token = parse_number (&start, end))) {
+    skip_white (&start, end);
+    bburx = atof (token);
+    RELEASE(token);
+  } else
+    return 0;
+  if ((token = parse_number (&start, end))) {
+    skip_white (&start, end);
+    bbury = atof (token);
+    RELEASE(token);
+  } else
+    return 0;
+  /* Got four numbers */
+  fprintf (stderr, "bbllx=%g,bblly=%g,bburx=%g,bbury=%g\n",
+	   bbllx,bblly,bburx,bbury);
+  /* Read all headers--act on *Font records */
+  while (!feof(image_file) && mfgets (work_buffer, WORK_BUFFER_SIZE,
+				     image_file)) {
+    if (*work_buffer != '%')
+      break;
+    if (*(work_buffer+1) == '*' &&
+	!strncmp (work_buffer+2, "Font:", strlen("Font:"))) {
+      double ps_ptsize;
+      start = work_buffer+strlen("%*Font:");
+      end = start+strlen(start);
+      skip_white (&start, end);
+      if ((name = parse_ident (&start, end))) {
+	skip_white (&start, end);
+      } else
+	return 0;
+      if ((token = parse_number (&start, end))) {
+	ps_ptsize = atof (token);
+	RELEASE (token);
+      } else
+	return 0;
+      fprintf (stderr, "name=%s,size=%g\n", name, ps_ptsize);
+      mp_locate_font (name, ps_ptsize);
+    }
+  }
+  return 1;
+}
 
 pdf_obj *mp_include (FILE *image_file,  struct xform_info *p,
 		     char *res_name) 
 {
+  rewind (image_file);
+  if (mp_parse_headers (image_file)) {
+  }
   return NULL;
 }
 

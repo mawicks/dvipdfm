@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.21 1999/08/24 02:32:21 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.22 1999/08/25 03:52:00 mwicks Exp $
 
     This is ebb, a bounding box extraction program.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -303,15 +303,6 @@ int main (int argc, char *argv[])
 	     argv[0]);
   }
   return 0;
-}
-
-/* This is basically a stub so that pdf_special and pdf_doc don't have
-   to be linked here.  Unfortunately, the get_reference function
-   prevents modularization */
-
-pdf_obj *get_reference (char **start, char *end)
-{
-  return NULL;
 }
 
 
