@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.17 1998/12/05 11:47:25 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.18 1998/12/05 15:23:07 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -364,16 +364,19 @@ static void do_pagesize(char **start, char *end)
     skip_white(start, end);
     if (!parse_dimension(start, end, p)) {
       fprintf (stderr, "\nFailed to find a valid set of dimensions here\n");
+      release_xform_info (p);
       dump (*start, end);
       return;
     }
   }
-  if (p->scale != 0.0 || p->xscale != 0.0 || p->yscale != 0.0) {;
-  fprintf (stderr, "\nScale meaningless for pagesize\n");
-  return;
+  if (p->scale != 0.0 || p->xscale != 0.0 || p->yscale != 0.0) {
+    fprintf (stderr, "\nScale meaningless for pagesize\n");
+    release_xform_info (p);
+    return;
   }
   if (p->width == 0.0 || p->depth + p->height == 0.0) {
     fprintf (stderr, "\nPage cannot have a zero dimension\n");
+    release_xform_info (p);
     return;
   }
   dev_set_page_size (p->width, p->depth + p->height);
@@ -399,20 +402,24 @@ MEM_START
     skip_white(start, end);
     if (!parse_dimension(start, end, p)) {
       fprintf (stderr, "\nFailed to find a valid dimension here\n");
+      release_xform_info (p);
       dump (*start, end);
       return;
     }
   }
-  if (p->scale != 0.0 || p->xscale != 0.0 || p->yscale != 0.0) {;
-  fprintf (stderr, "\nScale meaningless for annotations\n");
-  return;
+  if (p->scale != 0.0 || p->xscale != 0.0 || p->yscale != 0.0) {
+    fprintf (stderr, "\nScale meaningless for annotations\n");
+    release_xform_info (p);
+    return;
   }
   if (p->width == 0.0 || p->depth + p->height == 0.0) {
     fprintf (stderr, "Special ann: Rectangle has a zero dimension\n");
+    release_xform_info (p);
     return;
   }
   if ((result = parse_pdf_dict(start, end)) == NULL) {
     fprintf (stderr, "Ignoring invalid dictionary\n");
+    release_xform_info (p);
     return;
   };
   rectangle = pdf_new_array();
@@ -582,6 +589,7 @@ MEM_START
       fprintf (stderr, "\nFailed to find transformation parameters\n");
       *start = save;
       dump (*start, end);
+      release_xform_info (p);
       return;
     }
   }
@@ -589,12 +597,14 @@ MEM_START
     fprintf (stderr, "\nSpecified dimensions are inconsistent\n");
     fprintf (stderr, "\nSpecial will be ignored\n");
     *start = save;
+    release_xform_info (p);
     dump (*start, end);
     return;
   }
   if (p -> width != 0.0 || p -> height != 0.0 || p -> depth != 0.0) {
     fprintf (stderr, "Special: bt: width, height, and depth are meaningless\n");
     *start = save;
+    release_xform_info (p);
     dump (*start, end);
     return;
   }
@@ -607,6 +617,7 @@ MEM_START
   if (p -> yscale == 0.0)
     p->yscale = 1.0;
   dev_begin_xform (p->xscale, p->yscale, p->rotate);
+  release_xform_info (p);
 #ifdef MEM_DEBUG
 MEM_END
 #endif
@@ -701,15 +712,18 @@ static void do_bead(char **start, char *end)
     skip_white(start, end);
     if (!parse_dimension(start, end, p)) {
       fprintf (stderr, "\nFailed to find a dimension for this bead\n");
+      release_xform_info (p);
       return;
     }
   }
   if (p->scale != 0.0 || p->xscale != 0.0 || p->yscale != 0.0) {
     fprintf (stderr, "\nScale meaningless for annotations\n");
+    release_xform_info (p);
     return;
   }
   if (p->width == 0.0 || p->depth + p->height == 0.0) {
     fprintf (stderr, "Special bead: Rectangle has a zero dimension\n");
+    release_xform_info (p);
     return;
   }
   skip_white (start, end);
@@ -760,12 +774,14 @@ MEM_START
     skip_white(start, end);
     if (!parse_dimension(start, end, p)) {
       fprintf (stderr, "\nFailed to find dimensions for encapsulated figure\n");
+      release_xform_info (p);
       return;
     }
   }
   if (!validate_image_xform_info (p)) {
     fprintf (stderr, "\nSpecified dimensions are inconsistent\n");
     fprintf (stderr, "\nSpecial will be ignored\n");
+    release_xform_info (p);
     return;
   }
   if (*start < end && (filestring = parse_pdf_string(start, end)) !=
@@ -775,6 +791,7 @@ MEM_START
     if (debug) fprintf (stderr, "Opening %s\n", filename);
     if ((trailer = pdf_open (filename)) == NULL) {
       fprintf (stderr, "\nSpecial ignored\n");
+      release_xform_info (p);
       return;;
     };
     pdf_release_obj (filestring);
@@ -785,6 +802,7 @@ MEM_START
   } else
     {
       fprintf (stderr, "No file name found in special\n");
+      release_xform_info (p);
       dump(*start, end);
       return;
     }
@@ -831,12 +849,14 @@ MEM_START
     skip_white(start, end);
     if (!parse_dimension(start, end, p)) {
       fprintf (stderr, "\nFailed to find dimensions for encapsulated image\n");
+      release_xform_info (p);
       return;
     }
   }
   if (!validate_image_xform_info (p)) {
     fprintf (stderr, "\nSpecified dimensions are inconsistent\n");
     fprintf (stderr, "\nSpecial will be ignored\n");
+    release_xform_info (p);
     return;
   }
   if (*start < end && (filestring = parse_pdf_string(start, end)) !=
@@ -846,6 +866,7 @@ MEM_START
     if (debug) fprintf (stderr, "Opening %s\n", filename);
     if ((jpeg = jpeg_open(filename)) == NULL) {
       fprintf (stderr, "\nSpecial ignored\n");
+      release_xform_info (p);
       return;
     };
     pdf_release_obj (filestring);
@@ -855,6 +876,7 @@ MEM_START
   } else
     {
       fprintf (stderr, "No file name found in special\n");
+      release_xform_info (p);
       dump(*start, end);
       return;
     }
@@ -1266,6 +1288,8 @@ void pdf_finish_specials (void)
     }
     RELEASE (named_references[i].name);
   }
+  if (number_named_references > 0)
+    RELEASE (named_references);
 }
 
 void pdf_parse_special(char *buffer, UNSIGNED_QUAD size, double
@@ -1481,6 +1505,7 @@ static void do_bxobj (char **start, char *end, double x_user, double y_user)
     skip_white(start, end);
     if (!parse_dimension(start, end, p)) {
       fprintf (stderr, "\nFailed to find a valid dimension here\n");
+      release_xform_info (p);
       dump (*start, end);
       return;
     }
@@ -1493,6 +1518,7 @@ static void do_bxobj (char **start, char *end, double x_user, double y_user)
     fprintf (stderr, "Special: bxobj: Bounding box has a zero dimension\n");
   }
   xobject = begin_form_xobj (x_user, y_user-p->depth, x_user+p->width, y_user+p->height);
+  release_xform_info (p);
   add_reference (objname, xobject,
 		 pdf_name_value(pdf_lookup_dict(pdf_stream_dict(xobject), "Name")));
   /* Next line has Same explanation as for do_ann.  Clumsy

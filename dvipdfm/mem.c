@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mem.c,v 1.3 1998/12/05 11:47:24 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mem.c,v 1.4 1998/12/05 15:23:07 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -27,10 +27,9 @@
 #include "mem.h"
 
 #ifdef MEM_DEBUG
-#include <time.h>
 #include <unistd.h>
 FILE *debugfile = NULL;
-clock_t start_time = 0;
+static long int event = 0;
 #endif MEM_DEBUG
 
 void *new (size_t size, char *function, int line)
@@ -44,10 +43,9 @@ void *new (size_t size, char *function, int line)
 #ifdef MEM_DEBUG  
     if (debugfile == NULL) {
       debugfile = fopen ("malloc.log", "w");
-      fprintf (debugfile, "Clocks per sec: %d\n", CLOCKS_PER_SEC);
-      start_time = clock();
     }
-    fprintf (debugfile, "%p %010ld new %s:%d\n", result, clock()-start_time, function, line);
+    event += 1;
+    fprintf (debugfile, "%p %07ld new %s:%d\n", result, event, function, line);
 #endif /* MEM_DEBUG */
 
   return result;
@@ -64,13 +62,12 @@ void *renew (void *mem, size_t size, char *function, int line)
 #ifdef MEM_DEBUG
     if (debugfile == NULL) {
       debugfile = fopen ("malloc.log", "w");
-      fprintf (debugfile, "Clocks per sec: %d\n", CLOCKS_PER_SEC);
-      start_time = clock();
     }
+    event += 1;
     if (mem != NULL)
       fprintf (debugfile, "%p %010ld fre %s:%d\n", mem,
-	       clock()-start_time, function, line);
-    fprintf (debugfile, "%p %010ld new %s:%d\n", result, clock()-start_time, function, line);
+	       event, function, line);
+    fprintf (debugfile, "%p %07ld new %s:%d\n", result, event, function, line);
 #endif /* MEM_DEBUG */
 
   return result;
@@ -82,10 +79,9 @@ void release (void *mem, char *function, int line)
 #ifdef MEM_DEBUG
     if (debugfile == NULL) {
       debugfile = fopen ("malloc.log", "w");
-      fprintf (debugfile, "Clocks per sec: %d\n", CLOCKS_PER_SEC);
-      start_time = clock();
     }
-    fprintf (debugfile, "%p %010ld fre %s:%d\n", mem, clock()-start_time, function, line);
+    event += 1;
+    fprintf (debugfile, "%p %07ld fre %s:%d\n", mem, event, function, line);
 #endif /* MEM_DEBUG */
 
   free (mem);

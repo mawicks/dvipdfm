@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.12 1998/12/05 11:47:24 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.13 1998/12/05 15:23:07 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -466,6 +466,9 @@ void dev_close_all_xforms (void)
 
 void dev_bop (void)
 {
+#ifdef MEM_DEBUG
+MEM_START
+#endif
   if (debug) {
     fprintf (stderr, "dev_bop:\n");
   }
@@ -477,10 +480,16 @@ void dev_bop (void)
   bop_font_reset();
   pdf_doc_add_to_page ("0 w", 3);
   dev_do_color();
+#ifdef MEM_DEBUG
+MEM_END
+#endif
 }
 
 void dev_eop (void)
 {
+#ifdef MEM_DEBUG
+MEM_START
+#endif
   if (debug) {
     fprintf (stderr, "dev_eop:\n");
   }
@@ -492,6 +501,9 @@ void dev_eop (void)
   pdf_doc_this_bop (format_buffer, strlen(format_buffer));
   graphics_mode();
   dev_close_all_xforms();
+#ifdef MEM_DEBUG
+MEM_END
+#endif
 }
 
 void dev_locate_font (char *tex_name,

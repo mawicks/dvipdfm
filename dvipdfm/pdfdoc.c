@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.16 1998/12/05 11:47:25 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.17 1998/12/05 15:23:07 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -405,6 +405,9 @@ void pdf_doc_add_outline (pdf_obj *dict)
     ERROR ("Can't add to outline at depth < 1");
   new_entry = pdf_new_dict ();
   pdf_merge_dict (new_entry, dict);
+  /* Caller doesn't know we don't actually use the dictionary,
+     so he *gave* dict to us.  We have to free it */
+  pdf_release_obj (dict);
   /* Tell it where its parent is */
   pdf_add_dict (new_entry,
 		pdf_new_name ("Parent"),
@@ -642,6 +645,9 @@ void finish_articles(void)
 
 static void finish_last_page ()
 {
+#ifdef MEM_DEBUG
+MEM_START
+#endif  
   if (debug) {
     fprintf (stderr, "(finish_last_page)");
   }
@@ -698,6 +704,9 @@ static void finish_last_page ()
     pdf_release_obj (this_page_xobjects);
     this_page_xobjects = NULL;
   }
+#ifdef MEM_DEBUG
+MEM_END
+#endif  
 }
 
 pdf_obj *pdf_doc_current_page_resources (void)
@@ -715,7 +724,7 @@ pdf_obj *pdf_doc_ref_page (unsigned long page_no)
     resize_pages (page_no+PAGES_ALLOC_SIZE);
   }
   /* Has this page been referenced yet? */ 
-  if (pages[page_no-1].page_ref == NULL) {
+  if (pages[page_no-1].page_dict == NULL) {
     /* If not, create it */
     pages[page_no-1].page_dict = pdf_new_dict ();
     /* and reference it */
@@ -777,6 +786,9 @@ pdf_obj *pdf_doc_next_page_ref (void)
 
 void pdf_doc_new_page (void)
 {
+#ifdef MEM_DEBUG
+MEM_START
+#endif
   if (debug) {
     fprintf (stderr, "(pdf_doc_new_page)");
     fprintf (stderr, "page_count=%ld, max_pages=%ld\n", page_count,
@@ -792,29 +804,55 @@ void pdf_doc_new_page (void)
   this_page_bop = pdf_new_stream();
   this_page_eop = pdf_new_stream();
   /* Was this page already instantiated by a forward reference to it? */
-  if (pages[page_count].page_dict == NULL) {
+  if (pages[page_count].page_ref == NULL) {
     /* If not, create it. */
     pages[page_count].page_dict = pdf_new_dict ();
     /* and reference it */
     pages[page_count].page_ref = pdf_ref_obj(pages[page_count].page_dict);
   }
+#ifdef MEM_DEBUG
+  fprintf (debugfile, "adding to /Kids\n");
+#endif
   pdf_add_array (pages_kids,
 		 pdf_link_obj(pages[page_count].page_ref));
-
+#ifdef MEM_DEBUG
+  fprintf (debugfile, "Filling in /Type\n");
+#endif
   pdf_add_dict (pages[page_count].page_dict,
 		pdf_new_name ("Type"),
 		pdf_new_name ("Page"));
+#ifdef MEM_DEBUG
+  fprintf (debugfile, "Filling in /Parent\n");
+#endif
   pdf_add_dict (pages[page_count].page_dict,
 		pdf_new_name ("Parent"),
 		pdf_link_obj (page_tree_label));
   tmp1 = pdf_new_array ();
+#ifdef MEM_DEBUG
+  fprintf (debugfile, "Adding ref to glob_page_bop\n");
+#endif
   pdf_add_array (tmp1, pdf_ref_obj (glob_page_bop));
+#ifdef MEM_DEBUG
+  fprintf (debugfile, "Adding ref to this_page_bop\n");
+#endif
   pdf_add_array (tmp1, pdf_ref_obj (this_page_bop));
   /* start the contents stream for the new page */
   this_page_contents = pdf_new_stream();
+#ifdef MEM_DEBUG
+  fprintf (debugfile, "Adding ref to contents_bop\n");
+#endif
   pdf_add_array (tmp1, pdf_ref_obj (this_page_contents));
+#ifdef MEM_DEBUG
+  fprintf (debugfile, "Adding ref to this_page_eop\n");
+#endif
   pdf_add_array (tmp1, pdf_ref_obj (this_page_eop));
+#ifdef MEM_DEBUG
+  fprintf (debugfile, "Adding ref to glob_page_eop\n");
+#endif
   pdf_add_array (tmp1, pdf_ref_obj (glob_page_eop));
+#ifdef MEM_DEBUG
+  fprintf (debugfile, "Adding /Contents key\n");
+#endif
   pdf_add_dict (pages[page_count].page_dict,
 		pdf_new_name ("Contents"),
 		tmp1);
@@ -836,6 +874,9 @@ void pdf_doc_new_page (void)
   /* Even though the page is gone, a Reference to this page is kept
      until program ends */
   page_count += 1;
+#ifdef MEM_DEBUG
+MEM_END
+#endif
 }
 
 void pdf_doc_add_to_page (char *buffer, unsigned length)
@@ -886,6 +927,9 @@ void pdf_doc_finish ()
 
   /* Do consistency check on forward references to pages */
   for (i=0; i<page_count; i++) {
+    fprintf (stderr, "Releasing pagref for page=%i,p=%p\n", i,
+	     pages[i].page_ref);
+    pdf_write_obj (stderr, pages[i].page_ref);
     pdf_release_obj (pages[i].page_ref);
     pages[i].page_ref = NULL;
   }
@@ -893,6 +937,8 @@ void pdf_doc_finish ()
     fprintf (stderr, "\nWarning:  Nonexistent page(s) referenced\n");
     fprintf (stderr, "          (PDF file may not work right)\n");
   }
+
+  RELEASE (pages);
   pdf_out_flush ();
 }
 
