@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/psspecial.c,v 1.7 1999/09/10 00:33:58 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/psspecial.c,v 1.8 2000/01/15 16:40:06 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -76,6 +76,7 @@ static int parse_psfile (char **start, char *end, double x_user, double y_user)
   double hsize = 0.0, vsize = 0.0;
   int error = 0;
   struct xform_info *p = new_xform_info();
+  skip_white(start, end);
   parse_key_val (start, end, &key, &val);
   if (key && val) {
     filename = val;
@@ -94,53 +95,61 @@ static int parse_psfile (char **start, char *end, double x_user, double y_user)
 	  break;
 	}
 	if (val) {
-	  switch (keys[i].id) {
-	  case HOFFSET:
-	    hoffset = atof (val);
-	    break;
-	  case VOFFSET:
-	    voffset = atof (val);
-	    break;
-	  case HSIZE:
-	    hsize = atof (val);
-	    break;
-	  case VSIZE:
-	    vsize = atof (val);
-	    break;
-	  case HSCALE:
-	    p -> xscale = atof(val)/100.0;
-	    break;
-	  case VSCALE:
-	    p -> yscale = atof(val)/100.0;
-	    break;
-	  case ANGLE:
-	    p -> rotate = atof(val)/100.0;
-	    break;
-	  case LLX:
-	    p -> user_bbox = 1;
-	    p -> llx = atof(val);
-	    break;
-	  case LLY:
-	    p -> user_bbox = 1;
-	    p -> lly = atof(val);
-	    break;
-	  case URX:
-	    p -> user_bbox = 1;
-	    p -> urx = atof(val);
-	    break;
-	  case URY:
-	    p -> user_bbox = 1;
-	    p -> ury = atof(val);
-	    break;
-	  case RWI:
-	    p -> width = atof(val)/10.0;
-	    break;
-	  case RHI:
-	    p -> height = atof(val)/10.0;
-	    break;
-	  default:
-	    fprintf (stderr, "\nPSfile key \"%s=%s\" not recognized",
-		     key, val);
+	  if (is_a_number(val)) {
+	    switch (keys[i].id) {
+	    case HOFFSET:
+	      hoffset = atof (val);
+	      break;
+	    case VOFFSET:
+	      voffset = atof (val);
+	      break;
+	    case HSIZE:
+	      hsize = atof (val);
+	      break;
+	    case VSIZE:
+	      vsize = atof (val);
+	      break;
+	    case HSCALE:
+	      p -> xscale = atof(val)/100.0;
+	      break;
+	    case VSCALE:
+	      p -> yscale = atof(val)/100.0;
+	      break;
+	    case ANGLE:
+	      p -> rotate = atof(val)/100.0;
+	      break;
+	    case LLX:
+	      p -> user_bbox = 1;
+	      p -> llx = atof(val);
+	      break;
+	    case LLY:
+	      p -> user_bbox = 1;
+	      p -> lly = atof(val);
+	      break;
+	    case URX:
+	      p -> user_bbox = 1;
+	      p -> urx = atof(val);
+	      break;
+	    case URY:
+	      p -> user_bbox = 1;
+	      p -> ury = atof(val);
+	      break;
+	    case RWI:
+	      p -> width = atof(val)/10.0;
+	      break;
+	    case RHI:
+	      p -> height = atof(val)/10.0;
+	      break;
+	    default:
+	      if (keys[i].id == CLIP) {
+		fprintf (stderr, "\nPSfile key \"clip\" takes no value\n");
+	      } else
+		fprintf (stderr, "\nPSfile key \"%s=%s\" not recognized\n",
+			 key, val);
+	      error = 1;
+	    }
+	  } else {
+	    fprintf (stderr, "\nPSfile key \"%s\" assigned nonnumeric value\n", key);
 	    error = 1;
 	  }
 	  RELEASE (val);
@@ -150,14 +159,16 @@ static int parse_psfile (char **start, char *end, double x_user, double y_user)
 	    p -> clip  = 1;
 	    break;
 	  default:
-	    fprintf (stderr, "\nPSfile key \"%s\" not recognized\n",
+	    fprintf (stderr, "\nPSfile key \"%s\" needs a value\n",
 		     key);
 	    error = 1;
 	  }
 	}
 	RELEASE (key);
       } else {
-	fprintf (stderr, "\nError parsing PSfile special\n");
+	fprintf (stderr, "\nInvalid keyword in PSfile special\n");
+	dump (*start, end);
+	break;
       }
       skip_white (start, end);
     } /* If here and *start == end we got something */

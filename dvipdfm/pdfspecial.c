@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.72 2000/01/14 04:20:41 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.73 2000/01/15 16:40:06 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -122,6 +122,7 @@ pdf_obj *get_reference(char **start, char *end)
 #ifdef MEM_DEBUG
 MEM_START
 #endif
+  skip_white (start, end);
   if ((name = parse_pdf_reference(start, end)) != NULL) {
     if ((result = lookup_reference (name)) == NULL) {
       fprintf (stderr, "\nNamed reference (@%s) doesn't exist.\n", name);
@@ -143,6 +144,7 @@ pdf_obj *get_reference_lvalue(char **start, char *end)
 #ifdef MEM_DEBUG
 MEM_START
 #endif
+  skip_white (start, end);
   if ((name = parse_pdf_reference(start, end)) != NULL) {
     result = lookup_object (name);
     if (result == NULL) {
@@ -321,7 +323,6 @@ double parse_one_unit (char **start, char *end)
   char *unit_string = NULL, *save = *start;
   double result = -1.0;
   int errors = 0;
-  
   skip_white(start, end);
   if ((unit_string = parse_c_ident(start, end)) != NULL) {
     for (i=0; i<sizeof(units)/sizeof(units[0]); i++) {
@@ -1043,6 +1044,7 @@ MEM_START
     fprintf (stderr, "\nError in dimensions of encapsulated image\n");
     error = 1;
   }
+  skip_white(start, end);
   if (!error && (filestring = parse_pdf_string(start, end)) == NULL) {
     fprintf (stderr, "\nMissing filename\n");
     error = 1;
@@ -1391,7 +1393,7 @@ static pdf_obj *lookup_reference(char *name)
 
   if (strlen (name) > 4 &&
       !strncmp (name, "page", 4) &&
-      is_a_number (name+4)) {
+      is_an_int (name+4)) {
     return pdf_doc_ref_page(atoi (name+4));
   }
   for (i=0; i<number_named_references; i++) {

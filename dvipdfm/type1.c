@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.100 2000/01/11 02:30:40 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.101 2000/01/15 16:40:06 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -550,7 +550,7 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
       break;
     case 3:
       ident = parse_ident (&start, end);
-      if (is_a_number (ident)) {
+      if (is_an_int (ident)) {
 	last_number = (int) atof (ident);
 	state = 4;
       } else {
@@ -840,7 +840,7 @@ static unsigned long do_partial_body (unsigned char *filtered, unsigned char
       ident = parse_ident (&start, end);
       if (ident == NULL)
 	ERROR ("Error processing a symbol in the PFB file.");
-      if (is_a_number(ident))
+      if (is_an_int(ident))
 	last_number = atof (ident);
       else {
 	if (!strcmp (ident, "RD") ||
@@ -898,7 +898,7 @@ static unsigned long do_partial_body (unsigned char *filtered, unsigned char
     if (verbose>1) {
       fprintf (stderr, "\nEmbedding %d of %s glyphs", nused,ident);
     }
-    if (ident == NULL || !is_a_number (ident) || nused > atof (ident)) 
+    if (ident == NULL || !is_an_int (ident) || nused > atof (ident)) 
       ERROR ("More glyphs needed than present in file");
     RELEASE (ident);
     tail = start;
@@ -915,8 +915,8 @@ static unsigned long do_partial_body (unsigned char *filtered, unsigned char
       /* Get the number that should follow the glyph name */
       skip_white(&start, end);
       ident = parse_ident (&start, end);
-      if (!is_a_number (ident))
-	ERROR ("Expecting a number after glyph name");
+      if (!is_an_int (ident))
+	ERROR ("Expecting an integer after glyph name");
       last_number = atof (ident);
       RELEASE (ident);
       /* The next identifier should be a "RD" or a "-|".  We don't
@@ -929,6 +929,7 @@ static unsigned long do_partial_body (unsigned char *filtered, unsigned char
       /* Skip the binary stream */
       start += (unsigned long) last_number;
       /* Skip the "ND" or "|-" terminator */
+      skip_white(&start, end);
       ident = parse_ident (&start, end);
       RELEASE (ident);
       skip_white (&start, end);

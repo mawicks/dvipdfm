@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.c,v 1.29 1999/09/08 16:51:47 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.c,v 1.30 2000/01/15 16:40:06 mwicks Exp $
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
 
@@ -83,12 +83,28 @@ void parse_crap (char **start, char *end)
   }
 }
 
-int is_a_number(const char *s)
+int is_an_int(const char *s)
 {
   int i;
   for (i=0; i<strlen(s); i++) {
     if (i == 0 && s[i] == '-')
       continue;
+    if (!isdigit (s[i]))
+      return 0;
+  }
+  return 1;
+}
+
+int is_a_number(const char *s)
+{
+  int i, period = 0;
+  for (i=0; i<strlen(s); i++) {
+    if (s[i] == '-' && i == 0)
+      continue;
+    if (s[i] == '.' && !period) {
+      period = 1;
+      continue;
+    }
     if (!isdigit (s[i]))
       return 0;
   }
@@ -241,8 +257,8 @@ MEM_END
 static char *parse_gen_ident (char **start, char *end, char *valid_chars)
 {
   char *ident, *save;
-  skip_white(start, end);
   save = *start;
+  skip_white(start, end);
   while (*start < end && strchr (valid_chars, **start))
     (*start)++;
   if (save == *start)
@@ -260,6 +276,13 @@ char *parse_ident (char **start, char *end)
   return parse_gen_ident (start, end, valid_chars);
 }
 
+char *parse_val_ident (char **start, char *end)
+{
+  static char *valid_chars =
+    "!\"#$&'*+,-./0123456789:;?@ABCDEFGHIJKLMNOPQRSTUVWXYZ\\^_`abcdefghijklmnopqrstuvwxyz|~";
+  return parse_gen_ident (start, end, valid_chars);
+}
+
 char *parse_c_ident (char **start, char *end)
 {
   static char *valid_chars =
@@ -269,7 +292,6 @@ char *parse_c_ident (char **start, char *end)
 
 char *parse_opt_ident(char **start, char *end)
 {
-  skip_white(start, end);
   if (*start  >= end || (**start) != '@')
     return NULL;
   (*start)++;
@@ -298,7 +320,7 @@ pdf_obj *parse_pdf_name (char **start, char *end)
 
 char *parse_pdf_reference(char **start, char *end)
 {
-  skip_white(start, end);
+  skip_white (start, end);
   if (**start != '@') {
     fprintf (stderr, "\nPDF Name expected and not found.\n");
     dump(*start, end);
@@ -310,7 +332,7 @@ char *parse_pdf_reference(char **start, char *end)
 
 pdf_obj *parse_pdf_boolean (char **start, char *end)
 {
-  skip_white(start, end);
+  skip_white (start, end);
   if (end-*start > strlen ("true") &&
       !strncmp (*start, "true", strlen("true"))) {
     *start += strlen("true");
@@ -328,7 +350,7 @@ pdf_obj *parse_pdf_null (char **start, char *end)
 {
   char *save = *start;
   char *ident;
-  skip_white(start, end);
+  skip_white (start, end);
   ident = parse_ident(start, end);
   if (!strcmp (ident, "null")) {
     RELEASE(ident);
@@ -649,18 +671,17 @@ void parse_key_val (char **start, char *end, char **key, char **val)
   skip_white (start, end);
   if ((*key = parse_c_ident (start, end))) {
     skip_white (start, end);
-    if (*start < end && *((*start)++) == '=')
+    if (*start < end && **start == '=')
       {
+	(*start) += 1;
 	skip_white (start, end);
 	if (*start < end) switch (**start) {
 	case '"':
 	  *val = parse_c_string (start, end);
 	  break;
 	default:
-	  *val = parse_ident (start, end);
+	  *val = parse_val_ident (start, end);
 	}
       }
   }
 }
-
-
