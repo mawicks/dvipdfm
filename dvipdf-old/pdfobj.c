@@ -293,31 +293,43 @@ pdf_obj *pdf_new_string (const char *string, unsigned length)
   return result;
 }
 
+int pdfobj_escape_c (char *buffer, char ch)
+{
+  switch (ch) {
+  case '(':
+    return sprintf (buffer, "\\(");
+  case ')':
+    return sprintf (buffer, "\\)");
+  case '\\':
+    return sprintf (buffer, "\\\\");
+  case '\n':
+    return sprintf (buffer, "\\n");
+  case '\r':
+    return sprintf (buffer, "\\r");
+  case '\t':
+    return sprintf (buffer, "\\t");
+  case '\b':
+    return sprintf (buffer, "\\b");
+  case '\f':
+    return sprintf (buffer, "\\f");
+  default:
+    if (!isprint (ch)) {
+      return sprintf (buffer, "\\%03o", ch);
+    } else {
+      return sprintf (buffer, "%c", ch);
+    }
+  }
+}
+
+
 static void write_string (const struct pdf_string *string)
 {
   char *s = string -> string;
   int i, count;
   pdf_out_char ('(');
   for (i=0; i< string -> length; i++) {
-    if (s[i] == '(') 
-      pdf_out ("\\(", 2);
-    else if (s[i] == ')')
-      pdf_out ("\\)", 2);
-    else if (s[i] == '\n')
-      pdf_out ("\\n", 2);
-    else if (s[i] == '\r')
-      pdf_out ("\\r", 2);
-    else if (s[i] == '\t')
-      pdf_out ("\\t", 2);
-    else if (s[i] == '\b')
-      pdf_out ("\\b", 2);
-    else if (s[i] == '\f')
-      pdf_out ("\\f", 2);
-    else if (!isprint (s[i])) {
-      count = sprintf (format_buffer, "\\%3o", s[i]);
-      pdf_out (format_buffer, 1);
-    } else
-      pdf_out_char (s[i]);
+    count = pdfobj_escape_c (format_buffer, s[i]);
+    pdf_out (format_buffer, count);
   }
   pdf_out_char (')');
 }

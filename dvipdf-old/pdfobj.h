@@ -121,6 +121,7 @@ void pdf_add_stream (pdf_obj *stream, char *stream_data, unsigned
 void pdf_release_obj (pdf_obj *object);
 pdf_obj *pdf_ref_obj (pdf_obj *object);
 
+int pdfobj_escape_c (char *buffer, char ch);
 
 #endif  /* PDFOBJ_H */
 

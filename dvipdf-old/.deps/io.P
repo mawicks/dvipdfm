@@ -4,4 +4,6 @@ io.o: io.c io.h /usr/include/stdio.h /usr/include/libio.h \
  /usr/include/gnu/types.h \
  /usr/lib/gcc-lib/i386-redhat-linux/2.7.2.3/include/stddef.h \
  /usr/lib/gcc-lib/i386-redhat-linux/2.7.2.3/include/stdarg.h \
- /usr/include/stdio_lim.h numbers.h error.h /usr/include/stdlib.h
+ /usr/include/stdio_lim.h numbers.h /usr/include/math.h \
+ /usr/include/huge_val.h /usr/include/mathcalls.h error.h \
+ /usr/include/stdlib.h

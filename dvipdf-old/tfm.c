@@ -122,16 +122,30 @@ static get_fix_word_array (SIGNED_PAIR *a_word, int length)
   }
 }
 
+static get_unsigned_pair_array (UNSIGNED_PAIR *a_word, int length)
+{
+  unsigned i;
+  for (i=0; i< length; i++) {
+    a_word[i] = get_unsigned_pair (tfm_file);
+  }
+}
+
 static do_fix_word_array (SIGNED_PAIR *a, UNSIGNED_PAIR len)
 {
   a = new (sizeof (*a) * len);
   get_fix_word_array (a, len);
 }
 
+static do_unsigned_pair_array (UNSIGNED_PAIR *a, UNSIGNED_PAIR len)
+{
+  a = new (sizeof (*a) * len);
+  get_unsigned_pair_array (a, len);
+}
+
 static get_arrays (struct a_tfm *a_tfm)
 {
   do_fix_word_array (a_tfm -> header, a_tfm -> wlenheader);
-  do_fix_word_array (a_tfm -> char_info, (a_tfm->ec)-(a_tfm->bc)+1); /* Fix me.  I should use unsigned version of do_fix_word_array */
+  do_unsigned_pair_array (a_tfm -> char_info, (a_tfm->ec)-(a_tfm->bc)+1);
   do_fix_word_array (a_tfm -> width, a_tfm -> nwidths);
   do_fix_word_array (a_tfm -> height, a_tfm -> nheights);
   do_fix_word_array (a_tfm -> depth, a_tfm -> ndepths);

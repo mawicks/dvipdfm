@@ -5,7 +5,9 @@
 
 static pdf_obj *font_resource, *fontlist_dict;
 
-char *message = " Computer Modern Roman Fonts ";
+static pdf_obj *junk;
+
+char *message = "()()\n\r\t\b\f\\()Computer Modern Roman Fonts ";
 char buffer[256];
 
 int main (int argc, char *argv[]) 
@@ -21,8 +23,14 @@ int main (int argc, char *argv[])
 
   fprintf (stdout, "Writing to %s\n", argv[1]);
 
+
   pdf_doc_init (argv[1]);
        pdf_doc_new_page (612, 792);
+
+junk = pdf_new_string (message, strlen(message));
+ pdf_ref_obj (junk); pdf_release_obj (junk);
+  
+
        fontlist_dict = pdf_new_dict ();
        font_resource = type1_font_resource ("cmr10", "F1");
        pdf_add_dict (fontlist_dict, tmp1 = pdf_new_name ("F1"), 
@@ -35,7 +43,7 @@ int main (int argc, char *argv[])
        pdf_doc_add_to_page (STRING0, strlen(STRING0));
        pdf_doc_add_to_page (" BT ", 4);
 #define STRING1 " /F1 32 Tf "
-#define STRING2 " (Computer Modern Roman) Tj  "
+#define STRING2 " (\n\r\t\b\f\\()Computer Modern Roman) Tj  "
        pdf_doc_add_to_page (STRING1, strlen(STRING1));
        pdf_doc_add_to_page (STRING2, strlen(STRING2));
        pdf_doc_add_to_page (" ET ", 4);
