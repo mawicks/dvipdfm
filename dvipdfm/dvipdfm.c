@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.38 1999/02/21 14:30:20 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.39 1999/02/21 14:50:28 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -98,22 +98,22 @@ static void usage (void)
    fprintf (stderr, "under certain conditions.  Details are distributed with the software.\n");
    fprintf (stderr, "\nUsage: dvipdfm [options] dvifile\n");
    fprintf (stderr, "where [options] is one or more of\n\n");
-   fprintf (stderr, "\t-c      \tIgnore color specials (for printing on B&W printers)\n");
-   fprintf (stderr, "\t-f filename\tSet font map file name [pdffonts.map]\n");
-   fprintf (stderr, "\t-o filename\tSet output file name [dvifile.pdf]\n");
-   fprintf (stderr, "\t-l \t\tLandscape mode\n");
-   fprintf (stderr, "\t-m number\tSet additional magnification\n");
-   fprintf (stderr, "\t-p papersize\tSet papersize (letter, legal, ledger, tabloid, a4, or a3) [letter]\n");
-   fprintf (stderr, "\t-r resolution\tSet resolution (in DPI) for raster fonts [600]\n");
-   fprintf (stderr, "\t-s pages\tSelect page ranges (-)\n");
-   fprintf (stderr, "\t-x dimension\tSet horizontal offset [1.0in]\n");
-   fprintf (stderr, "\t-y dimension\tSet vertical offset [1.0in]\n");
-   fprintf (stderr, "\t-e          \tDisable partial font embedding [default is enabled])\n");
-   fprintf (stderr, "\t-z number\tSet compression level (0-9) [default is 9])\n");
-   fprintf (stderr, "\t-v          \tBe verbose\n");
-   fprintf (stderr, "\t-vv         \tBe more verbose\n");
+   fprintf (stderr, "-c      \tIgnore color specials (for printing on B&W printers)\n");
+   fprintf (stderr, "-f filename\tSet font map file name [pdffonts.map]\n");
+   fprintf (stderr, "-o filename\tSet output file name [dvifile.pdf]\n");
+   fprintf (stderr, "-l \t\tLandscape mode\n");
+   fprintf (stderr, "-m number\tSet additional magnification\n");
+   fprintf (stderr, "-p papersize\tSet papersize (letter, legal, ledger, tabloid, a4, or a3) [letter]\n");
+   fprintf (stderr, "-r resolution\tSet resolution (in DPI) for raster fonts [600]\n");
+   fprintf (stderr, "-s pages\tSelect page ranges (-)\n");
+   fprintf (stderr, "-x dimension\tSet horizontal offset [1.0in]\n");
+   fprintf (stderr, "-y dimension\tSet vertical offset [1.0in]\n");
+   fprintf (stderr, "-e          \tDisable partial font embedding [default is enabled])\n");
+   fprintf (stderr, "-z number\tSet compression level (0-9) [default is 9])\n");
+   fprintf (stderr, "-v          \tBe verbose\n");
+   fprintf (stderr, "-vv         \tBe more verbose\n");
    fprintf (stderr, "\nAll dimensions entered on the command line are \"true\" TeX dimensions.\n");
-   fprintf (stderr, "Page ranges for \"-s\" option are physical pages and are separated by commas, e.g., \"-s 1-3,5-6\"\n\n");
+   fprintf (stderr, "Argument of \"-s\" lists physical page ranges separated by commas, e.g., \"-s 1-3,5-6\"\n\n");
    exit(1);
 }
 
