@@ -1,0 +1,9 @@
+% Format of this file is
+%    TeXname AFMfilename Encoding binary_font_file
+% 
+%     The fields TeXname and AFMfilename are required
+% To use the default encoding for a font set
+% Encoding to "default."  Binary_font_file is optional
+%
+ptmr8r	ptmr8a	8r.enc
+
