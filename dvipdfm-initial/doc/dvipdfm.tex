@@ -1,4 +1,4 @@
-% $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/doc/dvipdfm.tex,v 1.8 1998/11/19 22:59:51 mwicks Exp $
+% $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/doc/dvipdfm.tex,v 1.9 1998/11/20 02:52:43 mwicks Exp $
 \special{  pdf:  docview <</PageMode /UseOutlines>>}%
 \catcode`\ =11\def\space{ }\catcode`\ =10
 % Page layout
@@ -129,7 +129,8 @@ having the following features:
 
 \beginlist
 \item{$\bullet$} Support for outline (bookmark) entries, named destinations,
-and annotations (including hyperlinks, forms and widgets).
+and annotations (including hyperlinks, forms and widgets).  Nearly
+every Acrobat Distiller pdfmark is approximated.
 
 \item{$\bullet$} Ability to include arbitrary PDF files as encapsulated
 objects along their any embedded resources such as fonts.
@@ -160,8 +161,13 @@ H\`an Th\'e Th\`an's PDF\TeX\ project is an alternative method
 of generating PDF from \TeX\ source.
 Although quite good and fairly mature, the PDF\TeX\ project
 modified \TeX\ itself to add primitives that support the PDF features.
-I prefer to work with an unmodified \TeX.
-This |dvipdfm| project demonstrates that many of the features
+I prefer to work with \TeX\ unmodified, as released by Donald Knuth
+(call me a purist).
+There is an existing DVI to PDF driver called
+|dvipdf| written by S. Lesenko.  At present, it's not widely
+available, so I haven't used it.  I wrote |dvipdfm|
+mainly as an exercise to get at the features
+of PDF I was trying to use.  This |dvipdfm| project demonstrates that many features
 of PDF can be accessed by using a DVI driver.
 The PDF features are activated in the driver via
 \TeX\ |special| primitives.

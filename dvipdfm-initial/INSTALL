@@ -48,4 +48,5 @@ Notes/Possible Problems:
        your texmf.cnf, try setting the environment variable TEXMFCNF
        to point to the directory containing texmf.cnf.  As an
        alternative, you can set AFMFONTS to point to your ".afm" files
-       (dvipdfm needs these). Set T1FONTS to point to your ".pfb" files.
+       (dvipdfm needs these),  set T1FONTS to point to your ".pfb" files,
+       and set TFMFONTS to point to your ".tfm" files.
