@@ -1,4 +1,5 @@
-/*
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfdoc.c,v 1.2 1998/11/18 02:31:33 mwicks Exp $
+
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
 
@@ -751,6 +752,13 @@ void pdf_doc_init (char *filename)
   create_catalog ();
   finish_page_tree();	/* start_page_tree was called by create_catalog */
 }
+
+void pdf_doc_creator (char *s)
+{
+  pdf_add_dict (docinfo, pdf_new_name ("Creator"),
+		pdf_new_string (s, strlen(s)));
+}
+
 
 void pdf_doc_finish ()
 {

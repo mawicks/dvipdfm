@@ -1,4 +1,5 @@
-/*
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/dvi.c,v 1.2 1998/11/18 02:31:32 mwicks Exp $
+
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
 
@@ -493,6 +494,7 @@ void dvi_init (char *outputfile)
   do_scales();
   if (dvi_debug) fprintf (stderr, "dvi: Initializing output device\n");
   dev_init (outputfile);
+  dev_add_comment (dvi_comment);
   if (dvi_debug) fprintf (stderr, "dvi: locating fonts\n");
   do_locate_fonts();
   if (dvi_debug) fprintf (stderr, "dvi: pdf_init done\n");
