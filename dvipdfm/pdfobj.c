@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.33 1998/12/24 23:19:25 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.34 1998/12/25 01:39:31 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -35,6 +35,10 @@
 #include "pdfparse.h"
 #include "c-auto.h"
 
+#ifdef HAVE_ZLIB
+#include <zlib.h>
+#endif /* HAVE_ZLIB */
+
 #define MIN(a,b) ((a)<(b)?(a):(b))
 
 FILE *pdf_output_file = NULL;
@@ -62,7 +66,7 @@ static void pdf_flush_obj (FILE *file, const pdf_obj *object);
 static void pdf_label_obj (pdf_obj *object);
 
 static void pdf_out_char (FILE *file, char c);
-static void pdf_out (FILE *file, char *buffer, int length);
+static void pdf_out (FILE *file, void *buffer, int length);
 
 static void release_indirect (pdf_indirect *data);
 static void write_indirect (FILE *file, const pdf_indirect *indirect);
@@ -212,7 +216,7 @@ static void pdf_out_char (FILE *file, char c)
     pdf_output_line_position = 0;
 }
 
-static void pdf_out (FILE *file, char *buffer, int length)
+static void pdf_out (FILE *file, void *buffer, int length)
 {
   fwrite (buffer, 1, length, file);
   /* Keep tallys for xref table *only* if writing a pdf file */

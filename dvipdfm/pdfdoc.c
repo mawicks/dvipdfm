@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.30 1998/12/25 00:00:48 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.31 1998/12/25 01:39:31 mwicks Exp $
  
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -40,7 +40,7 @@
 
 static pdf_obj *catalog = NULL;
 static pdf_obj *docinfo = NULL;
-static pdf_obj *page_tree = NULL, *page_tree_ref = NULL, *pages_kids = NULL;
+static pdf_obj *page_tree = NULL, *page_tree_ref = NULL;
 
 int outline_depth=0;
 static struct 
@@ -51,7 +51,7 @@ static struct
 
 
 static pdf_obj *current_page_resources = NULL;
-static pdf_obj *page_count_obj = NULL, *this_page_contents = NULL;
+static pdf_obj *this_page_contents = NULL;
 static pdf_obj *glob_page_bop, *glob_page_eop;
 static pdf_obj *this_page_bop = NULL, *this_page_eop = NULL;
 static pdf_obj *this_page_beads = NULL;
@@ -365,7 +365,6 @@ static pdf_obj *page_subtree (struct pages *pages, unsigned long npages,
 		       pdf_obj *parent_ref)
 {
 #define PAGE_CLUSTER 4
-  int i;
   pdf_obj *self, *self_ref, *kid_array;
   self = pdf_new_dict();
   /* This is a slight kludge which allow the subtree
@@ -557,7 +556,6 @@ static int CDECL cmp_dest (const void *d1, const void *d2)
 static pdf_obj *name_subtree (dest_entry *dests, unsigned long ndests)
 {
 #define CLUSTER 4
-  int i;
   pdf_obj *result, *name_array, *limit_array, *kid_array;
   result = pdf_new_dict();
   limit_array = pdf_new_array();
@@ -598,8 +596,7 @@ static number_dests = 0;
 
 static void finish_dests_tree (void)
 {
-  pdf_obj *kid, *name_array;
-  int i;
+  pdf_obj *kid;
   if (number_dests > 0) {
     /* Sort before writing any /Dests entries */
     qsort(dests, number_dests, sizeof(dests[0]), cmp_dest);
@@ -967,7 +964,6 @@ void pdf_doc_creator (char *s)
 
 void pdf_doc_close ()
 {
-  int i;
   if (debug) fprintf (stderr, "pdf_doc_finish:\n");
   if (this_page_contents != NULL) {
     finish_last_page();
