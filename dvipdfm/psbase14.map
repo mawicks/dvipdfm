@@ -36,7 +36,7 @@ psyr	none	Symbol
 psyro	none	Symbol -s 0.167
 
 % Times
-ptmr8r 8r Times
+ptmr8r 8r Times-Roman
 ptmb8r 8r Times-Bold
 ptmbi8r 8r Times-Italic
 ptmri8r 8r Times-Italic
