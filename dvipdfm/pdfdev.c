@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.102.4.4 2000/08/03 02:33:44 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.102.4.5 2000/08/03 03:03:08 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -131,9 +131,8 @@ double pdf_dev_scale (void)
     Unfortunately, positive is up, which doesn't agree with TeX's convention.  */
 
 static spt_t text_xorigin = 0, text_yorigin = 0,
-  text_offset = 0, text_leading = 0;
+  text_offset = 0;
 double text_slant = 0.0, text_extend = 1.0;
-double text_xerror = 0.0, text_yerror = 0.0;
 
 unsigned  n_dev_fonts = 0;
 unsigned  n_phys_fonts = 0;
@@ -180,10 +179,7 @@ static void reset_text_state(void)
   int len;
   text_xorigin = 0;
   text_yorigin = 0;
-  text_leading = 0;
   text_offset = 0;
-  text_xerror = 0.0;
-  text_yerror = 0.0;
   /* 
    * We need to reset the line matrix to handle slanted fonts 
    */
@@ -252,17 +248,18 @@ static void string_mode (spt_t xpos, spt_t ypos, double slant, double extend)
     {
       spt_t rounded_delx, desired_delx;
       spt_t rounded_dely, desired_dely;
+      spt_t dvi_xerror, dvi_yerror;
 
       /* First round dely (it is needed for delx) */
       dely = ypos - text_yorigin;
-      desired_dely = (dely+text_yerror);
+      desired_dely = dely;
       rounded_dely = IDIVRND(desired_dely, CENTI_PDF_U) * CENTI_PDF_U;
       /* Next round delx, precompensating for line transformation matrix */
-      desired_delx = ((delx+text_xerror)-desired_dely*slant)/extend;
+      desired_delx = (delx-desired_dely*slant)/extend;
       rounded_delx = IDIVRND(desired_delx, CENTI_PDF_U) * CENTI_PDF_U;
       /* Estimate errors in DVI units */
-      text_yerror = (desired_dely - rounded_dely);
-      text_xerror = (extend*(desired_delx - rounded_delx)+slant*text_yerror);
+      dvi_yerror = (desired_dely - rounded_dely);
+      dvi_xerror = (extend*(desired_delx - rounded_delx)+slant*dvi_yerror);
       format_buffer[len++] = ' ';
       len += centi_u_to_a (format_buffer+len, rounded_delx/CENTI_PDF_U);
       format_buffer[len++] = ' ';
@@ -270,9 +267,8 @@ static void string_mode (spt_t xpos, spt_t ypos, double slant, double extend)
       pdf_doc_add_to_page (format_buffer, len);
       len = 0;
       pdf_doc_add_to_page (" TD[(", 5);
-      text_leading = dely;
-      text_xorigin = xpos-text_xerror;
-      text_yorigin = ypos-text_yerror;
+      text_xorigin = xpos-dvi_xerror;
+      text_yorigin = ypos-dvi_yerror;
     }
     text_offset = 0;
     break;
@@ -312,7 +308,6 @@ static void dev_set_font (int font_id)
     format_buffer[len++] = 'T';
     format_buffer[len++] = 'm';
      /* There's no longer any uncertainty about where we are */
-    text_xerror = 0.0; text_yerror = 0.0;
     text_slant = dev_font[font_id].slant;
     text_extend = dev_font[font_id].extend;
   }
