@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/jpeg.c,v 1.4 1998/11/19 15:28:35 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/jpeg.c,v 1.5 1998/11/20 20:15:12 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -146,7 +146,7 @@ void jpeg_close (struct jpeg *jpeg)
 
 static num_images = 0;
 pdf_obj *jpeg_build_object(struct jpeg *jpeg, double x_user, double
-			   y_user, struct dimension_info *p)
+			   y_user, struct xform_info *p)
 {
   pdf_obj *xobject, *xobj_dict;
   double xscale, yscale;
@@ -207,9 +207,11 @@ pdf_obj *jpeg_build_object(struct jpeg *jpeg, double x_user, double
 	xscale = p->yscale;
     }
   }
-  
-  sprintf (work_buffer, " q %g 0 0 %g  %g %g cm /Im%d Do Q ", xscale,
-	   yscale, x_user, y_user-p->depth, num_images);
+  pdf_doc_add_to_page (" q ", 3);
+  add_xform_matrix (x_user, y_user, xscale, yscale, p->rotate);
+  if (p->depth != 0.0)
+    add_xform_matrix (0.0, -p->depth, 1.0, 1.0, 0.0);
+  sprintf (work_buffer, " /Im%d Do Q ", num_images);
   pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
   return (xobject);
 }

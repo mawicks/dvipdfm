@@ -1,5 +1,16 @@
-   This is dvipdfm, a DVI to PDF translator.  
-   
+   This is dvipdfm, a DVI to PDF translator.  I wrote this mainly as
+exercise to get at the features of PDF I wanted to experiment with. You're
+probably wondering why I don't use PDFTeX.  I am a bit of a purist and I
+would rather use TeX unmodified as Donald Knuth left it.
+You can get it from
+
+    http://odo.kettering.edu/dvipdfm
+
+or if you prefer FTP:
+
+    ftp://ftp.kettering.edu/pub/outgoing/mwicks/dvipdfm
+    
+
    Features:
       - TeX \special's that approximate the functionality 
         of the PostScript pdfmarks used by Adobe's

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfspecial.c,v 1.4 1998/11/19 15:28:35 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfspecial.c,v 1.5 1998/11/20 20:15:12 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <math.h>
 #include "pdflimits.h"
 #include "pdfspecial.h"
 #include "pdfobj.h"
@@ -137,6 +138,7 @@ static void do_put(char **start, char *end)
 #define SCALE 3
 #define XSCALE 4
 #define YSCALE 5
+#define ROTATE 6
 
 struct {
   char *s;
@@ -148,30 +150,31 @@ struct {
   {"depth", DEPTH, 1},
   {"scale", SCALE, 0},
   {"xscale", XSCALE, 0},
-  {"yscale", YSCALE, 0}
+  {"yscale", YSCALE, 0},
+  {"rotate", ROTATE, 0}
 };
 
-
-static struct dimension_info *new_dimension_info (void)
+static struct xform_info *new_xform_info (void)
 {
-  struct dimension_info *result;
-  result = NEW (1, struct dimension_info);
+  struct xform_info *result;
+  result = NEW (1, struct xform_info);
   result -> width = 0.0;
   result -> height = 0.0;
   result -> depth = 0.0;
   result -> scale = 0.0;
   result -> xscale = 0.0;
   result -> yscale = 0.0;
+  result -> rotate = 0.0;
   return result;
 }
 
-static void release_dimension_info (struct dimension_info *p)
+static void release_xform_info (struct xform_info *p)
 {
   release (p);
   return;
 }
 
-static int validate_image_dimension_info (struct dimension_info *p)
+static int validate_image_xform_info (struct xform_info *p)
 {
   if (p->width != 0.0)
     if (p->scale !=0.0 || p->xscale != 0.0) {
@@ -246,8 +249,8 @@ double parse_one_unit (char **start, char *end)
   return units[i].units*dvi_tell_mag();
 }
 
-static int parse_dimension (char **start, char *end, struct
-				  dimension_info *p)
+static int parse_dimension (char **start, char *end,
+			    struct xform_info *p)
 {
   double dimension;
   char *number_string, *save = *start;
@@ -298,6 +301,12 @@ static int parse_dimension (char **start, char *end, struct
       fprintf (stderr, "\nDuplicate yscale specified\n");
     p->yscale = atof (number_string);
     break;
+  case ROTATE:
+    if (p->rotate != 0)
+      fprintf (stderr, "\nDuplicate rotation specified\n");
+#define PI (4.0*atan(1.0))
+    p->rotate = atof (number_string) * PI / 180.0;
+    break;
   }
   release(number_string);
   skip_white(start, end);
@@ -308,8 +317,8 @@ static void do_ann(char **start, char *end)
   pdf_obj *result, *rectangle, *tmp1, *tmp2;
   char *name, *number_string;
   int dimension;
-  struct dimension_info *p;
-  p = new_dimension_info();
+  struct xform_info *p;
+  p = new_xform_info();
   skip_white(start, end);
   name = parse_opt_ident(start, end);
   skip_white(start, end);
@@ -337,7 +346,7 @@ static void do_ann(char **start, char *end)
   pdf_add_array (rectangle, pdf_new_number(ROUND(dev_tell_y()-p->depth,0.1)));
   pdf_add_array (rectangle, pdf_new_number(ROUND(dev_tell_x()+p->width,0.1)));
   pdf_add_array (rectangle, pdf_new_number(ROUND(dev_tell_y()+p->height,0.1)));
-  release_dimension_info (p);
+  release_xform_info (p);
   pdf_add_dict (result, pdf_new_name ("Rect"),
 		rectangle);
   pdf_doc_add_to_page_annots (pdf_ref_obj (result));
@@ -447,7 +456,7 @@ static void do_bead(char **start, char *end)
   pdf_obj *bead_dict, *rectangle, *tmp1, *tmp2;
   char *name, *number_string, *save = *start;
   int key;
-  struct dimension_info *p;
+  struct xform_info *p;
   skip_white(start, end);
   if (*((*start)++) != '@' || (name = parse_ident(start, end)) == NULL) {
     fprintf (stderr, "Article reference expected.\nWhich article does this go with?\n");
@@ -455,7 +464,7 @@ static void do_bead(char **start, char *end)
     dump(*start, end);
   }
   skip_white(start, end);
-  p = new_dimension_info();
+  p = new_xform_info();
   while ((*start) < end && isalpha (**start)) {
     skip_white(start, end);
     if (!parse_dimension(start, end, p)) {
@@ -477,7 +486,7 @@ static void do_bead(char **start, char *end)
   pdf_add_array (rectangle, pdf_new_number(ROUND(dev_tell_y()-p->depth,0.1)));
   pdf_add_array (rectangle, pdf_new_number(ROUND(dev_tell_x()+p->width,0.1)));
   pdf_add_array (rectangle, pdf_new_number(ROUND(dev_tell_y()+p->height,0.1)));
-  release_dimension_info(p);
+  release_xform_info(p);
   pdf_add_dict (bead_dict, pdf_new_name ("R"),
 		rectangle);
   pdf_add_dict (bead_dict, pdf_new_name ("P"),
@@ -497,10 +506,10 @@ static void do_epdf (char **start, char *end, double x_user, double y_user)
   char *filename, *objname, *number_string;
   pdf_obj *filestring;
   pdf_obj *trailer, *result;
-  struct dimension_info *p;
+  struct xform_info *p;
   skip_white(start, end);
   objname = parse_opt_ident(start, end);
-  p = new_dimension_info ();
+  p = new_xform_info ();
   skip_white(start, end);
   while ((*start) < end && isalpha (**start)) {
     skip_white(start, end);
@@ -509,7 +518,7 @@ static void do_epdf (char **start, char *end, double x_user, double y_user)
       return;
     }
   }
-  if (!validate_image_dimension_info (p)) {
+  if (!validate_image_xform_info (p)) {
     fprintf (stderr, "\nSpecified dimensions are inconsistent\n");
     fprintf (stderr, "\nSpecial will be ignored\n");
     return;
@@ -525,7 +534,7 @@ static void do_epdf (char **start, char *end, double x_user, double y_user)
     };
     pdf_release_obj (filestring);
     result = pdf_include_page(trailer, x_user, y_user, p);
-    release_dimension_info(p);
+    release_xform_info(p);
     pdf_release_obj (trailer);
     pdf_close ();
   } else
@@ -560,8 +569,8 @@ static void do_image (char **start, char *end, double x_user, double y_user)
   char *filename, *number_string, *objname;
   pdf_obj *filestring, *result;
   struct jpeg *jpeg;
-  struct dimension_info *p;
-  p = new_dimension_info();
+  struct xform_info *p;
+  p = new_xform_info();
   skip_white(start, end);
   objname = parse_opt_ident(start, end);
   skip_white(start, end);
@@ -573,7 +582,7 @@ static void do_image (char **start, char *end, double x_user, double y_user)
       return;
     }
   }
-  if (!validate_image_dimension_info (p)) {
+  if (!validate_image_xform_info (p)) {
     fprintf (stderr, "\nSpecified dimensions are inconsistent\n");
     fprintf (stderr, "\nSpecial will be ignored\n");
     return;
@@ -589,7 +598,7 @@ static void do_image (char **start, char *end, double x_user, double y_user)
     };
     pdf_release_obj (filestring);
     result = jpeg_build_object(jpeg, x_user, y_user, p);
-    release_dimension_info (p);
+    release_xform_info (p);
     jpeg_close (jpeg);
   } else
     {
@@ -996,8 +1005,24 @@ static pdf_obj *build_scale_array (int a, int b, int c, int d, int e, int f)
 
 int num_xobjects = 0;
 
+/* Compute a transformation matrix
+   transformations are applied in the following
+   order: scaling, rotate, displacement. */
+void add_xform_matrix (double xoff, double yoff,
+		       double xscale, double yscale,
+		       double rotate) 
+{
+  double c, s;
+  c = ROUND(cos(rotate),1e-5);
+  s = ROUND(sin(rotate),1e-5);
+  sprintf (work_buffer, " %g %g %g %g %g %g cm ", 
+	   c*xscale, s*xscale, -s*yscale, c*yscale, xoff, yoff);
+  pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
+}
+
+
 pdf_obj *pdf_include_page(pdf_obj *trailer, double x_user, double y_user,
-			  struct dimension_info *p)
+			  struct xform_info *p)
 {
   pdf_obj *catalog, *page_tree,
     *kids_ref, *kids;
@@ -1113,8 +1138,11 @@ pdf_obj *pdf_include_page(pdf_obj *trailer, double x_user, double y_user,
     }
   pdf_release_obj (new_resources);
   pdf_release_obj (resources);
-  sprintf (work_buffer, " q %g 0 0 %g  %g %g cm /Fm%d Do Q ", xscale,
-	   yscale, x_user, y_user-p->depth, num_xobjects);
+  pdf_doc_add_to_page (" q ", 3);
+  add_xform_matrix (x_user, y_user, xscale, yscale, p->rotate);
+  if (p->depth != 0.0)
+    add_xform_matrix (0.0, -p->depth, 1.0, 1.0, 0.0);
+  sprintf (work_buffer, " /Fm%d Do Q ", num_xobjects);
   pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
   return (contents);
   /* pdf_release_obj(contents); */
