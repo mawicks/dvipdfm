@@ -13,18 +13,16 @@
         \special's for placing arbitrary PDF stream
 	graphics on every page.
 
-      - A color stack accessible via specials (this
-        should help people wanting to write packages for
-	this driver).
+      - A color stack accessible via \special's.
 	
       - Works great on plain old DVI files.
 
-   Limitations:
+   Limitations (at present):
 
       - No Virtual font support in this version. This means that the
 	"times", "palatino", and similar packages that require virtual
-	fonts will not work correctly.  Work is in progress and
-	this should be supported soon. 
+	fonts will not work correctly.  Virtual font support is in
+	progress and this should be supported soon. 
 
       - No output PDF stream compression.  Input PDF files
         may be contain compressed streams, however.
@@ -32,8 +30,14 @@
 	supported in a future version.
 	
       - No package support yet.  Graphics can be included
-        via \special's, but there is no \includegraphics
-	support, for example.
+        via \special's, but there is no higher level macro
+	support.  There is no interfacet for \includegraphics,
+	for example.  Rotation isn't implemented yet.
+	This should be easy to implement for included figures
+	and will be added soon.
+	
+      - This code is in its infancy.  It has worked flawlessly
+        for me, but YMMV.
 	
    Mark A. Wicks
    Kettering University
