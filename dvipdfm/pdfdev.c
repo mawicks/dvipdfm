@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.60 1999/01/18 15:25:15 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.61 1999/01/19 02:53:13 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -106,7 +106,7 @@ unsigned long dev_tell_ydpi(void)
 
 int motion_state = GRAPHICS_MODE; /* Start in graphics mode */
 
-#define FORMAT_BUF_SIZE 256
+#define FORMAT_BUF_SIZE 4096
 static char format_buffer[FORMAT_BUF_SIZE];
 
  /* Device coordinates are relative to upper left of page.  One of the

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.27 1999/01/18 15:25:15 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.28 1999/01/19 02:53:12 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -249,6 +249,7 @@ static void do_args (int argc, char *argv[])
 	dvi_set_verbose();
 	type1_set_verbose();
 	vf_set_verbose();
+	pk_set_verbose();
 	pdf_obj_set_verbose();
 	pdf_doc_set_verbose();
 	break;

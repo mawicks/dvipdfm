@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.40 1999/01/11 02:10:29 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.41 1999/01/19 02:53:13 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -45,7 +45,7 @@ FILE *pdf_output_file = NULL;
 FILE *pdf_input_file = NULL;
 unsigned long pdf_output_file_position = 0, compression_saved = 0;
 int pdf_output_line_position = 0;
-#define FORMAT_BUF_SIZE 256
+#define FORMAT_BUF_SIZE 4096
 char format_buffer[FORMAT_BUF_SIZE];
 
 static struct xref_entry 
@@ -496,6 +496,8 @@ int pdfobj_escape_str (char *buffer, int bufsize, unsigned char *s, int len)
   int result = 0, i;
   for (i=0; i<len; i++) {
     /* Exit as fast as possible for printable characters */
+    if (result+4 > bufsize)
+      ERROR ("pdfobj_escape_str: Buffer overflow");
     switch (s[i]) {
     case '(':
       buffer[result++] = '\\';
@@ -518,8 +520,6 @@ int pdfobj_escape_str (char *buffer, int bufsize, unsigned char *s, int len)
       }
       break;
     }
-    if (result+4 > bufsize)
-      ERROR ("pdfobj_escape_str: Buffer overflow");
   }
   return result;
 }

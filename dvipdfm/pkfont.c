@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pkfont.c,v 1.1 1999/01/18 15:26:03 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pkfont.c,v 1.2 1999/01/19 02:53:13 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -37,6 +37,14 @@
 #define DPI 600
 
 pdf_obj *pk_encoding_ref = NULL;
+static verbose = 0;
+
+void pk_set_verbose(void)
+{
+  if (verbose < 255) {
+    verbose += 1;
+  }
+}
 
 static void make_pk_encoding_ref (void)
 {
@@ -57,7 +65,6 @@ static void make_pk_encoding_ref (void)
       sprintf (work_buffer, "x%x", i);
       pdf_add_array (differences, pdf_new_name(work_buffer));
     }
-    pdf_write_obj (stderr, encoding);
     pk_encoding_ref = pdf_ref_obj (encoding);
     pdf_release_obj (encoding);
   }
@@ -109,7 +116,6 @@ int pk_font (char *tex_name, double ptsize, int tfm_font_id, char
 					DPI*ptsize/tfm_get_design_size(tfm_font_id),
 					kpse_pk_format,
 					&kpse_file_info))) {
-      fprintf (stderr, "\nglyph_file = %s\n", pk_file_name);
       /* Make sure there is enough room in pk_fonts for this entry */
       if (num_pk_fonts >= max_pk_fonts) {
 	max_pk_fonts += MAX_FONTS;
@@ -279,10 +285,10 @@ static void do_character (unsigned char flag, int pk_id, pdf_obj *char_procs)
     unsigned long tfm_width = 0;
     long dm=0, w=0, h=0;
     int hoff=0, voff=0;
-    fprintf (stderr, "\nEmbedding code=%ld, length=%ld\n", code,
-	     packet_length);
-    if (isprint (code%256))
-      fprintf (stderr, "(%c)\n", (int) code%256);
+    /*    fprintf (stderr, "\nEmbedding code=%ld, length=%ld\n", code,
+	  packet_length); */
+    /*    if (isprint (code%256))
+	  fprintf (stderr, "(%c)\n", (int) code%256);*/
     dyn_f = flag/16;
     switch (format) {
     case SHORT_FORM:
@@ -321,7 +327,7 @@ static void do_character (unsigned char flag, int pk_id, pdf_obj *char_procs)
 		     char_width, 0.0,
 		     llx, lly, urx, ury);
       pdf_add_stream (glyph, work_buffer, len);
-      len = sprintf (work_buffer, " %.2f %.2f m %.2f %.2f l %.2f %.2f l %.2f %.2f l b",
+      len = sprintf (work_buffer, " %.2f %.2f m %.2f %.2f l %.2f %.2f l %.2f %.2f l s",
 	       llx, lly, urx, lly, urx, ury, llx, ury);
       pdf_add_stream (glyph, work_buffer, len);
       sprintf (work_buffer, "x%x", (int)code%256);
@@ -337,9 +343,10 @@ static void do_character (unsigned char flag, int pk_id, pdf_obj *char_procs)
   do_skip (packet_length);
 }
 
-
 static void embed_pk_font (int pk_id)
 {
+  if (verbose)
+    fprintf (stderr, "(%s", pk_fonts[pk_id].pk_file_name);
   if ((pk_file = fopen (pk_fonts[pk_id].pk_file_name,
 			FOPEN_RBIN_MODE))) {
     int pk_command_byte;
@@ -374,6 +381,8 @@ static void embed_pk_font (int pk_id)
 	}
     }
     fclose (pk_file);
+    if (verbose) 
+      fprintf (stderr, ")\n");
     pdf_add_dict (pk_fonts[pk_id].direct,
 		  pdf_new_name ("CharProcs"),
 		  pdf_ref_obj(char_procs));
