@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.16 1998/12/13 22:04:21 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.17 1998/12/21 02:31:56 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -163,14 +163,7 @@ pdf_obj *get_encoding (const char *enc_name)
   return pdf_link_obj(result_ref);
 }
 
-void type1_close_all_encodings (void)
-{
-  int i;
-  for (i=0; i<num_encodings; i++) {
-    RELEASE (encodings[i].enc_name);
-    pdf_release_obj (encodings[i].encoding_ref);
-  }
-}
+
 
 struct font_record *get_font_record (const char *tex_name)
 {
@@ -297,21 +290,49 @@ static unsigned long do_pfb_segment (FILE *file, int expected_type, pdf_obj *str
   return length;
 }
 
+static num_pfbs = 0;
+static max_pfbs = 0;
+struct a_pfb
+{
+  char *pfb_name;
+  pdf_obj *direct, *indirect;
+} *pfbs = NULL;
+
 pdf_obj *type1_fontfile (const char *pfb_name)
 {
-  FILE *type1_binary_file;
-  pdf_obj *stream, *stream_dict, *stream_label;
-  unsigned long length1, length2, length3;
+  int i;
+  if (num_pfbs >= max_pfbs) {
+    max_pfbs += MAX_FONTS;
+    pfbs = RENEW (pfbs, max_pfbs, struct a_pfb);
+  }
+  for (i=0; i<num_pfbs; i++) {
+    if (pfbs[i].pfb_name && !strcmp (pfbs[i].pfb_name, pfb_name))
+      break;
+  }
+  if (i == num_pfbs) {
+    num_pfbs += 1;
+    pfbs[i].pfb_name = NEW (strlen(pfb_name)+1, char);
+    strcpy (pfbs[i].pfb_name, pfb_name);
+    pfbs[i].direct = pdf_new_stream();
+    pfbs[i].indirect = pdf_ref_obj (pfbs[i].direct);
+  }
+  return pdf_link_obj(pfbs[i].indirect);
+}
+
+static void do_pfb (const char *pfb_name, pdf_obj *stream)
+{
   char *full_pfb_name;
   int ch;
+  FILE *type1_binary_file;
+  pdf_obj *stream_dict;
+  unsigned long length1, length2, length3;
   full_pfb_name = kpse_find_file (pfb_name, kpse_type1_format,
 				  1);
   if (full_pfb_name == NULL ||
       (type1_binary_file = fopen (full_pfb_name, FOPEN_RBIN_MODE)) == NULL) {
     fprintf (stderr, "type1_fontfile:  Unable to find or open binary font file (%s)...Hope that's okay.", pfb_name);
-    return NULL;
+    return;
   }
-  stream = pdf_new_stream();
   /* Following line doesn't hide PDF stream structure very well */
   length1 = do_pfb_segment (type1_binary_file, ASCII, stream);
   length2 = do_pfb_segment (type1_binary_file, BINARY, stream);
@@ -328,9 +349,24 @@ pdf_obj *type1_fontfile (const char *pfb_name)
 		pdf_new_number (length2));
   pdf_add_dict (stream_dict, pdf_new_name("Length3"),
 		pdf_new_number (length3));
-  stream_label = pdf_ref_obj (stream);
-  pdf_release_obj (stream);
-  return stream_label;
+  return;
+}
+
+void type1_close_all (void)
+{
+  int i;
+  for (i=0; i<num_encodings; i++) {
+    RELEASE (encodings[i].enc_name);
+    pdf_release_obj (encodings[i].encoding_ref);
+  }
+  /* Read any necessary font files and flush them */
+  for (i=0; i<num_pfbs; i++) {
+    do_pfb (pfbs[i].pfb_name, pfbs[i].direct);
+    RELEASE (pfbs[i].pfb_name);
+    pdf_release_obj (pfbs[i].direct);
+    pdf_release_obj (pfbs[i].indirect);
+  }
+  RELEASE (pfbs);
 }
 
 #define FONTNAME 1
