@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.h,v 1.6 1999/01/20 06:09:47 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tpic.h,v 1.1 1999/01/20 06:09:48 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -23,37 +23,19 @@
 */
 
 	
-#ifndef PDFSPECIAL_H
+#ifndef _TPIC_H_
 
-#define PDFSPECIAL_H
+#define _TPIC_H_
+
 #include "numbers.h"
-#include "pdfobj.h"
 
-struct xform_info 
-{
-  double width;
-  double height;
-  double depth;
-  double scale;
-  double xscale;
-  double yscale;
-  double rotate;
-};
-
-extern int pdf_parse_special(char *buffer, UNSIGNED_QUAD size, double
+extern int tpic_parse_special(char *buffer, UNSIGNED_QUAD size, double
 		       x_user, double y_user);
-extern void pdf_finish_specials(void);
-extern pdf_obj *get_reference(char **start, char *end);
-
-extern void add_xform_matrix (double xoff, double yoff, double xscale, double
-		       yscale, double rotate);
-
-extern void pdf_special_ignore_colors(void);
-
-extern double parse_one_unit (char **start, char *end);
-
 #ifndef M_PI
   #define M_PI (4.0*atan(1.0))
 #endif /* M_PI */
 
-#endif  /* PDFSPECIAL_H */
+#endif  /* _TPIC_H */
+
+
+

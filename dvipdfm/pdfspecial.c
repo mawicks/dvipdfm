@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.37 1999/01/19 03:42:41 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.38 1999/01/20 06:09:47 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -1343,10 +1343,10 @@ void pdf_finish_specials (void)
     RELEASE (named_references);
 }
 
-void pdf_parse_special(char *buffer, UNSIGNED_QUAD size, double
+int pdf_parse_special(char *buffer, UNSIGNED_QUAD size, double
 		       x_user, double y_user)
 {
-  int pdfmark;
+  int pdfmark, result=0;
   char *start = buffer, *end;
   end = buffer + size;
 
@@ -1354,106 +1354,105 @@ void pdf_parse_special(char *buffer, UNSIGNED_QUAD size, double
 MEM_START
 #endif
 
-  if (!is_pdf_special(&start, end)) {
-    fprintf (stderr, "\nNon PDF special ignored\n");
-    dump (start, end);
-    return;
-  }
-  /* Must have a pdf special */
-  if ((pdfmark = parse_pdfmark(&start, end)) < 0)
-    {
-      fprintf (stderr, "\nSpecial ignored.\n");
-      return;
+  if (is_pdf_special(&start, end)) {
+    result = 1; /* This means it really was a pdf special.  It doesn't
+		   mean it succeeded */
+    /* Must have a pdf special */
+    pdfmark = parse_pdfmark(&start, end);
+    switch (pdfmark) {
+    case ANN:
+      do_ann(&start, end);
+      break;
+    case OUT:
+      do_outline(&start, end);
+      break;
+    case ARTICLE:
+      do_article(&start, end);
+      break;
+    case BEAD:
+      do_bead(&start, end);
+      break;
+    case DEST:
+      do_dest(&start, end);
+      break;
+    case DOCINFO:
+      do_docinfo(&start, end);
+      break;
+    case DOCVIEW:
+      do_docview(&start, end);
+      break;
+    case OBJ:
+      do_obj(&start, end);
+      break;
+    case CONTENT:
+      do_content(&start, end, x_user, y_user);
+      break;
+    case PUT:
+      do_put(&start, end);
+      break;
+    case CLOSE:
+      do_close(&start, end);
+      break;
+    case BOP:
+      do_bop(&start, end);
+      break;
+    case EOP:
+      do_eop(&start, end);
+      break;
+    case EPDF:
+      do_epdf(&start, end, x_user, y_user);
+      break;
+    case IMAGE:
+      do_image(&start, end, x_user, y_user);
+      break;
+    case BGCOLOR:
+      if (!ignore_colors)
+	do_bgcolor (&start, end);
+      break;
+    case BCOLOR:
+      if (!ignore_colors)
+	do_bcolor (&start, end);
+      break;
+    case ECOLOR:
+      if (!ignore_colors)
+	do_ecolor ();
+      break;
+    case BGRAY:
+      do_bgray (&start, end);
+      break;
+    case EGRAY:
+      do_egray ();
+      break;
+    case BXFORM:
+      do_bxform (&start, end, x_user, y_user);
+      break;
+    case EXFORM:
+      do_exform ();
+      break;
+    case PAGESIZE:
+      do_pagesize(&start, end);
+      break;
+    case BXOBJ:
+      do_bxobj (&start, end, x_user, y_user);
+      break;
+    case EXOBJ:
+      do_exobj ();
+      break;
+    case UXOBJ:
+      do_uxobj (&start, end, x_user, y_user);
+      break;
+    default:
+      dump (start, end);
+      fprintf (stderr, "Invalid pdf special ignored\n");
+      break;
     }
-  if (verbose)
-    fprintf (stderr, "pdfmark = %d\n", pdfmark);
-  switch (pdfmark) {
-  case ANN:
-    do_ann(&start, end);
-    break;
-  case OUT:
-    do_outline(&start, end);
-    break;
-  case ARTICLE:
-    do_article(&start, end);
-    break;
-  case BEAD:
-    do_bead(&start, end);
-    break;
-  case DEST:
-    do_dest(&start, end);
-    break;
-  case DOCINFO:
-    do_docinfo(&start, end);
-    break;
-  case DOCVIEW:
-    do_docview(&start, end);
-    break;
-  case OBJ:
-    do_obj(&start, end);
-    break;
-  case CONTENT:
-    do_content(&start, end, x_user, y_user);
-    break;
-  case PUT:
-    do_put(&start, end);
-    break;
-  case CLOSE:
-    do_close(&start, end);
-    break;
-  case BOP:
-    do_bop(&start, end);
-    break;
-  case EOP:
-    do_eop(&start, end);
-    break;
-  case EPDF:
-    do_epdf(&start, end, x_user, y_user);
-    break;
-  case IMAGE:
-    do_image(&start, end, x_user, y_user);
-    break;
-  case BGCOLOR:
-    if (!ignore_colors)
-      do_bgcolor (&start, end);
-    break;
-  case BCOLOR:
-    if (!ignore_colors)
-      do_bcolor (&start, end);
-    break;
-  case ECOLOR:
-    if (!ignore_colors)
-      do_ecolor ();
-    break;
-  case BGRAY:
-    do_bgray (&start, end);
-    break;
-  case EGRAY:
-    do_egray ();
-    break;
-  case BXFORM:
-    do_bxform (&start, end, x_user, y_user);
-    break;
-  case EXFORM:
-    do_exform ();
-    break;
-  case PAGESIZE:
-    do_pagesize(&start, end);
-    break;
-  case BXOBJ:
-    do_bxobj (&start, end, x_user, y_user);
-    break;
-  case EXOBJ:
-    do_exobj ();
-    break;
-  case UXOBJ:
-    do_uxobj (&start, end, x_user, y_user);
-    break;
+  } else {
+    result = 0;
   }
-  /*  parse_crap (&start, end); */
 #ifdef MEM_DEBUG
 MEM_END
 #endif
+  return result;
 }
 
 /* Compute a transformation matrix
