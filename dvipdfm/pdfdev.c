@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.113 2001/07/27 02:37:00 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.114 2001/07/27 02:38:00 mwicks Exp $
  
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -667,7 +667,6 @@ void dev_bg_rgb_color (double r, double g, double b)
   background.c1 = r;
   background.c2 = g;
   background.c3 = b;
-  fill_page();
   return;
 }
 
@@ -678,7 +677,6 @@ void dev_bg_cmyk_color (double c, double m, double y, double k)
   background.c2 = m;
   background.c3 = y;
   background.c4 = k;
-  fill_page();
   return;
 }
 
@@ -686,7 +684,6 @@ void dev_bg_gray (double value)
 {
   background.colortype = GRAY;
   background.c1 = value;
-  fill_page();
   return;
 }
 
@@ -968,7 +965,6 @@ MEM_START
     fprintf (stderr, "dev_bop:\n");
   }
   pdf_doc_new_page ();
-  fill_page();
   graphics_mode();
   {
     text_slant = 0.0;
@@ -994,6 +990,7 @@ MEM_START
   }
   graphics_mode();
   dev_close_all_xforms(0);
+  fill_page();
   pdf_doc_finish_page ();
   /* Finish any pending PS specials */
   mp_eop_cleanup();
