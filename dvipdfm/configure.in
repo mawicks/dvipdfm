@@ -21,7 +21,7 @@ AC_PROG_MAKE_SET
 
 dnl Don't bother going further if we don't have kpse installed.
 AC_HAS_KPSE_FORMATS
-AC_CHECK_LIB(kpathsea, kpse_find_file, [AC_DEFINE(KPATHSEA) LIBS="-lkpathsea $LIBS"],
+AC_CHECK_LIB(kpathsea, kpse_find_file, [AC_DEFINE(HAVE_KPATHSEA) LIBS="-lkpathsea $LIBS"],
   AC_MSG_ERROR([kpathsea library not found
 This version of dvipdfm requires the kpathsea library and its headers.  If
 you know where it is you might try setting the LDFLAGS environment variable
@@ -32,9 +32,6 @@ AC_TEXMF_TREE
 AC_HAS_ZLIB
   
 dnl Check for functions
-dnl AC_CHECK_FUNCS(basename)
-AC_HAVE_BASENAME
-
 
 dnl Checks for libraries.
 dnl Replace `main' with a function in -lm:

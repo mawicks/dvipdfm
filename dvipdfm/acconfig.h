@@ -12,12 +12,8 @@
 /* HAVE_TM_GMTOFF - Define if struct tm has tm_gmtoff as a member */
 #undef HAVE_TM_GMTOFF
 
-/* HAVE_BASENAME - Define if basename() is in either <string.h> or <libgen.h>
- * and if <libgen.h> exists */
-#undef HAVE_BASENAME
-
-/* KPATHSEA - Define if you have kpathsea */
-#undef KPATHSEA
+/* HAVE_KPATHSEA - Define if you have kpathsea */
+#undef HAVE_KPATHSEA
 
 /* HAVE_ZLIB - Define if you have zlib and its headers */
 #undef HAVE_ZLIB
