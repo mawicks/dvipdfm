@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.20.2.1 1999/08/23 03:04:01 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.20.2.2 1999/08/23 03:05:36 mwicks Exp $
 
     This is ebb, a bounding box extraction program.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -40,7 +40,7 @@
 #endif
 
 #define EBB_PROGRAM "ebb"
-#define EBB_VERSION "Version 0.5"
+#define EBB_VERSION "Version 0.5.1"
 
 static void usage (void)
 {
