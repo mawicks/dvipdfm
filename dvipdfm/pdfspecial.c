@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.33 1998/12/30 19:36:11 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.34 1998/12/30 20:54:16 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -716,7 +716,7 @@ static void do_article(char **start, char *end)
 {
   char *name = NULL, *save = *start;
   int error = 0;
-  pdf_obj *info_dict;
+  pdf_obj *info_dict = NULL;
   skip_white (start, end);
   if (*((*start)++) != '@' || (name = parse_ident(start, end)) == NULL) {
     fprintf (stderr, "Article name expected.\n");

@@ -75,9 +75,9 @@ depend.make:
 #
 # Autoconf stuff
 #
-Makefile: Makefile.in configure
-	echo "***** You need to rerun ./configure. *****"
-	exit 1
+@MAINT@Makefile: Makefile.in configure
+@MAINT@	echo "***** You need to rerun ./configure. *****"
+@MAINT@	exit 1
 @MAINT@c-auto.h: c-auto.h.in configure.in
 @MAINT@	echo "***** You need to rerun ./configure. *****"
 @MAINT@	rm c-auto.h

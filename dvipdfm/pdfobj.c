@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.35 1998/12/30 19:36:10 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.36 1998/12/30 20:54:16 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -893,7 +893,10 @@ char *pdf_get_dict (const pdf_obj *dict, int index)
 
 pdf_obj *pdf_new_stream (int flags)
 {
-  pdf_obj *result, *filters = NULL;
+  pdf_obj *result;
+#ifdef HAVE_ZLIB  
+  pdf_obj *filters = NULL;
+#endif /* HAVE_ZLIB */
   pdf_stream *data;
   result = pdf_new_obj (PDF_STREAM);
   data = NEW (1, pdf_stream);
@@ -931,8 +934,12 @@ static void write_stream (FILE *file, pdf_stream *stream)
 {
 #define COMPRESS_LEVEL 9
 #define THRESHOLD 100
-  unsigned char *buffer, *filtered;
-  unsigned long filtered_length, buffer_length;
+  unsigned char *filtered;
+  unsigned long filtered_length;
+#ifdef HAVE_ZLIB
+  unsigned long buffer_length;
+  unsigned char *buffer;
+#endif /* HAVE_ZLIB */
   /* Always work from a copy of the stream */
   /* All filters read from "filtered" and leave their result in
      "filtered" */
