@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pkfont.c,v 1.7 1999/02/09 03:24:09 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pkfont.c,v 1.8 1999/02/21 03:35:03 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -35,7 +35,7 @@
 #include "ctype.h"
 
 pdf_obj *pk_encoding_ref = NULL;
-static verbose = 0;
+static verbose = 0, debug = 0;
 static font_dpi = 600;
 
 void pk_set_verbose(void)
@@ -433,8 +433,13 @@ static void do_character (unsigned char flag, int pk_id, pdf_obj *char_procs)
   case LONG_FORM:
     packet_length = get_unsigned_quad (pk_file);
     code = get_unsigned_quad (pk_file);
-    ERROR ("Unable to handle long characters in PK files");
+    if (code > 255)
+      ERROR ("Unable to handle long characters in PK files");
     break;
+  }
+  if (debug) {
+    fprintf (stderr, "\npk_do_character: code=%lu, packet_length=%lu\n",
+	     code, packet_length);
   }
   if ((pk_fonts[pk_id].chars_used)[code%256]) {
     int dyn_f;
@@ -510,8 +515,9 @@ static void do_character (unsigned char flag, int pk_id, pdf_obj *char_procs)
       pdf_release_obj (glyph);
     }
   } else {
-    /*    fprintf (stderr, "\nSkipping code=%ld, length=%ld\n", code,
-	  packet_length);  */
+    if (debug)
+      fprintf (stderr, "\npk_do_character: Skipping code=%ld, length=%ld\n", code,
+	       packet_length);
     do_skip (packet_length);
   }
   /* For now, we are ignoring everything */
@@ -588,5 +594,4 @@ void pk_close_all (void)
     RELEASE (pk_fonts[i].pk_file_name);
   }
 }
-
 
