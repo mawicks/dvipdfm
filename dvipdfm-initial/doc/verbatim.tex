@@ -1,0 +1,21 @@
+% Taken from the TeXBook
+\outer\def\begindisplay{\obeylines\startdisplay}
+{\obeylines\gdef\startdisplay#1
+  {\catcode`\^^M=5$$#1\halign\bgroup\indent##\hfil&&\qquad##\hfil\cr}}
+\outer\def\enddisplay{\crcr\egroup$$}
+\chardef\other=12
+\def\ttverbatim{\begingroup \catcode`\\=\other \catcode`\{=\other
+ \catcode`\}=\other \catcode`\$=\other \catcode `\&=\other
+ \catcode`\#=\other \catcode`\%=\other \catcode `\~=\other
+ \catcode`\_=\other \catcode`\^=\other
+  \obeyspaces \obeylines \tt}
+{\obeyspaces\gdef {\ }}
+\outer\def\begintt{$$\let\par=\endgraf\ttverbatim \parskip=0pt
+ \catcode`\|=0 \rightskip=-5pc \ttfinish}
+{\catcode`\|=0 |catcode`|\=\other
+ |obeylines % end of line is now active
+ |gdef|ttfinish#1^^M#2\endtt{#1|vbox{#2}|endgroup$$}}
+\catcode`\|=\active
+{\obeylines\gdef|{\ttverbatim\spaceskip=\ttglue\let^^M=\ \let|=\endgroup}}
+\newskip\ttglue
+\ttglue=0.5em plus 0.25em minus 0.15em
