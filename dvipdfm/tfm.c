@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.25 1999/09/16 21:31:09 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.26 1999/09/16 22:43:05 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -32,8 +32,8 @@
 
 #define FWBASE ((double) (1<<20))
 
-static char tfm_verbose = 1;
-static char tfm_debug = 1;
+static char tfm_verbose = 0;
+static char tfm_debug = 0;
 
 /* TFM Record structure
      Multiple TFM's may be read in at once */

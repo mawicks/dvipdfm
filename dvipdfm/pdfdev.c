@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.91 1999/09/08 16:51:46 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.92 1999/09/16 22:41:54 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -151,16 +151,35 @@ static struct dev_font {
   int remap;
 } dev_font[MAX_DEVICE_FONTS];
 
+/*
+ * reset_text_state() outputs a BT
+ * and does any necessary coordinate transformations
+ * to get ready to ship out text
+ */
+
 static void reset_text_state(void)
 {
+  int len;
   text_xorigin = 0;
   text_yorigin = 0;
   text_leading = 0;
   text_offset = 0;
   text_xerror = 0.0;
   text_yerror = 0.0;
+  /* 
+   * We need to reset the line matrix to handle slanted fonts 
+   */
+  len = sprintf (format_buffer, " BT");
+  if (current_font >= 0 && /* If not at top of page */
+      (dev_font[current_font].slant != 0.0 ||
+      dev_font[current_font].extend != 1.0)) {
+    len += sprintf (format_buffer+len, " %.7g 0 %.3g 1 %.7g %.7g Tm",
+		   dev_font[current_font].extend,
+		   dev_font[current_font].slant, ROUND(text_xorigin*dvi2pts,0.01),
+		   ROUND(text_yorigin*dvi2pts,0.01));
+  }
+  pdf_doc_add_to_page (format_buffer, len);
 }
-
 
 static void text_mode (void)
 {
@@ -170,7 +189,6 @@ static void text_mode (void)
   case TEXT_MODE:
     break;
   case GRAPHICS_MODE:
-    pdf_doc_add_to_page (" BT", 3);
     reset_text_state();
     break;
   }
@@ -190,7 +208,6 @@ void graphics_mode (void)
   case TEXT_MODE:
     len += sprintf (format_buffer+len, " ET");
     pdf_doc_add_to_page (format_buffer, len);
-    reset_text_state();
     break;
   }
   motion_state = GRAPHICS_MODE;
@@ -205,8 +222,8 @@ static void string_mode (mpt_t xpos, mpt_t ypos, double slant, double extend)
   case STRING_MODE:
     break;
   case GRAPHICS_MODE:
-    len += sprintf (format_buffer+len, " BT"); /* Fall through */
     reset_text_state();
+    /* Fall through now... */
     /* Following may be necessary after a rule (and also after
        specials) */
   case TEXT_MODE:
