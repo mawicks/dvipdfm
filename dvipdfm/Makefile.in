@@ -126,9 +126,9 @@ depend:
 	make depend.make
 depend.make:
 	$(CC) $(CPPFLAGS) -MM $(src) > depend.make
-#
-# Autoconf stuff
-#
+@MAINT@#
+@MAINT@# Autoconf stuff
+@MAINT@#
 @MAINT@Makefile: Makefile.in configure
 @MAINT@	echo "***** You need to rerun ./configure. *****"
 @MAINT@	exit 1
@@ -141,6 +141,13 @@ depend.make:
 @MAINT@	touch config.h.in
 @MAINT@configure: configure.in
 @MAINT@	autoconf
+@MAINT@#
+@MAINT@ # Automated distributions
+@MAINT@#
+@MAINT@doc/dvipdfm.dvi:	doc/dvipdfm.tex
+@MAINT@	cd doc; tex dvipdfm
+@MAINT@doc/dvipdfm.pdf:	dvipdfm.dvi
+@MAINT@	cd doc; dvipdfm dvipdfm
 @MAINT@tarball: depend configure
 	/bin/rm -rf ../dvipdfm
 	mkdir ../dvipdfm
@@ -170,8 +177,16 @@ depend.make:
 @MAINT@	sed -e s/VERSION/@VERSION@/ dvipdfm.spec.in > /usr/src/redhat/SPECS/dvipdfm-@VERSION@.spec
 @MAINT@	cp -a ../dvipdfm-@VERSION@.tar.gz /usr/src/redhat/SOURCES/
 @MAINT@	rpm -ba /usr/src/redhat/SPECS/dvipdfm-@VERSION@.spec
-@MAINT@web-dist: rpm-dist tarball
+@MAINT@web-dist: rpm-dist tarball doc/dvipdfm.pdf
+@MAINT@	rm /home/httpd/html/dvipdfm/dvipdfm.tar.gz
 @MAINT@	cp -a ../dvipdfm-@VERSION@.tar.gz /usr/src/redhat/RPMS/i386/dvipdfm-@VERSION@-1.i386.rpm /home/httpd/html/dvipdfm/
-@MAINT@ftp-dist: rpm-dist tarball
-@MAINT@	ssh mwicks@ftp 'rm pub/outgoing/mwicks/dvipdfm/*.tar.gz; cd pub/outgoing/mwicks/dvipdfm/; ln -s dvipdfm-@VERSION@.tar.gz dvipdfm.tar.gz'
+@MAINT@	ln -s dvipdfm-@VERSION@.tar.gz /home/httpd/html/dvipdfm/dvipdfm.tar.gz
+@MAINT@	cp -a doc/dvipdfm.pdf /home/httpd/html/dvipdfm/dvipdfm-@VERSION@.pdf
+@MAINT@	rm -f /home/httpd/html/dvipdfm/dvipdfm.pdf
+@MAINT@	ln -s dvipdfm-@VERSION@.pdf /home/httpd/html/dvipdfm/dvipdfm.pdf
+@MAINT@ftp-dist: rpm-dist tarball doc/dvipdfm.pdf
+@MAINT@	ssh mwicks@ftp 'rm pub/outgoing/mwicks/dvipdfm/*.tar.gz pub/outgoing/mwicks/dvipdfm/*.pdf ; cd pub/outgoing/mwicks/dvipdfm/; ln -s dvipdfm-@VERSION@.tar.gz dvipdfm.tar.gz'
 @MAINT@	scp ../dvipdfm-@VERSION@.tar.gz mwicks@ftp:pub/outgoing/mwicks/dvipdfm/dvipdfm-@VERSION@.tar.gz
+@MAINT@	scp doc/dvipdfm.pdf mwicks@ftp:pub/outgoing/mwicks/dvipdfm/dvipdfm-@VERSION@.pdf
+@MAINT@	ssh mwicks@ftp 'ln -s dvipdfm-@VERSION@.pdf pub/outgoing/mwicks/dvipdfm/dvipdfm.pdf'
+
