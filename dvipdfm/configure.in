@@ -13,8 +13,6 @@ AC_PROG_LN_S
 AC_PROG_MAKE_SET
 
 dnl Don't bother going further if we don't have kpse.
-LDFLAGS="-L ${libdir} $LDFLAGS"
-CFLAGS="-I ${includedir} $CFLAGS"
 AC_HAS_KPSE_FORMATS
 AC_CHECK_LIB(kpathsea, kpse_find_file, [AC_DEFINE(KPATHSEA) LIBS="-lkpathsea $LIBS"],
   AC_MSG_ERROR([kpathsea library not found
