@@ -1,4 +1,4 @@
-% $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/doc/dvipdfm.tex,v 1.23 1999/09/06 04:38:43 mwicks Exp $
+% $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/doc/dvipdfm.tex,v 1.24 1999/09/19 05:55:50 mwicks Exp $
 % \special{ pdf: pagesize width 8.5truein height 11.0truein}
 \special{  pdf:  docview <</PageMode /UseOutlines>>}%
 \catcode`\ =11\def\space{ }\catcode`\ =10
@@ -116,10 +116,15 @@
   \hbox{\special{pdf: outline 2 << /Title (#1) /Dest [
 @thispage /FitH @ypos ]  >> }}}%
 %
-\def\link#1#2{\setbox0\hbox{\setlink{#1}}%
-   \leavevmode\special{pdf: ann width \the\wd0\space height \the\ht0\space depth \the\dp0
-     << /Type /Annot /Subtype /Link /Border [ 0 0 0 ] /A << /S /GoTo
-     /D (#2) >> >>}\box0\relax}%
+% \def\link#1#2{\setbox0\hbox{\setlink{#1}}%
+%    \leavevmode\special{pdf: ann width \the\wd0\space height \the\ht0\space depth \the\dp0
+%      << /Type /Annot /Subtype /Link /Border [ 0 0 0 ] /A << /S /GoTo
+%      /D (#2) >> >>}\box0\relax}%
+\def\link#1#2{%
+  \leavevmode\special{pdf: bann 
+    << /Type /Annot /Subtype /Link /Border [ 0 0 0 ] /A << /S /GoTo /D (#2)
+>>
+>>}\setlink{#1}\special{pdf: eann}\relax}
 %
 \def\dest#1{\hbox{\raise14pt\hbox{\special{pdf:dest (#1) [ @thispage /FitH
 @ypos ]}}}}%
@@ -148,8 +153,8 @@
 %
 \title{Dvipdfm User's Manual}
 \author{Mark A. Wicks}
-\version{Version 0.12}
-\date{September 6, 1999}
+\version{Version 0.12.4}
+\date{September 19, 1999}
 \maketitle
 \section{Introduction}
 This package is a DVI (\TeX) to PDF conversion utility,
@@ -172,7 +177,7 @@ generate the thumbnails.}
 
 \item{$\bullet$} {\it Support for arbitrary, nested linear transformations
 of typeset material.}  Any material on the page, including
-\TeX\ text, may be \link{scaled}{textxform} \link{and}{textxform} \link{rotated}{textxform}.
+\TeX\ text, may be \link{scaled and rotated}{textxform}.
 
 \item{$\bullet$} {\it Ability to include the first page of a \link{PDF file}{pdfimage} as
 an encapsulated object along with its embedded resources such as fonts.}
@@ -488,6 +493,24 @@ was typeset with
         /Contents (This is a /Text Annotation 
         that looks like a sticky note.) >>}
 \endtt
+
+\subsection{Begin Annotation}
+\syntax
+{\tt beginann} {\it PDF\_dictionary}
+\description
+The |beginann| (|bann| or |bannot|) command begins a breakable annotation.
+Dvipdfm tries to determine the boundaries of the annotation automatically.
+Such an annotation may be broken over several lines (or even several pages).
+Unlike |annot|, the annotation may be not be referred to by name later,
+since there may be more than once instances of the annotation.
+The |beginann| command needs not dimension because |dvipdfm|
+computes the correct bounding box on the fly.
+
+\subsection{End Annotation}
+\syntax
+{\tt endann}
+\description
+The |endann| (|eann| or |eannot|) terminates a breakable annotation.
 
 \subsection{Dest}
 \syntax
