@@ -44,7 +44,7 @@ install-data:
 	if test ! -r $(psheaderdir)/dvipdfm/pdffonts.map \
 	   || grep 'original pdffonts.map --' $(psheaderdir)/dvipdfm/pdffonts.map \
 	   >/dev/null; then  \
-	   mkdir $(psheaderdir)/dvipdfm >& /dev/null || true; \
+	   mkdir $(psheaderdir)/dvipdfm 2> /dev/null || true; \
 	   $(INSTALL) ./pdffonts.map $(psheaderdir)/dvipdfm/pdffonts.map; \
 	else true; fi
 uninstall-exec:
