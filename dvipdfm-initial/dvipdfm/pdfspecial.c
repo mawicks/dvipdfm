@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfspecial.c,v 1.10.2.3 1998/11/25 02:18:42 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfspecial.c,v 1.10.2.4 1998/11/25 07:12:35 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -383,22 +383,60 @@ static void do_ann(char **start, char *end)
   return;
 }
 
+static void do_bgcolor(char **start, char *end)
+{
+  char *save = *start;
+  pdf_obj *color, *tmp;
+  double r, g, b;
+  skip_white(start, end);
+  if ((color = parse_pdf_object(start, end)) == NULL ) {
+    fprintf (stderr, "\nSpecial: background color: Expecting color specified by an array or number\n");
+    return;
+  }
+  if (color -> type != PDF_ARRAY && 
+      color -> type != PDF_NUMBER ) {
+    fprintf (stderr, "\nSpecial: background color: Expecting color specified by an array or number\n");
+    *start = save;
+    return;
+  }
+  if (color -> type == PDF_ARRAY) {
+    int i;
+    for (i=1; i<=4; i++) {
+      if (pdf_get_array (color, i) == NULL)
+	break;
+    }
+    if (i != 4) {
+      fprintf (stderr, "\nSpecial: begincolor: Expecting color array with three elements\n");
+      return;
+    }
+    r = pdf_number_value (pdf_get_array (color, 1));
+    g = pdf_number_value (pdf_get_array (color, 2));
+    b = pdf_number_value (pdf_get_array (color, 3));
+    dev_bg_color (r, g, b);
+  } else {
+    dev_bg_gray (pdf_number_value (color));
+  }
+  pdf_release_obj (color);
+  return;
+}
+
 static void do_bcolor(char **start, char *end)
 {
   char *save = *start;
   pdf_obj *color_array, *tmp;
   double r, g, b;
   skip_white(start, end);
-  if ((color_array = parse_pdf_object(start, end)) == NULL) {
-    fprintf (stderr, "\nSpecial: begincolor: Expecting color specified by an array\n");
+  if ((color_array = parse_pdf_object(start, end)) == NULL ) {
+    fprintf (stderr, "\nSpecial: begincolor: Expecting color specified by an array or number\n");
     return;
   }
-  if (color_array -> type != PDF_ARRAY) {
-    fprintf (stderr, "\nSpecial: begincolor: Expecting color specified by an array\n");
+  if (color_array -> type != PDF_ARRAY && 
+      color_array -> type != PDF_NUMBER ) {
+    fprintf (stderr, "\nSpecial: begincolor: Expecting color specified by an array or number\n");
     *start = save;
     return;
   }
-  {
+  if (color_array -> type == PDF_ARRAY) {
     int i;
     for (i=1; i<=4; i++) {
       if (pdf_get_array (color_array, i) == NULL)
@@ -412,8 +450,11 @@ static void do_bcolor(char **start, char *end)
     g = pdf_number_value (pdf_get_array (color_array, 2));
     b = pdf_number_value (pdf_get_array (color_array, 3));
     dev_begin_color (r, g, b);
-    return;
+  } else {
+    dev_begin_gray (pdf_number_value (color_array));
   }
+  pdf_release_obj (color_array);
+  return;
 }
 
 static void do_bgray(char **start, char *end)
@@ -800,8 +841,9 @@ static int is_pdf_special (char **start, char *end)
 #define ECOLOR 19
 #define BGRAY  20
 #define EGRAY  21
-#define BXFORM 22
-#define EXFORM 23
+#define BGCOLOR 22
+#define BXFORM 23
+#define EXFORM 24
 
 struct pdfmark
 {
@@ -842,6 +884,8 @@ struct pdfmark
   {"eg", EGRAY},
   {"egray", EGRAY},
   {"endgray", EGRAY},
+  {"bbc", BGCOLOR},
+  {"bbg", BGCOLOR},
   {"begintransform", BXFORM},
   {"begintrans", BXFORM},
   {"btrans", BXFORM},
@@ -1066,6 +1110,9 @@ void pdf_parse_special(char *buffer, UNSIGNED_QUAD size, double
     break;
   case IMAGE:
     do_image(&start, end, x_user, y_user);
+    break;
+  case BGCOLOR:
+    do_bgcolor (&start, end);
     break;
   case BCOLOR:
     do_bcolor (&start, end);

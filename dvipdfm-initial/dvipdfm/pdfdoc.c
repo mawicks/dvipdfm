@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfdoc.c,v 1.2 1998/11/18 02:31:33 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfdoc.c,v 1.2.2.1 1998/11/25 07:12:35 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -48,7 +48,8 @@ static struct
 
 static pdf_obj *current_page_resources = NULL;
 static pdf_obj *page_count_obj = NULL, *this_page_contents = NULL;
-static pdf_obj *page_bop, *page_eop;
+static pdf_obj *glob_page_bop, *glob_page_eop;
+static pdf_obj *this_page_bop = NULL, *this_page_eop = NULL;
 static pdf_obj *this_page_beads = NULL;
 static pdf_obj *this_page_annots = NULL;
 static pdf_obj *this_page_xobjects = NULL;
@@ -103,20 +104,33 @@ static start_page_tree (void)
   pdf_add_dict (catalog,
 		pdf_new_name ("Pages"),
 		pdf_link_obj (page_tree_label));
-  page_bop = pdf_new_stream();
-  page_eop = pdf_new_stream();
+  glob_page_bop = pdf_new_stream();
+  glob_page_eop = pdf_new_stream();
 }
 
 void pdf_doc_bop (char *string, unsigned length)
 {
   if (length > 0)
-    pdf_add_stream (page_bop, string, length);
+    pdf_add_stream (glob_page_bop, string, length);
 }
+
+void pdf_doc_this_bop (char *string, unsigned length)
+{
+  if (length > 0)
+    pdf_add_stream (this_page_bop, string, length);
+}
+
+void pdf_doc_this_eop (char *string, unsigned length)
+{
+  if (length > 0)
+    pdf_add_stream (this_page_eop, string, length);
+}
+
 
 void pdf_doc_eop (char *string, unsigned length)
 {
   if (length > 0)
-    pdf_add_stream (page_eop, string, length);
+    pdf_add_stream (glob_page_eop, string, length);
 }
 
 static start_outline_tree (void)
@@ -597,6 +611,14 @@ static void finish_last_page ()
   if (debug) {
     fprintf (stderr, "(finish_last_page)");
   }
+  if (this_page_bop != NULL) {
+    pdf_release_obj (this_page_bop);
+    this_page_bop = NULL;
+  }
+  if (this_page_eop != NULL) {
+    pdf_release_obj (this_page_eop);
+    this_page_eop = NULL;
+  }
   if (this_page_contents != NULL) {
     pdf_release_obj (this_page_contents);
     this_page_contents = NULL;
@@ -680,6 +702,8 @@ void pdf_doc_new_page (double page_width, double page_height)
   if (this_page_contents != NULL) {
     finish_last_page();
   }
+  this_page_bop = pdf_new_stream();
+  this_page_eop = pdf_new_stream();
   /* Was this page already instantiated by a forward reference to it? */
   if (pages[page_count].page_dict == NULL) {
     /* If not, create it. */
@@ -705,11 +729,13 @@ void pdf_doc_new_page (double page_width, double page_height)
 		pdf_new_name ("Parent"),
 		pdf_link_obj (page_tree_label));
   tmp1 = pdf_new_array ();
-  pdf_add_array (tmp1, pdf_ref_obj (page_bop));
+  pdf_add_array (tmp1, pdf_ref_obj (glob_page_bop));
+  pdf_add_array (tmp1, pdf_ref_obj (this_page_bop));
   /* start the contents stream for the new page */
   this_page_contents = pdf_new_stream();
   pdf_add_array (tmp1, pdf_ref_obj (this_page_contents));
-  pdf_add_array (tmp1, pdf_ref_obj (page_eop));
+  pdf_add_array (tmp1, pdf_ref_obj (this_page_eop));
+  pdf_add_array (tmp1, pdf_ref_obj (glob_page_eop));
   pdf_add_dict (pages[page_count].page_dict,
 		pdf_new_name ("Contents"),
 		tmp1);
@@ -774,8 +800,8 @@ void pdf_doc_finish ()
 
   pdf_release_obj (catalog);
   pdf_release_obj (docinfo);
-  pdf_release_obj (page_bop);
-  pdf_release_obj (page_eop);
+  pdf_release_obj (glob_page_bop);
+  pdf_release_obj (glob_page_eop);
   finish_outline();
   finish_dests_tree();
   finish_articles();

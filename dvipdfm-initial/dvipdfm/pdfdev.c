@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfdev.c,v 1.4.2.1 1998/11/25 02:18:42 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfdev.c,v 1.4.2.2 1998/11/25 07:12:35 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -252,14 +252,52 @@ static void bop_font_reset(void)
   current_font = -1;
 }
 
+
+
 #define RGB 1
 #define GRAY 2
 struct color {
   int colortype;
   double r, g, b;
-} colorstack[MAX_COLORS];
+} colorstack[MAX_COLORS], background = {GRAY, 1.0, 1.0, 1.0};
 
 static int num_colors = 0;
+
+static void fill_page (void)
+{
+  if (background.colortype == GRAY && background.g == 1.0)
+    return;
+  if (background.colortype == RGB) {
+    sprintf (format_buffer, " q 0 w %g %g %g rg ", 
+	     background.r, background.g, background.b);
+  } else if (background.colortype == GRAY) {
+    sprintf (format_buffer, " q 0 w %g g ", background.g);
+  }
+  pdf_doc_this_bop (format_buffer, strlen(format_buffer));
+  sprintf (format_buffer,
+	   " 0 0 m %g 0 l %g %g l 0 %g l b Q",
+	   page_width, page_width, page_height, page_height);
+  pdf_doc_this_bop (format_buffer, strlen(format_buffer));
+}
+
+void dev_bg_color (double r, double g, double b)
+{
+  background.colortype = RGB;
+  background.r = r;
+  background.g = g;
+  background.b = b;
+  fill_page();
+  return;
+}
+
+void dev_bg_gray (double value)
+{
+  background.colortype = GRAY;
+  background.g = value;
+  fill_page();
+  return;
+}
+
 static void dev_clear_color_stack (void)
 {
   num_colors = 0;
@@ -294,6 +332,7 @@ static void dev_do_color (void)
   ERROR ("Internal error: Invalid color item on color stack");
   return;
 }
+
 
 void dev_begin_color (double r, double g, double b)
 {
@@ -388,6 +427,7 @@ void dev_bop (void)
   }
     
   pdf_doc_new_page (page_width, page_height);
+  fill_page();
   graphics_mode();
   dev_xpos = 0.0;
   dev_ypos = 0.0;
