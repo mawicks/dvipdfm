@@ -135,8 +135,8 @@ line10 -r
 %
 % Required by psnfss2e
 %
-eurmo10  default  eurm10 -s 0.167
-eurbo10  default  eurb10 -s 0.167
+eurmo10  default  eurm10 -s 0.167 -r
+eurbo10  default  eurb10 -s 0.167 -r
 rsfs5    none  rsfs5
 rsfs7    none  rsfs7
 rsfs10   none  rsfs10%
