@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfspecial.c,v 1.5 1998/11/20 20:15:12 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfspecial.c,v 1.6 1998/11/20 23:44:16 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -408,6 +408,44 @@ static void do_ecolor(void)
   dev_end_color();
 }
 
+static void do_bxform (char **start, char *end)
+{
+  char *save = *start;
+  struct xform_info *p;
+  p = new_xform_info ();
+  skip_white (start, end);
+  while ((*start) < end && isalpha (**start)) {
+    skip_white (start, end);
+    if (!parse_dimension (start, end, p)) {
+      fprintf (stderr, "\nFailed to find transformation parameters\n");
+      return;
+    }
+  }
+  if (!validate_image_xform_info (p)) {
+    fprintf (stderr, "\nSpecified dimensions are inconsistent\n");
+    fprintf (stderr, "\nSpecial will be ignored\n");
+    return;
+  }
+  if (p -> width != 0.0 || p -> height != 0.0 || p -> depth != 0.0) {
+    fprintf (stderr, "Special: bt: width, height, and depth are meaningless\n");
+    return;
+  }
+  if (p -> scale != 0.0) {
+    p->xscale = p->scale;
+    p->yscale = p->scale;
+  }
+  if (p -> xscale == 0.0)
+    p->xscale = 1.0;
+  if (p -> yscale == 0.0)
+    p->yscale = 1.0;
+  dev_begin_xform (p->xscale, p->yscale, p->rotate);
+}
+
+static void do_exform(void)
+{
+  dev_end_xform();
+}
+
 static void do_outline(char **start, char *end)
 {
   pdf_obj *result;
@@ -730,6 +768,8 @@ static int is_pdf_special (char **start, char *end)
 #define IMAGE 17
 #define BCOLOR 18
 #define ECOLOR 19
+#define BXFORM 20
+#define EXFORM 21
 
 struct pdfmark
 {
@@ -763,7 +803,15 @@ struct pdfmark
   {"begincolor", BCOLOR},
   {"ec", ECOLOR},
   {"ecolor", ECOLOR},
-  {"endcolor", ECOLOR}
+  {"endcolor", ECOLOR},
+  {"begintransform", BXFORM},
+  {"begintrans", BXFORM},
+  {"btrans", BXFORM},
+  {"bt", BXFORM},
+  {"endtransform", EXFORM},
+  {"endtrans", EXFORM},
+  {"etrans", EXFORM},
+  {"et", EXFORM}
 };
 
 static int parse_pdfmark (char **start, char *end)
@@ -924,6 +972,7 @@ void pdf_parse_special(char *buffer, UNSIGNED_QUAD size, double
 
   if (!is_pdf_special(&start, end)) {
     fprintf (stderr, "\nNon PDF special ignored\n");
+    dump (start, end);
     return;
   }
   /* Must have a pdf special */
@@ -985,6 +1034,12 @@ void pdf_parse_special(char *buffer, UNSIGNED_QUAD size, double
     break;
   case ECOLOR:
     do_ecolor ();
+    break;
+  case BXFORM:
+    do_bxform (&start, end);
+    break;
+  case EXFORM:
+    do_exform ();
     break;
   }
 }

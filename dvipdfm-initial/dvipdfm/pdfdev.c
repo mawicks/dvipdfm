@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfdev.c,v 1.3 1998/11/19 15:28:35 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfdev.c,v 1.4 1998/11/20 23:44:15 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -33,7 +33,13 @@
 #include "numbers.h"
 #include "type1.h"
 #include "mem.h"
+#include "io.h"
 #include "pdfspecial.h"
+#include "pdflimits.h"
+
+/* Internal functions */
+static void dev_clear_color_stack (void);
+static void dev_clear_xform_stack (void);
 
 #define HOFFSET 72.0
 #define VOFFSET 72.0
@@ -209,12 +215,13 @@ static void line_mode (void)
  motion_state = LINE_MODE;
 }
 
-
 void dev_init (char *outputfile)
 {
   if (debug) fprintf (stderr, "dev_init:\n");
   pdf_doc_init (outputfile);
   graphics_mode();
+  dev_clear_color_stack();
+  dev_clear_xform_stack();
 }
 
 void dev_add_comment (char *comment)
@@ -245,12 +252,11 @@ static void bop_font_reset(void)
   current_font = -1;
 }
 
-#define MAX_COLORS 16
 struct color {
   double r, g, b;
 } colorstack[MAX_COLORS];
-static int num_colors;
 
+static int num_colors = 0;
 static void dev_clear_color_stack (void)
 {
   num_colors = 0;
@@ -298,6 +304,56 @@ void dev_end_color (void)
   dev_do_color();
 }
 
+static int num_transforms = 0;
+
+static void dev_clear_xform_stack (void)
+{
+  num_transforms = 0;
+  return;
+}
+
+void dev_begin_xform (double xscale, double yscale, double rotate)
+{
+#define PI = (4.0*atan (1.0));
+  double c, s;
+  if (num_transforms >= MAX_TRANSFORMS) {
+    fprintf (stderr, "\ndev_set_color:  Exceeded depth of transformation stack\n");
+    return;
+  }
+  c = ROUND (cos(rotate),1e-5);
+  s = ROUND (sin(rotate),1e-5);
+  sprintf (work_buffer, " q %g %g %g %g %g %g cm ",
+	   xscale*c, xscale*s, -yscale*s, yscale*c,
+	   ROUND((1.0-xscale*c)*dev_xpos+yscale*s*dev_ypos,0.001),
+	   ROUND(-xscale*s*dev_xpos+(1.0-yscale*c)*dev_ypos,0.001));
+  pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
+  num_transforms += 1;
+  return;
+}
+
+void dev_end_xform (void)
+{
+  if (num_transforms <= 0) {
+    fprintf (stderr, "\ndev_end_xform:  End transform with no corresponding begin\n");
+    return;
+  }
+  pdf_doc_add_to_page (" Q ", 3);
+  num_transforms -= 1;
+  return;
+}
+
+static void dev_close_all_xforms (void)
+{
+  if (num_transforms)
+    fprintf (stderr, "\nspecial: Closing pending transformations at end of page\n");
+  while (num_transforms > 0) {
+    num_transforms -= 1;
+    pdf_doc_add_to_page (" Q ", 3);
+  }
+  return;
+}
+
+
 void dev_bop (void)
 {
   if (debug) {
@@ -324,6 +380,7 @@ void dev_eop (void)
     fprintf (stderr, "dev_eop:\n");
   }
   graphics_mode();
+  dev_close_all_xforms();
   pdf_doc_add_to_page_resources ("Font", this_page_fontlist_dict);
 }
 

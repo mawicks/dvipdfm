@@ -1,4 +1,4 @@
-% $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/doc/dvipdfm.tex,v 1.10 1998/11/20 20:15:12 mwicks Exp $
+% $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/doc/dvipdfm.tex,v 1.11 1998/11/20 23:44:15 mwicks Exp $
 \special{  pdf:  docview <</PageMode /UseOutlines>>}%
 \catcode`\ =11\def\space{ }\catcode`\ =10
 % Page layout
@@ -19,19 +19,21 @@
 %
 % Some color definitions
 % 
+\def\begincolor#1{\special{pdf:bc #1}}%
+\def\endcolor{\special{pdf:ec}}%
 \def\colored#1#2{%
-  \special{pdf:bc #1}#2\special{pdf:ec}}%
+  \begincolor{#1}#2\endcolor}
 \def\red{[0.8 0.5 0]}%
 \def\green{[0 1 0]}%
 \def\blue{[0 0.4 0.8]}%
 \def\yellow{[0.8 0.9 0.1]}%
 \def\linkcolor{[0.5 0.0 0.7]}%
-\def\begincolor#1{\special{pdf:bc #1}}%
-\def\endcolor{\special{pdf:ec}}%
 %
 % Small help for images
 \def\reserve#1#2#3{\setbox0\hbox{}\wd0=#1
                    \ht0=#2\special{#3}\box0}
+\def\nreserve#1#2#3{\setbox0\hbox{}\wd0=#1
+                   \ht0=#2{#3}\box0}
 %
 % Some font definitions
 %
@@ -164,7 +166,7 @@ modified \TeX\ itself to add primitives that support the PDF features.
 I prefer to work with \TeX\ unmodified, as released by Donald Knuth
 (call me a purist).
 There is an existing DVI to PDF driver called
-|dvipdf| written by S. Lesenko.  At present, it's not widely
+|dvipdf| written by Sergey Lesenko.  At present, it's not widely
 available, so I haven't used it.  I wrote |dvipdfm|
 mainly as an exercise to get at the features
 of PDF I was trying to use.  This |dvipdfm| project demonstrates that many features
@@ -246,8 +248,8 @@ or the current location on the current page.
 The driver defined variables appear in \link{Table~1}{drivervariables}.
 \topinsert
 {\dest{drivervariables}}
-\centerline{\begincolor{\blue}\subheadingfont Table~1---List of driver
-defined variables\endcolor}
+\centerline{\colored{\blue}{\subheadingfont Table~1---List of driver
+defined variables}}
 \bigskip\nobreak
 \centerline{\vbox{\halign{{\tt #}\hskip
 1em&\vtop{\leftskip0pt\rightskip0pt\hsize=3.0in\noindent #}\cr
@@ -273,11 +275,11 @@ by~``{*}'' represents an item that may appear
 zero or more times.  An item followed by~``{+}''
 represents a required item that may appear multiple times.
 
-\subsection{Dimensions and scalings}
+\subsection{Dimensions and transformations}
 Interaction with the |dvipdfm| driver consists
 of short commands with a few arguments delimited by white space.
 Typically the arguments are PDF objects.
-Two exceptions are dimension specifications and scalings.
+Two exceptions are dimension specifications and transformations.
 
 In the \TeX\ style, a dimension specification consists of one of the keywords
 |width|, |height|, or |depth| followed by a dimension
@@ -286,9 +288,11 @@ unit will typically be |pt| (which represents a \TeX\ point, not a
 PDf point) but |cm| and |in| are also allowed.  The notation
 {\it dimension\/} in a syntax description means a dimension is expected.
 
-A scaling consists of one of the keywords |scale|, |xscale|, or
-|yscale| followed by a numerical value.  The notation
-{\it scaling} means a scaling is expected. 
+A transformation consists of one of the keywords |scale|, |xscale|,
+|yscale|, or |rotate| followed by a numerical value.  In the
+case of |rotate| the value is the rotation angle in degrees.
+The notation
+{\it transformation} means a transformation is expected. 
 
 \section{Document Construction Commands}
 All commands are executed via \TeX\ |\special| primitives
@@ -487,6 +491,47 @@ The object may continue to be referenced using @{\it name}
 indefinitely.  If the object is never closed, it will
 be closed when |dvipdfm| finishes processing the document.
 
+\section{Text Transformation Commands}
+The commands in this section deal with arbitrary transformation
+of the text (and rules) typeset by \TeX.  
+
+\subsection{BeginTransform}
+\syntax
+{\tt begintransform} {\it transformation}+
+
+\description
+The |begintransform| (|btrans| or |bt|) applies
+the specified transformation to all subsequent text.
+The scaling is applied first, followed by the rotation.
+The reference point of a box following
+the |\special| remains fixed.  Such transformations
+may be nested to perform rotations within rotated text, for exmaple.
+
+\example
+\begintt
+\special{pdf: bt rotate 90 xscale 2.0 }
+\endtt
+
+\subsection{BeginTransform}
+\syntax
+{\tt endtransform}
+
+\description
+The |endtransform| (|etrans| or |et|) concludes
+the action of the immediately preceding |begintransform|
+command.  All transformations must be closed
+on the same page.  The driver will close
+any pending unclosed transformations at the
+end of the page and issue a warning message.
+All material to be transformed
+should probably be enclosed in a single box
+to prevent any break.
+\example
+\begintt
+\special{pdf: et}
+\endtt
+
+
 \section{Color Commands}
 The commands in this section deal with manipulation of the color
 stack.
@@ -527,7 +572,7 @@ driver supports PDF and JPEG graphics inclusion.
 
 \subsection{Epdf}
 \syntax
-{\tt epdf} [|@|{\it name}] [{\it dimension}$\vert${\it scaling}]*  {\it PDF\_String}
+{\tt epdf} [|@|{\it name}] [{\it dimension}$\vert${\it transformation}]*  {\it PDF\_String}
 
 \description
 The {\tt epdf} command ``encapsulates'' the first page of a PDF
@@ -537,19 +582,20 @@ with the lower left corner at the current location of the page.
 The optional @{\it name} parameter may be used
 to reference this object within other objects.  If a
 {\it dimension} is supplied, the object will be scaled to fit
-that dimension.  A {\it scaling} consists of one of the keywords
-|scale|, |xscale|, or |yscale| followed by a number representing
-the scaling factor.  Both {\it scaling} and {\it dimension}
+that dimension.  A {\it transformation} consists of one of the keywords
+|scale|, |xscale|, |yscale|, or |rotate|
+followed by a number representing
+the scaling factor or rotation angle in degrees.  Both {\it transformation} and {\it dimension}
 parameters can be supplied as long as they are not logically
 inconsistent.
 \example
 \begintt
-\special{pdf:epdf yscale 0.50 width 4.0in (circuit.pdf)}
+\special{pdf:epdf yscale 0.50 width 4.0in rotate 45 (circuit.pdf)}
 \endtt
 
 \subsection{Image}
 \syntax
-{\tt image} [@{\it name}] [{\it dimension} $\vert$ {\it scaling}]*  {\it PDF\_String}
+{\tt image} [@{\it name}] [{\it dimension} $\vert$ {\it transformation}]*  {\it PDF\_String}
 
 \description
 The {\tt image} command ``encapsulates'' a JPEG image
@@ -607,25 +653,72 @@ of marking operators and is added to the page's content stream.
 The stream is applied {\it to all pages} regardless
 of where it appears in the document.
 
-\section{Image Examples}
+\section{Graphics Examples}
+
+The examples in this section illustrate some of the transformation
+and image inclusion capabilities of \dvipdfm.
+
+\dest{textxform}
+\subsection{Text Transformation}
+Tables with slanted entries are also possible as shown
+in Table~2.  This table was achieved using
+various ``|bt rotate 35|'' commands.  It
+is difficult to do without macro support.
+
+\vskip 0.5in
+\def\up#1{\special{pdf:bt rotate 10}\hbox{#1}}
+\def\down#1{\special{pdf:bt rotate -10}\hbox{#1}}
+You \up{can} \up{nest} \down{the} \down{text} {transformation}
+\down{capabilities} \down{to} \up{achieve} \up{effects} {like}
+{this}.
+\special{pdf:et}\special{pdf:et}\special{pdf:et}\special{pdf:et}
+\special{pdf:et}\special{pdf:et}\special{pdf:et}\special{pdf:et}
+
+
+\def\rvr{\colored{\red}{\vrule}}\def\entry#1{\special{pdf:bt rotate 35}%
+{\vbox to 0pt{\vss\hbox{\quad\colored{\blue}{#1}\quad}\vskip 1pt\colored{\red}{\hrule}}\special{pdf:et}}}
+\topinsert
+\bigskip
+\centerline{\colored{\blue}{\subheadingfont Table 2---Example of Rotated
+Computer Modern text}}
+\bigskip
+\centerline{\vbox to 0.45in{\vss\offinterlineskip\halign{#&#&#&#&#&#\cr
+\entry{1994}&
+\entry{1995}&
+\entry{1996}&
+\entry{1997}&
+\entry{1998}&
+\entry{1999}\cr
+\noalign{\colored{\red}{\hrule}}
+\strut\rvr&\rvr&\rvr&\rvr&\rvr&\rvr\crcr}}}
+\bigskip
+\endinsert
+
+\dest{imageinclude}
+\subsection{Image Inclusion}
 Figure~1 is a photograph of the author that was included from a JPEG file:
 The image shown in Figure~2 image comes from the same file,
-but is loaded at a 50\% scale.
+but is loaded at a 50\% scale and a 45$^\circ$ rotation.
 
 \topinsert
-\centerline{\reserve{1.50in}{2.05in}{pdf: image rotate 30 (mwicks.jpeg)}}
+\bigskip
+\centerline{\reserve{1.50in}{2.05in}{pdf: image (mwicks.jpeg)}}
 \medskip
 \centerline{\subheadingfont
 \begincolor{\blue}Figure~1---A JPEG image of the author.\endcolor}
+\bigskip
 \endinsert
 
 
 \topinsert
-\centerline{\reserve{0.75in}{1.025in}{pdf: image scale 0.50 (mwicks.jpeg)}}
+\bigskip
+\centerline{\reserve{0.75in}{1.25in}{pdf: image rotate 45 scale 0.50 (mwicks.jpeg)}}
 \medskip
 \centerline{\subheadingfont
-\begincolor{\blue}Figure~2---The same JPEG image of the author scaled to 50.\%
+\begincolor{\blue}Figure~2---Image of the author scaled by 0.5 and rotated
+by 45$^\circ$.%
 \endcolor}
+\bigskip
 \endinsert
 
 Sophisticated macro support for images is not yet available.  For now,
