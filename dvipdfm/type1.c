@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.18 1998/12/21 02:51:28 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.19 1998/12/21 03:05:11 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -94,6 +94,19 @@ pdf_obj *find_encoding_differences (pdf_obj *encoding)
   return result;
 }
 
+static void save_glyphs (struct glyph *glyph, pdf_obj *encoding)
+{
+  int i;
+  char *glyph_name;
+  for (i=0; i<256; i++) {
+    glyph_name = pdf_string_value (pdf_get_array(encoding, i));
+    glyph[i].name = NEW (strlen(glyph_name)+1, char);
+    strcpy (glyph[i].name, glyph_name);
+    glyph[i].position = i;
+  }
+  return;
+}
+
 pdf_obj *get_encoding (const char *enc_name)
 {
   FILE *encfile = NULL;
@@ -153,12 +166,7 @@ pdf_obj *get_encoding (const char *enc_name)
     differences = find_encoding_differences (encoding);
     /* Save glyph positions in a format easier for partial font
        embedding */
-    for (i=0; i<256; i++) {
-      tmp = pdf_string_value (pdf_get_array(encoding, i));
-      (encodings[num_encodings].glyphs)[i].name = NEW (strlen(tmp)+1, char);
-      strcpy ((encodings[num_encodings].glyphs)[i].name, tmp);
-      (encodings[num_encodings].glyphs)[i].position = i;
-    }
+    save_glyphs (encodings[num_encodings].glyphs, encoding);
     pdf_release_obj (encoding);
     result = pdf_new_dict();
     pdf_add_dict (result, pdf_new_name ("Type"),
@@ -384,6 +392,8 @@ void type1_close_all (void)
     pdf_release_obj (encodings[i].encoding_ref);
     /* Release glyph names for this encoding */
     for (j=0; j<256; j++) {
+      fprintf (stderr, "(%s)[%d]", 
+	       (encodings[i].glyphs)[j].name, j);
       RELEASE ((encodings[i].glyphs)[j].name);
     }
   }
