@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.65 1999/04/08 04:13:16 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.66 1999/07/15 11:54:34 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -130,12 +130,18 @@ int get_encoding (const char *enc_name)
      this */
   if ((full_enc_filename = kpse_find_file (enc_name,
 					   kpse_tex_ps_header_format,
+					   1)) == NULL &&
+      (full_enc_filename = kpse_find_file (enc_name,
+					   kpse_program_text_format,
 					   1)) == NULL) {
     strcpy (tmp = NEW (strlen(enc_name)+5, char), enc_name);
     strcat (tmp, ".enc");
-    full_enc_filename = kpse_find_file (tmp,
-					kpse_tex_ps_header_format,
-					1);
+    if ((full_enc_filename = kpse_find_file (tmp,
+					     kpse_tex_ps_header_format,
+					     1)) == NULL)
+      full_enc_filename = kpse_find_file (tmp,
+					  kpse_program_text_format,
+					  1);
     RELEASE (tmp);
   }
   if (full_enc_filename == NULL ||
