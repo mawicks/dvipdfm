@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.106 2001/01/31 02:01:00 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.107 2001/01/31 02:09:00 mwicks Exp $
  
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -141,7 +141,6 @@ static char format_buffer[FORMAT_BUF_SIZE];
 double pdf_dev_scale (void)
 {
   return 65800.0*dvi2pts;
-/*  return  PDF_U_TO_A_PTS; */
 }
 
 
