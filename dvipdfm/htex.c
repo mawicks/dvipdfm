@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/htex.c,v 1.2 1999/08/30 02:19:11 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/htex.c,v 1.3 1999/08/30 02:20:33 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -190,7 +190,7 @@ void html_make_link (char *name, double xll, double yll, double xur, double yur)
   pdf_add_array (box, pdf_new_number (xur+2.0));
   /* Set a minimum box height for macro packages or authors
      that aren't very smart */
-  pdf_add_array (box, pdf_new_number (abs(yur-yll)>12.0?yur+2.0:yur+14.0));
+  pdf_add_array (box, pdf_new_number (abs(yur-yll)>11.0?yur+2.0:yur+13.0));
   pdf_add_dict(link, pdf_new_name("Rect"), box);
   color = pdf_new_array ();
   pdf_add_array (color, pdf_new_number (0));
