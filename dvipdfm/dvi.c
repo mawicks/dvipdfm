@@ -1,6 +1,6 @@
 
 
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.42 1999/01/20 06:09:47 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.43 1999/01/22 04:10:20 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -876,6 +876,10 @@ static void do_eop(void)
   }
   dev_eop();
 }
+/* Note to be absolutely certain that the string escape buffer doesn't
+   hit its limit, FORMAT_BUF_SIZE should set to 4 times S_BUFFER_SIZE
+   in pdfobj.c.  Is there any application that genenerate words with
+   1k characters? */
 
 #define S_BUFFER_SIZE 1024
 static unsigned char s_buffer[S_BUFFER_SIZE];
