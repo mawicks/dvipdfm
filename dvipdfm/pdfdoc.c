@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.32 1998/12/30 19:36:10 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.33 1999/01/05 20:10:52 mwicks Exp $
  
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -357,6 +357,8 @@ void pdf_doc_add_to_page_annots (pdf_obj *annot)
   if (debug) {
     fprintf (stderr, "(pdf_doc_add_to_page_annots)");
   }
+  if (this_page_annots == NULL)
+    this_page_annots = pdf_new_array ();
   pdf_add_array (this_page_annots,
 		 annot);
 }
@@ -423,6 +425,16 @@ static void finish_page_tree(void)
   subtree = page_subtree (pages, page_count, NULL);
   pdf_merge_dict (page_tree, subtree);
   pdf_release_obj (subtree);
+  /* Generate media box at root of page tree and let the
+     other pages inherit it */
+  {
+    tmp1 = pdf_new_array ();
+    pdf_add_array (tmp1, pdf_new_number (0));
+    pdf_add_array (tmp1, pdf_new_number (0));
+    pdf_add_array (tmp1, pdf_new_number (ROUND(dev_page_width(),1.0)));
+    pdf_add_array (tmp1, pdf_new_number (ROUND(dev_page_height(),1.0)));
+    pdf_add_dict (page_tree, pdf_link_obj (mediabox_name), tmp1);
+  }
   pdf_release_obj (page_tree);
   pdf_add_dict (catalog,
 		pdf_link_obj (pages_name),
@@ -714,6 +726,8 @@ void pdf_doc_add_bead (char *article_name, pdf_obj *partial_dict)
     pdf_release_obj (articles[i].last);
   }
   articles[i].last = partial_dict;
+  if (this_page_beads == NULL)
+    this_page_beads = pdf_new_array();
   pdf_add_array (this_page_beads,
 		 pdf_ref_obj (partial_dict));
 }
@@ -757,52 +771,45 @@ MEM_START
   /* Flush this page */
   /* Page_count is the index of the current page, starting at 1 */
   if (page_count > 0) {
-    /* Write out MediaBox as the very last thing we do on the
-       previous page */
-    tmp1 = pdf_new_array ();
-    pdf_add_array (tmp1, pdf_new_number (0));
-    pdf_add_array (tmp1, pdf_new_number (0));
-    pdf_add_array (tmp1, pdf_new_number
-		   (ROUND(dev_page_width(),1.0)));
-    pdf_add_array (tmp1, pdf_new_number (ROUND(dev_page_height(),1.0)));
-    pdf_add_dict (pages[page_count-1].page_dict,
-		  pdf_link_obj (mediabox_name), tmp1);
     /* We keep .page_dict open because we don't know the parent yet */
-  }
-  if (debug) {
-    fprintf (stderr, "(finish_last_page)");
-  }
-  if (this_page_bop != NULL) {
-    pdf_release_obj (this_page_bop);
-    this_page_bop = NULL;
-  }
-  if (this_page_eop != NULL) {
-    pdf_release_obj (this_page_eop);
-    this_page_eop = NULL;
-  }
-  if (this_page_contents != NULL) {
-    pdf_release_obj (this_page_contents);
-    this_page_contents = NULL;
-  }
-  if (current_page_resources != NULL) {
-    pdf_release_obj (current_page_resources);
-    current_page_resources = NULL;
-  }
-  if (this_page_annots != NULL) {
-    pdf_release_obj (this_page_annots);
-    this_page_annots = NULL;
-  }
-  if (this_page_beads != NULL) {
-    pdf_release_obj (this_page_beads);
-    this_page_beads = NULL;
-  }
-  if (this_page_fonts != NULL) {
-    pdf_release_obj (this_page_fonts);
-    this_page_fonts = NULL;
-  }
-  if (this_page_xobjects != NULL) {
-    pdf_release_obj (this_page_xobjects);
-    this_page_xobjects = NULL;
+    if (this_page_bop != NULL) {
+      pdf_release_obj (this_page_bop);
+      this_page_bop = NULL;
+    }
+    if (this_page_eop != NULL) {
+      pdf_release_obj (this_page_eop);
+      this_page_eop = NULL;
+    }
+    if (this_page_contents != NULL) {
+      pdf_release_obj (this_page_contents);
+      this_page_contents = NULL;
+    }
+    if (current_page_resources != NULL) {
+      pdf_release_obj (current_page_resources);
+      current_page_resources = NULL;
+    }
+    if (this_page_annots != NULL) {
+      pdf_add_dict (pages[page_count-1].page_dict,
+		    pdf_link_obj(annots_name),
+		    pdf_ref_obj (this_page_annots));
+      pdf_release_obj (this_page_annots);
+      this_page_annots = NULL;
+    }
+    if (this_page_beads != NULL) {
+      pdf_add_dict (pages[page_count-1].page_dict,
+		    pdf_link_obj (bead_name),
+		    pdf_ref_obj (this_page_beads));
+      pdf_release_obj (this_page_beads);
+      this_page_beads = NULL;
+    }
+    if (this_page_fonts != NULL) {
+      pdf_release_obj (this_page_fonts);
+      this_page_fonts = NULL;
+    }
+    if (this_page_xobjects != NULL) {
+      pdf_release_obj (this_page_xobjects);
+      this_page_xobjects = NULL;
+    }
   }
 #ifdef MEM_DEBUG
 MEM_END
@@ -920,18 +927,10 @@ MEM_START
   pdf_add_array (tmp1, pdf_ref_obj (glob_page_eop));
   pdf_add_dict (pages[page_count].page_dict,
 		pdf_link_obj(contents_name), tmp1);
-  this_page_annots = pdf_new_array ();
-  pdf_add_dict (pages[page_count].page_dict,
-		pdf_link_obj(annots_name),
-		pdf_ref_obj (this_page_annots));
   start_current_page_resources();
   pdf_add_dict (pages[page_count].page_dict,
 		pdf_link_obj (resources_name),
 		pdf_ref_obj (current_page_resources));
-  this_page_beads = pdf_new_array();
-  pdf_add_dict (pages[page_count].page_dict,
-		pdf_link_obj (bead_name),
-		pdf_ref_obj (this_page_beads));
   /* Contents are still available as this_page_contents until next
      page is started */
   /* Even though the page is gone, a Reference to this page is kept
