@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.38 1999/01/06 02:26:01 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.39 1999/01/06 03:37:10 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -242,6 +242,8 @@ static void pdf_out (FILE *file, void *buffer, int length)
   if (file == pdf_output_file) {
     pdf_output_file_position += length;
     pdf_output_line_position += length;
+    if (length > 0 && ((char *)buffer)[length-1] == '\n')
+      pdf_output_line_position = 0;
   }
 }
 

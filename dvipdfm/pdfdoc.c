@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.38 1999/01/06 02:54:04 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.39 1999/01/06 03:37:10 mwicks Exp $
  
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -782,65 +782,62 @@ MEM_START
   finish_pending_xobjects();
   /* Flush this page */
   /* Page_count is the index of the current page, starting at 1 */
-  if (page_count > 0) {
-    {
-      tmp1 = pdf_new_array ();
-      pdf_add_array (tmp1, pdf_ref_obj (glob_page_bop));
-      if (this_page_bop) {
-	pdf_add_array (tmp1, pdf_ref_obj (this_page_bop));
-      }
-      pdf_add_array (tmp1, pdf_link_obj (coord_xform_ref));
-      pdf_add_array (tmp1, pdf_ref_obj (this_page_contents));
-      pdf_add_array (tmp1, pdf_ref_obj (glob_page_eop));
-      pdf_add_dict (pages[page_count-1].page_dict,
-		    pdf_link_obj(contents_name), tmp1);
-    }
-    /* We keep .page_dict open because we don't know the parent yet */
-    if (this_page_bop != NULL) {
-      pdf_add_stream (this_page_bop, "\n", 1);
-      pdf_release_obj (this_page_bop);
-      this_page_bop = NULL;
-    }
-    if (this_page_contents != NULL) {
-      pdf_add_stream (this_page_contents, "\n", 1);
-      pdf_release_obj (this_page_contents);
-      this_page_contents = NULL;
-    }
-    if (this_page_annots != NULL) {
-      pdf_add_dict (pages[page_count-1].page_dict,
-		    pdf_link_obj(annots_name),
-		    pdf_ref_obj (this_page_annots));
-      pdf_release_obj (this_page_annots);
-      this_page_annots = NULL;
-    }
-    if (this_page_beads != NULL) {
-      pdf_add_dict (pages[page_count-1].page_dict,
-		    pdf_link_obj (bead_name),
-		    pdf_ref_obj (this_page_beads));
-      pdf_release_obj (this_page_beads);
-      this_page_beads = NULL;
-    }
-    if (this_page_fonts != NULL) {
-      pdf_add_dict (current_page_resources, 
-		    pdf_new_name ("Font"),
-		    pdf_ref_obj (this_page_fonts));
-      pdf_release_obj (this_page_fonts);
-      this_page_fonts = NULL;
-    }
-    if (this_page_xobjects != NULL) {
-      pdf_add_dict (current_page_resources,
-		    pdf_new_name ("XObject"),
-		    pdf_ref_obj (this_page_xobjects));
-      pdf_release_obj (this_page_xobjects);
-      this_page_xobjects = NULL;
-    }
-    if (current_page_resources != NULL) {
-      pdf_release_obj (current_page_resources);
-      current_page_resources = NULL;
-    }
+  tmp1 = pdf_new_array ();
+  pdf_add_array (tmp1, pdf_ref_obj (glob_page_bop));
+  if (this_page_bop) {
+    pdf_add_array (tmp1, pdf_ref_obj (this_page_bop));
   }
+  pdf_add_array (tmp1, pdf_link_obj (coord_xform_ref));
+  pdf_add_array (tmp1, pdf_ref_obj (this_page_contents));
+  pdf_add_array (tmp1, pdf_ref_obj (glob_page_eop));
+  pdf_add_dict (pages[page_count].page_dict,
+		pdf_link_obj(contents_name), tmp1);
+  /* We keep .page_dict open because we don't know the parent yet */
+  if (this_page_bop != NULL) {
+    pdf_add_stream (this_page_bop, "\n", 1);
+    pdf_release_obj (this_page_bop);
+    this_page_bop = NULL;
+  }
+  if (this_page_contents != NULL) {
+    pdf_add_stream (this_page_contents, "\n", 1);
+    pdf_release_obj (this_page_contents);
+    this_page_contents = NULL;
+  }
+  if (this_page_annots != NULL) {
+    pdf_add_dict (pages[page_count].page_dict,
+		  pdf_link_obj(annots_name),
+		  pdf_ref_obj (this_page_annots));
+    pdf_release_obj (this_page_annots);
+    this_page_annots = NULL;
+  }
+  if (this_page_beads != NULL) {
+    pdf_add_dict (pages[page_count].page_dict,
+		  pdf_link_obj (bead_name),
+		  pdf_ref_obj (this_page_beads));
+    pdf_release_obj (this_page_beads);
+    this_page_beads = NULL;
+  }
+  if (this_page_fonts != NULL) {
+    pdf_add_dict (current_page_resources, 
+		  pdf_new_name ("Font"),
+		  pdf_ref_obj (this_page_fonts));
+    pdf_release_obj (this_page_fonts);
+    this_page_fonts = NULL;
+  }
+  if (this_page_xobjects != NULL) {
+    pdf_add_dict (current_page_resources,
+		  pdf_new_name ("XObject"),
+		  pdf_ref_obj (this_page_xobjects));
+    pdf_release_obj (this_page_xobjects);
+    this_page_xobjects = NULL;
+  }
+  if (current_page_resources != NULL) {
+    pdf_release_obj (current_page_resources);
+    current_page_resources = NULL;
+  }
+  page_count += 1;
 #ifdef MEM_DEBUG
-MEM_END
+  MEM_END;
 #endif  
 }
 
@@ -887,34 +884,25 @@ pdf_obj *pdf_doc_catalog (void)
 
 pdf_obj *pdf_doc_this_page (void)
 {
-  if (page_count <= 0) {
-    ERROR ("Reference to current page, but no pages have been started yet");
-  }
-  return pages[page_count-1].page_dict;
+  return pages[page_count].page_dict;
 }
 
 pdf_obj *pdf_doc_this_page_ref (void)
 {
-  if (page_count <= 0) {
-    ERROR ("Reference to current page, but no pages have been started yet");
-  }
-  return pdf_doc_ref_page(page_count);
+  return pdf_doc_ref_page(page_count+1);
 }
 
 pdf_obj *pdf_doc_prev_page_ref (void)
 {
-  if (page_count <= 0) {
-    ERROR ("Reference to previous page, but no pages have been started yet");
+  if (page_count < 1) {
+    ERROR ("Reference to previous page, but no pages have been completed yet");
   }
-  return pdf_doc_ref_page(page_count>1?page_count-1:1);
+  return pdf_doc_ref_page(page_count>0?page_count:1);
 }
 
 pdf_obj *pdf_doc_next_page_ref (void)
 {
-  if (page_count <= 0) {
-    ERROR ("Reference to previous page, but no pages have been started yet");
-  }
-  return pdf_doc_ref_page(page_count+1);
+  return pdf_doc_ref_page(page_count+2);
 }
 
 void pdf_doc_new_page (void)
@@ -950,7 +938,6 @@ MEM_START
      page is started */
   /* Even though the page is gone, a Reference to this page is kept
      until program ends */
-  page_count += 1;
 #ifdef MEM_DEBUG
 MEM_END
 #endif
@@ -994,8 +981,15 @@ void pdf_doc_close ()
   pdf_release_obj (catalog);
   /* Do consistency check on forward references to pages */
   if (highest_page_ref > page_count) {
+    unsigned long i;
     fprintf (stderr, "\nWarning:  Nonexistent page(s) referenced\n");
     fprintf (stderr, "          (PDF file may not work right)\n");
+    for (i=page_count; i<highest_page_ref; i++) {
+      if (pages[i].page_dict) {
+	pdf_release_obj (pages[i].page_dict);
+	pdf_release_obj (pages[i].page_ref);
+      }
+    }
   }
   pdf_finish_specials();
   release_short_cuts();

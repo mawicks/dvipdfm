@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.34 1998/12/30 20:54:16 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.35 1999/01/06 03:37:11 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -1214,7 +1214,7 @@ static pdf_obj *lookup_reference(char *name)
     return pdf_doc_prev_page_ref();
   }
   if (!strcmp (name, "nextpage")) {
-    return pdf_doc_prev_page_ref();
+    return pdf_doc_next_page_ref();
   }
   if (!strcmp (name, "pages")) {
     return pdf_ref_obj (pdf_doc_page_tree());
