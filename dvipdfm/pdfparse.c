@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.c,v 1.24 1999/08/26 04:51:03 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.c,v 1.25 1999/09/02 00:38:26 mwicks Exp $
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
 
@@ -447,6 +447,67 @@ pdf_obj *parse_pdf_string (char **start, char *end)
   result = pdf_new_string (string, strlength);
   RELEASE (string);
   return result;
+}
+
+char *parse_c_string (char **start, char *end)
+{
+  char *string, *save;
+  int strlength;
+  skip_white(start, end);
+  save = *start;
+  if (*start == end || **start != '"') {
+    return NULL;
+  }
+  ++(*start);
+  string = NEW (end - *start, char);
+  strlength = 0;
+  while (*start < end && (**start != '"')) {
+    if (**start == '\\')
+      switch (*(++(*start))) {
+      case '"':
+	string[strlength++] = '"';
+	(*start)++;
+	break;
+      case 'n':
+	string[strlength++] = '\n';
+	(*start)++;
+	break;
+      case 'r':
+	string[strlength++] = '\r';
+	(*start)++;
+	break;
+      case 't':
+	string[strlength++] = '\t';
+	(*start)++;
+	break;
+      case 'b':
+	string[strlength++] = '\b';
+	(*start)++;
+	break;
+      default:
+	if (isdigit(**start)) {
+	  int i;
+	  string[strlength] = 0;
+	  for (i=0; i<3; i++) 
+	    string[strlength] = string[strlength]*8 + (*((*start)++)-'0');
+	  strlength+= 1;
+	} else {
+	  string[strlength++] = *((*start)++);
+	}
+      }
+    else {
+      string[strlength++] = *((*start)++);
+    }
+    string[strlength]=0;
+  }
+  if (*start >= end) {
+    fprintf (stderr, "\nString ended prematurely\n");
+    dump (save, *start);
+    return NULL;
+  }
+  string[strlength] = 0;
+  (*start)++;
+  return string;
 }
 
 static pdf_obj *parse_pdf_stream (char **start, char *end, pdf_obj

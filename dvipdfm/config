@@ -12,12 +12,13 @@
 % the paths so you can be sure what you are running
 
 % The following line works with Frank Siegert's pstill
-% D /usr/local/bin/pstill -c -o %o %i
+% D "/usr/local/bin/pstill -c -o %o %i"
 
 % The following line works with Sebastian Rahtz' GhostScript wrapper
 % script called epstopdf
-D /usr/local/bin/epstopdf %i ; mv %b.pdf %o
+D "/usr/local/bin/epstopdf %i ; mv %b.pdf %o"
 
 % The following line works with Adobe Acrobat Distiller
-% D /usr/local/bin/distill -quiet -pairs %i %o
+% D "/usr/local/bin/distill -quiet -pairs %i %o"
 
+p a4    
