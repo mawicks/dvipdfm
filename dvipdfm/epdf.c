@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/epdf.c,v 1.15 1999/08/15 04:54:55 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/epdf.c,v 1.16 1999/08/26 21:48:39 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -29,42 +29,6 @@
 #include "mfileio.h"
 #include "epdf.h"
 #include "mem.h"
-
-double xscale, yscale;
-
-void do_scaling(pdf_obj *media_box, struct xform_info *p)
-{ 
-  /* Take care of scaling */
-  double bbllx, bblly, bburx, bbury;
-  bbllx = pdf_number_value (pdf_get_array (media_box, 0));
-  bblly = pdf_number_value (pdf_get_array (media_box, 1));
-  bburx = pdf_number_value (pdf_get_array (media_box, 2));
-  bbury = pdf_number_value (pdf_get_array (media_box, 3));
-  xscale = 1.0;
-  yscale = 1.0;
-  if (p->scale != 0.0) {
-    xscale = p->scale;
-    yscale = p->scale;
-  }
-  if (p->xscale != 0.0) {
-    xscale = p->xscale;
-  }
-  if (p->yscale != 0.0) {
-    yscale = p->yscale;
-  }
-  if (p-> width != 0.0 && bbllx != bburx) {
-    xscale = p->width / (bburx - bbllx);
-    if (p->height == 0.0)
-      yscale = xscale;
-  }
-  if (p->height != 0.0 && bblly != bbury) {
-    yscale = p->height / (bbury - bblly);
-    if (p->width == 0.0)
-      xscale = yscale;
-  }
-  p->xscale = xscale;
-  p->yscale = yscale;
-}
 
 pdf_obj *pdf_include_page(FILE *image_file, struct xform_info *p, char *res_name)
 {
@@ -141,7 +105,14 @@ MEM_START
       crop_box = NULL;
     }
     /* Adjust scaling information as necessary */
-    do_scaling (media_box, p);
+    {
+      double bbllx, bblly, bburx, bbury;
+      bbllx = pdf_number_value (pdf_get_array (media_box, 0));
+      bblly = pdf_number_value (pdf_get_array (media_box, 1));
+      bburx = pdf_number_value (pdf_get_array (media_box, 2));
+      bbury = pdf_number_value (pdf_get_array (media_box, 3));
+      pdf_scale_image (p, bburx-bbllx, bbury-bblly);
+    }
     if ((contents =
 	 pdf_deref_obj(pdf_lookup_dict(page_tree,"Contents")))==NULL) {
       fprintf (stderr, "\nNo Contents found\n");

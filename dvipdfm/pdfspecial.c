@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.52 1999/08/25 21:54:54 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.53 1999/08/26 21:48:39 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1484,11 +1484,41 @@ pdf_obj *jpeg_start_image(FILE *file)
   return (xobject);
 }
 
+void pdf_scale_image (struct xform_info *p, double nat_width, double
+		      nat_height)
+{
+  double xscale = 1.0, yscale = 1.0;
+  if (p->scale != 0) {
+    xscale = p->scale;
+    yscale = p->scale;
+  }
+  if (p->xscale != 0) {
+    xscale = p->xscale;
+  }
+  if (p->yscale != 0) {
+    yscale = p->yscale;
+  }
+  if (p->width != 0.0 && nat_height != 0.0) {
+    xscale = p->width/nat_width;
+    if (p->height == 0.0)
+      yscale = xscale;
+  }
+  if (p->height != 0.0 && nat_height != 0.0) {
+    yscale = p->height/nat_height;
+    if (p->width == 0.0)
+      xscale = p->yscale;
+  }
+  /* We overwrite p->xscale and p->yscale to pass values back to
+     caller to user */
+  p->xscale = xscale * dvi_tell_mag();
+  p->yscale = yscale * dvi_tell_mag();
+  return;
+}
+
 static void finish_image (pdf_obj *image_res, struct xform_info *p,
 			  char *res_name)
 {
   pdf_obj *image_dict;
-  double xscale = 1.0, yscale = 1.0;
   image_dict = pdf_stream_dict (image_res);
   pdf_add_dict (image_dict, pdf_new_name ("Name"),
 		pdf_new_name (res_name));
@@ -1502,30 +1532,13 @@ static void finish_image (pdf_obj *image_res, struct xform_info *p,
     int width, height;
     width = pdf_number_value(pdf_lookup_dict (image_dict, "Width"));
     height = pdf_number_value(pdf_lookup_dict (image_dict, "Height"));
-    if (p->scale != 0) {
-      xscale = p->scale;
-      yscale = p->scale;
-    }
-    if (p->xscale != 0) {
-      xscale = p->xscale;
-    }
-    if (p->yscale != 0) {
-      yscale = p->yscale;
-    }
-    if (p->width != 0.0) {
-      xscale = p->width/width*(100.0/72.0);
-      if (p->height == 0.0)
-	yscale = xscale;
-    }
-    if (p->height != 0.0) {
-      yscale = p->height/height*(100.0/72.0);
-      if (p->width == 0.0)
-	xscale = p->yscale;
-    }
-    /* We overwrite p->xscale and p->yscale to pass values back to
-       caller to user */
-    p->xscale = xscale * width * dvi_tell_mag() * (72.0 / 100.0);
-    p->yscale = yscale * height * dvi_tell_mag() * (72.0 / 100.0);
+    /* Following routine sets xscale and yscale to a fraction of
+       their natural values */
+    pdf_scale_image (p, width*(72.0/100.0), height*(72.0)/100.0);
+    /* Since bitmapped images are always 1x1 in PDF, we must rescale
+       again */
+    p->xscale *= width*(72.0/100.0);
+    p->yscale *= height*(72.0/100.0);
   }
   return;
 }

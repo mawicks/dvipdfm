@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.6 1999/08/26 04:51:02 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.7 1999/08/26 21:48:39 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -67,7 +67,7 @@ int n_mp_fonts = 0;
 
 int mp_locate_font (char *tex_name, double pt_size)
 {
-  int result, i;
+  int result=-1, i;
   for (i=0; i<n_mp_fonts; i++) {
     if (!strcmp (tex_name, mp_fonts[i].tex_name) &&
 	mp_fonts[i].pt_size == pt_size)
@@ -92,6 +92,15 @@ int mp_locate_font (char *tex_name, double pt_size)
   return result;
 }
 
+static void release_fonts (void)
+{
+  int i;
+  for (i=0; i<n_mp_fonts; i++) {
+    RELEASE (mp_fonts[i].tex_name);
+  }
+  n_mp_fonts = 0;
+}
+
 int mp_is_font_name (char *tex_name)
 {
   int i;
@@ -108,8 +117,8 @@ int mp_is_font_name (char *tex_name)
 int mp_fontid (char *tex_name, double pt_size)
 {
   int i;
+  fprintf (stderr, "mp_fontid: f=%s,s=%g\n", tex_name, pt_size);
   for (i=0; i<n_mp_fonts; i++) {
-    fprintf (stderr, "stored=%g,ptsize=%g\n", mp_fonts[i].pt_size, pt_size);
     if (!strcmp (tex_name, mp_fonts[i].tex_name) &&
 	(mp_fonts[i].pt_size == pt_size))
       break;
@@ -200,6 +209,7 @@ static pdf_obj *stack[PS_STACK_SIZE];
 static top_stack;
 
 double x_state, y_state;
+int move_pending = 0;
 
 #define PUSH(o) { \
   if (top_stack<PS_STACK_SIZE) { \
@@ -322,10 +332,7 @@ static void do_operator(char *token)
   pdf_obj *tmp1=NULL, *tmp2=NULL, *tmp3=NULL, *tmp4 = NULL;
   pdf_obj *tmp5=NULL, *tmp6=NULL;
   int len;
-  fprintf (stderr, "\n\n\ndo_operator(%s)", token);
-  dump_stack();
   operator = lookup_operator (token);
-  fprintf (stderr, "op=%d\n\n\n", operator);
   switch (operator) {
   case ADD:
     tmp1 = POP_STACK();
@@ -351,7 +358,7 @@ static void do_operator(char *token)
       for (i=0; i<6; i++) {
 	if (!(tmp2 = pdf_get_array(tmp1, i)))
 	  break;
-	len += sprintf (work_buffer+len, " %g",
+	len += sprintf (work_buffer+len, " %.4g",
 			pdf_number_value(tmp2));
       }
       len += sprintf (work_buffer+len, " cm");
@@ -369,10 +376,10 @@ static void do_operator(char *token)
 	(tmp3 = POP_STACK()) && tmp3->type == PDF_NUMBER &&
 	(tmp2 = POP_STACK()) && tmp2->type == PDF_NUMBER &&
 	(tmp1 = POP_STACK()) && tmp1->type == PDF_NUMBER) {
-      len = sprintf (work_buffer, " %g %g %g %g %g %g c", 
-		     pdf_number_value(tmp1), pdf_number_value(tmp2),
-		     pdf_number_value(tmp3), pdf_number_value(tmp4),
-		     pdf_number_value(tmp5), pdf_number_value(tmp6));
+      len = sprintf (work_buffer, " %.2f %.2f %.2f %.2f %.2f %.2f c", 
+		     pdf_number_value(tmp1),pdf_number_value(tmp2),
+		     pdf_number_value(tmp3),pdf_number_value(tmp4),
+		     pdf_number_value(tmp5),pdf_number_value(tmp6));
       pdf_doc_add_to_page (work_buffer, len);
     } else {
       fprintf (stderr, "\nMissing number(s) before \"curveto\"\n");
@@ -434,9 +441,14 @@ static void do_operator(char *token)
 	  fprintf (stderr, "\n\"fshow\": Missing font in MetaPost file? %s@%g\n", 
 		   (char *) pdf_string_value(tmp2), pdf_number_value(tmp3));
 	}
+	/* MetaPost ships out a "moveto" before displaying any text.
+	   This confuses Acrobat Reader because it thinks we are
+	   starting a graphics path.  Ship out a "newpath" to end the
+	   path started by the "moveto" */
+	pdf_doc_add_to_page (" n", 2);
 	dev_set_string (x_state/dev_dvi2pts(), y_state/dev_dvi2pts(),
 			pdf_string_value(tmp1),
-			pdf_string_length(tmp1), 0, fontid);
+			pdf_string_length(tmp1), 0, mp_fonts[fontid].font_id);
 	graphics_mode();
       }
       if (tmp1)
@@ -454,7 +466,6 @@ static void do_operator(char *token)
     pdf_doc_add_to_page (" Q", 2);
     break;
   case IDTRANSFORM:
-    dump_stack();
     if ((tmp2 = POP_STACK()) && tmp2 -> type == PDF_NUMBER &&
 	(tmp1 = POP_STACK()) && tmp1 -> type == PDF_NUMBER) {
       pdf_set_number (tmp1, pdf_number_value(tmp1)/100.0);
@@ -474,7 +485,7 @@ static void do_operator(char *token)
       int len;
       if ((tmp2 = POP_STACK()) && tmp2-> type == PDF_NUMBER &&
 	  (tmp1 = POP_STACK()) && tmp1-> type == PDF_NUMBER) {
-	len = sprintf (work_buffer, " %g %g l",
+	len = sprintf (work_buffer, " %.2f %.2f l",
 		 pdf_number_value (tmp1),pdf_number_value (tmp2));
 	pdf_doc_add_to_page (work_buffer, len);
 	x_state = pdf_number_value (tmp1);
@@ -487,14 +498,16 @@ static void do_operator(char *token)
     }
     break;
   case MOVETO:
-    fprintf (stderr, "moveto\n");
-    dump_stack();
-    
     if ((tmp2 = POP_STACK()) && tmp2-> type == PDF_NUMBER &&
 	(tmp1 = POP_STACK()) && tmp1-> type == PDF_NUMBER) {
-      len = sprintf (work_buffer, " %g %g m",
+      len = sprintf (work_buffer, " %.2f %.2f m",
 		     pdf_number_value (tmp1),pdf_number_value (tmp2));
       pdf_doc_add_to_page (work_buffer, len);
+      /* MetaPost likes to ship out a moveto before displayed text.
+	 This causes the reader to choke since it thinks we are
+	 starting a graphics path and PDF makes strong distinctions
+	 between graphics and text.  Save the move but don't actually
+	 do it unless the next operator is a graphics operator */
       x_state = pdf_number_value (tmp1);
       y_state = pdf_number_value (tmp2);
     }
@@ -515,7 +528,7 @@ static void do_operator(char *token)
       pdf_release_obj (tmp2);
     break;
   case NEWPATH:
-    pdf_doc_add_to_page (" n", 2);
+    /* pdf_doc_add_to_page (" n", 2); */
     break;
   case POP:
     tmp1 = POP_STACK();
@@ -525,7 +538,7 @@ static void do_operator(char *token)
   case RLINETO: 
     if ((tmp2 = POP_STACK()) && tmp2->type == PDF_NUMBER &&
 	(tmp1 = POP_STACK()) && tmp1->type == PDF_NUMBER) {
-      len = sprintf (work_buffer, " %g %g l",
+      len = sprintf (work_buffer, " %.2f %.2f l",
 		     x_state+pdf_number_value(tmp1),
 		     y_state+pdf_number_value(tmp2));
       pdf_doc_add_to_page (work_buffer, len);
@@ -538,7 +551,7 @@ static void do_operator(char *token)
   case SCALE: 
     if ((tmp2 = POP_STACK()) &&  tmp2->type == PDF_NUMBER &&
 	(tmp1 = POP_STACK()) && tmp1->type == PDF_NUMBER) {
-      len = sprintf (work_buffer, " %g 0 0 %g 0 0 cm", 
+      len = sprintf (work_buffer, " %.2f 0 0 %.2f 0 0 cm", 
 		     pdf_number_value (tmp1),
 		     pdf_number_value (tmp2));
       pdf_doc_add_to_page (work_buffer, len);
@@ -553,11 +566,11 @@ static void do_operator(char *token)
 	(tmp3 = POP_STACK()) && tmp3->type == PDF_NUMBER &&
 	(tmp2 = POP_STACK()) && tmp2->type == PDF_NUMBER &&
 	(tmp1 = POP_STACK()) && tmp1->type == PDF_NUMBER) {
-      len = sprintf (work_buffer, " %g %g %g %g k",
+      len = sprintf (work_buffer, " %.3f %.3f %.3f %.3f k",
 		     pdf_number_value (tmp1), pdf_number_value (tmp2),
 		     pdf_number_value (tmp3), pdf_number_value (tmp4));
       pdf_doc_add_to_page (work_buffer, len);
-      len = sprintf (work_buffer, " %g %g %g %g K",
+      len = sprintf (work_buffer, " %.3f %.3f %.3f %.3f K",
 		     pdf_number_value (tmp1), pdf_number_value (tmp2),
 		     pdf_number_value (tmp3), pdf_number_value (tmp4));
       pdf_doc_add_to_page (work_buffer, len);
@@ -574,7 +587,6 @@ static void do_operator(char *token)
       pdf_release_obj (tmp4);
     break;
   case SETDASH:
-    fprintf (stderr, "setdash\n"); dump_stack();
     if ((tmp2 = POP_STACK()) && tmp2->type == PDF_NUMBER &&
 	(tmp1 = POP_STACK()) && tmp1->type == PDF_ARRAY) {
       int i;
@@ -582,14 +594,14 @@ static void do_operator(char *token)
       for (i=0;; i++) {
 	if ((tmp3 = pdf_get_array (tmp1, i)) &&
 	    tmp3 -> type == PDF_NUMBER) {
-	  len = sprintf (work_buffer, " %g", pdf_number_value(tmp3));
+	  len = sprintf (work_buffer, " %.2f", pdf_number_value(tmp3));
 	  pdf_doc_add_to_page (work_buffer, len);
 	} else 
 	  break;
       }
       pdf_doc_add_to_page (" ]", 2);
       if (tmp2 -> type == PDF_NUMBER) {
-	len = sprintf (work_buffer, " %g d", pdf_number_value(tmp2));
+	len = sprintf (work_buffer, " %.2f d", pdf_number_value(tmp2));
 	pdf_doc_add_to_page (work_buffer, len);
       }
     } else {
@@ -602,10 +614,10 @@ static void do_operator(char *token)
     break;
   case SETGRAY:
     if ((tmp1 = POP_STACK()) && tmp1->type == PDF_NUMBER) {
-      len = sprintf (work_buffer, " %g g",
+      len = sprintf (work_buffer, " %.3f g",
 		     pdf_number_value (tmp1));
       pdf_doc_add_to_page (work_buffer, len);
-      len = sprintf (work_buffer, " %g G",
+      len = sprintf (work_buffer, " %.3f G",
 		     pdf_number_value (tmp1));
       pdf_doc_add_to_page (work_buffer, len);
     } else {
@@ -755,7 +767,20 @@ void parse_contents (FILE *image_file)
       }
       skip_white (&start, end);
     }
-    /*    dump_stack(); */
+  }
+}
+
+static void mp_cleanup (void)
+{
+  fprintf (stderr, "\nmp_cleanup\n");
+  release_fonts();
+  if (top_stack != 0) {
+    fprintf (stderr, "\nMetaPost: PS stack not empty!\n");
+  }
+  while (top_stack > 0) {
+    pdf_obj *p;
+    if ((p=POP_STACK()))
+      pdf_release_obj (p);
   }
 }
 
@@ -778,30 +803,21 @@ pdf_obj *mp_include (FILE *image_file,  struct xform_info *p,
    rewind (image_file);
    if (mp_parse_headers (image_file)) {
       /* Looks like an MP file.  Setup xobj "capture" */
+     pdf_scale_image (p, bburx-bbllx, bbury-bblly);
      xobj = begin_form_xobj (bbllx,bblly, bbllx, bblly,
 			     bburx, bbury, res_name);
-      if (!xobj)
-	return NULL;
-      /* Flesh out the contents */
-      parse_contents (image_file);
-      fprintf (stderr, "Returned from parse_contents\n");
-
-      /* Finish off the form */
-      end_form_xobj();
-      /* Add it to the resource list */
-      pdf_doc_add_to_page_xobjects (res_name, pdf_ref_obj(xobj));
-      /* And release it */
-      pdf_release_obj (xobj);
-      sprintf (work_buffer, " q 1 0 0 1 %.2f %.2f cm /%s Do Q",
-	       x_user, y_user, res_name);
-      pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
+     if (!xobj)
+       return NULL;
+     /* Flesh out the contents */
+     parse_contents (image_file);
+     fprintf (stderr, "Returned from parse_contents\n");
+     
+     /* Finish off the form */
+     end_form_xobj();
    }
-   return NULL;
+   mp_cleanup();
+   return xobj;
 }
-
-
-
-
 
 
 
