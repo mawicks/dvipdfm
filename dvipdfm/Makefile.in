@@ -94,12 +94,12 @@ depend.make:
 @MAINT@bin-dist: dvipdfm-static ebb-static dvipdfm ebb
 @MAINT@	/bin/rm -rf dvipdfm-bin
 @MAINT@	mkdir -p dvipdfm-bin
-@MAINT@	cp -a dvipdfm ebb COPYING README pdffonts.map dvipdfm-bin
+@MAINT@	cp -a dvipdfm ebb INSTALL-BINARY COPYING README pdffonts.map dvipdfm-bin
 @MAINT@	strip dvipdfm ebb dvipdfm-static ebb-static
 @MAINT@	tar -zcf dvipdfm-binary-linux-i386-glibc-@VERSION@.tar.gz dvipdfm-bin
 @MAINT@	/bin/rm -rf dvipdfm-bin
 @MAINT@	mkdir -p dvipdfm-bin
-@MAINT@	cp -a COPYING README pdffonts.map dvipdfm-bin
+@MAINT@	cp -a INSTALL-BINARY COPYING README pdffonts.map dvipdfm-bin
 @MAINT@	cp -a dvipdfm-static dvipdfm-bin/dvipdfm
 @MAINT@	cp -a ebb-static dvipdfm-bin/ebb
 @MAINT@	tar -zcf dvipdfm-binary-linux-i386-static-@VERSION@.tar.gz dvipdfm-bin
