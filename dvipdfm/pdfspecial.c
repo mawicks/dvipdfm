@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.24 1998/12/07 18:16:29 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.25 1998/12/07 20:32:51 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -603,9 +603,6 @@ static void do_bgray(char **start, char *end)
 
 static void do_ecolor(void)
 {
-#ifdef MEM_DEBUG
-  fprintf (debugfile, "(do_ecolor)\n");
-#endif /* MEM_DEBUG */
   dev_end_color();
 }
 
@@ -677,9 +674,6 @@ static void do_outline(char **start, char *end)
   int error = 0;
   char *save; 
   static int lowest_level = 255;
-#ifdef MEM_DEBUG
-    fprintf (debugfile, "(do_outline)\n");
-#endif
   skip_white(start, end);
   save = *start; 
   if ((level = parse_pdf_object(start, end)) != NULL &&
@@ -831,9 +825,6 @@ MEM_START
     filename = pdf_string_value(filestring);
     fprintf (stderr, "(%s)", filename);
     if (debug) fprintf (stderr, "Opening %s\n", filename);
-#ifdef MEM_DEBUG
-    fprintf (debugfile, "Opending file and Reading trailer\n");
-#endif
     if ((trailer = pdf_open (filename)) == NULL) {
       fprintf (stderr, "\nSpecial ignored\n");
       release_xform_info (p);
@@ -841,21 +832,9 @@ MEM_START
     };
     pdf_release_obj (filestring);
     result = pdf_include_page(trailer, x_user, y_user, p);
-#ifdef MEM_DEBUG
-    fprintf (debugfile, "back from include_page, releasing xform\n");
-#endif
     release_xform_info(p);
-#ifdef MEM_DEBUG
-    fprintf (debugfile, "Releasing trailer...\n");
-#endif
     pdf_release_obj (trailer);
-#ifdef MEM_DEBUG
-    fprintf (debugfile, "Closing PDF file...\n");
-#endif
     pdf_close ();
-#ifdef MEM_DEBUG
-    fprintf (debugfile, "Done (Closing PDF file) \n");
-#endif
   } else
     {
       fprintf (stderr, "No file name found in special\n");
@@ -867,9 +846,6 @@ MEM_START
     fprintf (stderr, "\nEPDF special ignored\n");
     return;
   }
-#ifdef MEM_DEBUG
-  fprintf (debugfile, "Adding reference to epdf object\n");
-#endif
   if (objname != NULL) {
     add_reference (objname, result,
 		   pdf_name_value(pdf_lookup_dict(pdf_stream_dict(result), "Name")));

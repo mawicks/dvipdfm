@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.14 1998/12/05 18:04:34 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.15 1998/12/07 20:32:50 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -331,17 +331,8 @@ MEM_START
 	fprintf (stderr, "\nwrite_indirect, label=%d, from_file=%p, current_file=%p\n", indirect -> label, indirect->dirty_file, pdf_input_file);
 	ERROR ("write_indirect:  input PDF file doesn't match object");
       }
-#ifdef MEM_DEBUG
-      fprintf (debugfile, "Doing some laundry..\n");
-#endif
       clean = pdf_ref_file_obj (indirect -> label);
-#ifdef MEM_DEBUG
-      fprintf (debugfile, "Done with laundry. Here it is...\n");
-#endif
       pdf_write_obj (file, clean);
-#ifdef MEM_DEBUG
-      fprintf (debugfile, "Releasing clean part of laundry..\n");
-#endif
       pdf_release_obj (clean);
     }
   } else {
@@ -1195,16 +1186,10 @@ MEM_START
   if (xref_table[obj_no].indirect != NULL) {
     return pdf_link_obj(xref_table[obj_no].indirect);
   }
-#ifdef MEM_DEBUG
-  fprintf (debugfile, "New object...reading object from file\n");
-#endif
   if ((direct = pdf_read_object (obj_no)) == NULL) {
     fprintf (stderr, "\npdf_ref_file_obj: Could not read object\n");
     return NULL;
   }
-#ifdef MEM_DEBUG
-  fprintf (debugfile, "Building indirect reference\n");
-#endif
   indirect = pdf_ref_obj (direct);
   xref_table[obj_no].indirect = indirect;
   xref_table[obj_no].direct = direct;
@@ -1405,9 +1390,6 @@ pdf_obj *read_xref (void)
 #ifdef MEM_DEBUG
 MEM_START
 #endif  
-#ifdef MEM_DEBUG
-  fprintf (debugfile, "Finding xref position\n");
-#endif
   if ((xref_pos = find_xref()) == 0) {
     fprintf (stderr, "No xref loc.  Is this a correct PDF file?\n");
     return NULL;
@@ -1417,25 +1399,16 @@ MEM_START
   }
   /* Read primary xref table */
   seek_absolute (pdf_input_file, xref_pos);
-#ifdef MEM_DEBUG
-  fprintf (debugfile, "Parsing xref\n");
-#endif
   if (!parse_xref()) {
     fprintf (stderr,
 	     "\nCouldn't read xref table.  Is this a correct PDF file?\n");
     return NULL;
   }
-#ifdef MEM_DEBUG
-  fprintf (debugfile, "Parsing trailer\n");
-#endif
   if ((main_trailer = parse_trailer()) == NULL) {
     fprintf (stderr,
 	     "\nCouldn't read xref trailer.  Is this a correct PDF file?\n");
     return NULL;
   }
-#ifdef MEM_DEBUG
-  fprintf (debugfile, "Looking up catalog\n");
-#endif
   if (pdf_lookup_dict (main_trailer, "Root") == NULL ||
       (xref_size = pdf_lookup_dict (main_trailer, "Size")) == NULL) {
     fprintf (stderr,
@@ -1446,9 +1419,6 @@ MEM_START
     extend_xref (pdf_number_value (xref_size));
   }
   /* Read any additional xref tables */
-#ifdef MEM_DEBUG
-  fprintf (debugfile, "Looking for 'prev' xref tables\n");
-#endif
   prev_trailer = pdf_link_obj (main_trailer);
   while ((prev_xref = pdf_lookup_dict (prev_trailer, "Prev")) != NULL) {
     xref_pos = pdf_number_value (prev_xref);
@@ -1515,9 +1485,6 @@ void pdf_close (void)
     fprintf (stderr, "\npdf_close:\n");
     fprintf (stderr, "pdf_input_file=%p\n", pdf_input_file);
   }
-#ifdef MEM_DEBUG
-  fprintf (debugfile, "Starting magic loop\n");
-#endif  
   do {
     done = 1;
     for (i=0; i<num_input_objects; i++) {
@@ -1536,9 +1503,6 @@ void pdf_close (void)
       pdf_release_obj (xref_table[i].indirect);
     }
   }
-#ifdef MEM_DEBUG
-  fprintf (debugfile, "Releasing XREF Table\n");
-#endif
   RELEASE (xref_table);
   xref_table = NULL;
   num_input_objects = 0;

@@ -53,10 +53,6 @@ MEM_START
 
   /* Now just lookup catalog location */
   /* Deref catalog */
-
-#ifdef MEM_DEBUG
- fprintf (debugfile, "Getting Catalog\n");
-#endif
   if ((catalog = pdf_deref_obj(pdf_lookup_dict (trailer,"Root"))) ==
       NULL) {
     fprintf (stderr, "\nCatalog isn't where I expect it.\n");
@@ -64,28 +60,16 @@ MEM_START
   }
 
   /* Lookup page tree in catalog */
-#ifdef MEM_DEBUG
- fprintf (debugfile, "Getting Page tree\n");
-#endif
   page_tree = pdf_deref_obj (pdf_lookup_dict (catalog, "Pages"));
   /* Should be done with catalog */
   pdf_release_obj (catalog);
   /* Media box and resources can be inherited so start looking for
      them here */
-#ifdef MEM_DEBUG
- fprintf (debugfile, "Looking for MediaBox\n");
-#endif
   media_box = pdf_deref_obj (pdf_lookup_dict (page_tree, "MediaBox"));
-#ifdef MEM_DEBUG
- fprintf (debugfile, "Looking for Resources\n");
-#endif
   resources = pdf_deref_obj (pdf_lookup_dict (page_tree, "Resources"));
   if (resources == NULL) {
     resources = pdf_new_dict();
   }
-#ifdef MEM_DEBUG
- fprintf (debugfile, "Searching for first page (with inheritance)\n");
-#endif
   while ((kids_ref = pdf_lookup_dict (page_tree, "Kids")) != NULL) {
     kids = pdf_deref_obj (kids_ref);
     pdf_release_obj (page_tree);

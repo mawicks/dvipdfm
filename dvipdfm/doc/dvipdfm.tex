@@ -1,4 +1,4 @@
-% $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/doc/dvipdfm.tex,v 1.10 1998/12/06 21:15:32 mwicks Exp $
+% $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/doc/dvipdfm.tex,v 1.11 1998/12/07 20:32:51 mwicks Exp $
 \special{  pdf:  docview <</PageMode /UseOutlines>>}%
 \catcode`\ =11\def\space{ }\catcode`\ =10
 % Page layout
@@ -164,7 +164,7 @@ of typeset material.}  Any material on the page, including
 
 \item{$\bullet$} {\it Ability to include the first page of a \link{PDF file}{pdfimage} as
 an encapsulated object along with its embedded resources such as fonts.}
-Note:  Currently, this doesn't work of the contents stream
+Note:  Currently, this doesn't work if the contents stream
 has multiple segments. 
 
 \item{$\bullet$} {\it Ability to include a \link{JPEG image}{jpegimage} as an encapsulated
@@ -901,8 +901,8 @@ resource was embedded along with the content stream.
 
 \section{Font Mapping}
 
-Different \TeX\ font names can be 
-mapped into different physical font names (PostScript) via
+\TeX\ font names can be
+mapped into arbitrary physical (PostScript) font names via
 the map file named |pdffonts.map|.  The file is
 similar to the |psfonts.map| file used by |dvips|
 and other drivers.  Each line in the

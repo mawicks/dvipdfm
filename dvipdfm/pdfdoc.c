@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.22 1998/12/07 05:12:36 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.23 1998/12/07 20:32:50 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -829,49 +829,22 @@ MEM_START
     /* and reference it */
     pages[page_count].page_ref = pdf_ref_obj(pages[page_count].page_dict);
   }
-#ifdef MEM_DEBUG
-  fprintf (debugfile, "adding to /Kids\n");
-#endif
   pdf_add_array (pages_kids,
 		 pdf_link_obj(pages[page_count].page_ref));
-#ifdef MEM_DEBUG
-  fprintf (debugfile, "Filling in /Type\n");
-#endif
   pdf_add_dict (pages[page_count].page_dict,
 		pdf_new_name ("Type"),
 		pdf_new_name ("Page"));
-#ifdef MEM_DEBUG
-  fprintf (debugfile, "Filling in /Parent\n");
-#endif
   pdf_add_dict (pages[page_count].page_dict,
 		pdf_new_name ("Parent"),
 		pdf_link_obj (page_tree_label));
   tmp1 = pdf_new_array ();
-#ifdef MEM_DEBUG
-  fprintf (debugfile, "Adding ref to glob_page_bop\n");
-#endif
   pdf_add_array (tmp1, pdf_ref_obj (glob_page_bop));
-#ifdef MEM_DEBUG
-  fprintf (debugfile, "Adding ref to this_page_bop\n");
-#endif
   pdf_add_array (tmp1, pdf_ref_obj (this_page_bop));
   /* start the contents stream for the new page */
   this_page_contents = pdf_new_stream();
-#ifdef MEM_DEBUG
-  fprintf (debugfile, "Adding ref to contents_bop\n");
-#endif
   pdf_add_array (tmp1, pdf_ref_obj (this_page_contents));
-#ifdef MEM_DEBUG
-  fprintf (debugfile, "Adding ref to this_page_eop\n");
-#endif
   pdf_add_array (tmp1, pdf_ref_obj (this_page_eop));
-#ifdef MEM_DEBUG
-  fprintf (debugfile, "Adding ref to glob_page_eop\n");
-#endif
   pdf_add_array (tmp1, pdf_ref_obj (glob_page_eop));
-#ifdef MEM_DEBUG
-  fprintf (debugfile, "Adding /Contents key\n");
-#endif
   pdf_add_dict (pages[page_count].page_dict,
 		pdf_new_name ("Contents"),
 		tmp1);

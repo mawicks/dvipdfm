@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.17 1998/12/07 18:16:29 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.18 1998/12/07 20:32:50 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -523,7 +523,6 @@ int dev_locate_font (char *tex_name,
 {
   /* Since Postscript fonts are scaleable, this font may have already
      been asked for.  Make sure it doesn't already exist. */
-  int result = -1;
   int i;
   if (debug) {
     fprintf (stderr, "dev_locate_font:\n");
@@ -579,9 +578,6 @@ void dev_select_font (int dev_font_id)
   if (debug) {
     fprintf (stderr, "(dev_select_font)");
   }
-#ifdef MEM_DEBUG
-  fprintf (debugfile, "(dev_select_font entered)\n");
-#endif
   if (dev_font_id < 0 || dev_font_id >= n_dev_fonts) {
     ERROR ("dev_change_to_font: dvi wants a font that isn't loaded");
   }
@@ -597,9 +593,6 @@ void dev_select_font (int dev_font_id)
     pdf_doc_add_to_page_fonts (dev_font[dev_font_id].short_name,
 			       pdf_link_obj(dev_font[dev_font_id].font_resource));
   }
-#ifdef MEM_DEBUG
-  fprintf (debugfile, "(dev_select_font left)\n");
-#endif
 }
 /* The following routine is here for forms.  Since
    a form is self-contained, it will need its own Tf command
@@ -625,9 +618,6 @@ void dev_reselect_font(void)
 void dev_set_char (unsigned ch, double width)
 {
   int len;
-#ifdef MEM_DEBUG
-  fprintf (debugfile, "%c\n", ch);
-#endif
   if (debug) {
     fprintf (stderr, "(dev_set_char (width=%g)", width);
     if (isprint (ch))
