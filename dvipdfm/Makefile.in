@@ -14,11 +14,11 @@ psheaderdir=$(texmf)/dvips
 programs=dvipdfm ebb
 headers=dvi.h pdflimits.h error.h mfileio.h jpeg.h mem.h numbers.h \
 	pdfdev.h pdfdoc.h pdfparse.h pdfspecial.h tfm.h type1.h epdf.h \
-	vf.h dvicodes.h
+	vf.h dvicodes.h t1crypt.h
 src=pdfdev.c pdfdoc.c dvi.c mfileio.c mem.c jpeg.c numbers.c pdfobj.c \
-	pdfparse.c pdfspecial.c tfm.c type1.c dvipdfm.c epdf.c vf.c
+	pdfparse.c pdfspecial.c tfm.c type1.c dvipdfm.c epdf.c vf.c t1crypt.c
 objects=pdfdev.o pdfdoc.o dvi.o mfileio.o mem.o jpeg.o numbers.o pdfobj.o \
-        pdfparse.o pdfspecial.o tfm.o type1.o dvipdfm.o epdf.o vf.o
+        pdfparse.o pdfspecial.o tfm.o type1.o dvipdfm.o epdf.o vf.o t1crypt.o
 eobjects=ebb.o jpeg.o pdfobj.o mem.o mfileio.o numbers.o pdfparse.o
 
 check default all: $(programs)
