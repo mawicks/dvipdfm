@@ -16,7 +16,7 @@ pdfparse.o: pdfparse.c system.h pdfparse.h numbers.h pdfobj.h \
  pdfspecial.h pdfdoc.h pdfdev.h mem.h dvi.h error.h mfileio.h
 pdfspecial.o: pdfspecial.c system.h pdflimits.h pdfspecial.h numbers.h \
  pdfobj.h pdfdoc.h pdfdev.h pdfparse.h mem.h dvi.h error.h mfileio.h \
- jpeg.h epdf.h
+ jpeg.h epdf.h config.h pngimage.h
 tfm.o: tfm.c system.h pdflimits.h numbers.h error.h mfileio.h mem.h
 type1.o: type1.c system.h pdfobj.h mem.h error.h mfileio.h numbers.h \
  type1.h tfm.h pdfparse.h pdflimits.h t1crypt.h winansi.h \
@@ -33,4 +33,6 @@ pkfont.o: pkfont.c pkfont.h pdfobj.h mfileio.h numbers.h pdflimits.h \
  mem.h tfm.h error.h system.h
 tpic.o: tpic.c tpic.h numbers.h pdfparse.h pdfobj.h mem.h mfileio.h \
  pdfdoc.h dvi.h error.h pdfdev.h
-thumbnail.o: thumbnail.c config.h system.h mem.h pdfobj.h thumbnail.h
+thumbnail.o: thumbnail.c config.h system.h mem.h pdfobj.h thumbnail.h \
+ pngimage.h
+pngimage.o: pngimage.c config.h system.h mem.h pdfobj.h

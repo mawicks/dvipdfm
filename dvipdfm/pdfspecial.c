@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.44 1999/08/14 04:22:37 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.45 1999/08/14 04:38:57 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -43,10 +43,11 @@
 #include "epdf.h"
 
 #include "config.h"
+
 #ifdef HAVE_LIBPNG
 #include <png.h>
-#include "thumbnail.h"
-#endif
+#include "pngimage.h"
+#endif /* HAVE_LIBPNG */
 
 #define verbose 0
 #define debug 0
