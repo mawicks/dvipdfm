@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.58 1999/09/08 16:51:47 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.59 1999/09/10 00:33:57 mwicks Exp $
  
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1092,6 +1092,7 @@ static pdf_obj *build_scale_array (double a, double b, double c,
 
 void doc_make_form_xobj (pdf_obj *this_form_contents, pdf_obj *bbox,
 			 double refptx, double refpty,
+			 double xscale, double yscale,
 			 pdf_obj *resources, char *form_name)
 {
   pdf_obj *xobj_dict, *tmp1;
@@ -1104,11 +1105,11 @@ void doc_make_form_xobj (pdf_obj *this_form_contents, pdf_obj *bbox,
   pdf_add_dict (xobj_dict, pdf_new_name ("BBox"), bbox);
   pdf_add_dict (xobj_dict, pdf_new_name ("FormType"), 
 		pdf_new_number(1.0));
-  /* The reference point should be where the lower left corner of the
-     bounding box is.  We use an identity scaling matrix,
-     and translate the lower left corner of the bounding box to the
-     origin */
-  tmp1 = build_scale_array (1, 0, 0, 1, -refptx, -refpty);
+  /* The reference point of an Xobject is at the lower left corner
+     of the bounding box.  Since we would like to have an arbitrary
+     reference point, we use a transformation matrix, translating
+     the reference point to (0,0) */
+  tmp1 = build_scale_array (xscale, 0, 0, yscale, -xscale*refptx, -yscale*refpty);
   pdf_add_dict (xobj_dict, pdf_new_name ("Matrix"), tmp1);
   pdf_add_dict (xobj_dict, pdf_link_obj (resources_name), resources);
   return;
@@ -1157,10 +1158,8 @@ pdf_obj *begin_form_xobj (double xpos, double ypos,
   pdf_add_array (bbox, pdf_new_number (ROUND(bburx,0.01)));
   pdf_add_array (bbox, pdf_new_number (ROUND(bbury,0.01)));
   /* Resource is already made, so call doc_make_form_xobj() */
-  /*  sprintf (work_buffer, "1 0 0 1 %.2f %.2f cm", -xpos, -ypos);
-      pdf_doc_add_to_page (work_buffer, strlen(work_buffer)); */
   doc_make_form_xobj (this_page_contents, bbox,
-		      xpos, ypos,
+		      xpos, ypos, 1.0, 1.0,
 		      pdf_ref_obj(current_page_resources), res_name);
   /* Make sure the object is self-contained by adding the
      current font to the object stream */

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/psspecial.c,v 1.6 1999/09/08 16:51:48 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/psspecial.c,v 1.7 1999/09/10 00:33:58 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -146,7 +146,8 @@ static int parse_psfile (char **start, char *end, double x_user, double y_user)
 	  RELEASE (val);
 	} else {  /* Keywords without values */
 	  switch (keys[i].id) {
-	  case CLIP: /* Ignore */
+	  case CLIP:
+	    p -> clip  = 1;
 	    break;
 	  default:
 	    fprintf (stderr, "\nPSfile key \"%s\" not recognized\n",

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/epdf.c,v 1.19 1999/09/08 16:51:46 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/epdf.c,v 1.20 1999/09/10 00:33:57 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -104,28 +104,28 @@ MEM_START
       media_box = crop_box;
       crop_box = NULL;
     }
-    /* If the user specified a bounding box, use override both
-       mediabox and cropbox.  At this point, "media_box"
-       should probably be called "bounding_box" as that
-       is how it is going to be used.  It's just that the
-       default bounding box is the media box, so that's the
-       name of the variable. */
-    if (p->user_bbox) {
+    /* This gets bit confusing.  In the following code,
+       media_box is the box the image is cropped to. 
+       The bounding box is the box the image is scaled to */
+    /* If user did not supply bounding box, use media_box
+       (which may really be cropbox) as bounding box */
+    if (!p->user_bbox) {
+      p->llx = pdf_number_value (pdf_get_array (media_box, 0));
+      p->lly = pdf_number_value (pdf_get_array (media_box, 1));
+      p->urx = pdf_number_value (pdf_get_array (media_box, 2));
+      p->ury = pdf_number_value (pdf_get_array (media_box, 3));
+    }
+    /* Adjust scaling information as necessary */
+    pdf_scale_image (p, (p->urx)-(p->llx), (p->ury)-(p->lly));
+    /* If the user specified a bounding box, override both
+       mediabox and cropbox since the bounding becomes the crop box. */
+    if (p->clip && p->user_bbox) {
       pdf_release_obj (media_box);
       media_box = pdf_new_array ();
       pdf_add_array (media_box, pdf_new_number (p->llx));
       pdf_add_array (media_box, pdf_new_number (p->lly));
       pdf_add_array (media_box, pdf_new_number (p->urx));
       pdf_add_array (media_box, pdf_new_number (p->ury));
-    }
-    /* Adjust scaling information as necessary */
-    {
-      double bbllx, bblly, bburx, bbury;
-      bbllx = pdf_number_value (pdf_get_array (media_box, 0));
-      bblly = pdf_number_value (pdf_get_array (media_box, 1));
-      bburx = pdf_number_value (pdf_get_array (media_box, 2));
-      bbury = pdf_number_value (pdf_get_array (media_box, 3));
-      pdf_scale_image (p, bburx-bbllx, bbury-bblly);
     }
     if ((contents =
 	 pdf_deref_obj(pdf_lookup_dict(page_tree,"Contents")))==NULL) {
@@ -137,8 +137,7 @@ MEM_START
   /* Arrays of contents must be handled very differently (not implemented) */
   if (contents && contents -> type != PDF_ARRAY) {
     doc_make_form_xobj (contents, media_box,
-			pdf_number_value(pdf_get_array (media_box, 0)),
-			pdf_number_value(pdf_get_array (media_box, 1)),
+			p->llx, p->lly, 1.0, 1.0,
 			resources, res_name);
   } else {
     fprintf (stderr, "\nIgnoring stream with with multiple segments\n");
