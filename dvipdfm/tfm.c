@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.18 1999/02/21 14:30:23 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.19 1999/04/01 00:33:55 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -264,7 +264,7 @@ int tfm_open (const char *tfm_name)
   if (i == numtfms) { /* Name hasn't already been loaded */
     full_tfm_file_name = kpse_find_tfm (tfm_name);
     if (full_tfm_file_name == NULL) {
-      fprintf (stderr, "%s: ", tfm_name);
+      fprintf (stderr, "\n%s: ", tfm_name);
       ERROR ("tfm_open:  Unable to find TFM file");
     }
     if (numtfms >= MAX_FONTS) {

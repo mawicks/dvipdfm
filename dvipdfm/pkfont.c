@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pkfont.c,v 1.10 1999/03/23 02:54:42 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pkfont.c,v 1.11 1999/04/01 00:33:55 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -487,8 +487,8 @@ static void do_character (unsigned char flag, int pk_id, pdf_obj *char_procs)
       pdf_add_stream (glyph, work_buffer, len);
       /* For now add an outline box for debugging purposes */
       /*      len = sprintf (work_buffer, " %.2f %.2f m %.2f %.2f l %.2f %.2f l %.2f %.2f l s",
-	       llx, lly, urx, lly, urx, ury, llx, ury);
-	       pdf_add_stream (glyph, work_buffer, len); */
+		     llx, lly, urx, lly, urx, ury, llx, ury);
+		     pdf_add_stream (glyph, work_buffer, len); */
       /* Scale and translate origin to lower left corner for raster data */
       len = sprintf (work_buffer, " q %.2f 0 0 %.2f %.2f %.2f cm",
 		     w*pix2charu, h*pix2charu, llx, lly);
