@@ -65,11 +65,11 @@ MAKEINFO = @MAKEINFO@
 PACKAGE = @PACKAGE@
 VERSION = @VERSION@
 
-include_HEADERS = dvi.h error.h io.h tfm.h numbers.h pdfobj.h pdfdoc.h type1.h pdfdev.h pdfspecial.h
+include_HEADERS = dvi.h error.h io.h tfm.h numbers.h pdfobj.h pdfdoc.h type1.h pdfdev.h pdfspecial.h pdfparse.h jpeg.h
 bin_PROGRAMS = dvipdf dvitest 
-dvitest_SOURCES = dvitest.c numbers.c dvi.c io.c mem.c pdfdev.c pdfdoc.c pdfobj.c type1.c tfm.c pdfspecial.c
+dvitest_SOURCES = dvitest.c numbers.c dvi.c io.c mem.c pdfdev.c pdfdoc.c pdfobj.c type1.c tfm.c pdfspecial.c pdfparse.c jpeg.c
 dvipdf_LDADD = ./kpathsea/kpathsea/kpathsea.a
-dvipdf_SOURCES = dvipdf.c numbers.c dvi.c io.c mem.c pdfdev.c pdfdoc.c pdfobj.c type1.c tfm.c pdfspecial.c
+dvipdf_SOURCES = dvipdf.c numbers.c dvi.c io.c mem.c pdfdev.c pdfdoc.c pdfobj.c type1.c tfm.c pdfspecial.c pdfparse.c jpeg.c
 dvitest_LDADD = ./kpathsea/kpathsea/kpathsea.a
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
@@ -82,11 +82,11 @@ DEFS = @DEFS@ -I. -I$(srcdir) -I.
 LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@
 dvipdf_OBJECTS =  dvipdf.o numbers.o dvi.o io.o mem.o pdfdev.o pdfdoc.o \
-pdfobj.o type1.o tfm.o pdfspecial.o
+pdfobj.o type1.o tfm.o pdfspecial.o pdfparse.o jpeg.o
 dvipdf_DEPENDENCIES =  ./kpathsea/kpathsea/kpathsea.a
 dvipdf_LDFLAGS = 
 dvitest_OBJECTS =  dvitest.o numbers.o dvi.o io.o mem.o pdfdev.o \
-pdfdoc.o pdfobj.o type1.o tfm.o pdfspecial.o
+pdfdoc.o pdfobj.o type1.o tfm.o pdfspecial.o pdfparse.o jpeg.o
 dvitest_DEPENDENCIES =  ./kpathsea/kpathsea/kpathsea.a
 dvitest_LDFLAGS = 
 COMPILE = $(CC) $(DEFS) $(INCLUDES) $(CPPFLAGS) $(CFLAGS)
@@ -103,8 +103,9 @@ DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
 TAR = tar
 GZIP = --best
 DEP_FILES =  .deps/dvi.P .deps/dvipdf.P .deps/dvitest.P .deps/io.P \
-.deps/mem.P .deps/numbers.P .deps/pdfdev.P .deps/pdfdoc.P \
-.deps/pdfobj.P .deps/pdfspecial.P .deps/tfm.P .deps/type1.P
+.deps/jpeg.P .deps/mem.P .deps/numbers.P .deps/pdfdev.P .deps/pdfdoc.P \
+.deps/pdfobj.P .deps/pdfparse.P .deps/pdfspecial.P .deps/tfm.P \
+.deps/type1.P
 SOURCES = $(dvipdf_SOURCES) $(dvitest_SOURCES)
 OBJECTS = $(dvipdf_OBJECTS) $(dvitest_OBJECTS)
 

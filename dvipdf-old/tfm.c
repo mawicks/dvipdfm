@@ -240,6 +240,17 @@ double tfm_get_width (int font_id, UNSIGNED_PAIR ch)
   return (double) (tfm[font_id].width)[width_index] / 1048576.0;
 }
 
+UNSIGNED_PAIR tfm_get_firstchar (int font_id)
+{
+  return tfm[font_id].bc;
+}
+
+UNSIGNED_PAIR tfm_get_lastchar (int font_id)
+{
+  return tfm[font_id].ec;
+}
+
+
 
 
 

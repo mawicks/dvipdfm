@@ -1,4 +1,3 @@
-
 /* This is tailored for PDF */
 
 #include <string.h>
@@ -10,6 +9,8 @@
 #include "kpathsea/tex-file.h"
 #include "io.h"
 #include "numbers.h"
+#include "type1.h"
+#include "tfm.h" 
 
 static is_a_base_font (char *name)
 {
@@ -120,16 +121,12 @@ pdf_obj *type1_fontfile (const char *tex_name)
   fclose (type1_binary_file);
   fprintf (stderr, ")");
   stream_dict = pdf_stream_dict (stream);
-  pdf_add_dict (stream_dict, tmp1 = pdf_new_name("Length1"),
-		tmp2 = pdf_new_number (length1));
-  pdf_release_obj (tmp1);  pdf_release_obj (tmp2);
-  pdf_add_dict (stream_dict, tmp1 = pdf_new_name("Length2"),
-		tmp2 = pdf_new_number (length2));
-  pdf_release_obj (tmp1);  pdf_release_obj (tmp2);
-  pdf_add_dict (stream_dict, tmp1 = pdf_new_name("Length3"),
-		tmp2 = pdf_new_number (length3));
-  pdf_release_obj (tmp1);  pdf_release_obj (tmp2);
-  pdf_release_obj (stream_dict);
+  pdf_add_dict (stream_dict, pdf_new_name("Length1"),
+		pdf_new_number (length1));
+  pdf_add_dict (stream_dict, pdf_new_name("Length2"),
+		pdf_new_number (length2));
+  pdf_add_dict (stream_dict, pdf_new_name("Length3"),
+		pdf_new_number (length3));
   stream_label = pdf_ref_obj (stream);
   pdf_release_obj (stream);
   return stream_label;
@@ -189,10 +186,8 @@ static get_afm_token (void)
 static double descent, ascent;
 static double bbllx, bblly, bburx, bbury, xheight;
 static double capheight, italicangle;
-static int firstchar, lastchar;
 static int isfixed;
 static char fontname[256];  /* Make as long as buffer */
-static double char_widths[256];
 
 static reset_afm_variables (void)
 {
@@ -201,38 +196,7 @@ static reset_afm_variables (void)
   bbllx = 0.0; bblly = 0.0;
   bburx = 0.0; bbury = 0.0;
   capheight = 0.0; italicangle = 0.0;
-  firstchar = 255; lastchar = 0;
   isfixed = 0;
-  for (i=0; i<256; i++) {
-    char_widths[i] = 0.0;
-  }
-}
-
-static scan_char_metrics (int num_expected)
-{
-  int ch, afm_tok, i;
-  double width;
-  char *p, *tok;
-  for (i=0; i<num_expected; i++) {
-    if ((p = fgets (buffer, sizeof(buffer), type1_afm_file)) == NULL){
-      ERROR ("scan_char_metrics:  Couldn't read all the expected metrics");
-    }
-    ch = -1; width = 0;
-    while (tok = strtok (p, ";")) {
-      p = NULL;
-      if (strstr (tok, "C ")){
-	sscanf (tok, " C %d", &ch);
-      }
-      else if (strstr (tok, "WX ")){
-	sscanf (tok, " WX %lf", &width);
-      }
-    }
-    if (ch >= 0) {
-      char_widths[ch] = width;
-      if (ch > lastchar) lastchar = ch;
-      if (ch < firstchar) firstchar = ch;
-    }
-  }
 }
 
 static void open_afm_file (const char *tex_name)
@@ -302,15 +266,11 @@ static void scan_afm_file (void)
       if (sscanf (position, " %lf", &xheight) != 1)
 	ERROR ("afm: Error reading XHeight");
       break;
-    case SCHARMETRICS:
-      if (sscanf (position, " %ld", &num_char_metrics) != 1)
-	ERROR ("afm:  Error reading number of char metrics");
-      scan_char_metrics(num_char_metrics);
-      break;
     case COMMENT:
     case SFONTMETRICS:
     case EFONTMETRICS:
     case ECHARMETRICS:
+    default:
       break;
     }
   }
@@ -324,121 +284,107 @@ static void scan_afm_file (void)
 
 pdf_obj *type1_font_descriptor (const char *tex_name)
 {
-  pdf_obj *font_descriptor, *font_descriptor_ref, *tmp1, *tmp2;
+  pdf_obj *font_descriptor, *font_descriptor_ref, *tmp1;
   int flags;
   font_descriptor = pdf_new_dict ();
   pdf_add_dict (font_descriptor,
-		tmp1 = pdf_new_name ("Type"),
-		tmp2 = pdf_new_name ("FontDescriptor"));
-  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+		pdf_new_name ("Type"),
+		pdf_new_name ("FontDescriptor"));
   if (capheight == 0.0) {
     fprintf (stderr, "\nWarning:  type1_font_descriptor:  AFM file: CapHeight is zero\n");
   }
   pdf_add_dict (font_descriptor,
-		tmp1 = pdf_new_name ("CapHeight"),
-		tmp2 = pdf_new_number (ROUND(capheight,0.01)));
-  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+		pdf_new_name ("CapHeight"),
+		pdf_new_number (ROUND(capheight,0.01)));
   pdf_add_dict (font_descriptor,
-		tmp1 = pdf_new_name ("Ascent"),
-		tmp2 = pdf_new_number (ROUND(ascent,0.01)));
-  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+		pdf_new_name ("Ascent"),
+		pdf_new_number (ROUND(ascent,0.01)));
   pdf_add_dict (font_descriptor,
-		tmp1 = pdf_new_name ("Descent"),
-		tmp2 = pdf_new_number (ROUND(descent,0.01)));
-  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+		pdf_new_name ("Descent"),
+		pdf_new_number (ROUND(descent,0.01)));
   flags = 0;
   if (italicangle != 0.0) flags += ITALIC;
   if (isfixed) flags += FIXED_WIDTH;
   flags += SYMBOLIC;
   pdf_add_dict (font_descriptor,
-		tmp1 = pdf_new_name ("Flags"),
-		tmp2 = pdf_new_number (flags));
-  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+		pdf_new_name ("Flags"),
+		pdf_new_number (flags));
   tmp1 = pdf_new_array ();
-  pdf_add_array (tmp1, tmp2 = pdf_new_number (ROUND(bbllx,1))); pdf_release_obj (tmp2);
-  pdf_add_array (tmp1, tmp2 = pdf_new_number (ROUND(bblly,1))); pdf_release_obj (tmp2);
-  pdf_add_array (tmp1, tmp2 = pdf_new_number (ROUND(bburx,1))); pdf_release_obj (tmp2);
-  pdf_add_array (tmp1, tmp2 = pdf_new_number (ROUND(bbury,1))); pdf_release_obj (tmp2);
+  pdf_add_array (tmp1, pdf_new_number (ROUND(bbllx,1)));
+  pdf_add_array (tmp1, pdf_new_number (ROUND(bblly,1)));
+  pdf_add_array (tmp1, pdf_new_number (ROUND(bburx,1)));
+  pdf_add_array (tmp1, pdf_new_number (ROUND(bbury,1)));
   pdf_add_dict (font_descriptor,
-		tmp2 = pdf_new_name ("FontBBox"),
+		pdf_new_name ("FontBBox"),
 		tmp1);
-  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
   pdf_add_dict (font_descriptor,
-		tmp1 = pdf_new_name ("FontName"),
-		tmp2 = pdf_new_name (fontname));
-  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+		pdf_new_name ("FontName"),
+		pdf_new_name (fontname));
   pdf_add_dict (font_descriptor,
-		tmp1 = pdf_new_name ("ItalicAngle"),
-		tmp2 = pdf_new_number (ROUND(italicangle,1)));
-  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+		pdf_new_name ("ItalicAngle"),
+		pdf_new_number (ROUND(italicangle,1)));
   if (xheight != 0.0) {
     pdf_add_dict (font_descriptor,
-		  tmp1 = pdf_new_name ("XHeight"),
-		  tmp2 = pdf_new_number (ROUND(xheight,1)));
-    pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+		  pdf_new_name ("XHeight"),
+		  pdf_new_number (ROUND(xheight,1)));
   }
   pdf_add_dict (font_descriptor,
-		tmp1 = pdf_new_name ("StemV"),  /* This is required */
-		tmp2 = pdf_new_number (NOCLUE));
-  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+		pdf_new_name ("StemV"),  /* This is required */
+		pdf_new_number (NOCLUE));
   pdf_add_dict (font_descriptor,
-		tmp1 = pdf_new_name ("FontFile"),
-		tmp2 = type1_fontfile (tex_name));
-  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+		pdf_new_name ("FontFile"),
+		type1_fontfile (tex_name));
   font_descriptor_ref = pdf_ref_obj (font_descriptor);
   pdf_release_obj (font_descriptor);
   return font_descriptor_ref;
 }
 
-pdf_obj *type1_font_resource (const char *tex_name, const char *resource_name)
+pdf_obj *type1_font_resource (const char *tex_name, int tfm_font_id, const char *resource_name)
 {
   int i;
+  int firstchar, lastchar;
   pdf_obj *font_resource, *font_resource_ref, *tmp1, *tmp2;
   font_resource = pdf_new_dict ();
   pdf_add_dict (font_resource,
-		tmp1 = pdf_new_name ("Type"),
-		tmp2 = pdf_new_name ("Font"));
-  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+		pdf_new_name ("Type"),
+		pdf_new_name ("Font"));
   pdf_add_dict (font_resource,
-		tmp1 = pdf_new_name ("Subtype"),
-		tmp2 = pdf_new_name ("Type1"));
+		pdf_new_name ("Subtype"),
+		pdf_new_name ("Type1"));
   pdf_add_dict (font_resource,
-		tmp1 = pdf_new_name ("Name"),
-		tmp2 = pdf_new_name (resource_name));
-  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+		pdf_new_name ("Name"),
+		pdf_new_name (resource_name));
   open_afm_file (tex_name);
   reset_afm_variables ();
   scan_afm_file();
   close_afm_file ();
   if (!is_a_base_font (fontname)) {
     pdf_add_dict (font_resource, 
-		  tmp1 = pdf_new_name ("FontDescriptor"),
-		  tmp2 = type1_font_descriptor (tex_name));
-    pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+		  pdf_new_name ("FontDescriptor"),
+		  type1_font_descriptor (tex_name));
   }
   pdf_add_dict (font_resource,
-		tmp1 = pdf_new_name ("BaseFont"),
-		tmp2 = pdf_new_name (fontname));  /* fontname is set
+		pdf_new_name ("BaseFont"),
+		pdf_new_name (fontname));  /* fontname is set
 						     by
 						     type1_font_descriptor() */
-  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+  firstchar = tfm_get_firstchar(tfm_font_id);
   pdf_add_dict (font_resource,
-		tmp1 = pdf_new_name ("FirstChar"),
-		tmp2 = pdf_new_number (firstchar));
-  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+		pdf_new_name ("FirstChar"),
+		pdf_new_number (firstchar));
+  lastchar = tfm_get_lastchar(tfm_font_id);
   pdf_add_dict (font_resource,
-		tmp1 = pdf_new_name ("LastChar"),
-		tmp2 = pdf_new_number (lastchar));
-  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+		pdf_new_name ("LastChar"),
+		pdf_new_number (lastchar));
   tmp1 = pdf_new_array ();
   for (i=firstchar; i<=lastchar; i++) {
-    pdf_add_array (tmp1, tmp2 = pdf_new_number (ROUND(char_widths[i],0.01)));
-        pdf_release_obj (tmp2);
+    pdf_add_array (tmp1,
+		   pdf_new_number(ROUND(tfm_get_width (tfm_font_id, i)*1000.0,0.01)));
+    /*  pdf_new_number (ROUND(char_widths[i],0.01))); */
   }
   pdf_add_dict (font_resource,
-		tmp2 = pdf_new_name ("Widths"),
+		pdf_new_name ("Widths"),
 		tmp1);
-  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
   font_resource_ref = pdf_ref_obj (font_resource);
   pdf_release_obj (font_resource);
   return font_resource_ref;

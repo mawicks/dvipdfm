@@ -6,5 +6,5 @@ numbers.o: numbers.c numbers.h /usr/include/stdio.h \
  /usr/lib/gcc-lib/i386-redhat-linux/2.7.2.3/include/stdarg.h \
  /usr/include/stdio_lim.h /usr/include/math.h /usr/include/huge_val.h \
  /usr/include/mathcalls.h \
- /usr/lib/gcc-lib/i386-redhat-linux/2.7.2.3/include/float.h \
- /usr/include/__math.h error.h io.h
+ /usr/lib/gcc-lib/i386-redhat-linux/2.7.2.3/include/float.h error.h \
+ io.h

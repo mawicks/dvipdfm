@@ -240,11 +240,12 @@ void dev_eop (void)
   }
   graphics_mode();
   pdf_doc_add_to_page_resources ("Font", this_page_fontlist_dict);
-  pdf_release_obj (this_page_fontlist_dict);
 }
 
 void dev_locate_font (char *tex_name,
-		      unsigned long tex_font_id, double ptsize)
+		      unsigned long tex_font_id,
+		      int tfm_font_id,
+		      double ptsize)
 {
   /* Since Postscript fonts are scaleable, this font may have already
      been asked for.  Make sure it doesn't already exist. */
@@ -265,6 +266,7 @@ void dev_locate_font (char *tex_name,
     /* type1_font_resource on next line always returns an indirect
        reference */
     dev_font[i].font_resource = type1_font_resource (tex_name,
+						     tfm_font_id,
 						     dev_font[i].short_name);
   } else {	/* Font was found */
     strcpy (dev_font[n_dev_fonts].short_name, dev_font[i].short_name);
@@ -305,9 +307,8 @@ void dev_select_font (long tex_font_id)
   /* Add to resource list for this page */
   if (!dev_font[i].used_on_this_page) {
     pdf_add_dict (this_page_fontlist_dict,
-		  tmp1 = pdf_new_name (dev_font[i].short_name),
-		  dev_font[i].font_resource);
-    pdf_release_obj (tmp1);
+		  pdf_new_name (dev_font[i].short_name),
+		  pdf_link_obj (dev_font[i].font_resource));
     dev_font[i].used_on_this_page = 1;
   }
 }

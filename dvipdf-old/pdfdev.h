@@ -9,7 +9,8 @@ unsigned long dev_tell_xdpi(void);
 
 unsigned long dev_tell_ydpi(void);
 
-void dev_locate_font (char *name, unsigned long tex_font_id, double ptsize);
+void dev_locate_font (char *name, unsigned long tex_font_id,
+		      int tfm_font_id, double ptsize);
 
 void dev_bop (void);
 

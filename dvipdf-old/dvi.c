@@ -447,8 +447,6 @@ static void do_locate_fonts (void)
   for (i=0; i<numfonts; i++) {
     fprintf (stderr, "\n<%s @ %gpt>",
 	     font_def[i].name, ROUND(font_def[i].size*dvi2pts,0.1));
-    dev_locate_font (font_def[i].name, font_def[i].id, 
-		     font_def[i].size*dvi2pts);
     /* Only need to read tfm once for the same name.  Check to see
        if it already exists */
     for (j=0; j<i; j++) {
@@ -459,6 +457,9 @@ static void do_locate_fonts (void)
       font_def[i].tfm_id = tfm_open (font_def[i].name);
     else
       font_def[i].tfm_id = font_def[j].tfm_id;
+    dev_locate_font (font_def[i].name, font_def[i].id, 
+		     font_def[i].tfm_id,
+		     font_def[i].size*dvi2pts);
   }
 }
 

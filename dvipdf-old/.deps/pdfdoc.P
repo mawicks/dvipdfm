@@ -11,5 +11,4 @@ pdfdoc.o: pdfdoc.c /usr/include/stdio.h /usr/include/libio.h \
  /usr/include/timebits.h pdfobj.h error.h mem.h config.h pdfdoc.h \
  numbers.h /usr/include/math.h /usr/include/huge_val.h \
  /usr/include/mathcalls.h \
- /usr/lib/gcc-lib/i386-redhat-linux/2.7.2.3/include/float.h \
- /usr/include/__math.h
+ /usr/lib/gcc-lib/i386-redhat-linux/2.7.2.3/include/float.h

@@ -776,7 +776,7 @@ fi
 
 
 
-CFLAGS="-O2 --pedantic"
+CFLAGS="-g --pedantic"
 
 CPPFLAGS="-I./kpathsea/ -DTEXMFCNF=/usr/lib/texmf/texmf.cnf"
 

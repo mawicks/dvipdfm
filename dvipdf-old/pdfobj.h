@@ -113,8 +113,8 @@ void pdf_set_number (pdf_obj *object, double value);
 double pdf_number_value (pdf_obj *number);
 
 pdf_obj *pdf_new_string (const char *string, unsigned length);
-
 void pdf_set_string (pdf_obj *object, char *string, unsigned length);
+char *pdf_string_value (pdf_obj *object);
 
 #define pdf_obj_string_value(s) (((struct pdf_string *)((s)->data)) -> string)
 #define pdf_obj_string_length(s) (((struct pdf_string *)((s)->data)) -> length)
@@ -144,11 +144,13 @@ void pdf_add_stream (pdf_obj *stream, char *stream_data, unsigned
 pdf_obj *pdf_stream_dict(pdf_obj *stream);
 
 void pdf_release_obj (pdf_obj *object);
+pdf_obj *pdf_deref_obj (pdf_obj *object);
 pdf_obj *pdf_ref_obj (pdf_obj *object);
 pdf_obj *pdf_new_ref (int label, int generation);
-
+pdf_obj *pdf_ref_file_obj (int obj_no);
 
 void pdf_write_obj (FILE *file, const pdf_obj *object);
+pdf_obj *pdf_open (char *filename);
 
 int pdfobj_escape_c (char *buffer, char ch);
 

@@ -7,8 +7,8 @@ AM_INIT_AUTOMAKE(dvipdf, 0.6dev)
 
 AC_PREFIX_DEFAULT(/usr/local/texmf)
 
-dnl CFLAGS="-g --pedantic"
-CFLAGS="-O2 --pedantic"
+CFLAGS="-g --pedantic"
+dnl CFLAGS="-O2 --pedantic"
 AC_SUBST(CFLAGS)
 CPPFLAGS="-I./kpathsea/ -DTEXMFCNF=/usr/lib/texmf/texmf.cnf"
 AC_SUBST(CPPFLAGS)

@@ -7,9 +7,9 @@ tfm.o: tfm.c numbers.h /usr/include/stdio.h /usr/include/libio.h \
  /usr/include/stdio_lim.h /usr/include/math.h /usr/include/huge_val.h \
  /usr/include/mathcalls.h \
  /usr/lib/gcc-lib/i386-redhat-linux/2.7.2.3/include/float.h \
- /usr/include/__math.h dvi_limits.h error.h io.h mem.h \
- /usr/include/stdlib.h /usr/include/sys/types.h /usr/include/time.h \
- /usr/include/endian.h /usr/include/bytesex.h \
- /usr/include/sys/select.h /usr/include/selectbits.h \
- /usr/include/alloca.h kpathsea/kpathsea/tex-file.h \
- kpathsea/kpathsea/c-proto.h kpathsea/kpathsea/types.h
+ dvi_limits.h error.h io.h mem.h /usr/include/stdlib.h \
+ /usr/include/sys/types.h /usr/include/time.h /usr/include/endian.h \
+ /usr/include/bytesex.h /usr/include/sys/select.h \
+ /usr/include/selectbits.h /usr/include/alloca.h \
+ kpathsea/kpathsea/tex-file.h kpathsea/kpathsea/c-proto.h \
+ kpathsea/kpathsea/types.h

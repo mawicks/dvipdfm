@@ -5,10 +5,14 @@
 void pdf_doc_new_page (double width, double height);
 
 pdf_obj *pdf_doc_this_page (void);
+pdf_obj *pdf_doc_next_page (void);
+pdf_obj *pdf_doc_prev_page (void);
 pdf_obj *pdf_doc_ref_page (unsigned page_no);
 
 void pdf_doc_add_to_page_resources (const char *name, pdf_obj
 				    *resources);
+pdf_obj *pdf_doc_current_page_resources(void);
+
 void pdf_doc_add_to_page_annots (pdf_obj *annot);
 
 void pdf_doc_add_dest (char *name, unsigned length, pdf_obj *array);
