@@ -165,7 +165,7 @@ depend.make:
 @MAINT@	cp -a ebb-static dvipdfm-bin/ebb
 @MAINT@	tar -zcf ../dvipdfm-binary-linux-i386-static-@VERSION@.tar.gz dvipdfm-bin
 @MAINT@	/bin/rm -rf dvipdfm-bin
-@MAINT@rpm-dist: tarball VERSION
+@MAINT@rpm-dist: tarball
 @MAINT@	sed -e s/VERSION/@VERSION@/ dvipdfm.spec.in > /usr/src/redhat/SPECS/dvipdfm-@VERSION@.spec
 @MAINT@	cp -a ../dvipdfm-@VERSION@.tar.gz /usr/src/redhat/SOURCES/
 @MAINT@	rpm -ba /usr/src/redhat/SPECS/dvipdfm-@VERSION@.spec
