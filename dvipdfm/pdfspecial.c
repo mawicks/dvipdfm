@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.36 1999/01/19 03:36:58 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.37 1999/01/19 03:42:41 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -1025,7 +1025,7 @@ static void do_content(char **start, char *end, double x_user, double y_user)
 		   y_user);
     pdf_doc_add_to_page (work_buffer, len);
     pdf_doc_add_to_page (*start, end-*start);
-    pdf_doc_add_to_page (" Q", 1);
+    pdf_doc_add_to_page (" Q", 2);
   }
   *start = end;
   return;
