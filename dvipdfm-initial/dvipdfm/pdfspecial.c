@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfspecial.c,v 1.10.2.6 1998/11/26 07:14:40 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfspecial.c,v 1.10.2.7 1998/11/26 17:08:57 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -896,6 +896,8 @@ struct pdfmark
   {"eg", EGRAY},
   {"egray", EGRAY},
   {"endgray", EGRAY},
+  {"bgcolor", BGCOLOR},
+  {"bgc", BGCOLOR},
   {"bbc", BGCOLOR},
   {"bbg", BGCOLOR},
   {"begintransform", BXFORM},
