@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.54 1999/01/22 04:04:53 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.55 1999/01/22 23:31:22 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -515,7 +515,7 @@ static unsigned long do_pfb_header (FILE *file, int pfb_id,
   buffer = NEW (length, unsigned char);
   if ((nread = fread(buffer, sizeof(unsigned char), length, file)) ==
       length) {
-    for (i=0; i<nread; i++) {
+    for (i=0; i<length; i++) {
       if (buffer[i] == '\r')
 	buffer[i] = '\n';  /* May not be portable to non-Unix
 			      systems */
@@ -717,45 +717,55 @@ static unsigned long do_pfb_body (FILE *file, int pfb_id,
 {
   int i, ch;
   int stream_type;
-  unsigned char *buffer, *filtered;
-  unsigned long length, nread;
-  if ((ch = fgetc (file)) < 0 || ch != 128){
-    fprintf (stderr, "Got %d, expecting 128\n", ch);
-    ERROR ("type1_do_pfb_segment:  Are you sure this is a pfb?");
-  }
-  if ((stream_type = fgetc (file)) < 0 || stream_type != BINARY) {
-    fprintf (stderr, "Got %d, expecting %d\n", ch, BINARY);
-    ERROR ("type1_do_pfb_segment:  Are you sure this is a pfb?");
-  }
-  length = get_low_endian_quad (file);
-  buffer = NEW (length, unsigned char);
-  filtered = NEW (length, unsigned char);
-  if ((nread = fread(buffer, sizeof(unsigned char), length, file)) ==
-      length) {
-    if (partial_enabled && glyphs != NULL) {
-      /* For partial font embedding we need to decrypt the binary
-	 portin of the pfb */
-      crypt_init(EEKEY);
-      for (i=0; i<nread; i++) {
-	buffer[i] = decrypt(buffer[i]);
-      }
-      /* Now we do the partial embedding */
-      length = do_partial_body (filtered, buffer, length, 
-				pfbs[pfb_id].used_chars,
-				glyphs);
-      /* And reencrypt the whole thing */
-      crypt_init (EEKEY);
-      for (i=0; i<length; i++) {
-	buffer[i] = encrypt(filtered[i]);
-      }
+  unsigned char *buffer=NULL, *filtered=NULL;
+  unsigned long length=0;
+  /* Unfortunately, there can be several binary segments, so
+     we loop through all of them */
+  while (1) {
+    unsigned long nread;
+    unsigned long new_length;
+    if ((ch = fgetc (file)) < 0 || ch != 128){
+      fprintf (stderr, "Got %d, expecting 128\n", ch);
+      ERROR ("type1_do_pfb_segment:  Are you sure this is a pfb?");
     }
-    pdf_add_stream (pfbs[pfb_id].direct, (char *) buffer, length);
-  } else {
-    fprintf (stderr, "Found only %ld/%ld bytes\n", nread, length);
-    ERROR ("type1_do_pfb_segment:  Are you sure this is a pfb?");
+    if ((stream_type = fgetc (file)) < 0 || stream_type != BINARY) {
+      seek_relative (file, -2); /* Backup up two (yuck!) */
+      break;
+    }
+    new_length = get_low_endian_quad (file);
+    if (verbose > 3) {
+      fprintf (stderr, "Length of next binary segment: %ld\n",
+	       new_length);
+    }
+    buffer = RENEW (buffer, length+new_length, unsigned char);
+    if ((nread = fread(buffer+length, sizeof(unsigned char), new_length, file)) !=
+	new_length) {
+      fprintf (stderr, "Found only %ld/%ld bytes\n", nread, new_length);
+      ERROR ("type1_do_pfb_segment:  Are you sure this is a pfb?");
+    }
+    length += new_length;
   }
+  if (partial_enabled && glyphs != NULL) {
+    /* For partial font embedding we need to decrypt the binary
+       portion of the pfb */
+    crypt_init(EEKEY);
+    for (i=0; i<length; i++) {
+      buffer[i] = decrypt(buffer[i]);
+    }
+    /* Now we do the partial embedding */
+    filtered = NEW (length, unsigned char);
+    length = do_partial_body (filtered, buffer, length, 
+			      pfbs[pfb_id].used_chars,
+			      glyphs);
+    /* And reencrypt the whole thing */
+    crypt_init (EEKEY);
+    for (i=0; i<length; i++) {
+      buffer[i] = encrypt(filtered[i]);
+    }
+    RELEASE (filtered);
+  }
+  pdf_add_stream (pfbs[pfb_id].direct, (char *) buffer, length);
   RELEASE (buffer);
-  RELEASE (filtered);
   return length;
 }
 
@@ -770,19 +780,19 @@ static unsigned long do_pfb_trailer (FILE *file, pdf_obj *stream)
     ERROR ("type1_do_pfb_segment:  Are you sure this is a pfb?");
   }
   if ((stream_type = fgetc (file)) < 0 || stream_type != ASCII) {
-    fprintf (stderr, "Got %d, expecting %d\n", ch, ASCII);
+    fprintf (stderr, "Got %d, expecting %d\n", stream_type, ASCII);
     ERROR ("type1_do_pfb_segment:  Are you sure this is a pfb?");
   }
   length = get_low_endian_quad (file);
   buffer = NEW (length, unsigned char);
   if ((nread = fread(buffer, sizeof(unsigned char), length, file)) ==
       length) {
-    for (i=0; i<nread; i++) {
+    for (i=0; i<length; i++) {
       if (buffer[i] == '\r')
 	buffer[i] = '\n';  /* May not be portable to non-Unix
 			      systems */
     }
-    pdf_add_stream (stream, (char *) buffer, nread);
+    pdf_add_stream (stream, (char *) buffer, length);
   } else {
     fprintf (stderr, "Found only %ld out of %ld bytes\n", nread, length);
     ERROR ("type1_do_pfb_segment:  Are you sure this is a pfb?");
