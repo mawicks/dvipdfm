@@ -1,4 +1,4 @@
-% $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/doc/dvipdfm.tex,v 1.25 1999/09/19 15:58:47 mwicks Exp $
+% $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/doc/dvipdfm.tex,v 1.26 1999/09/20 02:12:26 mwicks Exp $
 % \special{ pdf: pagesize width 8.5truein height 11.0truein}
 \special{  pdf:  docview <</PageMode /UseOutlines>>}%
 \catcode`\ =11\def\space{ }\catcode`\ =10
@@ -153,7 +153,7 @@
 %
 \title{Dvipdfm User's Manual}
 \author{Mark A. Wicks}
-\version{Version 0.12.4}
+\version{Version 0.12.4b}
 \date{September 19, 1999}
 \maketitle
 \section{Introduction}
@@ -508,7 +508,7 @@ computes the correct bounding box on the fly.
 
 Note:  Link breaking is easily fooled at page breaks.  If you have problems
 with the header or footer wanting to become part of the link, you can
-insert a |nobreak| command at the beginning of the footer and a |break|
+insert a |nolink| command at the beginning of the footer and a |link|
 command at the end of the footer.
 
 \subsection{End Annotation}
@@ -517,22 +517,22 @@ command at the end of the footer.
 \description
 The |endann| (|eann| or |eannot|) terminates a breakable annotation.
 
-\subsection{Break}
-{\tt break}
+\subsection{Link}
+{\tt link}
 \description
-The |break| command instructs the link breaking algorithm to resume its
-operation after a |nobreak| command.
+The |link| command instructs the link breaking algorithm to resume its
+operation after a |nolink| command.
 
-\subsection{Nobreak}
-{\tt nobreak}
+\subsection{Nolink}
+{\tt nolink}
 \description
-The |nobreak| command instructs the link breaking algorithm to suspend
+The |nolink| command instructs the link breaking algorithm to suspend
 it operation.  This is only required if there is material inserted
 on the page in the {\it middle} of a link.  For example, when a link
 is broken at the end of a page, the header and footer are inserted
 in the middle of the link, but are not part of the link.  Material
-that is inserted between a |nobreak| and |break| will not become
-part of the link.  The |nobreak| and |break| escapes are not necessary
+that is inserted between a |nolink| and |link| will not become
+part of the link.  The |nolink| and |link| escapes are not necessary
 with the standard LaTeX header and footer lines, but may become necessary
 if these are changed.
 
