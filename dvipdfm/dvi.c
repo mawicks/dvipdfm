@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.65 1999/10/08 15:39:34 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.66 1999/10/08 15:56:04 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -56,6 +56,7 @@ static UNSIGNED_QUAD dvi_unit_num, dvi_unit_den, dvi_mag;
 #define VIRTUAL 2
 #define DVI 1
 #define VF 2
+
 struct loaded_font {
   int type;  /* Type is physical or virtual */
   int font_id;  /* id returned by dev (for PHYSICAL fonts)
