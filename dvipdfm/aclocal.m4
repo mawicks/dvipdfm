@@ -63,9 +63,9 @@ AC_DEFUN(AC_HAS_LIBPNG,
 LIBS="$LIBS -lm"
 AC_TRY_COMPILE([#include <png.h>], [png_infop p;],
 [AC_MSG_RESULT(yes)
- AC_CHECK_LIB(png, png_read_image,
+ AC_CHECK_LIB(png, png_get_image_width,
 [AC_DEFINE(HAVE_LIBPNG)
-LIBS="$LIBS -lpng"])],
+LIBS="$LIBS -lpng"],,-lz)],
 [AC_MSG_RESULT(no)])])
 #
 # End of local tests

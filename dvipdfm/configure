@@ -944,24 +944,24 @@ EOF
 if { (eval echo configure:945: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   echo "$ac_t""yes" 1>&6
- echo $ac_n "checking for png_create_read_struct in -lpng""... $ac_c" 1>&6
-echo "configure:949: checking for png_create_read_struct in -lpng" >&5
-ac_lib_var=`echo png'_'png_create_read_struct | sed 'y%./+-%__p_%'`
+ echo $ac_n "checking for png_get_image_width in -lpng""... $ac_c" 1>&6
+echo "configure:949: checking for png_get_image_width in -lpng" >&5
+ac_lib_var=`echo png'_'png_get_image_width | sed 'y%./+-%__p_%'`
 if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   ac_save_LIBS="$LIBS"
-LIBS="-lpng  $LIBS"
+LIBS="-lpng -lz $LIBS"
 cat > conftest.$ac_ext <<EOF
 #line 957 "configure"
 #include "confdefs.h"
 /* Override any gcc2 internal prototype to avoid an error.  */
 /* We use char because int might match the return type of a gcc2
     builtin and then its argument prototype would still apply.  */
-char png_create_read_struct();
+char png_get_image_width();
 
 int main() {
-png_create_read_struct()
+png_get_image_width()
 ; return 0; }
 EOF
 if { (eval echo configure:968: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest; then
