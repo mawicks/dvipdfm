@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.24 1998/12/30 21:15:16 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.25 1998/12/30 21:23:18 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -139,7 +139,7 @@ static void do_args (int argc, char *argv[])
       switch (*flag) {
       case 'm':
 	if (argc < 2) {
-	  fprintf (stderr, "Magnification specification missing a number\n");
+	  fprintf (stderr, "\nMagnification specification missing a number\n\n");
 	  usage();
 	}
 	{
@@ -150,7 +150,7 @@ static void do_args (int argc, char *argv[])
 	    mag = atof (result);
 	  }
 	  else {
-	    fprintf (stderr, "Error in number following magnification specification\n");
+	    fprintf (stderr, "\nError in number following magnification specification\n\n");
 	    usage();
 	  }
 	  if (result != NULL) {
@@ -161,7 +161,7 @@ static void do_args (int argc, char *argv[])
 	break;
       case 'x':
 	if (argc < 2) {
-	  fprintf (stderr, "Magnification specification missing a number\n");
+	  fprintf (stderr, "\nMagnification specification missing a number\n\n");
 	  usage();
 	}
 	{
@@ -173,7 +173,7 @@ static void do_args (int argc, char *argv[])
 	    x_offset = atof (result);
 	  }
 	  else {
-	    fprintf (stderr, "Error in number following xoffset specification\n");
+	    fprintf (stderr, "\nError in number following xoffset specification\n\n");
 	    usage();
 	  }
 	  if (result != NULL) {
@@ -184,7 +184,7 @@ static void do_args (int argc, char *argv[])
 	    x_offset *= unit;
 	  }
 	  else {
-	    fprintf (stderr, "Error in dimension specification following xoffset");
+	    fprintf (stderr, "\nError in dimension specification following xoffset\n\n");
 	    usage();
 	  }
 	}
@@ -192,7 +192,7 @@ static void do_args (int argc, char *argv[])
 	break;
       case 'y':
 	if (argc < 2) {
-	  fprintf (stderr, "Magnification specification missing a number\n");
+	  fprintf (stderr, "\nMagnification specification missing a number\n\n");
 	  usage();
 	}
 	{
@@ -204,7 +204,7 @@ static void do_args (int argc, char *argv[])
 	    y_offset = atof (result);
 	  }
 	  else {
-	    fprintf (stderr, "Error in number following yoffset specification\n");
+	    fprintf (stderr, "\nError in number following yoffset specification\n\n");
 	    usage();
 	  }
 	  if (result != NULL) {
@@ -215,7 +215,7 @@ static void do_args (int argc, char *argv[])
 	    y_offset *= unit;
 	  }
 	  else {
-	    fprintf (stderr, "Error in dimension specification following yoffset");
+	    fprintf (stderr, "\nError in dimension specification following yoffset\n\n");
 	    usage();
 	  }
 	}
@@ -270,7 +270,7 @@ static void do_args (int argc, char *argv[])
 	  } else {
 	    char *result, *end, *start = argv[1];
 	    if (argc < 2) {
-	      fprintf (stderr, "\nCompression specification missing number for level\n");
+	      fprintf (stderr, "\nCompression specification missing number for level\n\n");
 	      usage();
 	    }
 	    end = start + strlen(argv[1]);
@@ -279,7 +279,7 @@ static void do_args (int argc, char *argv[])
 	      level = (int) atof (result);
 	    }
 	    else {
-	      fprintf (stderr, "\nError in number following compression specification\n");
+	      fprintf (stderr, "\nError in number following compression specification\n\n");
 	      usage();
 	    }
 	    if (result != NULL) {
@@ -302,11 +302,11 @@ static void do_args (int argc, char *argv[])
     argv += 1;
   }
   if (argc < 1) {
-    fprintf (stderr, "No dvi filename specified.\n");
+    fprintf (stderr, "\nNo dvi filename specified.\n\n");
     usage();
   }
   if (argc > 1) {
-    fprintf (stderr, "Multiple dvi filenames?\n");
+    fprintf (stderr, "\nMultiple dvi filenames?\n\n");
     usage();
   }
   if (strncmp (".dvi", argv[0]+strlen(argv[0])-4, 4)) {
