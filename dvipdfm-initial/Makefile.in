@@ -1,5 +1,4 @@
 directories = kpathsea/kpathsea dvipdfm
-export XMAKEARGS=kpsewhich
 prefix=@prefix@
 datadir=@datadir@
 bindir=@bindir@
