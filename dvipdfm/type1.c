@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.71 1999/07/16 18:57:20 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.72 1999/07/16 19:27:34 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -55,7 +55,6 @@ void type1_set_verbose(void)
 struct font_record 
 {
   char *font_name;
-  char *pfb_name;
   char *enc_name;
 };
 
@@ -216,7 +215,6 @@ struct font_record *get_font_record (const char *tex_name)
   result = NEW (1, struct font_record);
   result -> enc_name = NULL;
   result -> font_name = NULL;
-  result -> pfb_name = NULL;
   
   if (first) {
     first = 0;
@@ -251,8 +249,6 @@ struct font_record *get_font_record (const char *tex_name)
   result -> enc_name = parse_ident (&start, end); /* May be null */  
   skip_white (&start, end);
   result -> font_name = parse_ident (&start, end); /* May be null */
-  skip_white (&start, end);
-  result -> pfb_name = parse_ident (&start, end); /* May be null */
   return result;
 }
 
@@ -907,7 +903,7 @@ static int type1_pfb_id (const char *pfb_name, int encoding_id)
     if (!(full_pfb_name = kpse_find_file (pfb_name, kpse_type1_format,
 				    1)) || 
 	!(pfb_file = fopen (full_pfb_name, FOPEN_RBIN_MODE))) {
-      fprintf (stderr, "type1_fontfile:  Unable to find binary font file (%s)...Hope that's okay.", pfb_name);
+      fprintf (stderr, "type1_fontfile:  Unable to find Type 1 font file for (%s)...Hope that's okay.", pfb_name);
       return -1;
     }
     short_fontname = pfb_find_name (pfb_file);
@@ -1009,8 +1005,7 @@ static void do_pfb (int pfb_id)
 			cmr, should be set to be symbolic */
 #define STEMV 80
 
-static pdf_obj *type1_font_descriptor (const char *font_name, const char *pfb_name, int encoding_id,
-				int pfb_id, int tfm_font_id)
+static pdf_obj *type1_font_descriptor (int encoding_id, int pfb_id, int tfm_font_id)
 {
   pdf_obj *font_descriptor, *font_descriptor_ref, *tmp1;
   int flags;
@@ -1046,7 +1041,7 @@ static pdf_obj *type1_font_descriptor (const char *font_name, const char *pfb_na
   }
   pdf_add_dict (font_descriptor,
 		pdf_new_name ("FontName"),
-		pdf_new_name (font_name));
+		pdf_new_name (type1_fontname(pfb_id)));
 #ifndef M_PI
   #define M_PI (4.0*atan(1.0))
 #endif
@@ -1103,17 +1098,6 @@ static void fill_in_defaults (struct font_record *font_record, const
   if (font_record -> font_name == NULL) {
     font_record -> font_name = NEW (strlen(tex_name)+1, char);
     strcpy (font_record->font_name, tex_name);
-  }
-  /* If a pfb_name wasn't specified, default to tex_name */
-  if (font_record -> pfb_name == NULL) {
-    font_record -> pfb_name = NEW (strlen(tex_name)+1, char);
-    strcpy (font_record->pfb_name, tex_name);
-  }
-  /* If a "none" pfb name was specified, set name to null */
-  if (font_record -> pfb_name != NULL && 
-      !strcmp (font_record->pfb_name, "none")) {
-    RELEASE(font_record->pfb_name);
-    font_record -> pfb_name = NULL;
   }
   return;
 }
@@ -1182,13 +1166,11 @@ int type1_font (const char *tex_name, int tfm_font_id, const char *resource_name
   /* font_record should always result in non-null value with default
      values filled in from pdffonts.map if any */
   font_record = get_font_record (tex_name);
-  /* Fill in default value for font_name, enc, and pfb_name if not from
-     map file */
+  /* Fill in default value for font_name and enc if not specified in map file */
   fill_in_defaults (font_record, tex_name);
   if (verbose>1){
-    fprintf (stderr, "\nfontmap: %s -> /%s pfb:%s", tex_name,
-	     font_record->font_name,
-	     font_record->pfb_name?font_record->pfb_name:"none");
+    fprintf (stderr, "\nfontmap: %s -> %s", tex_name,
+	     font_record->font_name);
     if (font_record->enc_name)
       fprintf (stderr, "(%s)", font_record->enc_name);
     fprintf (stderr, "\n");
@@ -1201,7 +1183,7 @@ int type1_font (const char *tex_name, int tfm_font_id, const char *resource_name
 	   is_a_base_font(font_record->font_name));
   
   if (is_a_base_font(font_record->font_name) ||
-      (pfb_id = type1_pfb_id(font_record -> pfb_name, encoding_id)) >= 0) {
+      (pfb_id = type1_pfb_id(font_record -> font_name, encoding_id)) >= 0) {
     /* Looks like we have a physical font.  Allocate storage for it */
     /* Make sure there is enough room in type1_fonts for this entry */
     if (num_type1_fonts >= max_type1_fonts) {
@@ -1229,9 +1211,9 @@ int type1_font (const char *tex_name, int tfm_font_id, const char *resource_name
     if (type1_fonts[num_type1_fonts].pfb_id >= 0) {
       pdf_add_dict (font_resource, 
 		    pdf_new_name ("FontDescriptor"),
-		    type1_font_descriptor(font_record -> font_name, font_record -> pfb_name,
-					  encoding_id,
-					  type1_fonts[num_type1_fonts].pfb_id, tfm_font_id));
+		    type1_font_descriptor(encoding_id,
+					  type1_fonts[num_type1_fonts].pfb_id,
+					  tfm_font_id));
       /* If we are embedding this font, it may have been used by another virtual
 	 font and we need to use the same mangled name.  Mangled
 	 named are known only to the pfb module, so we call it to get
@@ -1274,8 +1256,6 @@ int type1_font (const char *tex_name, int tfm_font_id, const char *resource_name
     RELEASE (font_record -> enc_name);
   if (font_record -> font_name)
     RELEASE (font_record -> font_name);
-  if (font_record -> pfb_name)
-    RELEASE (font_record -> pfb_name);
   RELEASE (font_record);
   return result;
 }

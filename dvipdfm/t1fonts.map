@@ -13,62 +13,62 @@
 % The following entries are used to force an encoding to work around a bug
 % in Acrobat reader
 %
-cmr10 ot1 CMR10
-cmr12 ot1 CMR12
-cmr17 ot1 CMR17
-cmr5 ot1 CMR5
-cmr6 ot1 CMR6
-cmr7 ot1 CMR7
-cmr8 ot1 CMR8
-cmr9 ot1 CMR9
+cmr10 ot1
+cmr12 ot1
+cmr17 ot1
+cmr5 ot1
+cmr6 ot1
+cmr7 ot1
+cmr8 ot1
+cmr9 ot1
 % Bold
-cmbx10 ot1 CMBX10
-cmbx12 ot1 CMBX12
-cmbx5 ot1 CMBX5
-cmbx6 ot1 CMBX6
-cmbx7 ot1 CMBX7
-cmbx8 ot1 CMBX8
-cmbx9 ot1 CMBX9
+cmbx10 ot1
+cmbx12 ot1
+cmbx5 ot1
+cmbx6 ot1
+cmbx7 ot1
+cmbx8 ot1
+cmbx9 ot1
 % Misc
-cmb10 ot1 CMB10
-cmbxsl10 ot1 CMBXSL10
-cmbxti10 ot1 CMBXTI10
-cmdunh10 ot1 CMDUNH10
-cmff10 ot1 CMFF10
-cmfi10 ot1 CMFI10
-cmfib8 ot1 CMFIB8
-cmssbx10 ot1 CMSSBX10
-cmssdc10 ot1 CMSSDC10
-cmssq8 ot1 CMSSQ8
-cmssqi8 ot1 CMSSQI8
-cmu10 ot1 CMU10
-cmvtt10 ot1 CMVTT10
-lcmss8 ot1 LCMSS8
-lcmssb8 ot1 LCMSSB8
-lcmssi8 ot1 LCMSSI8
+cmb10 ot1
+cmbxsl10 ot1
+cmbxti10 ot1
+cmdunh10 ot1
+cmff10 ot1
+cmfi10 ot1
+cmfib8 ot1
+cmssbx10 ot1
+cmssdc10 ot1
+cmssq8 ot1
+cmssqi8 ot1
+cmu10 ot1
+cmvtt10 ot1
+lcmss8 ot1
+lcmssb8 ot1
+lcmssi8 ot1
 % Italic
-cmti10 ot1 CMTI10
-cmti12 ot1 CMTI12
-cmti7 ot1 CMTI7
-cmti8 ot1 CMTI8
-cmti9 ot1 CMTI9
+cmti10 ot1
+cmti12 ot1
+cmti7 ot1
+cmti8 ot1
+cmti9 ot1
 % Slanted
-cmsl10 ot1 CMSL10
-cmsl12 ot1 CMSL12
-cmsl8 ot1 CMSL8
-cmsl9 ot1 CMSL9
+cmsl10 ot1
+cmsl12 ot1
+cmsl8 ot1
+cmsl9 ot1
 % Roman sanserif
-cmss10 ot1 CMSS10
-cmss12 ot1 CMSS12
-cmss17 ot1 CMSS17
-cmss8 ot1 CMSS8
-cmss9 ot1 CMSS9
+cmss10 ot1
+cmss12 ot1
+cmss17 ot1
+cmss8 ot1
+cmss9 ot1
 % Sans Serif
-cmssi10 ot1 CMSSI10
-cmssi12 ot1 CMSSI12
-cmssi17 ot1 CMSSI17
-cmssi8 ot1 CMSSI8
-cmssi9 ot1 CMSSI9
+cmssi10 ot1
+cmssi12 ot1
+cmssi17 ot1
+cmssi8 ot1
+cmssi9 ot1
 %
 % CharterBT-Bold
 bchb8r 8r CharterBT-Bold
