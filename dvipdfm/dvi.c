@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.30 1998/12/14 16:25:32 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.31 1998/12/15 01:43:27 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -98,15 +98,8 @@ static void find_post (void)
   long current;
   int read_byte;
 
-  if (debug) {
-    fprintf (stderr, "dvi_init: Searching for post\n");
-  }
-
   /* First find end of file */  
   dvi_file_size = file_size (dvi_file);
-  if (debug) {
-    fprintf (stderr, "dvi_init: DVI size is %ld\n", dvi_file_size);
-  }
   current = dvi_file_size;
  
   /* Scan backwards through PADDING */  
@@ -131,10 +124,6 @@ static void find_post (void)
      fprintf (stderr, "Found %d where post_post opcode should be\n", read_byte);
      invalid_signature();
   }
-  if (verbose) {
-    fprintf (stderr, "Post_post:\t %8ld\n", current);
-  }
-
   current = get_signed_quad (dvi_file);
   seek_absolute (dvi_file, current);
   if ((read_byte = fgetc(dvi_file)) != POST) {
@@ -142,9 +131,6 @@ static void find_post (void)
      invalid_signature();
   }
   post_location = current;
-  if (verbose) {
-    fprintf (stderr, "Post:     \t %8ld\n", post_location);
-  }
 }
 
 static void get_page_info (void) 
@@ -167,10 +153,6 @@ static void get_page_info (void)
     seek_absolute (dvi_file, page_loc[i+1]+41);
     page_loc[i] = get_unsigned_quad(dvi_file);
     range_check_loc(page_loc[numpages-1]+41);
-  }
-  if(verbose) {
-    for (i=0; i<numpages; i++) 
-      fprintf (stderr, "Page %4d:\t %8ld\n", i, page_loc[i]);
   }
 }
 
@@ -397,19 +379,6 @@ Maybe in the future, I'll substitute some other font.");
   return (thisfont);
 }
 
-void dvi_complete (void)    
-{
-  /* We add comment in dvi_complete instead of dvi_init so user has
-     a change to overwrite it.  The docinfo dictionary is
-     treated as a write-once record */
-  dev_add_comment (dvi_comment);
-  if (debug) fprintf (stderr, "dvi:  Closing output device...");
-  dev_close();
-  if (debug) fprintf (stderr, "dvi:  Output device closed\n");
-}
-
-#define HOFFSET 72.0
-#define VOFFSET 72.0
 
 double dvi_dev_xpos(void) {
   return dvi_state.h*dvi2pts;
@@ -424,22 +393,15 @@ static void do_moveto (SIGNED_QUAD x, SIGNED_QUAD y)
 {
   dvi_state.h = x;
   dvi_state.v = y;
-  if (debug) fprintf (stderr, "do_moveto: x = %ld, y = %ld\n", x, y);
 }
 
 void dvi_right (SIGNED_QUAD x)
 {
-  if (debug){
-    fprintf (stderr, "Moving right by %ld\n", x);
-  }
   dvi_state.h += x;
 }
 
 void dvi_down (SIGNED_QUAD y)
 {
-  if (debug){
-    fprintf (stderr, "Moving right by %ld\n", y);
-  }
   dvi_state.v += y;
 }
 
@@ -485,10 +447,6 @@ void dvi_set (SIGNED_QUAD ch)
   if (current_font < 0) {
     ERROR ("dvi_set:  No font selected");
   }
-  if (verbose) {
-    fprintf (stderr, "dvi_set, ch=%c\n", ch);
-  }
-  
   /* The division by dvi2pts seems strange since we actually know the
      "dvi" size of the fonts contained in the DVI file.  In other
      words, we converted from DVI units to pts and back again!
@@ -505,6 +463,7 @@ void dvi_set (SIGNED_QUAD ch)
     break;
   case VIRTUAL:    
     vf_set_char (ch, p->font_id);
+    break;
   }
   dvi_state.h += width;
 }
@@ -522,9 +481,8 @@ void dvi_put (SIGNED_QUAD ch)
 		  p->font_id);
     break;
   case VIRTUAL:    
-    fprintf (stderr, "Calling vf_set_char with c=%c, vf_id=%d\n", ch,
-	     p->font_id);
     vf_set_char (ch, p->font_id);
+    break;
   }
   return;
 }
@@ -848,7 +806,7 @@ static void do_xxx(UNSIGNED_QUAD size)
     buffer[i] = get_unsigned_byte(dvi_file);
   }
   if (debug)
-    fprintf (stderr, "%s\n", buffer);
+    fprintf (stderr, "Special: %s\n", buffer);
   dev_do_special (buffer, size, dvi_dev_xpos(), dvi_dev_ypos());
   RELEASE (buffer);
 }
@@ -1132,7 +1090,11 @@ error_t dvi_init (char * filename)
 void dvi_close (void)
 {
   int i;
-  
+  /* We add comment in dvi_close instead of dvi_init so user has
+     a change to overwrite it.  The docinfo dictionary is
+     treated as a write-once record */
+  dev_add_comment (dvi_comment);
+
   /* Do some house cleaning */
   fclose (dvi_file);
   for (i=0; i<numfonts; i++) {

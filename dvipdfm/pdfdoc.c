@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.24 1998/12/11 03:34:30 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.25 1998/12/15 01:43:28 mwicks Exp $
  
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -22,6 +22,7 @@
 	mwicks@kettering.edu
 */
 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -32,6 +33,7 @@
 #include "error.h"
 #include "mem.h"
 #include "pdfdoc.h"
+#include "pdfspecial.h"
 #include "pdfdev.h"
 #include "numbers.h"
 #include "mfileio.h"
@@ -890,7 +892,7 @@ void pdf_doc_creator (char *s)
 		pdf_new_string (s, strlen(s)));
 }
 
-void pdf_doc_finish ()
+void pdf_doc_close ()
 {
   int i;
   if (debug) fprintf (stderr, "pdf_doc_finish:\n");
@@ -909,6 +911,7 @@ void pdf_doc_finish ()
   pdf_release_obj (names_dict);
   pdf_release_obj (glob_page_bop);
   pdf_release_obj (glob_page_eop);
+  pdf_finish_specials();
   finish_outline();
   finish_dests_tree();
   finish_articles();
@@ -926,7 +929,6 @@ void pdf_doc_finish ()
   RELEASE (pages);
   pdf_out_flush ();
 }
-
 
 static pdf_obj *build_scale_array (int a, int b, int c, int d, int e, int f)
 {

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.h,v 1.10 1998/12/12 03:35:12 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.h,v 1.11 1998/12/15 01:43:28 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -64,10 +64,10 @@ extern void pdf_doc_add_outline (pdf_obj *dict);
 extern void pdf_doc_set_page_size (double width, double height);
      
 extern void pdf_doc_init (char *filename);
+extern void pdf_doc_close (void);
 
 extern void pdf_doc_comment (char *comment);
      
-extern void pdf_doc_finish (void);
 
 extern void pdf_doc_setverbose();
 extern void pdf_doc_setdebug();

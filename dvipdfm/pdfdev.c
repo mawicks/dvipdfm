@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.44 1998/12/14 16:25:33 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.45 1998/12/15 01:43:28 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -301,19 +301,16 @@ void dev_init (double scale)
   dev_clear_xform_stack();
 }
 
+void dev_close (void)
+{
+  graphics_mode();
+}
+
 void dev_add_comment (char *comment)
 {
   pdf_doc_creator (comment);
 }
 
-
-void dev_close (void)
-{
-  if (debug) fprintf (stderr, "dev_close:\n");
-  graphics_mode();
-  pdf_finish_specials();
-  pdf_doc_finish ();
-}
 
 /*  BOP, EOP, and FONT section.
    BOP and EOP manipulate some of the same data structures
@@ -501,7 +498,7 @@ void dev_begin_xform (double xscale, double yscale, double rotate,
 {
   double c, s;
   if (num_transforms >= MAX_TRANSFORMS) {
-    fprintf (stderr, "\ndev_begn_xform:  Exceeded depth of transformation stack\n");
+    fprintf (stderr, "\ndev_begin_xform:  Exceeded depth of transformation stack\n");
     return;
   }
   c = ROUND (cos(rotate),1e-5);
@@ -602,7 +599,7 @@ int dev_locate_font (char *tex_name, mpt_t ptsize)
   /* Since Postscript fonts are scaleable, this font may have already
      been asked for.  Make sure it doesn't already exist. */
   int i, thisfont;
-  if (verbose) {
+  if (debug) {
     fprintf (stderr, "dev_locate_font: fontname: (%s) ptsize: %ld, id: %d\n",
 	     tex_name, ptsize, n_dev_fonts);
   }
