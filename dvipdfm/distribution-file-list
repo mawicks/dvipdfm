@@ -57,6 +57,7 @@ mfileio.c
 mfileio.h
 numbers.c
 numbers.h
+ot1.enc
 pdfdev.c
 pdfdev.h
 pdfdoc.c
