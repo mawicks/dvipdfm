@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.97 1999/09/28 11:01:52 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.98 1999/10/08 15:39:34 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -384,16 +384,23 @@ struct a_pfb
   char *pfb_name;
   char *fontname;
   pdf_obj *direct, *indirect;
-  char used_chars[256];
+  char *used_chars;
   int encoding_id, remap;
 } *pfbs = NULL;
 
-static void clear_a_pfb (struct a_pfb *pfb)
+static void init_a_pfb (struct a_pfb *pfb)
 {
   int i;
+  pfb -> used_chars = NEW (256, char);
   for (i=0; i<256; i++) {
     (pfb->used_chars)[i] = 0;
   }
+  pfb->remap = 0;
+  pfb->pfb_name = NULL;
+  pfb->fontname = NULL;
+  pfb->direct = NULL;
+  pfb->indirect = NULL;
+  pfb->encoding_id = -1;
 }
 
 #include "standardenc.h"
@@ -1049,7 +1056,7 @@ static int type1_pfb_id (const char *pfb_name, int encoding_id, int remap)
       pfbs = RENEW (pfbs, max_pfbs, struct a_pfb);
     }
     num_pfbs += 1;
-    clear_a_pfb (pfbs+i);
+    init_a_pfb (pfbs+i);
     pfbs[i].pfb_name = NEW (strlen(pfb_name)+1, char);
     strcpy (pfbs[i].pfb_name, pfb_name);
     pfbs[i].direct = pdf_new_stream(STREAM_COMPRESS);
@@ -1227,7 +1234,7 @@ struct a_type1_font
   int pfb_id;
   double slant, extend;
   int remap;
-} *type1_fonts;
+} *type1_fonts = NULL;
 int num_type1_fonts = 0, max_type1_fonts = 0;
 
 pdf_obj *type1_font_resource (int type1_id)
@@ -1314,6 +1321,12 @@ int type1_font (const char *tex_name, int tfm_font_id, char *resource_name)
   int pfb_id = -1;
   pdf_obj *font_resource, *tmp1, *font_encoding_ref;
   struct font_record *font_record;
+  /* If we are at the limit, Make sure we have storage in case we end
+     up using a new font */
+  if (num_type1_fonts >= max_type1_fonts) {
+    max_type1_fonts += MAX_FONTS;
+    type1_fonts = RENEW (type1_fonts, max_type1_fonts, struct a_type1_font);
+  }
   font_record = get_font_record (tex_name);
   /* Fill in default value for font_name and enc if not specified in map file */
   if (verbose>1){
@@ -1341,12 +1354,7 @@ int type1_font (const char *tex_name, int tfm_font_id, char *resource_name)
 			     encoding_id,
 			     font_record? font_record -> remap: 0)) >= 0) {
     /* Looks like we have a physical font (either a reader font or a
-       Type 1 font binary file).  Allocate storage for it.
-       and make sure there is enough room in type1_fonts for this entry */
-    if (num_type1_fonts >= max_type1_fonts) {
-      max_type1_fonts += MAX_FONTS;
-      type1_fonts = RENEW (type1_fonts, max_type1_fonts, struct a_type1_font);
-    }
+       Type 1 font binary file).  */
     type1_fonts[num_type1_fonts].pfb_id = pfb_id;
     type1_fonts[num_type1_fonts].extend = font_record? font_record -> extend: 1.0;
     type1_fonts[num_type1_fonts].slant = font_record? font_record -> slant: 0.0;
@@ -1465,6 +1473,7 @@ void type1_close_all (void)
     RELEASE (pfbs[i].pfb_name);
     pdf_release_obj (pfbs[i].indirect);
     RELEASE (pfbs[i].fontname);
+    RELEASE (pfbs[i].used_chars);
   }
   RELEASE (pfbs);
   /* Now do encodings.  Clearly many pfbs will map to the same

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdflimits.h,v 1.12 1999/09/28 04:43:52 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdflimits.h,v 1.13 1999/10/08 15:39:34 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -22,7 +22,7 @@
 	mwicks@kettering.edu
 */
 
-#define MAX_FONTS 16u /* Font group allocation size, not a hard maximum */
+#define MAX_FONTS 4u /* Font group allocation size, not a hard maximum */
 #define DVI_MAX_STACK_DEPTH 256u
 #define MAX_VF_NESTING 16u
 #define MAX_COLORS 32u

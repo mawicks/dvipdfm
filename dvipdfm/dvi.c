@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.64 1999/10/08 00:15:57 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.65 1999/10/08 15:39:34 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -279,7 +279,6 @@ static void get_dvi_fonts (void)
   SIGNED_QUAD tex_id;
   seek_absolute (dvi_file, post_location+29);
   while ((code = get_unsigned_byte(dvi_file)) != POST_POST) {
-    need_more_fonts (1);
     switch (code)
       {
       case FNT_DEF1:
