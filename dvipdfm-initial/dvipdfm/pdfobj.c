@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfobj.c,v 1.5 1998/11/21 06:58:09 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfobj.c,v 1.6 1998/11/21 20:18:58 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -86,7 +86,7 @@ static void release_dict (struct pdf_dict *data);
 static void write_stream (FILE *file, const struct pdf_stream *stream);
 static pdf_obj *release_stream (struct pdf_stream *stream);
 
-static int debug = 0, verbose = 0;
+static int debug = 1, verbose = 1;
 
 void pdf_obj_set_debug(void)
 {
@@ -981,14 +981,18 @@ void pdf_release_obj (pdf_obj *object)
   }
 }
 
-
-static int backup_line ()
+static int backup_line (void)
 {
   int ch;
   ch = 0;
   if (debug) {
     fprintf (stderr, "\nbackup_line:\n");
   }
+  /* Note: this code should work even if \r\n is eol.
+     It could fail on a machine where \n is eol and
+     there is a \r in the stream---Highly unlikely
+     in the last few bytes where this is likely to be used.
+  */
   do {
     seek_relative (pdf_input_file, -2);
     if (debug)
@@ -1030,22 +1034,22 @@ static long find_xref(void)
   } while (tries < 10 && strncmp (work_buffer, "startxref", strlen ("startxref")));
   if (tries >= 10)
     return 0;
-  while ((ch = fgetc (pdf_input_file)) != '\n' && ch != '\r' ) {
-    /*  if (debug)
-	fprintf (stderr, "skip: c=%c (%x)\n", ch); */
-  };
-  fgets (work_buffer, WORK_BUFFER_SIZE, pdf_input_file);
+  /* Skip rest of this line */
+  mfgets (work_buffer, WORK_BUFFER_SIZE, pdf_input_file);
+  /* Next line should be actual xref location */
+  mfgets (work_buffer, WORK_BUFFER_SIZE, pdf_input_file);
   if (debug) {
     fprintf (stderr, "\n->[%s]<-\n", work_buffer);
   }
-  
   start = work_buffer;
   end = start+strlen(work_buffer);
   skip_white(&start, end);
   pdf_input_file_xref_pos = (long) atof (number = parse_number (&start, end));
   release (number);
-  if (debug)
+  if (debug) {
     fprintf (stderr, ")\n");
+    fprintf (stderr, "xref @ %d\n", pdf_input_file_xref_pos);
+  }
   return pdf_input_file_xref_pos;
 }
 
@@ -1260,12 +1264,12 @@ int parse_xref (void)
   
   seek_absolute (pdf_input_file, pdf_input_file_xref_pos);
   /* Now at beginning of actual xref table */
-  fgets (work_buffer, WORK_BUFFER_SIZE, pdf_input_file);
+  mfgets (work_buffer, WORK_BUFFER_SIZE, pdf_input_file);
   if (strncmp (work_buffer, "xref", strlen("xref"))) {
     fprintf (stderr, "No xref.  Are you sure this is a PDF file?\n");
     return 0;
   }
-  fgets (work_buffer, WORK_BUFFER_SIZE, pdf_input_file);
+  mfgets (work_buffer, WORK_BUFFER_SIZE, pdf_input_file);
   sscanf (work_buffer, "%ld %d", &first_obj, &num_input_objects);
   xref_table = NEW (num_input_objects, struct object);
   for (i=0; i<num_input_objects; i++) {
