@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/vf.c,v 1.23 2000/08/04 02:37:51 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/vf.c,v 1.24 2000/08/05 05:20:40 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -790,7 +790,7 @@ void vf_set_char(SIGNED_QUAD ch, int vf_font)
 	!(start = (vf_fonts[vf_font].ch_pkt)[ch])) {
       fprintf (stderr, "\nchar=0x%lx(%ld)\n", ch, ch);
       fprintf (stderr, "Tried to set a nonexistent character in a virtual font");
-      start = NULL;
+      start = end = NULL;
     } else {
       end = start + (vf_fonts[vf_font].pkt_len)[ch];
     }
