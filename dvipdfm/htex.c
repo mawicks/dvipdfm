@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/htex.c,v 1.1 1999/08/20 14:04:22 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/htex.c,v 1.2 1999/08/30 02:19:11 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -188,7 +188,9 @@ void html_make_link (char *name, double xll, double yll, double xur, double yur)
   pdf_add_array (box, pdf_new_number (xll-2.0));
   pdf_add_array (box, pdf_new_number (yll-2.0));
   pdf_add_array (box, pdf_new_number (xur+2.0));
-  pdf_add_array (box, pdf_new_number (yur+14.0));
+  /* Set a minimum box height for macro packages or authors
+     that aren't very smart */
+  pdf_add_array (box, pdf_new_number (abs(yur-yll)>12.0?yur+2.0:yur+14.0));
   pdf_add_dict(link, pdf_new_name("Rect"), box);
   color = pdf_new_array ();
   pdf_add_array (color, pdf_new_number (0));
@@ -226,7 +228,7 @@ void html_make_link (char *name, double xll, double yll, double xur, double yur)
 void html_end_anchor (void)
 {
   if (!pending) {
-    fprintf (stderr, "\nEnding anchor tag without starting tag!\n");
+    fprintf (stderr, "\nhtml_end_anchor:  Ending anchor tag without starting tag!\n");
   }
   if (pending > 0) {
     pending--;
@@ -241,7 +243,7 @@ void html_end_anchor (void)
 		    dev_phys_y());
     break;
   default:
-    fprintf (stderr, "Uh Oh!\n");
+    fprintf (stderr, "html_end_anchor:  Uh Oh!  This can't happen\n");
     exit(1);
   }
 }
