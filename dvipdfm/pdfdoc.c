@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.48 1999/08/13 02:24:31 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.49 1999/08/13 14:14:38 mwicks Exp $
  
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -37,7 +37,10 @@
 #include "pdfdev.h"
 #include "numbers.h"
 #include "mfileio.h"
+
+#ifdef HAVE_LIBPNG
 #include "thumbnail.h"
+#endif
 
 static pdf_obj *catalog = NULL;
 static pdf_obj *docinfo = NULL;
@@ -785,6 +788,7 @@ void finish_articles(void)
   }
 }
 
+#ifdef HAVE_LIBPNG
 static thumbnail_opt = 0;
 static char *thumb_basename = NULL;
 
@@ -792,6 +796,7 @@ void pdf_doc_enable_thumbnails(void)
 {
   thumbnail_opt = 1;
 }
+#endif
 
 void pdf_doc_finish_page ()
 {
@@ -857,6 +862,7 @@ MEM_START
     pdf_release_obj (current_page_resources);
     current_page_resources = NULL;
   }
+#ifdef HAVE_LIBPNG
   if (thumbnail_opt) {
     char *thumb_filename;
     pdf_obj *thumbnail;
@@ -870,6 +876,7 @@ MEM_START
 		    pdf_link_obj (thumb_name),
 		    thumbnail);
   }
+#endif
   page_count += 1;
 #ifdef MEM_DEBUG
   MEM_END;
@@ -987,6 +994,7 @@ void pdf_doc_init (char *filename)
 {
   if (debug) fprintf (stderr, "pdf_doc_init:\n");
   pdf_out_init (filename);
+#ifdef HAVE_LIBPNG
   /* Create a default name for thumbnail image files */
   if (thumbnail_opt) {
     if (!strncmp (".pdf", filename+strlen(filename)-4,4)) {
@@ -998,6 +1006,7 @@ void pdf_doc_init (char *filename)
       strcpy (thumb_basename, filename);
     }
   }
+#endif /* HAVE_LIBPNG */
   make_short_cuts();
   create_docinfo ();
   create_catalog ();
@@ -1012,8 +1021,10 @@ void pdf_doc_creator (char *s)
 void pdf_doc_close ()
 {
   if (debug) fprintf (stderr, "pdf_doc_finish:\n");
+#ifdef HAVE_LIBPNG
   if (thumb_basename)
     RELEASE (thumb_basename);
+#endif /* HAVE_LIBPNG */
   /* Following things were kept around so user can add dictionary
      items */
   finish_docinfo();

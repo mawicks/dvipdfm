@@ -2,7 +2,7 @@ pdfdev.o: pdfdev.c pdfdev.h numbers.h pdfdoc.h pdfobj.h error.h \
  type1.h pkfont.h mem.h mfileio.h pdfspecial.h pdfparse.h tpic.h \
  pdflimits.h tfm.h dvi.h
 pdfdoc.o: pdfdoc.c config.h system.h pdflimits.h pdfobj.h error.h \
- mem.h pdfdoc.h pdfspecial.h numbers.h pdfdev.h mfileio.h
+ mem.h pdfdoc.h pdfspecial.h numbers.h pdfdev.h mfileio.h thumbnail.h
 dvi.o: dvi.c error.h numbers.h mfileio.h pdflimits.h pdfdev.h pdfdoc.h \
  pdfobj.h tfm.h mem.h dvi.h vf.h dvicodes.h system.h
 mfileio.o: mfileio.c mfileio.h numbers.h error.h
@@ -33,4 +33,4 @@ pkfont.o: pkfont.c pkfont.h pdfobj.h mfileio.h numbers.h pdflimits.h \
  mem.h tfm.h error.h system.h
 tpic.o: tpic.c tpic.h numbers.h pdfparse.h pdfobj.h mem.h mfileio.h \
  pdfdoc.h dvi.h error.h pdfdev.h
-thumbnail.o: thumbnail.c system.h mem.h pdfobj.h
+thumbnail.o: thumbnail.c config.h system.h mem.h pdfobj.h thumbnail.h

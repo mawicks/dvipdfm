@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.43 1999/08/12 03:37:24 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.44 1999/08/13 14:14:38 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -299,7 +299,11 @@ static void do_args (int argc, char *argv[])
 	break;
       case 't':
 	{
+#ifdef HAVE_LIBPNG
 	  pdf_doc_enable_thumbnails ();
+#else
+	  ERROR ("The thumbnail option requires libpng, which you apparently don't have");
+#endif	   
 	}
 	break;
       case 'p':

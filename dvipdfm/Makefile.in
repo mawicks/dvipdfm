@@ -12,7 +12,8 @@ datadir=@datadir@
 texmf=@TEXMF@
 dvipdfmdir=$(texmf)/dvipdfm
 psheaderdir=$(texmf)/dvips
-programs=dvipdfm ebb dvipdft
+programs=dvipdfm ebb
+scripts=dvipdft
 headers=dvi.h pdflimits.h error.h mfileio.h jpeg.h mem.h numbers.h \
 	pdfdev.h pdfdoc.h pdfparse.h pdfspecial.h tfm.h type1.h epdf.h \
 	vf.h dvicodes.h t1crypt.h pkfont.h tpic.h thumbnail.h
@@ -37,7 +38,7 @@ install: install-exec install-data
 uninstall: uninstall-exec uninstall-data
 install-exec: all
 	$(INSTALL) -d $(bindir)
-	for i in $(programs) ; \
+	for i in $(programs) $(scripts) ; \
 	  do $(INSTALL) $$i $(bindir); \
 	done
 # t1fonts.map.
@@ -55,7 +56,7 @@ install-data:
 	else true; fi
 	cp ./ot1.enc $(dvipdfmdir)/ot1.enc
 uninstall-exec:
-	rm -f $(bindir)/$(programs)
+	rm -f $(bindir)/$(programs) $(bindir)/$(scripts)
 
 uninstall-data:
 	if grep 'original pdffonts.map --' $(psheaderdir)/dvipdfm/pdffonts.map \
@@ -87,7 +88,7 @@ depend:
 	rm -f depend.make
 	make depend.make
 depend.make:
-	gcc -MM $(src) > depend.make
+	$(CC) $(CPPFLAGS) -MM $(src) > depend.make
 #
 # Autoconf stuff
 #
