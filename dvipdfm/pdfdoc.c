@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.13 1998/12/04 03:55:08 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.14 1998/12/04 20:26:06 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -55,14 +55,15 @@ static pdf_obj *glob_page_bop, *glob_page_eop;
 static pdf_obj *this_page_bop = NULL, *this_page_eop = NULL;
 static pdf_obj *this_page_beads = NULL;
 static pdf_obj *this_page_annots = NULL;
-static pdf_obj *this_page_xobjects = NULL, *this_page_fonts = NULL;;
+static pdf_obj *this_page_xobjects = NULL, *this_page_fonts = NULL;
 static pdf_obj *tmp1, *tmp2;
 
-static int page_count = 0;
-static struct {
+static unsigned long page_count = 0;
+static struct pages {
   pdf_obj *page_dict;
   pdf_obj *page_ref;
-} pages[MAX_PAGES];
+} *pages = NULL;
+static unsigned long max_pages = 0;
 
 static void start_page_tree (void);
 static void create_catalog (void);
@@ -85,6 +86,19 @@ void pdf_doc_set_verbose(void)
 void pdf_doc_set_debug(void)
 {
   debug = 1;
+}
+
+static void resize_pages (unsigned long newsize)
+{
+  unsigned long i;
+  if (newsize > max_pages) {
+    pages = RENEW (pages, newsize, struct pages);
+    for (i=max_pages; i<newsize; i++) {
+      pages[i].page_dict = NULL;
+      pages[i].page_ref = NULL;
+    }
+    max_pages = newsize;
+  }
 }
 
 static void start_page_tree (void)
@@ -169,7 +183,7 @@ static char *asn_date (void)
   #ifdef TM_GM_TOFF
      #define timezone (bdtime->gm_toff)
   #else
-     #define timezone 0
+     #define timezone 0l
 #endif /* TM_GM_TOFF */
 #endif /* HAVE_TIMEZONE */
   static char date_string[22];
@@ -423,7 +437,8 @@ struct dests
   pdf_obj *array;
 };
 typedef struct dests dest_entry;
-static dest_entry dests[MAX_DESTS];
+static dest_entry *dests = NULL;
+unsigned long max_dests = 0;
 
 static number_dests = 0;
 
@@ -497,8 +512,9 @@ static void finish_dests_tree (void)
 
 void pdf_doc_add_dest (char *name, unsigned length, pdf_obj *array )
 {
-  if (number_dests >= MAX_DESTS) {
-    ERROR ("pdf_doc_add_dest:  Too many named destinations\n");
+  if (number_dests >= max_dests) {
+    max_dests += DESTS_ALLOC_SIZE;
+    dests = RENEW (dests, max_dests, dest_entry);
   }
   dests[number_dests].name = NEW (length, char);
   memcpy (dests[number_dests].name, name, length);
@@ -620,6 +636,9 @@ void finish_articles(void)
 
 static void finish_last_page ()
 {
+  if (debug) {
+    fprintf (stderr, "(finish_last_page)");
+  }
   finish_pending_xobjects();
   /* Flush this page */
   /* Page_count is the index of the current page, starting at 1 */
@@ -682,10 +701,13 @@ pdf_obj *pdf_doc_current_page_resources (void)
 
 
 static int highest_page_ref = 0;
-pdf_obj *pdf_doc_ref_page (unsigned page_no)
+pdf_obj *pdf_doc_ref_page (unsigned long page_no)
 {
-  if (page_no >= MAX_PAGES)
-    ERROR ("Reference to page greater than MAX_PAGES");
+  if (debug)
+    fprintf (stderr, "(doc_ref_page:page_no=%ld)", page_no);
+  if (page_no >= max_pages) {
+    resize_pages (page_no+PAGES_ALLOC_SIZE);
+  }
   /* Has this page been referenced yet? */ 
   if (pages[page_no-1].page_ref == NULL) {
     /* If not, create it */
@@ -718,7 +740,7 @@ pdf_obj *pdf_doc_this_page (void)
   if (page_count <= 0) {
     ERROR ("Reference to current page, but no pages have been started yet");
   }
-  fprintf (stderr, "pdf_doc_this_page: page_count = %d, ref=%p\n",
+  fprintf (stderr, "pdf_doc_this_page: page_count = %ld, ref=%p\n",
 	   page_count, pages[page_count-1].page_dict);
   return pages[page_count-1].page_dict;
 }
@@ -751,10 +773,13 @@ void pdf_doc_new_page (void)
 {
   if (debug) {
     fprintf (stderr, "(pdf_doc_new_page)");
+    fprintf (stderr, "page_count=%ld, max_pages=%ld\n", page_count,
+	     max_pages);
   }
-  if (page_count >= MAX_PAGES) 
-    ERROR ("Too many pages in pdf_doc_new_page\n");
-  
+  /* See if we need more pages allocated yet */
+  if (page_count >= max_pages) {
+    resize_pages(max_pages+PAGES_ALLOC_SIZE);
+  }
   if (this_page_contents != NULL) {
     finish_last_page();
   }

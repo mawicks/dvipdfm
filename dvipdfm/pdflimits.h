@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdflimits.h,v 1.3 1998/11/30 20:38:25 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdflimits.h,v 1.4 1998/12/04 20:26:07 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -22,16 +22,14 @@
 	mwicks@kettering.edu
 */
 
-	
-
-#define MAX_PAGES 4096
-#define MAX_FONTS 256
-#define DVI_MAX_STACK_DEPTH 256
-#define MAX_COLORS 32
-#define MAX_TRANSFORMS 32
-#define MAX_OUTLINE_DEPTH 32
-#define MAX_DESTS 4096
-#define MAX_ARTICLES 64
-#define MAX_NAMED_REFERENCES 2048
-#define MAX_ENCODINGS 8
-#define PDF_MAX_IND_OBJECTS 32767
+#define MAX_FONTS 256u
+#define DVI_MAX_STACK_DEPTH 256u
+#define MAX_COLORS 32u
+#define MAX_TRANSFORMS 32u
+#define MAX_OUTLINE_DEPTH 32u
+#define MAX_ARTICLES 64u
+#define MAX_ENCODINGS 8u
+#define IND_OBJECTS_ALLOC_SIZE 1024u
+#define PAGES_ALLOC_SIZE 128u
+#define DESTS_ALLOC_SIZE 1024u
+#define NAMED_OBJ_ALLOC_SIZE 128u

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.9 1998/12/03 16:30:08 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.10 1998/12/04 20:26:07 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -36,7 +36,6 @@
 
 #define MIN(a,b) ((a)<(b)?(a):(b))
 
-unsigned next_label = 1;
 FILE *pdf_output_file = NULL;
 FILE *pdf_input_file = NULL;
 unsigned long pdf_output_file_position = 0;
@@ -47,7 +46,10 @@ static struct xref_entry
 {
   unsigned long file_position;
   pdf_obj *pdf_obj;
-} output_xref[PDF_MAX_IND_OBJECTS];
+} *output_xref = NULL;
+static unsigned long pdf_max_ind_objects = 0;
+static unsigned long next_label = 1;
+
 static unsigned long startxref;
 
 static unsigned pdf_root_obj = 0, pdf_info_obj = 0;
@@ -115,11 +117,12 @@ void pdf_out_init (const char *filename)
 
 static void dump_xref(void)
 {
-  int length, i;
+  int length;
+  unsigned long i;
   startxref = pdf_output_file_position;	/* Record where this xref is for
 				   trailer */
   pdf_out (pdf_output_file, "xref\n", 5);
-  length = sprintf (format_buffer, "%d %d\n", 0, next_label);
+  length = sprintf (format_buffer, "%d %ld\n", 0, next_label);
   pdf_out (pdf_output_file, format_buffer, length);
   length = sprintf (format_buffer, "%010ld %05ld f \n", 0L, 65535L);
   /* Every space counts.  The space after the 'f' and 'n' is
@@ -140,7 +143,7 @@ static void dump_trailer(void)
   starttrailer = pdf_output_file_position;
   pdf_out (pdf_output_file, "trailer\n", 8);
   pdf_out (pdf_output_file, "<<\n", 3);
-  length = sprintf (format_buffer, "/Size %d\n",
+  length = sprintf (format_buffer, "/Size %ld\n",
 		    next_label);
   pdf_out (pdf_output_file, format_buffer, length);
   if (pdf_root_obj == 0) 
@@ -240,8 +243,10 @@ static void pdf_label_obj (pdf_obj *object)
 {
   if (object == NULL)
     return;
-  if (next_label > PDF_MAX_IND_OBJECTS) {
-    ERROR ("pdf_label_obj:  Indirect object capacity exceeded");
+  if (next_label > pdf_max_ind_objects) {
+    pdf_max_ind_objects += IND_OBJECTS_ALLOC_SIZE;
+    output_xref = RENEW (output_xref, pdf_max_ind_objects,
+			 struct xref_entry);
   }
   if (object -> label == 0) {  /* Don't change label on an already labeled
 				  object.  Ignore such calls */
@@ -955,7 +960,7 @@ static void pdf_flush_obj (FILE *file, const pdf_obj *object)
   /* Record file position.  No object is numbered 0, so subtract 1
      when using as an array index */
   output_xref[object->label-1].file_position = pdf_output_file_position;
-  length = sprintf (format_buffer, "%d %d obj\n", object -> label ,
+  length = sprintf (format_buffer, "%ld %d obj\n", object -> label ,
 		    object -> generation);
   pdf_out (file, format_buffer, length);
   pdf_write_obj (file, object);
@@ -1123,7 +1128,7 @@ struct object
 } *xref_table = NULL;
 long num_input_objects;
 
-long next_object (int obj)
+long next_object (unsigned long obj)
 {
   /* routine tries to estimate an upper bound for character position
      of the end of the object, so it knows how big the buffer must be.
@@ -1131,7 +1136,7 @@ long next_object (int obj)
      memory. It would be a major pain to rewrite them.  The worst case
      is that an object before an xref table will grab the whole table
      :-( */
-  int i;
+  unsigned long i;
   long this_position, result = pdf_file_size;  /* Worst case */
   this_position = xref_table[obj].position;
   /* Check all other objects to find next one */
@@ -1151,7 +1156,7 @@ long next_object (int obj)
    object has been read in (and written out) before, it simply
    returns the retained existing reference to that object */
 
-pdf_obj *pdf_ref_file_obj (int obj_no)
+pdf_obj *pdf_ref_file_obj (unsigned long obj_no)
 {
   pdf_obj *direct, *indirect;
   if (obj_no < 0 || obj_no >= num_input_objects) {
@@ -1159,7 +1164,7 @@ pdf_obj *pdf_ref_file_obj (int obj_no)
     return NULL;
   }
   if (xref_table[obj_no].indirect != NULL) {
-    fprintf (stderr, "\npdf_ref_file_obj: obj=%d is already referenced\n",obj_no);
+    fprintf (stderr, "\npdf_ref_file_obj: obj=%ld is already referenced\n",obj_no);
     return pdf_link_obj(xref_table[obj_no].indirect);
   }
   if ((direct = pdf_read_object (obj_no)) == NULL) {
@@ -1174,7 +1179,7 @@ pdf_obj *pdf_ref_file_obj (int obj_no)
 }
 
 
-pdf_obj *pdf_new_ref (int label, int generation) 
+pdf_obj *pdf_new_ref (unsigned long label, int generation) 
 {
   pdf_obj *result;
   pdf_indirect *indirect;
@@ -1192,13 +1197,13 @@ pdf_obj *pdf_new_ref (int label, int generation)
   return result;
 }
 
-pdf_obj *pdf_read_object (int obj_no) 
+pdf_obj *pdf_read_object (unsigned long obj_no) 
 {
   long start_pos, end_pos;
   char *buffer, *number, *parse_pointer, *end;
   pdf_obj *result;
   if (debug) {
-    fprintf (stderr, "\nread_object: obj=%d\n", obj_no);
+    fprintf (stderr, "\nread_object: obj=%ld\n", obj_no);
   }
   if (obj_no < 0 || obj_no >= num_input_objects) {
     fprintf (stderr, "\nTrying to read nonexistent object\n");
@@ -1288,7 +1293,7 @@ if (debug){
    with higher object numbers than the current object */
 static void extend_xref (long new_size) 
 {
-  int i;
+  unsigned long i;
   xref_table = RENEW (xref_table, new_size,
 		      struct object);
   for (i=num_input_objects; i<new_size; i++) {
@@ -1303,8 +1308,8 @@ static void extend_xref (long new_size)
 
 static int parse_xref (void)
 {
-  long first_obj, num_table_objects;
-  long i;
+  unsigned long first_obj, num_table_objects;
+  unsigned long i;
   /* This routine reads one xref segment.  It must be called
      positioned at the beginning of an xref table.  It may be called
      multiple times on the same file.  xref tables sometimes come in
@@ -1439,7 +1444,8 @@ void pdf_close (void)
   /* Following loop must be iterated because each write could trigger
      an additional indirect reference of an object with a lower
      number! */
-  int i, done;
+  unsigned long i;
+  int done;
   if (debug) {
     fprintf (stderr, "\npdf_close:\n");
     fprintf (stderr, "pdf_input_file=%p\n", pdf_input_file);

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.14 1998/12/04 03:55:08 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.15 1998/12/04 20:26:07 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -748,7 +748,8 @@ static void do_epdf (char **start, char *end, double x_user, double y_user)
     return;
   }
   if (objname != NULL) {
-    add_reference (objname, result, NULL);
+    add_reference (objname, result,
+		   pdf_name_value(pdf_lookup_dict(pdf_stream_dict(result), "Name")));
     /* An annotation is treated differently from a cos object.
        The previous line adds both a direct link and an indirect link
        to "result".  For cos objects this prevents the direct link
@@ -811,15 +812,9 @@ static void do_image (char **start, char *end, double x_user, double y_user)
     return;
   }
   if (objname != NULL) {
-    add_reference (objname, result, NULL);
-    /* An annotation is treated differently from a cos object.
-       The previous line adds both a direct link and an indirect link
-       to "result".  For cos objects this prevents the direct link
-       prevents the object from being flushed immediately.  
-       So that an "ann" doesn't behave like an OBJ, the ANN should be
-       immediately unlinked.  Otherwise the ANN would have to be
-       closed later. This seems awkward, but an annotation is always
-       considered to be complete */
+    add_reference (objname, result, 
+		   pdf_name_value(pdf_lookup_dict(pdf_stream_dict(result), "Name")));
+    /* Read the explanation for the next line in do_annot() */
     release_reference (objname);
     release (objname);
   }
@@ -1050,13 +1045,17 @@ struct named_reference
   char *res_name;
   pdf_obj *object_ref;
   pdf_obj *object;
-} named_references[MAX_NAMED_REFERENCES];
-
-static unsigned number_named_references = 0;
+} *named_references = NULL;
+static unsigned long number_named_references = 0, max_named_objects = 0;
 
 static void add_reference (char *name, pdf_obj *object, char *res_name)
 {
   int i;
+  if (number_named_references >= max_named_objects) {
+    max_named_objects += NAMED_OBJ_ALLOC_SIZE;
+    named_references = RENEW (named_references, max_named_objects,
+			      struct named_reference);
+  }
   for (i=0; i<number_named_references; i++) {
     if (!strcmp (named_references[i].name, name)) {
       break;
@@ -1163,7 +1162,9 @@ char *lookup_ref_res_name(char *name)
 {
   int i;
   for (i=0; i<number_named_references; i++) {
-    if (!strcmp (named_references[i].name, name)) {
+  if (named_references[i].name != NULL)
+    if (named_references[i].name != NULL &&
+	!strcmp (named_references[i].name, name)) {
       break;
     }
   }

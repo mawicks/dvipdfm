@@ -99,9 +99,9 @@
 % \def\Gin@PS@literal@header#1{\AtBeginDvi{\special{! #1}}}
 % \def\Gin@PS@file@header#1{\AtBeginDvi{\special{header=#1}}}
 \def\Gin@extensions{.jpg,.jpeg,.pdf}
-\@namedef{Gin@rule@.jpg}#1{{bmp}{.jpg.bb}{#1}}
-\@namedef{Gin@rule@.jpeg}#1{{bmp}{.jpeg.bb}{#1}}
-\@namedef{Gin@rule@.pdf}#1{{pdf}{.pdf.bb}{#1}}
+\@namedef{Gin@rule@.jpg}#1{{bmp}{.bb}{#1}}
+\@namedef{Gin@rule@.jpeg}#1{{bmp}{.bb}{#1}}
+\@namedef{Gin@rule@.pdf}#1{{pdf}{.bb}{#1}}
 \@namedef{Gin@rule@*}#1{{eps}{\Gin@ext}{#1}}
 \endinput
 %%

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.h,v 1.1 1998/11/27 21:16:37 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.h,v 1.2 1998/12/04 20:26:07 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -73,7 +73,7 @@ char *parse_pdf_reference (char **start, char*end);
 char *parse_opt_ident (char **start, char*end);
 
 void pdf_finish_specials(void);
-pdf_obj *pdf_read_object (int obj_no);
+pdf_obj *pdf_read_object (unsigned long obj_no);
 
 void dump (char *start, char *end);
 

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.h,v 1.6 1998/12/01 05:19:43 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.h,v 1.7 1998/12/04 20:26:07 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -47,7 +47,7 @@ struct pdf_obj
 {
   pdf_obj_type type;
   void *data;
-  unsigned label;  /* Only used for indirect objects
+  unsigned long label;  /* Only used for indirect objects
                                all other "label" to zero */
   unsigned generation;  /* Only used if "label" is used */
   unsigned refcount;  /* Number of links to this object */
@@ -173,9 +173,8 @@ pdf_obj *pdf_stream_dict(pdf_obj *stream);
 void pdf_release_obj (pdf_obj *object);
 pdf_obj *pdf_deref_obj (pdf_obj *object);
 pdf_obj *pdf_ref_obj (pdf_obj *object);
-pdf_obj *pdf_new_ref (int label, int generation);
-pdf_obj *pdf_ref_file_obj (int obj_no);
-
+pdf_obj *pdf_new_ref (unsigned long label, int generation);
+pdf_obj *pdf_ref_file_obj (unsigned long obj_no);
 void pdf_write_obj (FILE *file, const pdf_obj *object);
 pdf_obj *pdf_open (char *filename);
 void pdf_close (void);

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.4 1998/12/02 16:28:55 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.5 1998/12/04 20:26:06 mwicks Exp $
 
     This is ebb, a bounding box extraction program.
     Copyright (C) 1998  by Mark A. Wicks
@@ -56,20 +56,48 @@ static void do_time(FILE *file)
   fprintf (file, "%%%%CreationDate: %s\n", asctime (bd_time));
 }
 
+char *extensions[] = {
+  ".jpeg", ".JPEG", ".jpg", ".JPG", ".pdf", ".PDF"
+};
+
+static char *make_bb_filename (char *name)
+{
+  int i;
+  char *result;
+  for (i=0; i<sizeof(extensions)/sizeof(extensions[0]); i++) {
+    if (strlen (extensions[i]) < strlen(name) &&
+	!strncmp (name+strlen(name)-strlen(extensions[i]),
+		  extensions[i], strlen(extensions[i])))
+      break;
+  }
+  if (i == sizeof(extensions)/sizeof(extensions[0])) {
+    fprintf (stderr,
+	     "ebb: Warning: %s: Filename does not end in a recognizeable extension.\n",
+	     name);
+    result = NEW (strlen(name)+3, char);
+    strcpy (result, name);
+  }
+  else { /* Remove extension */
+    result = NEW (strlen(name)+3-strlen(extensions[i])+1, char);
+    strncpy (result, name, strlen(name)-strlen(extensions[i]));
+    result[strlen(name)-strlen(extensions[i])] = 0;
+  }
+    strcat (result, ".bb");
+  return result;
+}
+
 static void write_bb (char *filename, int bbllx, int bblly, int bburx,
 		      int bbury) 
 {
   char *bbfilename;
   FILE *bbfile;
-  bbfilename = NEW (strlen (filename)+4, char);
-  strcpy (bbfilename, filename);
-  strcat (bbfilename, ".bb");
+  fprintf (stderr, "okay\n");
+  bbfilename = make_bb_filename (filename);
   if ((bbfile = fopen (bbfilename, "w")) == NULL) {
     fprintf (stderr, "Unable to open output file: %s\n", bbfilename);
     return;
   }
   if (verbose) {
-    fprintf (stderr, "okay.\n");
     fprintf (stderr, "Writing to %s:  ", bbfilename);
     fprintf (stderr, "Bounding box:  %d %d %d %d\n", bbllx, bblly,
 	     bburx, bbury);

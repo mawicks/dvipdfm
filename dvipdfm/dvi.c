@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.6 1998/12/04 03:55:07 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.7 1998/12/04 20:26:06 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -151,7 +151,8 @@ static FILE *dvi_file;
 static dvi_verbose = 0;
 static dvi_debug = 0;
 static unsigned numfonts = 0, stackdepth;
-static unsigned long page_loc[MAX_PAGES];
+static unsigned long *page_loc = NULL;
+static long max_pages = 0;
 static char dvi_comment[257];
 static unsigned long post_location, dvi_file_size;
 static UNSIGNED_PAIR numpages = 0;
@@ -248,15 +249,14 @@ static void get_page_info (void)
   int i;
   seek_absolute (dvi_file, post_location+27);
   numpages = get_unsigned_pair (dvi_file);
-  if (dvi_verbose || numpages > MAX_PAGES) {
+  if (dvi_verbose) {
     fprintf (stderr, "Page count:\t %4d\n", numpages);
-  }
-  if (numpages > MAX_PAGES) {
-    ERROR ("dvi_open:  Sorry, too many pages!");
   }
   if (numpages == 0) {
     ERROR ("dvi_open:  Page count is 0!");
   }
+  max_pages = numpages;
+  page_loc = NEW (max_pages, unsigned long);
   seek_absolute (dvi_file, post_location+1);
   page_loc[numpages-1] = get_unsigned_quad(dvi_file);
   range_check_loc(page_loc[numpages-1]+41);
