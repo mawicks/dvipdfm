@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.30 1998/12/23 18:45:30 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.31 1998/12/23 20:58:44 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -844,6 +844,12 @@ char *pdf_get_dict (const pdf_obj *dict, int index)
   return result;
 }
 
+static char compression_enabled = 1;
+
+void pdf_obj_disable_compression (void)
+{
+  compression_enabled = 0;
+}
 
 pdf_obj *pdf_new_stream (int flags)
 {
@@ -865,7 +871,7 @@ pdf_obj *pdf_new_stream (int flags)
 		pdf_ref_obj (data -> length));
 
 #ifdef HAVE_ZLIB
-  if ((flags & STREAM_COMPRESS)) {
+  if ((flags & STREAM_COMPRESS) && compression_enabled) {
     if (!filters) {
       filters = pdf_new_array();
       pdf_add_dict (data -> dict, pdf_new_name ("Filter"), filters);
@@ -895,7 +901,7 @@ static void write_stream (FILE *file, pdf_stream *stream)
 
 #ifdef HAVE_ZLIB
   /* Apply compression filter if requested */
-  if ((stream -> _flags & STREAM_COMPRESS)) {
+  if ((stream -> _flags & STREAM_COMPRESS) && compression_enabled) {
     int z_error;
     buffer_length = filtered_length + filtered_length/1000 + 13;
     buffer = NEW (buffer_length, unsigned char);

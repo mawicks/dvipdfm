@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.14 1998/12/23 19:08:06 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.15 1998/12/23 20:58:44 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -105,12 +105,14 @@ static void usage (void)
    fprintf (stderr, "where [options] is one or more of\n\n");
    fprintf (stderr, "\t-c      \tIgnore color specials (for printing on B&W printers)\n");
    fprintf (stderr, "\t-f filename\tFont map file name [pdffonts.map]\n");
-   fprintf (stderr, "\t-o filename\tOutput file name\n");
+   fprintf (stderr, "\t-o filename\tOutput file name [dvifile.pdf]\n");
    fprintf (stderr, "\t-l \t\tlandscape mode\n");
    fprintf (stderr, "\t-m number\tAdditional magnification\n");
    fprintf (stderr, "\t-p papersize\tpapersize is [letter], legal, ledger, tabloid, a4, or a3\n");
    fprintf (stderr, "\t-x dimension\tHorizontal offset [1.0in]\n");
    fprintf (stderr, "\t-y dimension\tVertical offset [1.0in]\n");
+   fprintf (stderr, "\t-e          \tDisable partial font embedding [default is partial embedding])\n");
+   fprintf (stderr, "\t-z          \tDisable stream compression [default is to compress])\n");
    fprintf (stderr, "\nAll dimensions are \"true\" when specified on the command line\n");
    exit(1);
 }
@@ -247,6 +249,16 @@ static void do_args (int argc, char *argv[])
 	type1_set_mapfile (argv[1]);
 	argv += 2;
 	argc -= 2;
+	break;
+      case 'e':
+	type1_disable_partial();
+	argv += 1;
+	argc -= 1;
+	break;
+      case 'z':
+	pdf_obj_disable_compression();
+	argv += 1;
+	argc -= 1;
 	break;
       default:
 	usage();

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.39 1998/12/23 20:31:21 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.40 1998/12/23 20:58:44 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -42,8 +42,6 @@
 #include "pdfparse.h"
 #include "pdflimits.h"
 #include "t1crypt.h"
-
-#define do_partials 1
 
 static const char *map_filename = "pdffonts.map";
 
@@ -600,6 +598,13 @@ static unsigned long do_partial (unsigned char *filtered, unsigned char
 }
 
 
+static char partial_enabled = 1;
+
+void type1_disable_partial (void)
+{
+  partial_enabled = 0;
+}
+
 static unsigned long do_pfb_body (FILE *file, int pfb_id,
 				  char **glyphs)
 {
@@ -620,21 +625,21 @@ static unsigned long do_pfb_body (FILE *file, int pfb_id,
   filtered = NEW (length, unsigned char);
   if ((nread = fread(buffer, sizeof(unsigned char), length, file)) ==
       length) {
-    crypt_init(EEKEY);
-    for (i=0; i<nread; i++) {
-      buffer[i] = decrypt(buffer[i]);
-    }
-    crypt_init (EEKEY);
-    if (do_partials && glyphs != NULL) {
+    if (partial_enabled && glyphs != NULL && partial_enabled) {
+      /* For partial font embedding we need to decrypt the binary
+	 portin of the pfb */
+      crypt_init(EEKEY);
+      for (i=0; i<nread; i++) {
+	buffer[i] = decrypt(buffer[i]);
+      }
+      /* Now we do the partial embedding */
       length = do_partial (filtered, buffer, length, 
 			   pfbs[pfb_id].used_chars,
 			   glyphs);
+      /* And reencrypt the whole thing */
+      crypt_init (EEKEY);
       for (i=0; i<length; i++) {
 	buffer[i] = encrypt(filtered[i]);
-      }
-    } else {
-      for (i=0; i<nread; i++) {
-	buffer[i] = encrypt(buffer[i]);
       }
     }
     pdf_add_stream (pfbs[pfb_id].direct, (char *) buffer, length);
@@ -1135,7 +1140,7 @@ int type1_font (const char *tex_name, int tfm_font_id, const char *resource_name
       type1_fonts[num_type1_fonts].pfb_id = -1;
       if (font_record -> pfb_name != NULL) {
 	if (!is_a_base_font (fontname)) {
-	  if (do_partials) {
+	  if (partial_enabled) {
 	    mangle_fontname();
 	  }
 	  type1_fonts[num_type1_fonts].pfb_id =

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.h,v 1.16 1998/12/23 16:46:56 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.h,v 1.17 1998/12/23 20:58:44 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -172,6 +172,7 @@ extern char *pdf_get_dict (const pdf_obj *dict, int index);
 
 extern pdf_obj *pdf_new_stream (int flags);
 #define STREAM_COMPRESS 1
+extern void pdf_obj_disable_compression(void);
 extern void pdf_add_stream (pdf_obj *stream, char *stream_data, unsigned
 		     length);
 
