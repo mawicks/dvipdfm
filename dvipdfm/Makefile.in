@@ -75,7 +75,9 @@ Makefile: Makefile.in configure.in
 	$(srcdir)/configure
 c-auto.h: c-auto.h.in configure.in
 	$(srcdir)/configure
+	touch c-auto.h
 c-auto.h.in: acconfig.h configure.in
 	autoheader
+	touch c-auto.h.in
 configure: configure.in
 	autoconf
