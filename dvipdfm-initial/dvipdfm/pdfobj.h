@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfobj.h,v 1.3 1998/11/22 07:38:20 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfobj.h,v 1.4 1998/11/24 04:08:26 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -39,11 +39,11 @@
 #define PDF_DICT	6u
 #define PDF_STREAM	7u
 #define PDF_NULL        8u
-#define PDF_INDIRECT	9u   
+#define PDF_INDIRECT	9u
 
 typedef unsigned char pdf_obj_type;
 
-/* Any of these types can be represented as follows */
+/* Any of these types can be represented by the following structure */
 
 struct pdf_obj 
 {
