@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.77 1999/08/15 04:54:56 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.78 1999/08/17 03:14:06 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1172,9 +1172,9 @@ struct a_type1_font
 {
   pdf_obj *indirect;
   int pfb_id;
+  double slant, extend;
 } *type1_fonts;
 int num_type1_fonts = 0, max_type1_fonts = 0;
-
 
 pdf_obj *type1_font_resource (int type1_id)
 {
@@ -1183,6 +1183,26 @@ pdf_obj *type1_font_resource (int type1_id)
   else {
     ERROR ("Invalid font id in type1_font_resource");
     return NULL;
+  }
+}
+
+double type1_font_slant (int type1_id)
+{
+  if (type1_id>=0 && type1_id<max_type1_fonts)
+    return type1_fonts[type1_id].slant;
+  else {
+    ERROR ("Invalid font id in type1_font_slant");
+    return 0.0;
+  }
+}
+
+double type1_font_extend (int type1_id)
+{
+  if (type1_id>=0 && type1_id<max_type1_fonts)
+    return type1_fonts[type1_id].extend;
+  else {
+    ERROR ("Invalid font id in type1_font_extend");
+    return 1.0;
   }
 }
 
@@ -1254,6 +1274,9 @@ int type1_font (const char *tex_name, int tfm_font_id, const char *resource_name
       type1_fonts = RENEW (type1_fonts, max_type1_fonts, struct a_type1_font);
     }
     type1_fonts[num_type1_fonts].pfb_id = pfb_id;
+    type1_fonts[num_type1_fonts].extend = font_record -> extend;
+    type1_fonts[num_type1_fonts].slant = font_record -> slant;
+    
     /* Allocate a dictionary for the physical font */
     font_resource = pdf_new_dict ();
     if (encoding_id >= 0) {
@@ -1364,9 +1387,3 @@ void type1_close_all (void)
   if (mapfile)
     FCLOSE (mapfile);
 }
-
-
-
-
-
-

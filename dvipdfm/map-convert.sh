@@ -35,11 +35,24 @@ do
       set -- `grep FontName $AFM_FILE`
       FONTNAME=$2
     fi
+# If there's no explicity pfb name, try using the afm name as the pfb name    
+    if [ -z "$PFB" ];
+    then
+      PFB=$AFM_NAME
+    fi
     if [ -n "$PFB" ];
     then
-      FONTNAME="-";
+       PFB_FILE=`kpsewhich $PFB`
+       if [ -z "$PFB_FILE" ];
+       then
+          PFB_FILE=`kpsewhich $PFB.pfb`
+       fi
+       if [ -n "$PFB_FILE" ];
+       then
+         FONTNAME=$PFB
+       fi
     fi
-    echo $TEX_NAME $ENCODING $FONTNAME $PFB
+    echo $TEX_NAME $ENCODING $FONTNAME
   fi
 done  
 }

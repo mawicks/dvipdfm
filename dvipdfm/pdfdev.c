@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.65 1999/02/21 14:30:21 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.66 1999/08/17 03:14:06 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -119,6 +119,7 @@ static char format_buffer[FORMAT_BUF_SIZE];
 
 static mpt_t text_xorigin = 0, text_yorigin = 0,
   text_offset = 0, text_leading = 0;
+double text_slant = 0.0, text_extend = 1.0;
 double text_xerror = 0.0, text_yerror = 0.0;
 
 int n_dev_fonts = 0;
@@ -140,6 +141,7 @@ static struct dev_font {
   mpt_t mptsize;
   pdf_obj *font_resource;
   char *used_chars;
+  double extend, slant;
 } dev_font[MAX_DEVICE_FONTS];
 
 static void reset_text_state(void)
@@ -241,6 +243,16 @@ static void dev_set_font (int font_id)
   text_mode();
   len = sprintf (format_buffer, "/%s %.6g Tf", dev_font[font_id].short_name,
 		 dev_font[font_id].ptsize);
+  if (dev_font[font_id].extend != text_extend) {
+    len = sprintf (format_buffer, " %.6g Tz", dev_font[font_id].extend*100);
+    text_extend = dev_font[font_id].extend;
+  }
+  if (dev_font[font_id].slant != text_slant) {
+    len = sprintf (format_buffer, " 1 0 %.3g 1 %.7g %.7g Tm",
+		   dev_font[font_id].slant, text_xorigin*dvi2pts,
+		   text_yorigin*dvi2pts);
+    text_slant = dev_font[font_id].slant;
+  }
   pdf_doc_add_to_page (format_buffer, len);
   /* Add to Font list in Resource dictionary for this page */
   if (!dev_font[font_id].used_on_this_page) { 
@@ -554,6 +566,8 @@ void dev_reselect_font(void)
   for (i=0; i<n_dev_fonts; i++) {
     dev_font[i].used_on_this_page = 0;
   }
+  text_slant = 0.0;
+  text_extend = 1.0;
 }
 
 static void bop_font_reset(void)
@@ -572,6 +586,10 @@ MEM_START
   pdf_doc_new_page ();
   fill_page();
   graphics_mode();
+  {
+    text_slant = 0.0;
+    text_extend = 1.0;
+  }
   bop_font_reset();
   pdf_doc_add_to_page ("0 w", 3);
   dev_do_color();
@@ -629,6 +647,8 @@ static int locate_type1_font (char *tex_name, mpt_t ptsize)
     if (type1_id >= 0) { /* If we got one, it must be a physical font */
       dev_font[thisfont].font_resource = type1_font_resource (type1_id);
       dev_font[thisfont].used_chars = type1_font_used (type1_id);
+      dev_font[thisfont].slant = type1_font_slant (type1_id);
+      dev_font[thisfont].extend = type1_font_extend (type1_id);
       n_phys_fonts +=1 ;
     } else { /* No physical font corresponding to this name */
       thisfont = -1;
@@ -639,6 +659,8 @@ static int locate_type1_font (char *tex_name, mpt_t ptsize)
     /* Rebuild everything else */
     dev_font[thisfont].tfm_font_id = dev_font[i].tfm_font_id;
     dev_font[thisfont].used_chars = dev_font[i].used_chars;
+    dev_font[thisfont].slant = dev_font[i].slant;
+    dev_font[thisfont].extend = dev_font[i].extend;
     strcpy (dev_font[thisfont].short_name, dev_font[i].short_name);
     dev_font[thisfont].font_resource = pdf_link_obj
       (dev_font[i].font_resource);
@@ -698,6 +720,9 @@ static int locate_pk_font (char *tex_name, mpt_t ptsize)
     if (pk_id >= 0) { /* If we got one, it must be a physical font */
       dev_font[thisfont].font_resource = pk_font_resource (pk_id);
       dev_font[thisfont].used_chars = pk_font_used (pk_id);
+      /* Don't set extend or slant for PK fonts for now... */
+      dev_font[thisfont].extend = 0.0;
+      dev_font[thisfont].slant = 1.0;
       n_phys_fonts +=1 ;
     } else { /* No physical font corresponding to this name */
       thisfont = -1;

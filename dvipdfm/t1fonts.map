@@ -1,3 +1,15 @@
+% original t1fonts.map -- Constructed by M. Wicks, 8/17/99
+%
+% Format is as follows:
+% TeX-name encoding AFM-name PFB-name
+% The default behavior is to use the font's built-in
+% encoding, to use the TeX-name as the AFM-name, and
+% to use the AFM-name as the PFB-name.
+% The word "default" may be used in any field to
+% specify the default behavior. You can
+% also say "none", in the PFB field, for example
+% to say that no PFB should be loaded
+
 % original t1fonts.map -- Constructed by M. Wicks, 3/1/99
 %
 % Format is as follows:
@@ -13,9 +25,10 @@
 % The following entries are used to force an encoding to work around a bug
 % in Acrobat reader
 %
-cmr10 ot1 -s 0.5 -e 1.2
+% cmr10 ot1 -s 0.5 -e 1.2
 %cmr10 ot1 -e 1.3 -s 0.5
 %cmr10 ot1
+cmr10 ot1
 cmr12 ot1
 cmr17 ot1
 cmr5 ot1
@@ -73,29 +86,29 @@ cmssi8 ot1
 cmssi9 ot1
 %
 % CharterBT-Bold
-bchb8r 8r
+bchb8r 8r bchb8a
 % CharterBT-BoldItalic
-bchbi8r 8r
+bchbi8r 8r bchbi8a
 % CharterBT-Roman
-bchr8r 8r
+bchr8r 8r bchr8a
 % CharterBT-Italic
-bchri8r 8r
+bchri8r 8r bchri8a
 % AvantGarde-Demi
-pagd8r 8r
+pagd8r 8r pagd8a
 % AvantGarde-DemiOblique
-pagdo8r 8r
+pagdo8r 8r pagdo8a
 % AvantGarde-Book
-pagk8r 8r
+pagk8r 8r pagk8a
 % AvantGarde-BookOblique
-pagko8r 8r
+pagko8r 8r pagko8a
 % Bookman-Demi
-pbkd8r 8r
+pbkd8r 8r pbkd8a
 % Bookman-DemiItalic
-pbkdi8r 8r
+pbkdi8r 8r pbkdi8a
 % Bookman-Light
-pbkl8r 8r
+pbkl8r 8r pbkl8a
 % Bookman-LightItalic
-pbkli8r 8r
+pbkli8r 8r pbkli8a
 % Courier-Bold
 pcrb8r 8r Courier-Bold
 % Courier-BoldOblique
@@ -107,55 +120,75 @@ pcrro8r 8r Courier-Oblique
 % Helvetica-Bold
 phvb8r 8r Helvetica-Bold
 % Helvetica-Narrow-Bold
-phvb8rn 8r
+phvb8rn 8r Helvetica-Narrow-Bold
 % Helvetica-BoldOblique
-phvbo8r 8r Helvetica-BoldOblique
+phvbo8r 8r phvbo8a
 % Helvetica-Narrow-BoldOblique
-phvbo8rn 8r
+phvbo8rn 8r Helvetica-Narrow-BoldOblique
+%
+phvbon8r 8r Helvetica-BoldOblique -e 0.82
+phvbrn8r 8r Helvetica-Bold -e 0.82
 % Helvetica
-phvr8r 8r Helvetica
+phvr8r 8r phvr8a
 % Helvetica-Narrow
-phvr8rn 8r
+phvr8rn 8r Helvetica-Narrow
 % Helvetica-Oblique
 phvro8r 8r Helvetica-Oblique
 % Helvetica-Narrow-Oblique
-phvro8rn 8r
+phvro8rn 8r Helvetica-Narrow-Oblique
+phvron8r 8r Helvetica-Oblique -e 0.82
+phvrrn8r Helvetica -e 0.82
 % NewCenturySchlbk-Bold
-pncb8r 8r
+pncb8r 8r pncb8a
 % NewCenturySchlbk-BoldItalic
-pncbi8r 8r
+pncbi8r 8r pncbi8a
+pncbo8r 8r pncb8a -s 0.167
 % NewCenturySchlbk-Roman
-pncr8r 8r
+pncr8r 8r pncr8a
 % NewCenturySchlbk-Italic
-pncri8r 8r
+pncri8r 8r pncri8a
+pncro8r 8r pncri8a -s 0.167
 % Palatino-Bold
-pplb8r 8r
+pplb8r 8r pplb8a
 % Palatino-BoldItalic
-pplbi8r 8r
+pplbi8r 8r pplbi8a
+pplbo8r 8r pplb8a -s 0.167
+pplbu8r 8r pplbi8a -s -0.1763
 % Palatino-Roman
-pplr8r 8r
+pplr8r 8r pplr8a
 % Palatino-Italic
-pplri8r 8r
+pplri8r 8r pplri8a
+pplro8r pplr8a -s 0.167
+pplrre8r pplr8a -e 1.2
+pplrrn8r pplr8a -e 0.82
+pplru8r pplri8a -s -0.1763
 % Symbol
 psyr none Symbol
+psyro none Symbol -s 0.167
 % Times-Bold
 ptmb8r 8r Times-Bold
 % Times-BoldItalic
-ptmbi8r 8r Times-BoldItalic
+ptmbi8r 8r Times-Italic
 % Times-Roman
 ptmr8r 8r Times-Roman
 % Times-Italic
 ptmri8r 8r Times-Italic
+ptmbo8r 8r Times-Bold -s 0.167
+ptmro8r 8r Times-Roman -s 0.167
+ptmrre8r 8r Times-Roman -s 1.2
+ptmrrn8r 8r Times-Roman -s 0.82
 % Utopia-Bold
-putb8r 8r
+putb8r 8r putb8a
 % Utopia-BoldItalic
-putbi8r 8r
+putbi8r 8r putbi8a
 % Utopia-Regular
-putr8r 8r
+putr8r 8r putr8a
 % Utopia-Italic
-putri8r 8r
+putri8r 8r putri8a
+putbo8r 8r putb8a -s 0.167
+putro8r 8r putr8a -s 0.167
 % ZapfChancery-MediumItalic
-pzcmi8r 8r
+pzcmi8r 8r pzcmi8a
 % ZapfDingbats
 pzdr none ZapfDingbats
 % LaTeX Fonts having short file names
