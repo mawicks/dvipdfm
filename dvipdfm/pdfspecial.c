@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.9 1998/12/03 02:51:53 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.10 1998/12/03 18:04:23 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -1087,6 +1087,10 @@ static pdf_obj *lookup_reference(char *name)
   if (!strcmp (name, "resources")) {
     return pdf_ref_obj (pdf_doc_current_page_resources());
   }
+  if (!strcmp (name, "catalog")) {
+    return pdf_ref_obj (pdf_doc_catalog());
+  }
+
   if (strlen (name) > 4 &&
       !strncmp (name, "page", 4) &&
       is_a_number (name+4)) {
@@ -1117,8 +1121,8 @@ static pdf_obj *lookup_object(char *name)
   if (!strcmp (name, "resources")) {
     return pdf_doc_current_page_resources();
   }
-  if (!strcmp (name, "")) {
-    return pdf_doc_current_page_resources();
+  if (!strcmp (name, "catalog")) {
+    return pdf_doc_catalog();
   }
 
   for (i=0; i<number_named_references; i++) {

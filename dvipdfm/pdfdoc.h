@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.h,v 1.4 1998/12/03 16:30:08 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.h,v 1.5 1998/12/03 18:04:23 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -31,6 +31,7 @@ void pdf_doc_new_page (void);
 pdf_obj *pdf_doc_this_page_ref (void);
 pdf_obj *pdf_doc_this_page (void);
 pdf_obj *pdf_doc_page_tree (void);
+pdf_obj *pdf_doc_catalog (void);
 pdf_obj *pdf_doc_names (void);
 pdf_obj *pdf_doc_next_page_ref (void);
 pdf_obj *pdf_doc_prev_page_ref (void);
