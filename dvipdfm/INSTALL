@@ -1,15 +1,17 @@
 Installation:
 
-   To compile and install this package, follow the usual drill:
+   To compile and install this package, you need the standard TeX (texk)
+source tree.  Specifically, you need kpathsea along with its make/autoconf
+directories. 
    
-   1.  Unbundle the gzip'ed tar file.
-   2.  Type "./configure" in the top directory, specifying
+   1.  Unbundle the gzip'ed tar file inside the texk toplevel directory.
+   2.  Type "./configure" in the dvipdfm directory along with 
        any necessary options, e.g., "--prefix=PATH".
-   3.  Type "make" in the top directory.
-   4.  If all goes well, type "make install" in the top directory.
+   3.  Type "make" in the dvipdfm directory.
+   4.  If all goes well, type "make install" in the dvipdfm directory.
    
    I have installed this cleanly on Solaris 2.5 and RedHat Linux 5.1.
-I have been using it primarily under Linux.on Solaris
+I have been using it primarily under Linux.
 
    Please e-mail bug reports to
 
@@ -19,9 +21,10 @@ I have been using it primarily under Linux.on Solaris
       
 Notes/Possible Problems:
 
-   1.  The Makefile installs only the "dvipdfm" binary.  Additional files in
-       the kpathsea distribution are not installed.  It is assumed you
-       already have a working TeX distribution with its own texmf.cnf, etc.
+   1.  The Makefile installs the "dvipdfm" and the "ebb" binaries.
+       The dvipdfm binary requries kpathsea to do its font searching.
+       You must already have a working TeX installation with its own
+       texmf.cnf, etc.
 
    2.  In addition to this package, you will need PostScript Type1 fonts for
        the Computer Modern fonts and any additional fonts you want to use.
@@ -38,16 +41,11 @@ Notes/Possible Problems:
        library can find them.
 
    3.  If "dvipdfm" complains that it can't find fonts, read the "kpathsea"
-       documentation about debugging path searching (located in the
-       "kpathsea") directory.  This package uses version 3.2 of the kpathsea
-       library.  Make sure your TeX installation has a texmf.cnf that is
-       compatible with version 3.2 of the kpathsea library.  Version
-       3.2 of "kpathsea" along with its texmf.cnf is contained in
-       this distribution.  If your TeX distribution doesn't use version 3.2,
-       or if you can't get it to find the fonts, kpathsea can always find the
-       fonts using environment variables.  If "kpathsea" can't finding
+       documentation about debugging path searching.  If you can't get
+       kpathsea to find your texmf tree, it can always locate the
+       fonts using environment variables.  If "kpathsea" can't find
        your texmf.cnf, try setting the environment variable TEXMFCNF
        to point to the directory containing texmf.cnf.  As an
        alternative, you can set AFMFONTS to point to your ".afm" files
-       (dvipdfm needs these),  set T1FONTS to point to your ".pfb" files,
+       (dvipdfm needs these), set T1FONTS to point to your ".pfb" files,
        and set TFMFONTS to point to your ".tfm" files.

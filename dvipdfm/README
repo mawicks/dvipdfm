@@ -35,10 +35,11 @@ or if you prefer FTP:
 
    Limitations (at present):
 
-      - No Virtual font support in this version. This means that the
-	"times", "palatino", and similar packages that require virtual
-	fonts will not work correctly.  Virtual font support is in
-	progress and this should be supported soon. 
+      - No Virtual font or encoding support in this version. This
+	means that the "times", "palatino", and similar packages 
+	that require virtual fonts will not work correctly.
+        Virtual font support and encoding support is in progress
+        and this should be supported soon. 
 
       - No output PDF stream compression.  Input PDF files
         may be contain compressed streams, however.

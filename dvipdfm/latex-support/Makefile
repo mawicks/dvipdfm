@@ -1,2 +1,2 @@
 clean:
-	rm *.dvi *.log sample.pdf *~
+	rm -f *.dvi *.log sample.pdf *~

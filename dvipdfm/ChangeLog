@@ -1,12 +1,16 @@
+1998-11-27  Mark A. Wicks  <mwicks@odo.kettering.edu>
 
-Thu Nov 26 19:40:11 EST 1998
+	* Changed source tree to fit with texk distribution.
 
-   * Fixed a bug in the outline/bookmark tree structure.
+	* Added cmyk color support.
+	
+1998-11-26  Mark A. Wicks  <mwicks@odo.kettering.edu>
 
-   * Changed the \special parser so it would recognize numbers
-     that don't start with a digit.
+	* Fixed a bug in the outline/bookmark tree structure.
+	
+	* Changed the \special parser so it would recognize numbers
+          that don't start with a digit.
 
-   * Added macro support for Graphics and hyperref.
+        * Added macro support for Graphics and hyperref.
    
-   * Several minor changes.
-   
+        * Several minor changes.
