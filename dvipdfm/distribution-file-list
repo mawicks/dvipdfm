@@ -85,6 +85,7 @@ tfm.c
 tfm.h
 tpic.c
 tpic.h
+twiddle.h
 type1.c
 type1.h
 version
