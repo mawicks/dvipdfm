@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.116 2000/07/24 01:39:51 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.117 2000/07/24 01:45:13 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1004,7 +1004,6 @@ static unsigned long do_pfb_header (FILE *file, int pfb_id)
 #ifdef MEM_DEBUG
 MEM_START
 #endif
-  fprintf (stderr, "do_pfb_header()\n");
   buffer = get_pfb_segment (&length, file, ASCII);
   if (partial_enabled) {
     filtered = NEW (length+strlen(pfbs[pfb_id].fontname)+1+1024, unsigned
