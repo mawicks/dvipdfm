@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.3 1998/11/29 16:55:45 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.4 1998/11/30 03:40:21 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -210,6 +210,7 @@ static int parse_one_dim_word (char **start, char *end)
   char *dimension_string;
   char *save = *start;
   skip_white(start, end);
+
   if ((dimension_string = parse_ident(start, end)) == NULL) {
     fprintf (stderr, "\nExpecting a dimension here\n");
     dump(*start, end);

@@ -38,6 +38,7 @@ extern void *renew(void *mem,unsigned long size);
 #  undef OUT
 #  undef CDECL
 #  define CDECL __cdecl
+#  pragma warning(disable : 4101 4018)
 #else
 #  define CDECL
 #endif /* WIN32 */
