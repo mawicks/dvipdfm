@@ -58,20 +58,28 @@ NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
 CC = gcc
-CFLAGS = -g --pedantic --ansi
-LIBS = -lm
+CFLAGS = -O2 --pedantic
+CPPFLAGS = -I./kpathsea/ -DTEXMFCNF=/usr/lib/texmf/texmf.cnf
+LN_S = ln -s
 MAKEINFO = makeinfo
 PACKAGE = dvipdf
-VERSION = 0.01
+VERSION = 0.5d
 
-include_HEADERS = dvi.h error.h io.h tfm.h numbers.h pdfobj.h pdfdoc.h type1.h pdfdev.h
-bin_PROGRAMS = dvitest tfmtest pdftest doctest type1test devtest
-dvitest_SOURCES = dvitest.c numbers.c dvi.c io.c mem.c
+include_HEADERS = dvi.h error.h io.h tfm.h numbers.h pdfobj.h pdfdoc.h type1.h pdfdev.h pdfspecial.h
+bin_PROGRAMS = dvipdf dvitest tfmtest pdftest doctest type1test devtest
+dvitest_SOURCES = dvitest.c numbers.c dvi.c io.c mem.c pdfdev.c pdfdoc.c pdfobj.c type1.c tfm.c pdfspecial.c
+dvipdf_LDADD = ./kpathsea/kpathsea/kpathsea.a
+dvipdf_SOURCES = dvipdf.c numbers.c dvi.c io.c mem.c pdfdev.c pdfdoc.c pdfobj.c type1.c tfm.c pdfspecial.c
+dvitest_LDADD = ./kpathsea/kpathsea/kpathsea.a
 tfmtest_SOURCES = tfmtest.c numbers.c tfm.c io.c mem.c
-pdftest_SOURCES = pdftest.c pdfobj.c mem.c 
-doctest_SOURCES = doctest.c pdfdoc.c pdfobj.c mem.c type1.c
-devtest_SOURCES = devtest.c pdfdev.c pdfdoc.c pdfobj.c mem.c type1.c
-type1test_SOURCES = type1test.c type1.c pdfobj.c mem.c 
+tfmtest_LDADD = ./kpathsea/kpathsea/kpathsea.a
+pdftest_SOURCES = pdftest.c pdfobj.c mem.c io.c
+doctest_SOURCES = doctest.c pdfdoc.c pdfobj.c mem.c type1.c io.c
+doctest_LDADD = ./kpathsea/kpathsea/kpathsea.a
+devtest_SOURCES = devtest.c pdfdev.c pdfdoc.c pdfobj.c mem.c type1.c pdfspecial.c dvi.c io.c numbers.c tfm.c
+devtest_LDADD = ./kpathsea/kpathsea/kpathsea.a
+type1test_SOURCES = type1test.c type1.c pdfobj.c mem.c io.c
+type1test_LDADD = ./kpathsea/kpathsea/kpathsea.a
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = config.h
@@ -80,31 +88,32 @@ PROGRAMS =  $(bin_PROGRAMS)
 
 
 DEFS = -DHAVE_CONFIG_H -I. -I$(srcdir) -I.
-CPPFLAGS = 
 LDFLAGS = 
-dvitest_OBJECTS =  dvitest.o numbers.o dvi.o io.o mem.o
-dvitest_LDADD = $(LDADD)
-dvitest_DEPENDENCIES = 
+LIBS = -lm 
+dvipdf_OBJECTS =  dvipdf.o numbers.o dvi.o io.o mem.o pdfdev.o pdfdoc.o \
+pdfobj.o type1.o tfm.o pdfspecial.o
+dvipdf_DEPENDENCIES =  ./kpathsea/kpathsea/kpathsea.a
+dvipdf_LDFLAGS = 
+dvitest_OBJECTS =  dvitest.o numbers.o dvi.o io.o mem.o pdfdev.o \
+pdfdoc.o pdfobj.o type1.o tfm.o pdfspecial.o
+dvitest_DEPENDENCIES =  ./kpathsea/kpathsea/kpathsea.a
 dvitest_LDFLAGS = 
 tfmtest_OBJECTS =  tfmtest.o numbers.o tfm.o io.o mem.o
-tfmtest_LDADD = $(LDADD)
-tfmtest_DEPENDENCIES = 
+tfmtest_DEPENDENCIES =  ./kpathsea/kpathsea/kpathsea.a
 tfmtest_LDFLAGS = 
-pdftest_OBJECTS =  pdftest.o pdfobj.o mem.o
+pdftest_OBJECTS =  pdftest.o pdfobj.o mem.o io.o
 pdftest_LDADD = $(LDADD)
 pdftest_DEPENDENCIES = 
 pdftest_LDFLAGS = 
-doctest_OBJECTS =  doctest.o pdfdoc.o pdfobj.o mem.o type1.o
-doctest_LDADD = $(LDADD)
-doctest_DEPENDENCIES = 
+doctest_OBJECTS =  doctest.o pdfdoc.o pdfobj.o mem.o type1.o io.o
+doctest_DEPENDENCIES =  ./kpathsea/kpathsea/kpathsea.a
 doctest_LDFLAGS = 
-type1test_OBJECTS =  type1test.o type1.o pdfobj.o mem.o
-type1test_LDADD = $(LDADD)
-type1test_DEPENDENCIES = 
+type1test_OBJECTS =  type1test.o type1.o pdfobj.o mem.o io.o
+type1test_DEPENDENCIES =  ./kpathsea/kpathsea/kpathsea.a
 type1test_LDFLAGS = 
-devtest_OBJECTS =  devtest.o pdfdev.o pdfdoc.o pdfobj.o mem.o type1.o
-devtest_LDADD = $(LDADD)
-devtest_DEPENDENCIES = 
+devtest_OBJECTS =  devtest.o pdfdev.o pdfdoc.o pdfobj.o mem.o type1.o \
+pdfspecial.o dvi.o io.o numbers.o tfm.o
+devtest_DEPENDENCIES =  ./kpathsea/kpathsea/kpathsea.a
 devtest_LDFLAGS = 
 COMPILE = $(CC) $(DEFS) $(INCLUDES) $(CPPFLAGS) $(CFLAGS)
 LINK = $(CC) $(CFLAGS) $(LDFLAGS) -o $@
@@ -119,12 +128,12 @@ DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
 
 TAR = tar
 GZIP = --best
-DEP_FILES =  .deps/devtest.P .deps/doctest.P .deps/dvi.P .deps/dvitest.P \
-.deps/io.P .deps/mem.P .deps/numbers.P .deps/pdfdev.P .deps/pdfdoc.P \
-.deps/pdfobj.P .deps/pdftest.P .deps/tfm.P .deps/tfmtest.P \
-.deps/type1.P .deps/type1test.P
-SOURCES = $(dvitest_SOURCES) $(tfmtest_SOURCES) $(pdftest_SOURCES) $(doctest_SOURCES) $(type1test_SOURCES) $(devtest_SOURCES)
-OBJECTS = $(dvitest_OBJECTS) $(tfmtest_OBJECTS) $(pdftest_OBJECTS) $(doctest_OBJECTS) $(type1test_OBJECTS) $(devtest_OBJECTS)
+DEP_FILES =  .deps/devtest.P .deps/doctest.P .deps/dvi.P .deps/dvipdf.P \
+.deps/dvitest.P .deps/io.P .deps/mem.P .deps/numbers.P .deps/pdfdev.P \
+.deps/pdfdoc.P .deps/pdfobj.P .deps/pdfspecial.P .deps/pdftest.P \
+.deps/tfm.P .deps/tfmtest.P .deps/type1.P .deps/type1test.P
+SOURCES = $(dvipdf_SOURCES) $(dvitest_SOURCES) $(tfmtest_SOURCES) $(pdftest_SOURCES) $(doctest_SOURCES) $(type1test_SOURCES) $(devtest_SOURCES)
+OBJECTS = $(dvipdf_OBJECTS) $(dvitest_OBJECTS) $(tfmtest_OBJECTS) $(pdftest_OBJECTS) $(doctest_OBJECTS) $(type1test_OBJECTS) $(devtest_OBJECTS)
 
 all: Makefile $(PROGRAMS) $(HEADERS) config.h
 
@@ -208,6 +217,10 @@ distclean-compile:
 	-rm -f *.tab.c
 
 maintainer-clean-compile:
+
+dvipdf: $(dvipdf_OBJECTS) $(dvipdf_DEPENDENCIES)
+	@rm -f dvipdf
+	$(LINK) $(dvipdf_LDFLAGS) $(dvipdf_OBJECTS) $(dvipdf_LDADD) $(LIBS)
 
 dvitest: $(dvitest_OBJECTS) $(dvitest_DEPENDENCIES)
 	@rm -f dvitest

@@ -56,11 +56,9 @@ long file_size (FILE *file)
   long size;
   /* Seek to end */
   seek_end (file);
-
   size = tell_position (file);
   rewind (file);
   return (size);
 }
 
-
-
+char work_buffer[WORK_BUFFER_SIZE];

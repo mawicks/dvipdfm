@@ -1,0 +1,179 @@
+%\special{pdf: BOP q 0.6 0.8 1.0 rg 0 0 m 612 0 l 612 792 l 0 792 l b Q  }
+%\special{pdf: BOP q 0.6 0.8 1.0 rg 36 36 m 576 36 l 576 756 l 36 756 l b Q  }
+% \special{  pdf:  DOCINFO <</Producer (Me) /Author (Mark A. Wicks) /Title (Some sort of title.)>>}%
+%\special{  pdf:  DOCVIEW <</PageMode /UseThumbs>>}%
+\special{  pdf:  DOCVIEW <</PageMode /UseOutlines>>}%
+\catcode`\ =11\def\space{ }\catcode`\ =10
+\def\colored#1#2{%
+   \special{pdf:CONTENT q #1 rg }%
+   #2\special{pdf:CONTENT Q }}%
+\def\red#1{\colored{1 0 0}{#1}}%
+\def\green#1{\colored{0 1 0}{#1}}%
+\def\blue#1{\colored{0 0 1}{#1}}%
+\def\yellow#1{\colored{0.8 0.9 0.1}{#1}}%
+\font\maintitlefont=cmr12 at 17.28pt
+\font\headingfont=cmr12 at 14.4pt
+% Variables declared here
+% Miscellaneous token lists
+\newtoks\title\newtoks\author
+% Section levels
+\newcount\sectioncount\newcount\ssectioncount\newcount\sssectioncount
+\sectioncount0\ssectioncount0\sssectioncount0
+\def\settitle{%
+  \centerline{\maintitlefont\blue{\the\title}}%
+  \special {pdf:  DOCINFO << /Title (\the\title) >>}}%
+\def\setauthor{%
+  \centerline{\headingfont\blue{\the\author}}%
+  \special {pdf:  DOCINFO << /Author (\the\author) >>}}%
+\def\setheading#1{%
+  {\headingfont\blue{#1}}\raise\baselineskip\hbox{\special{pdf: OUTLINE 1 << /Title (#1) /Dest [
+@thispage /FitH @ypos ]  >> }}}%
+\def\setsubheading#1{%
+  {\headingfont\blue{#1}}\raise\baselineskip\hbox{\special{pdf: OUTLINE 2 << /Title (#1) /Dest [
+@thispage /FitH @ypos ]  >> }}}%
+\def\maketitle{\settitle\bigskip\setauthor\bigskip}
+\def\section#1{\advance\sectioncount by 1\ssectioncount0%
+\bigskip\noindent\setheading{\the\sectioncount. #1}\par\nobreak\medskip}%
+\def\subsection#1{\advance\ssectioncount by 1%
+\bigskip\noindent\setsubheading{\the\sectioncount.\the\ssectioncount\ #1}\par\nobreak\medskip}%
+\def\dvipdf{{\tt dvipdf}}%
+\def\version{0.5}%
+\title{The dvipdf, version \version\ User's Manual}
+\author{Mark A. Wicks}
+\maketitle
+\section{Background}
+I became interested in DVI to PDF conversion in October, 1998.  At that
+time, I examined the possible alternatives and investigated what other
+people were doing. I concluded that the most widely accepted method was to
+use Adobe's Acrobat distiller on a Postscript file produced by {\tt dvips}.
+The hyperlink features are accessed by using \TeX\ $\tt \backslash${\tt
+special}s to embed pdfmarks in the Postscript produced by {\tt dvips}.
+Han The Than's PDF\TeX project is an alternative solution.
+Although quite good and fairly mature, the PDF\TeX project required
+modifying the \TeX\ source code to add primitives to support the PDF features.
+I have a firm belief that \TeX should remain pristine
+unless a compelling case can be made that certain features cannot
+be implemented with \TeX\ $\tt \backslash${\tt special}s.  At least
+one other DVI to PDF project exists, but it wasn't widely available.
+
+From a technical standpoint,
+I believe that using distiller is and will be the best
+solution for some time.  However I had several objections to the use of distiller.
+My principle objection is that it isn't available for Linux---my principle
+operating system.  Also, the conversion to Postscript as an intermediate
+step seems unnatural.  \TeX is a complete programming language.
+The DVI specification is a page description language.
+Postscript is a programming language, while PDF is a page description language.
+Why convert a page description into a program for generating
+that page only so you can run a distiller that generates
+the page description obtained by running that program?
+I would argue that \TeX\ is a analogous to postscript (without the graphics)
+while DVI is analogous to PDF (without graphics or hyperlinks).
+Pdfmarks are postscript features meant for the distiller that are roughly analogous
+to \TeX $\tt \backslash${\tt special}s, which are meant for the DVI driver.
+It seems natural to have a DVI driver with features similar to those of the
+distiller.  My goal in writing \dvipdf\ was to convert a DVI file directly into PDF, while
+preserving the flavor of the pdfmark
+interface, so that a user familiar with the pdfmark interface
+will have little trouble adapting to \dvipdf.
+
+Unfortunately the ability to include graphics
+is and will likely remain a sensible reason to continue to
+use postscript only because so many graphics programs will produce an encapsulated postscript
+file.  I would hope that in the future, graphics programs
+will produce PDF content streams, or PDF objects that
+may be included into a DVI to PDF translator.
+
+\section{Introduction}
+This document describes and serves as an example input file for \dvipdf~version~\version.
+It assumes some familiarity with PDF.
+
+\section{Functions analogous to PDFmarks}
+These functions are all executed via \TeX\ $\tt \backslash${\tt special}s
+prefixed with {\tt pdf:}, e.g.,
+
+{\tt pdf: OUT 1 << /Title (Introduction) /Dest [ 1 0 R /FitH 234 ] >> }
+
+\subsection{ANN}
+\subsection{OUT}
+OUT {\it level} {\it dictionary}
+
+The parameter {\it level} is an integer representing the level of the outline
+entry (beginning with 1) and {\it dictionary} must contain
+the two keys {\tt /Title} and either {\tt /Dest} or {\tt /A}.
+It may also contain the {\tt /AA} key.  These keys are documented
+in the PDF Reference Manual.
+
+%\subsection{ARTICLE}
+%Currently, the ARTICLE command is not implemented.  It would 
+%facilitate the construction of threads and beads.
+
+%\subsection{DEST}
+%Currently, named destinations are not supported.
+
+\subsection{DOCINFO}
+
+DOCINFO {\it dictionary}
+
+DOCINFO adds the keys in the specified dictionary to the
+document's Info dictionary.  All keys are optional, but may include
+the keys {\tt Author}, {\tt Title}, {\tt Keywords}, {\tt Subject},
+and {\tt Creator}.
+
+\subsection{DOCVIEW}
+DOCVIEW {\it dictionary}
+
+DOCVIEW adds the keys in the specified dictionary to the
+document's Catalog dictionary.  All keys are optional, but may include
+the keys {\tt /PageMode},
+{\tt /URI}, {\tt /OpenAction}, {\tt /AA}
+and {\tt ViewerPreferences}.  See the PDF Reference Manual
+for documentation of these keys and additional keys.
+
+\subsection{OBJ}
+
+OBJ [@{\it name}] {\it object}
+
+OBJ creates a PDF object.  The parameter {\it object} is any valid PDF object.  The parameter @{\it name}
+may be used to refer to this object within other objects.  It
+will be expanded in any {\tt special} where a PDF object is expected.
+Typically {\it object} is an array or dictionary.  It may be an empty array or
+dictionary that may be accumulated dynamically via the PUT command.
+
+\subsection{PUT}
+PUT @{\it name} {\it object}
+
+or 
+
+PUT @{\it name} {\it dictionary}
+
+PUT modifies an existing PDF object created with OBJ.
+The first form is used when @{\tt name} is an array.  The second
+form is used when @{\tt name} is a dictionary.  Arrays are
+incremented one object at a time.  All keys in {\it dictionary}
+are added to the dictionary represented by @{\it name}.
+
+\subsection{CLOSE}
+
+CLOSE @{\it name}
+
+CLOSE writes a PDF object created with OBJ to the PDF file.
+No further PUT commands may be executed for this object.
+The object may continue to be referenced using @{\it name}
+indefinitely.
+
+\section{Additional functions}
+\subsection{BOP}
+
+BOP {\tt stream}
+
+BOP specifies a marking stream to be generated at the top of each page.
+
+
+\subsection{EOP}
+
+BOP {\tt stream}
+
+EOP specifies a marking stream to be generated at the top of each page.
+
+\bye

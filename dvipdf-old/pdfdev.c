@@ -1,3 +1,5 @@
+#include <math.h>
+#include <ctype.h>
 #include "pdfdev.h"
 #include "pdfdoc.h"
 #include "string.h"
@@ -6,21 +8,43 @@
 #include "numbers.h"
 #include "type1.h"
 #include "mem.h"
+#include "pdfspecial.h"
 
-#define DPI 72u  /* Acrobat doesn't seem to line coordinate systems
-		    that involve scalings around 0.01 */ 
+#define HOFFSET 72.0
+#define VOFFSET 72.0
+#define DPI 72u 
+ /* Acrobat doesn't seem to like coordinate systems
+    that involve scalings around 0.01, so we use
+    a scaline of 1.0.  In other words, device units = pts */ 
 /* Following dimensions in virtual device coordinates,
-which are 0.01 points */
+which are points */
 
-#define PAGE_WIDTH (17u*DPI/2u)
-#define PAGE_HEIGHT (11U*DPI)
+static double page_width=612.0, page_height=792.0;
 
-unsigned dev_tell_xdpi(void)
+void dev_set_page_size (double width, double height)
+{
+  page_width = width;
+  page_height = height;
+}
+
+
+static int debug = 0, verbose = 0;
+
+void dev_set_verbose (void)
+{
+  verbose = 1;
+}
+void dev_set_debug (void)
+{
+  debug = 1;
+}
+
+unsigned long dev_tell_xdpi(void)
 {
   return DPI;
 }
 
-unsigned dev_tell_ydpi(void)
+unsigned long dev_tell_ydpi(void)
 {
   return DPI;
 }
@@ -31,6 +55,7 @@ int motion_state = 1; /* Start in graphics mode */
 #define TEXT_MODE 2
 #define STRING_MODE 3
 #define LINE_MODE 4
+#define NO_MODE -1
 
 static char format_buffer[256];
  /* Device coordinates are relative to upper left of page.  One of the
@@ -41,86 +66,6 @@ static char format_buffer[256];
 
 static double dev_xpos, dev_ypos; 
 
-void assert_text_mode (void)
-{
-  switch (motion_state) {
-  case GRAPHICS_MODE:
-    pdf_doc_add_to_page (" BT ", 4);
-    break;
-  case STRING_MODE:
-    pdf_doc_add_to_page (")", 1);  /*  Fall through */
-  case LINE_MODE:
-    pdf_doc_add_to_page ("]TJ ", 4);
-    break;
-  }
-  motion_state = TEXT_MODE;
-}
-
-void assert_graphics_mode (void)
-{
-  switch (motion_state) {
-  case STRING_MODE:
-    pdf_doc_add_to_page (")", 1); /* Fall through */
-  case LINE_MODE:
-    pdf_doc_add_to_page ("]TJ ", 4); /* Fall through */
-  case TEXT_MODE:
-    pdf_doc_add_to_page (" ET ", 4);
-    break;
-  }
-  motion_state = GRAPHICS_MODE;
-}
-
-void assert_string_mode (void)
-{
- switch (motion_state) {
- case GRAPHICS_MODE:
-   pdf_doc_add_to_page (" BT ", 4); /* Fall through */
- case TEXT_MODE:
-   sprintf (format_buffer, "1 0 0 1 %g %g Tm [",
-	    ROUND(dev_xpos,0.01), ROUND(dev_ypos,0.01));
-   pdf_doc_add_to_page (format_buffer, strlen(format_buffer)); /* Fall
-								  through */
- case LINE_MODE:
-   pdf_doc_add_to_page ("(", 1);
-   break;
- }
- motion_state = STRING_MODE;
-}
-
-void assert_line_mode (void)
-{
- switch (motion_state) {
- case GRAPHICS_MODE:
-   pdf_doc_add_to_page (" BT ", 4); /* Fall through */
- case TEXT_MODE:
-   sprintf (format_buffer, "1 0 0 1 %g %g Td [",
-	    ROUND(dev_xpos,0.01), ROUND(dev_ypos,0.01));
-   pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
-   break;
- case STRING_MODE:
-   pdf_doc_add_to_page (")", 1);
-   break;
- }
- motion_state = LINE_MODE;
-}
-
-
-void dev_init (char *outputfile)
-{
-  pdf_doc_init (outputfile);
-  assert_graphics_mode();
-}
-
-void dev_close (void)
-{
-  assert_graphics_mode();
-  pdf_doc_finish ();
-}
-
-
-/*  BOP, EOP, and FONT section.
-   BOP and EOP manipulate some of the same data structures
-   as the font stuff */ 
 
 int n_dev_fonts = 0;
 int current_font = -1;
@@ -139,35 +84,161 @@ struct dev_font {
   pdf_obj *font_resource;
 } dev_font[MAX_DEVICE_FONTS];
 
-void bop_font_reset(void)
+static void no_mode (void)
+{
+  switch (motion_state) {
+  case STRING_MODE:
+    pdf_doc_add_to_page (")", 1); /* Fall through */
+  case LINE_MODE:
+    pdf_doc_add_to_page ("]TJ ", 4); /* Fall through */
+  case TEXT_MODE:
+    pdf_doc_add_to_page (" ET ", 4);
+  }
+  motion_state = NO_MODE;
+}
+
+static void text_mode (void)
+{
+  switch (motion_state) {
+  case NO_MODE:
+  case GRAPHICS_MODE:
+    pdf_doc_add_to_page (" BT ", 4);
+    /* Following may be necessary after a rule (and also after
+       specials) */
+    if (current_font != -1) {
+      sprintf (format_buffer, " /%s %g Tf ", dev_font[current_font].short_name,
+	       ROUND(dev_font[current_font].ptsize*DPI/72,0.01));
+      pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
+    }
+    break;
+  case STRING_MODE:
+    pdf_doc_add_to_page (")", 1);  /*  Fall through */
+  case LINE_MODE:
+    pdf_doc_add_to_page ("]TJ ", 4);
+    break;
+  }
+  motion_state = TEXT_MODE;
+}
+
+static void graphics_mode (void)
+{
+  switch (motion_state) {
+  case STRING_MODE:
+    pdf_doc_add_to_page (")", 1); /* Fall through */
+  case LINE_MODE:
+    pdf_doc_add_to_page ("]TJ ", 4); /* Fall through */
+  case TEXT_MODE:
+    pdf_doc_add_to_page (" ET ", 4);
+    break;
+  }
+  motion_state = GRAPHICS_MODE;
+}
+
+static void string_mode (void)
+{
+ switch (motion_state) {
+ case NO_MODE:
+ case GRAPHICS_MODE:
+   pdf_doc_add_to_page (" BT ", 4); /* Fall through */
+    /* Following may be necessary after a rule (and also after
+       specials) */
+   if (current_font != -1) {
+     sprintf (format_buffer, " /%s %g Tf ", dev_font[current_font].short_name,
+	      ROUND(dev_font[current_font].ptsize*DPI/72,0.01));
+     pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
+   }
+ case TEXT_MODE:
+   sprintf (format_buffer, "1 0 0 1 %g %g Tm [",
+	    ROUND(dev_xpos,0.01), ROUND(dev_ypos,0.01));
+   pdf_doc_add_to_page (format_buffer, strlen(format_buffer)); /* Fall
+								  through */
+ case LINE_MODE:
+   pdf_doc_add_to_page ("(", 1);
+   break;
+ }
+ motion_state = STRING_MODE;
+}
+
+static void line_mode (void)
+{
+ switch (motion_state) {
+ case NO_MODE:
+ case GRAPHICS_MODE:
+   pdf_doc_add_to_page (" BT ", 4); /* Fall through */
+    /* Following may be necessary after a rule (and also after
+       specials) */
+   if (current_font != -1) {
+     sprintf (format_buffer, " /%s %g Tf ", dev_font[current_font].short_name,
+	      ROUND(dev_font[current_font].ptsize*DPI/72,0.01));
+     pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
+   }
+ case TEXT_MODE:
+   sprintf (format_buffer, "1 0 0 1 %g %g Td [",
+	    ROUND(dev_xpos,0.01), ROUND(dev_ypos,0.01));
+   pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
+   break;
+ case STRING_MODE:
+   pdf_doc_add_to_page (")", 1);
+   break;
+ }
+ motion_state = LINE_MODE;
+}
+
+
+void dev_init (char *outputfile)
+{
+  if (debug) fprintf (stderr, "dev_init:\n");
+  pdf_doc_init (outputfile);
+  graphics_mode();
+}
+
+void dev_close (void)
+{
+  if (debug) fprintf (stderr, "dev_close:\n");
+  graphics_mode();
+  pdf_finish_specials();
+  pdf_doc_finish ();
+}
+
+
+/*  BOP, EOP, and FONT section.
+   BOP and EOP manipulate some of the same data structures
+   as the font stuff */ 
+
+static void bop_font_reset(void)
 {
   int i;
   for (i=0; i<n_dev_fonts; i++) {
     dev_font[i].used_on_this_page = 0;
   }
+  current_font = -1;
 }
 
 void dev_bop (void)
 {
-  pdf_doc_new_page (PAGE_WIDTH*72u/DPI, PAGE_HEIGHT*72u/DPI);
-#define BOP_STRING ""
-  pdf_doc_add_to_page (BOP_STRING, strlen(BOP_STRING));
-  assert_graphics_mode();
+  if (debug) {
+    fprintf (stderr, "dev_bop:\n");
+  }
+    
+  pdf_doc_new_page (page_width, page_height);
+  graphics_mode();
   dev_xpos = 0.0;
   dev_ypos = 0.0;
   sprintf (format_buffer, "%g 0 0 %g 0 0 cm ", ROUND(72.0/DPI,0.001), ROUND(72.0/DPI,0.001));
   pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
-  sprintf (format_buffer, "1 0 0 1 0 %ld cm ", (long) PAGE_HEIGHT);
+  sprintf (format_buffer, "1 0 0 1 0 %ld cm ", (long) page_height);
   pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
   this_page_fontlist_dict = pdf_new_dict ();
   bop_font_reset();
+  pdf_doc_add_to_page (" 0 w ", 5);
 }
 
 void dev_eop (void)
 {
-  assert_graphics_mode();
-#define EOP_STRING ""
-  pdf_doc_add_to_page (EOP_STRING, strlen(EOP_STRING));
+  if (debug) {
+    fprintf (stderr, "dev_eop:\n");
+  }
+  graphics_mode();
   pdf_doc_add_to_page_resources ("Font", this_page_fontlist_dict);
   pdf_release_obj (this_page_fontlist_dict);
 }
@@ -178,6 +249,9 @@ void dev_locate_font (char *tex_name,
   /* Since Postscript fonts are scaleable, this font may have already
      been asked for.  Make sure it doesn't already exist. */
   int i;
+  if (debug) {
+    fprintf (stderr, "dev_locate_font:\n");
+  }
   if (n_dev_fonts == MAX_DEVICE_FONTS)
     ERROR ("dev_locate_font:  Tried to load too many fonts\n");
   for (i=0; i<n_dev_fonts; i++) {
@@ -212,6 +286,9 @@ void dev_select_font (long tex_font_id)
 {
   int i;
   pdf_obj *tmp1, tmp2;
+  if (debug) {
+    fprintf (stderr, "(dev_select_font)");
+  }
   for (i=0; i<n_dev_fonts; i++) {
     if (dev_font[i].tex_font_id == tex_font_id)
       break;
@@ -219,7 +296,7 @@ void dev_select_font (long tex_font_id)
   if (i == n_dev_fonts) {
     ERROR ("dev_change_to_font:  dvi wants a font that isn't loaded");
   }
-  assert_text_mode();
+  text_mode();
   sprintf (format_buffer, " /%s %g Tf ", dev_font[i].short_name,
 	   ROUND(dev_font[i].ptsize*DPI/72,0.01));
   pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
@@ -235,20 +312,29 @@ void dev_select_font (long tex_font_id)
   }
 }
 
-
-void dev_set_char (unsigned ch)
+void dev_set_char (unsigned ch, double width)
 {
   char c;
   int len;
+  if (debug) {
+    fprintf (stderr, "(dev_set_char (width=%g)", width);
+    if (isprint (ch))
+      fprintf (stderr, "(%c)", ch);
+    fprintf (stderr, ")");
+  }
   c = ch;
-  assert_string_mode();
+  string_mode();
   len = pdfobj_escape_c (format_buffer, c);
   pdf_doc_add_to_page (format_buffer, len);
+  dev_xpos += width;
 }
 
 void dev_rule (double width, double height)
 {
-  assert_graphics_mode();
+  if (debug) {
+    fprintf (stderr, "(dev_rule)");
+  }
+  graphics_mode();
   sprintf (format_buffer, "%g %g m %g %g l %g %g l %g %g l b ",
 	   ROUND(dev_xpos,0.01), ROUND(dev_ypos,0.01),
 	   ROUND(dev_xpos+width,0.01), ROUND(dev_ypos,0.01),
@@ -259,16 +345,67 @@ void dev_rule (double width, double height)
 
 void dev_moveright (double x)
 {
+  if (debug) {
+    fprintf (stderr, "(dev_moveright %g)", x);
+  }
+  /* This moveright is only for text (not rules) 
+     No sense doing this unless in some kind of text mode already.
+     In other words, don't go enter LINE or STRING mode just
+     to do this. The reason is a moveright in graphics mode isn't
+     easy to implement in PDF.  The driver should always
+     do an absolute dev_moveto before a rule */
 
-  assert_line_mode();
-  sprintf (format_buffer, "%g", -ROUND(72000.0/current_ptsize*x/DPI,0.1));
-  pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
+  /* Acrobat reader apparently can't handle large relative motions.
+     Relative motions are used for kerning and interword spacing.
+     If a relative motion is too large, we force textmode() to
+     change it to an absolute motion. */
+
+  if ( fabs(72000.0/current_ptsize*x/DPI) > 1000.0 && 
+       (motion_state == LINE_MODE ||
+	motion_state == STRING_MODE)) {
+    text_mode();
+  }
+  if (
+      motion_state == LINE_MODE ||
+      motion_state == STRING_MODE) { 
+    line_mode();
+    sprintf (format_buffer, "%g", -ROUND(72000.0/current_ptsize*x/DPI,1.0));
+    pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
+  }
+  dev_xpos += x;
 }
 
 void dev_moveto (double x, double y)
 {
-  dev_xpos = x;
-  dev_ypos = -y;
-  assert_text_mode();
+  if (debug) {
+    fprintf (stderr, "(dev_moveto)");
+  }
+  if (motion_state == LINE_MODE ||
+      motion_state == STRING_MODE) {
+    text_mode();
+  }
+  dev_xpos = x + HOFFSET;
+  dev_ypos = -y - VOFFSET;
 }
 
+/* The following routines tell the coordinates in physical PDF style
+   coordinate with origin at bottom left of page.  All other
+   coordinates in this routine are in TeX style coordinates */
+
+double dev_tell_x (void)
+{
+  return dev_xpos;
+}
+
+double dev_tell_y (void)
+{
+  return page_height+dev_ypos;
+}
+
+
+void dev_do_special (char *buffer, UNSIGNED_QUAD size)
+{
+  int i;
+  graphics_mode();
+  pdf_parse_special (buffer, size);
+}

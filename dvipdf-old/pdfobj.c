@@ -4,7 +4,9 @@
 #include "pdfobj.h"
 #include "mem.h"
 #include "error.h"
+#include "io.h"
 
+#define MIN(a,b) ((a)<(b)?(a):(b))
 
 unsigned next_label = 1;
 FILE *pdf_file = NULL;
@@ -14,6 +16,7 @@ char format_buffer[256];
 static struct xref_entry 
 {
   unsigned long file_position;
+  pdf_obj *pdf_obj;
 } xref[PDF_MAX_IND_OBJECTS];
 static unsigned startxref;
 
@@ -21,35 +24,63 @@ static unsigned pdf_root_obj = 0, pdf_info_obj = 0;
 
 /* Internal static routines */
 
-static void pdf_write_obj (const pdf_obj *object);
-static void pdf_flush_obj (const pdf_obj *object);
+static void pdf_flush_obj (FILE *file, const pdf_obj *object);
 static void pdf_label_obj (pdf_obj *object);
-static void pdf_out_char (char c);
-static void pdf_out (char *buffer, int length);
+
+static void pdf_out_char (FILE *file, char c);
+static void pdf_out (FILE *file, char *buffer, int length);
+
 static void release_indirect (struct pdf_indirect *data);
-static void write_indirect (const struct pdf_indirect *indirect);
+static void write_indirect (FILE *file, const struct pdf_indirect *indirect);
+
 static void release_boolean (struct pdf_obj *data);
-static void write_boolean (const struct pdf_boolean *data);
+static void write_boolean (FILE *file, const struct pdf_boolean *data);
+
+static void write_null (FILE *file, void *data);
+static void release_null (void *data);
+
 static void release_number (struct pdf_number *data);
-static void write_number (const struct pdf_number *number);
-static void write_string (const struct pdf_string *string);
+static void write_number (FILE *file, const struct pdf_number
+			  *number);
+
+static void write_string (FILE *file, const struct pdf_string *string);
 static void release_string (struct pdf_string *data);
-static void write_name (const struct pdf_name *name);
+
+static void write_name (FILE *file, const struct pdf_name *name);
 static void release_name (struct pdf_name *data);
-static void write_array (const struct pdf_array *array);
+
+static void write_array (FILE *file, const struct pdf_array *array);
 static void release_array (struct pdf_array *data);
-static void write_dict (const struct pdf_dict *dict);
+
+static void write_dict (FILE *file, const struct pdf_dict *dict);
 static void release_dict (struct pdf_dict *data);
-static void write_stream (const struct pdf_stream *stream);
+
+static void write_stream (FILE *file, const struct pdf_stream *stream);
 static pdf_obj *release_stream (struct pdf_stream *stream);
+
+static int debug = 0, verbose = 0;
+
+void pdf_obj_set_debug(void)
+{
+  debug = 1;
+}
+
+void pdf_obj_set_verbose(void)
+{
+  verbose = 1;
+}
+
 
 void pdf_out_init (const char *filename)
 {
   if (!(pdf_file = fopen (filename, "w"))) {
-    fprintf (stderr, "pdf_out_init: %s\n");
-    ERROR ("pdf_init:  Could not open file");
+    if (strlen(filename) < 128) {
+      sprintf (format_buffer, "Unable to open %s\n", filename);
+    } else
+      sprintf (format_buffer, "Unable to open file");
+    ERROR (format_buffer);
   }
-  pdf_out ("%PDF-1.2\n", 9);
+  pdf_out (pdf_file, "%PDF-1.2\n", 9);
 }
 
 static void dump_xref(void)
@@ -57,18 +88,18 @@ static void dump_xref(void)
   int length, i;
   startxref = file_position;	/* Record where this xref is for
 				   trailer */
-  pdf_out ("xref\n", 5);
+  pdf_out (pdf_file, "xref\n", 5);
   length = sprintf (format_buffer, "%d %d\n", 0, next_label);
-  pdf_out (format_buffer, length);
+  pdf_out (pdf_file, format_buffer, length);
   length = sprintf (format_buffer, "%010ld %05ld f \n", 0L, 65535L);
   /* Every space counts.  The space after the 'f' and 'n' is
    *essential*.  The PDF spec says the lines must be 20 characters
    long including the end of line character. */
-  pdf_out (format_buffer, length);
+  pdf_out (pdf_file, format_buffer, length);
   for (i=1; i<next_label; i++){
     length = sprintf (format_buffer, "%010ld %05ld n \n",
 		      xref[i-1].file_position, 0L);
-    pdf_out (format_buffer, length);
+    pdf_out (pdf_file, format_buffer, length);
   }
 }
 
@@ -77,32 +108,33 @@ static void dump_trailer(void)
   int length;
   unsigned long starttrailer;
   starttrailer = file_position;
-  pdf_out ("trailer\n", 8);
-  pdf_out ("<<\n", 3);
+  pdf_out (pdf_file, "trailer\n", 8);
+  pdf_out (pdf_file, "<<\n", 3);
   length = sprintf (format_buffer, "/Size %ld\n",
 		    next_label);
-  pdf_out (format_buffer, length);
+  pdf_out (pdf_file, format_buffer, length);
   if (pdf_root_obj == 0) 
     ERROR ("dump_trailer:  Invalid root object");
   length = sprintf (format_buffer, "/Root %u %u R\n", pdf_root_obj, 0);
-  pdf_out (format_buffer, length);
+  pdf_out (pdf_file, format_buffer, length);
   if (pdf_info_obj != 0) {
     length = sprintf (format_buffer, "/Info %u %u R\n", pdf_info_obj, 0);
-    pdf_out (format_buffer, length);
+    pdf_out (pdf_file, format_buffer, length);
   }
-  pdf_out (">>\n", 3);
-  pdf_out ("startxref\n", 10);
+  pdf_out (pdf_file, ">>\n", 3);
+  pdf_out (pdf_file, "startxref\n", 10);
   length = sprintf (format_buffer, "%ld\n", startxref);
-  pdf_out (format_buffer, length);
-  pdf_out ("%%EOF\n", 6);
+  pdf_out (pdf_file, format_buffer, length);
+  pdf_out (pdf_file, "%%EOF\n", 6);
 }
-
 
 
 void pdf_out_flush (void)
 {
   if (pdf_file) {
+    if (verbose) fprintf (stderr, "pdf_obj_out_flush:  dumping xref\n");
     dump_xref();
+    if (verbose) fprintf (stderr, "pdf_obj_out_flush:  dumping trailer\n");
     dump_trailer();
     fclose (pdf_file);
   }
@@ -130,16 +162,20 @@ void pdf_set_info (pdf_obj *object)
   pdf_info_obj = object -> label;
 }
 
-static void pdf_out_char (char c)
+static void pdf_out_char (FILE *file, char c)
 {
-  fputc (c, pdf_file);
-  file_position += 1;
+  fputc (c, file);
+  /* Keep tallys for xref table *only* if writing a pdf file */
+  if (file == pdf_file)
+    file_position += 1;
 }
 
-static void pdf_out (char *buffer, int length)
+static void pdf_out (FILE *file, char *buffer, int length)
 {
-  fwrite (buffer, 1, length, pdf_file);
-  file_position += length;
+  fwrite (buffer, 1, length, file);
+  /* Keep tallys for xref table *only* if writing a pdf file */
+  if (file == pdf_file)
+    file_position += length;
 }
 
 
@@ -157,14 +193,41 @@ pdf_obj *pdf_new_obj(pdf_obj_type type)
 
 static void pdf_label_obj (pdf_obj *object)
 {
+  if (object == NULL)
+    return;
   if (next_label > PDF_MAX_IND_OBJECTS) {
     ERROR ("pdf_label_obj:  Indirect object capacity exceeded");
   }
   if (object -> label == 0) {  /* Don't change label on an already labeled
 				  object.  Ignore such calls */
+    /* Save so we can lookup this object by its number */
+    xref[next_label-1].pdf_obj = object;
     object -> label = next_label++;
     object -> generation = 0;
   }
+}
+
+/* This doesn't really copy the object, but allows 
+   it to be used without fear that somebody else will free it */
+
+pdf_obj *pdf_link_obj (pdf_obj *object)
+{
+  if (object == NULL)
+    ERROR ("pdf_link_obj passed null pointer");
+  object -> refcount += 1;
+  return object;
+}
+
+pdf_obj *pdf_new_ref (int label, int generation) 
+{
+  pdf_obj *result;
+  struct pdf_indirect *indirect;
+  result = pdf_new_obj (PDF_INDIRECT);
+  indirect = NEW (1, struct pdf_indirect);
+  result -> data = indirect;
+  indirect -> label = label;
+  indirect -> generation = generation;
+  return result;
 }
 
 pdf_obj *pdf_ref_obj(pdf_obj *object)
@@ -172,11 +235,11 @@ pdf_obj *pdf_ref_obj(pdf_obj *object)
   pdf_obj *result;
   struct pdf_indirect *indirect;
   
-  if (object == NULL || object -> type == 0) {
+  if (object == NULL)
+    ERROR ("pdf_ref_obj passed null pointer");
+  
+  if (object -> type == 0) {
     ERROR ("pdf_ref_obj:  Called with invalid object");
-  }
-  if (object -> label == 0) {
-    pdf_label_obj (object);
   }
   result = pdf_new_obj (PDF_INDIRECT);
   indirect = NEW (1, struct pdf_indirect);
@@ -188,6 +251,9 @@ pdf_obj *pdf_ref_obj(pdf_obj *object)
     indirect -> label = ((struct pdf_indirect *) (object -> data)) -> label;
     indirect -> generation = ((struct pdf_indirect *) (object -> data)) -> generation;
   } else {
+    if (object -> label == 0) {
+      pdf_label_obj (object);
+    }
     indirect -> label = object -> label;
     indirect -> generation = object -> generation;
   }
@@ -199,13 +265,30 @@ static void release_indirect (struct pdf_indirect *data)
   free (data);
 }
 
-static void write_indirect (const struct pdf_indirect *indirect)
+static void write_indirect (FILE *file, const struct pdf_indirect *indirect)
 {
   int length;
-  fprintf (stderr, "write_indirect: label: %d\n", indirect -> label);
   length = sprintf (format_buffer, "%d %d R", indirect -> label,
 		    indirect -> generation);
-  pdf_out (format_buffer, length);
+  pdf_out (file, format_buffer, length);
+}
+
+pdf_obj *pdf_new_null (void)
+{
+  pdf_obj *result;
+  result = pdf_new_obj (PDF_NULL);
+  result -> data = NULL;
+  return result;
+}
+
+static void release_null (void *data)
+{
+  return;
+}
+
+static void write_null (FILE *file, void *data)
+{
+  pdf_out (file, "null", 4);
 }
 
 pdf_obj *pdf_new_boolean (char value)
@@ -224,16 +307,15 @@ static void release_boolean (struct pdf_obj *data)
   free (data);
 }
 
-static void write_boolean (const struct pdf_boolean *data)
+static void write_boolean (FILE *file, const struct pdf_boolean *data)
 {
   if (data -> value) {
-    pdf_out ("true", 4);
+    pdf_out (file, "true", 4);
   }
   else {
-    pdf_out ("false", 5);
+    pdf_out (file, "false", 5);
   }
 }
-
 
 void pdf_set_boolean (pdf_obj *object, char value)
 {
@@ -259,11 +341,11 @@ static void release_number (struct pdf_number *data)
   free (data);
 }
 
-static void write_number (const struct pdf_number *number)
+static void write_number (FILE *file, const struct pdf_number *number)
 {
   int count;
   count = sprintf (format_buffer, "%g", number -> value);
-  pdf_out (format_buffer, count);
+  pdf_out (file, format_buffer, count);
 }
 
 
@@ -274,6 +356,16 @@ void pdf_set_number (pdf_obj *object, double value)
    }
    ((struct pdf_number *) (object -> data)) -> value = value;
 }
+
+double pdf_number_value (pdf_obj *object)
+{
+  if (object == NULL || object -> type != PDF_NUMBER) {
+    ERROR ("pdf_obj_number_value:  Passed non-number object");
+  }
+  return ((struct pdf_number *)(object -> data)) -> value;
+}
+
+
 
 pdf_obj *pdf_new_string (const char *string, unsigned length)
 {
@@ -322,16 +414,16 @@ int pdfobj_escape_c (char *buffer, char ch)
 }
 
 
-static void write_string (const struct pdf_string *string)
+static void write_string (FILE *file, const struct pdf_string *string)
 {
   char *s = string -> string;
   int i, count;
-  pdf_out_char ('(');
+  pdf_out_char (file, '(');
   for (i=0; i< string -> length; i++) {
     count = pdfobj_escape_c (format_buffer, s[i]);
-    pdf_out (format_buffer, count);
+    pdf_out (file, format_buffer, count);
   }
-  pdf_out_char (')');
+  pdf_out_char (file, ')');
 }
 
 static void release_string (struct pdf_string *data)
@@ -361,12 +453,26 @@ void pdf_set_string (pdf_obj *object, char *string, unsigned length)
   }
 }
 
+int pdf_check_name(const char *name)
+{
+  static char *valid_chars =
+    "!\"&'*+,-.0123456789:;=?@ABCDEFGHIJKLMNOPQRSTUVWXYZ\\^_`abcdefghijklmnopqrstuvwxyz|~";
+  int i;
+  if (strspn (name, valid_chars) == strlen (name))
+    return 1;
+  else
+    return 0;
+}
 
 pdf_obj *pdf_new_name (const char *name)  /* name does *not* include the / */ 
 {
   pdf_obj *result;
   unsigned length = strlen (name);
   struct pdf_name *data;
+  if (!pdf_check_name (name)) {
+    fprintf (stderr, "%s\n", name);
+    ERROR ("pdf_new_name:  invalid PDF name");
+  }
   result = pdf_new_obj (PDF_NAME);
   data = NEW (1, struct pdf_name);
   result -> data = data;
@@ -378,12 +484,19 @@ pdf_obj *pdf_new_name (const char *name)  /* name does *not* include the / */
   return result;
 }
 
+int pdf_match_name (const pdf_obj *name_obj, const char *name_string)
+{
+  struct pdf_name *data;
+  data = name_obj -> data;
+  return (!strcmp (data -> name, name_string));
+}
 
-static void write_name (const struct pdf_name *name)
+
+static void write_name (FILE *file, const struct pdf_name *name)
 {
   char *s = name -> name;
   int i, length;
-  pdf_out_char ('/');
+  pdf_out_char (file, '/');
   if (name -> name == NULL)
     length = 0;
   else
@@ -397,7 +510,7 @@ static void write_name (const struct pdf_name *name)
 	s[i] != '[' && 
 	s[i] != ']' && 
 	s[i] != '#')
-      pdf_out_char (s[i]);
+      pdf_out_char (file, s[i]);
   }
 }
 
@@ -440,31 +553,29 @@ pdf_obj *pdf_new_array (void)
   return result;
 }
 
-static void write_array (const struct pdf_array *array)
+static void write_array (FILE *file, const struct pdf_array *array)
 {
-  pdf_out_char ('[');
-  while (array -> this != NULL) {
-    pdf_write_obj (array -> this);
+  pdf_out_char (file, '[');
+  while (array -> next != NULL) {
+    pdf_write_obj (file, array -> this);
     array = array -> next;
-    if (array -> this != NULL)
-      pdf_out_char (' ');
+    if (array -> next != NULL)
+      pdf_out_char (file, ' ');
   }
-  pdf_out_char (']');
+  pdf_out_char (file, ']');
 }
 
 
 static void release_array (struct pdf_array *data)
 {
   struct pdf_array *next;
-  fprintf (stderr, "release_array:\n");
-  
-  while (data -> this != NULL) {
+  while (data != NULL && data -> next != NULL) {
     pdf_release_obj (data -> this);
     next = data -> next;
     free (data);
     data = next;
   }
-  free (next);
+  free (data);
 }
 
 void pdf_add_array (pdf_obj *array, pdf_obj *object) /* Array is ended
@@ -473,36 +584,31 @@ void pdf_add_array (pdf_obj *array, pdf_obj *object) /* Array is ended
 {
   struct pdf_array *data;
   struct pdf_array *new_node;
-  fprintf (stderr, "pdf_add_array\n");
   if (array == NULL || array -> type != PDF_ARRAY) {
      ERROR ("pdf_add_array:  Passed non-array object");
-  }
-  if (object == NULL) {
-    ERROR ("pdf_add_array: Passed non-object");
   }
   data = array -> data;
   new_node = NEW (1, struct pdf_array);
   new_node -> this = NULL;
   new_node -> next = NULL;
-  while (data -> this != NULL)
+  while (data -> next != NULL)
     data = data -> next;
   data -> next = new_node;
-  data -> this = object;
-  object -> refcount += 1;  /* Increment ref count */
+  data -> this = pdf_link_obj (object);
 }
 
 
-static void write_dict (const struct pdf_dict *dict)
+static void write_dict (FILE *file, const struct pdf_dict *dict)
 {
-  pdf_out ("<<\n", 3);
+  pdf_out (file, "<<\n", 3);
   while (dict -> key != NULL) {
-    pdf_write_obj (dict -> key);
-    pdf_out_char (' ');
-    pdf_write_obj (dict -> value);
+    pdf_write_obj (file, dict -> key);
+    pdf_out_char (file, ' ');
+    pdf_write_obj (file, dict -> value);
     dict = dict -> next;
-    pdf_out_char ('\n');
+    pdf_out_char (file, '\n');
   }
-  pdf_out (">>", 2);
+  pdf_out (file, ">>", 2);
 }
 
 pdf_obj *pdf_new_dict (void)
@@ -521,14 +627,14 @@ pdf_obj *pdf_new_dict (void)
 static void release_dict (struct pdf_dict *data)
 {
   struct pdf_dict *next;
-  while (data -> key != NULL) {
+  while (data != NULL && data -> key != NULL) {
     pdf_release_obj (data -> key);
     pdf_release_obj (data -> value);
     next = data -> next;
     free (data);
     data = next;
   }
-  free (next);
+  free (data);
 }
 
 void pdf_add_dict (pdf_obj *dict, pdf_obj *key, pdf_obj *value) /* Array is ended
@@ -543,8 +649,8 @@ void pdf_add_dict (pdf_obj *dict, pdf_obj *key, pdf_obj *value) /* Array is ende
   if (key == NULL || key -> type != PDF_NAME ) {
     ERROR ("pdf_add_dict: Passed invalid key");
   }
-  if (value == NULL || value -> type == 0 ||
-      value -> type > PDF_INDIRECT ) {
+  if (value != NULL && (value -> type == 0 ||
+      value -> type > PDF_INDIRECT )) {
     ERROR ("pdf_add_dict: Passed invalid value");
   }
   data = dict -> data;
@@ -555,11 +661,41 @@ void pdf_add_dict (pdf_obj *dict, pdf_obj *key, pdf_obj *value) /* Array is ende
   while (data -> key != NULL)
     data = data -> next;
   data -> next = new_node;
-  data -> key = key;
-  data -> value = value;
-  key -> refcount += 1;  /* Increment ref count */
-  value -> refcount += 1; 
+  data -> key = pdf_link_obj (key);
+  data -> value = pdf_link_obj (value);
 }
+
+void pdf_merge_dict (pdf_obj *dict1, pdf_obj *dict2)
+{
+  struct pdf_dict *data;
+  if (dict1 == NULL || dict1 -> type != PDF_DICT) 
+    ERROR ("pdf_merge_dict:  Passed invalid first dictionary");
+  if (dict2 == NULL || dict2 -> type != PDF_DICT)
+    ERROR ("pdf_merge_dict:  Passed invalid second dictionary");
+  data = dict2 -> data;
+  while (data -> key != NULL) {
+    struct pdf_name *key = (data -> key) -> data;
+    if (key == NULL || pdf_lookup_dict (dict1, key -> name) == NULL) {
+      pdf_add_dict (dict1, data -> key, data -> value);
+    }
+    data = data -> next;
+  }
+}
+
+pdf_obj *pdf_lookup_dict (const pdf_obj *dict, const char *name)
+{
+  struct pdf_dict *data;
+  if (dict == NULL || dict ->type != PDF_DICT) 
+    ERROR ("pdf_lookup_dict:  Passed invalid dictionary");
+  data = dict -> data;
+  while (data -> key != NULL) {
+    if (pdf_match_name (data -> key, name))
+      return (data -> value);
+    data = data -> next;
+  }
+  return NULL;
+}
+
 
 pdf_obj *pdf_new_stream (void)
 {
@@ -586,19 +722,21 @@ pdf_obj *pdf_new_stream (void)
   return result;
 }
 
-static void write_stream (const struct pdf_stream *stream)
+static void write_stream (FILE *file, const struct pdf_stream *stream)
 {
-  int ch, length = 0;
-  pdf_write_obj (stream -> dict);
-  pdf_out ("\nstream\n", 8);
+  int ch, length = 0, nwritten = 0;
+  pdf_write_obj (file, stream -> dict);
+  pdf_out (file, "\nstream\n", 8);
   rewind (stream -> tmpfile);
-  while ((ch = fgetc (stream -> tmpfile)) >= 0) {
-    pdf_out_char (ch);
-    length += 1;
+  while ((nwritten = fread (work_buffer, sizeof (char),
+			    WORK_BUFFER_SIZE,
+			    stream -> tmpfile)) > 0) {
+    pdf_out (file, work_buffer, nwritten);
+    length += nwritten;
   }
-  pdf_out ("\n", 1);
+  pdf_out (file, "\n", 1);
   pdf_set_number (stream -> length, length+1);
-  pdf_out ("endstream", 9);
+  pdf_out (file, "endstream", 9);
 }
 
 
@@ -609,6 +747,15 @@ static pdf_obj *release_stream (struct pdf_stream *stream)
   fclose (stream -> tmpfile);
 }
 
+pdf_obj *pdf_stream_dict (pdf_obj *stream)
+{
+  struct pdf_stream *data;
+  if (stream == NULL || stream -> type != PDF_STREAM) {
+     ERROR ("pdf_add_stream:  Passed non-stream object");
+  }
+  data = stream -> data;
+  return pdf_link_obj (data -> dict);
+}
 
 void pdf_add_stream (pdf_obj *stream, char *stream_data, unsigned length)
 {
@@ -623,42 +770,47 @@ void pdf_add_stream (pdf_obj *stream, char *stream_data, unsigned length)
   fwrite (stream_data, 1, length, data -> tmpfile);
 }
 
-static void pdf_write_obj (const pdf_obj *object)
+void pdf_write_obj (FILE *file, const pdf_obj *object)
 {
   int length;
-  fprintf (stderr, "pdf_write_obj: type: %d\n", object -> type);
-  if (object == NULL || object -> type > PDF_INDIRECT) {
+  if (object == NULL) {
+    ERROR ("pdf_write_obj passed null pointer");
+  }
+  if (object -> type > PDF_INDIRECT) {
     ERROR ("pdf_write_obj:  Called with invalid object");
   }
   switch (object -> type) {
   case PDF_BOOLEAN:
-    write_boolean (object -> data);
+    write_boolean (file, object -> data);
     break;
   case PDF_NUMBER:
-    write_number (object -> data);
+    write_number (file, object -> data);
     break;
   case PDF_STRING:
-    write_string (object -> data);
+    write_string (file, object -> data);
     break;
   case PDF_NAME:
-    write_name (object -> data);
+    write_name (file, object -> data);
     break;
   case PDF_ARRAY:
-    write_array (object -> data);
+    write_array (file, object -> data);
     break;
   case PDF_DICT:
-    write_dict (object -> data);
+    write_dict (file, object -> data);
     break;
   case PDF_STREAM:
-    write_stream (object -> data);
+    write_stream (file, object -> data);
+    break;
+  case PDF_NULL:
+    write_null (file, object -> data);
     break;
   case PDF_INDIRECT:
-    write_indirect (object -> data);
+    write_indirect (file, object -> data);
     break;
   }
 }
 
-static void pdf_flush_obj (const pdf_obj *object) 
+static void pdf_flush_obj (FILE *file, const pdf_obj *object) 
      /* Write the object to the file */ 
 {
   int length;
@@ -667,16 +819,18 @@ static void pdf_flush_obj (const pdf_obj *object)
   xref[object->label-1].file_position = file_position;
   length = sprintf (format_buffer, "%d %d obj\n", object -> label ,
 		    object -> generation);
-  pdf_out (format_buffer, length);
-  pdf_write_obj (object);
-  pdf_out ("\nendobj\n", 8);
+  pdf_out (file, format_buffer, length);
+  pdf_write_obj (file, object);
+  pdf_out (file, "\nendobj\n", 8);
 }
 
 
 void pdf_release_obj (pdf_obj *object)
 {
   int length;
-  if (object == NULL || object -> type > PDF_INDIRECT ||
+  if (object == NULL)
+    return;
+  if (object -> type > PDF_INDIRECT ||
       object -> refcount == 0) {
     fprintf (stderr, "pdf_release_obj: object = %p, type = %d\n", object, object ->
 	     type);
@@ -684,17 +838,18 @@ void pdf_release_obj (pdf_obj *object)
     ERROR ("pdf_release_obj:  Called with invalid object");
   }
   object -> refcount -= 1;
-  if (object -> refcount == 0) { /* Nothing is using this object so it's okay to
+    if (object -> refcount == 0) { /* Nothing is using this object so it's okay to
 				    remove it */
     /* Nonzero "label" means object needs to be written before it's destroyed*/
     if (object -> label && pdf_file != NULL) { 
-      pdf_flush_obj (object);
+      pdf_flush_obj (pdf_file, object);
     }
-    fprintf (stderr, "pdf_release_obj called with type = %d\n", object -> type);
-  
     switch (object -> type) {
     case PDF_BOOLEAN:
       release_boolean (object -> data);
+      break;
+    case PDF_NULL:
+      release_null (object -> data);
       break;
     case PDF_NUMBER:
       release_number (object -> data);
@@ -715,6 +870,8 @@ void pdf_release_obj (pdf_obj *object)
       release_stream (object -> data);
       break;
     }
+    object -> type = -1;  /* This might help detect freeing already freed objects */
     free (object);
   }
 }
+

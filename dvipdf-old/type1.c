@@ -7,6 +7,26 @@
 #include "pdfobj.h"
 #include "mem.h"
 #include "error.h"
+#include "kpathsea/tex-file.h"
+#include "io.h"
+#include "numbers.h"
+
+static is_a_base_font (char *name)
+{
+  static char *basefonts[] = {
+    "Courier",			"Courier-Bold",		"Courier-Oblique",
+    "Courier-BoldOblique",	"Helvetica",		"Helvetica-Bold",
+    "Helvetica-Oblique",	"Helvetica-BoldOblique",	"Symbol",
+    "Times-Roman",		"Times-Bold",		"Times-Italic",
+    "Times-BoldItalic",		"ZapfDingbats"
+  };
+  int i;
+  for (i=0; i<14; i++) {
+    if (!strcmp (name, basefonts[i]))
+      return 1;
+  }
+  return 0;
+}
 
 static unsigned long get_low_endian_quad (FILE *file)
 {
@@ -31,7 +51,7 @@ static unsigned long get_low_endian_quad (FILE *file)
 
 static unsigned long do_pfb_segment (FILE *file, int expected_type, pdf_obj *stream)
 {
-  int i, ch;
+  int i, ch, ntotal = 0;
   int stream_type;
   static char buffer[256];
   unsigned long length;
@@ -44,17 +64,24 @@ static unsigned long do_pfb_segment (FILE *file, int expected_type, pdf_obj *str
     ERROR ("type1_do_pfb_segment:  Are you sure this is a pfb?");
   }
   length = get_low_endian_quad (file);
-  fprintf (stderr, "reading %d byte segment \n", length);
-  /* Speed this loop up later... NEEDS WORK */ 
-  for (i=0; i<length; i++) {
-    if ((ch = fgetc (file)) < 0) {
-      fprintf (stderr, "Found only %d bytes\n", i);
+  while (ntotal < length) {
+    int nread, nleft, n_to_read;
+    nleft = length - ntotal;
+    n_to_read = (nleft < WORK_BUFFER_SIZE)? nleft: WORK_BUFFER_SIZE;
+    if ((nread = fread (work_buffer, sizeof(char), 
+			n_to_read, file)) > 0) {
+
+      for (i=0; i<nread; i++) {
+	if (work_buffer[i] == '\r' && stream_type == ASCII)
+	  work_buffer[i] = '\n';  /* May not be portable to non-Unix
+				     systems */
+      }
+      pdf_add_stream (stream, work_buffer, nread);
+      ntotal += nread;
+    } else{
+      fprintf (stderr, "Found only %d bytes\n", ntotal);
       ERROR ("type1_do_pfb_segment:  Are you sure this is a pfb?");
     }
-    if (ch == '\r' && stream_type == ASCII)
-      ch = '\n';  /* May not be portable to non-Unix systems */
-    buffer[0] = ch;
-    pdf_add_stream (stream, buffer, 1);  /* Terribly slow */
   }
   return length;
 }
@@ -64,12 +91,20 @@ pdf_obj *type1_fontfile (const char *tex_name)
   FILE *type1_binary_file;
   pdf_obj *stream, *stream_dict, *stream_label, *tmp1, *tmp2;
   unsigned long length1, length2, length3;
-  char *pfb_name;
+  char *pfb_name, *full_pfb_name;
   int ch;
   pfb_name = NEW (strlen (tex_name) + 5, char);
   strcpy (pfb_name, tex_name);
   strcat (pfb_name, ".pfb");
-  if ((type1_binary_file = fopen (pfb_name, "rb")) == NULL) {
+  full_pfb_name = kpse_find_file (pfb_name, kpse_dvips_header_format,
+				  1);
+  if (full_pfb_name == NULL) {
+    fprintf (stderr, "%s: ", pfb_name);
+    ERROR ("type1_fontfile:  Unable to find binary font file");
+  }
+  fprintf (stderr, "(%s", pfb_name);
+  release (pfb_name);
+  if ((type1_binary_file = fopen (full_pfb_name, "rb")) == NULL) {
     fprintf (stderr, "type1_fontfile:  %s\n", pfb_name);
     ERROR ("type1_fontfile:  Unable to open binary font file");
   }
@@ -83,6 +118,7 @@ pdf_obj *type1_fontfile (const char *tex_name)
     ERROR ("type1_fontfile:  Are you sure this is a pfb?");
   /* Got entire file! */
   fclose (type1_binary_file);
+  fprintf (stderr, ")");
   stream_dict = pdf_stream_dict (stream);
   pdf_add_dict (stream_dict, tmp1 = pdf_new_name("Length1"),
 		tmp2 = pdf_new_number (length1));
@@ -93,6 +129,7 @@ pdf_obj *type1_fontfile (const char *tex_name)
   pdf_add_dict (stream_dict, tmp1 = pdf_new_name("Length3"),
 		tmp2 = pdf_new_number (length3));
   pdf_release_obj (tmp1);  pdf_release_obj (tmp2);
+  pdf_release_obj (stream_dict);
   stream_label = pdf_ref_obj (stream);
   pdf_release_obj (stream);
   return stream_label;
@@ -176,7 +213,6 @@ static scan_char_metrics (int num_expected)
   int ch, afm_tok, i;
   double width;
   char *p, *tok;
-  fprintf (stderr, "num_expected: %d\n", num_expected);
   for (i=0; i<num_expected; i++) {
     if ((p = fgets (buffer, sizeof(buffer), type1_afm_file)) == NULL){
       ERROR ("scan_char_metrics:  Couldn't read all the expected metrics");
@@ -197,22 +233,33 @@ static scan_char_metrics (int num_expected)
       if (ch < firstchar) firstchar = ch;
     }
   }
-  for (i=firstchar; i<=lastchar; i++) {
-    fprintf (stderr, "wd[%d] = %f\n", i, char_widths[i]);
-  }
 }
 
 static void open_afm_file (const char *tex_name)
 {
-  static char *afm_name;
+  static char *afm_name, *full_afm_name;
   afm_name = NEW (strlen (tex_name) + 5, char);
   strcpy (afm_name, tex_name);
   strcat (afm_name, ".afm");
-  if ((type1_afm_file = fopen (afm_name, "r")) == NULL) {
+  full_afm_name = kpse_find_file (afm_name, kpse_dvips_header_format,
+				  1);
+  if (full_afm_name == NULL) {
+    fprintf (stderr, "%s: ", afm_name);
+    ERROR ("type1_font_descriptor:  Unable to find AFM file");
+  }
+  fprintf (stderr, "(%s", afm_name);
+  release (afm_name);
+  if ((type1_afm_file = fopen (full_afm_name, "r")) == NULL) {
     fprintf (stderr, "type1_font_descriptor:  %s\n", afm_name);
     ERROR ("type1_font_descriptor:  Unable to open AFM file");
   }
 }
+static void close_afm_file (void)
+{
+  fprintf (stderr, ")");
+  fclose (type1_afm_file);
+}
+
 
 static void scan_afm_file (void)
 {
@@ -222,22 +269,18 @@ static void scan_afm_file (void)
     case FONTNAME:
       if (sscanf (position, " %s ", fontname) != 1)
 	ERROR ("afm: Error reading Fontname");
-      fprintf (stderr, "Fontname: (%s)\n", fontname);
       break;
     case CAPHEIGHT:
       if (sscanf (position, " %lf", &capheight) != 1)
 	ERROR ("afm: Error reading Capheight");
-      fprintf (stderr, "Capheight: %f\n", capheight);
       break;
     case ASCENT:
       if (sscanf (position, " %lf", &ascent) != 1)
 	ERROR ("afm: Error reading ascent");
-      fprintf (stderr, "Ascent: %lf\n", ascent);
       break;
     case DESCENT:
       if (sscanf (position, " %lf", &descent) != 1)
 	ERROR ("afm: Error reading descent");
-      fprintf (stderr, "Descent: %lf\n", descent);
       break;
     case ISFIXED:
       if (strstr (position, "false"))
@@ -246,23 +289,18 @@ static void scan_afm_file (void)
 	isfixed = 1;
       else 
 	ERROR ("Can't read value for IsFixedPitch");
-      fprintf(stderr, "isfixed %d\n", isfixed);
       break;
     case FONTBBOX:
       if (sscanf (position, " %lf %lf %lf %lf ", &bbllx, &bblly, &bburx, &bbury) != 4)
 	ERROR ("afm: Error reading FontBBox");
-      fprintf (stderr, "FontBBox: %lf %lf %lf %lf \n", bbllx, bblly,
-	       bburx, bbury);
       break;
     case ITALICANGLE:
       if (sscanf (position, " %lf", &italicangle) != 1)
 	ERROR ("afm: Error reading descent");
-      fprintf (stderr, "ItalicAngle: %lf\n", italicangle);
       break;
     case XHEIGHT:
       if (sscanf (position, " %lf", &xheight) != 1)
 	ERROR ("afm: Error reading XHeight");
-      fprintf (stderr, "XHeight: %lf\n", xheight);
       break;
     case SCHARMETRICS:
       if (sscanf (position, " %ld", &num_char_metrics) != 1)
@@ -284,22 +322,17 @@ static void scan_afm_file (void)
 			cmr, should be set to be symbolic */
 #define NOCLUE 20
 
-#define ROUND(a,p) (floor((a)/(p)+0.5)*p)
-
 pdf_obj *type1_font_descriptor (const char *tex_name)
 {
   pdf_obj *font_descriptor, *font_descriptor_ref, *tmp1, *tmp2;
   int flags;
-  open_afm_file (tex_name);
-  reset_afm_variables ();
-  scan_afm_file();
   font_descriptor = pdf_new_dict ();
   pdf_add_dict (font_descriptor,
 		tmp1 = pdf_new_name ("Type"),
 		tmp2 = pdf_new_name ("FontDescriptor"));
   pdf_release_obj (tmp1); pdf_release_obj (tmp2);
   if (capheight == 0.0) {
-    ERROR ("type1_font_descriptor:  CapHeight is zero");
+    fprintf (stderr, "\nWarning:  type1_font_descriptor:  AFM file: CapHeight is zero\n");
   }
   pdf_add_dict (font_descriptor,
 		tmp1 = pdf_new_name ("CapHeight"),
@@ -373,10 +406,16 @@ pdf_obj *type1_font_resource (const char *tex_name, const char *resource_name)
 		tmp1 = pdf_new_name ("Name"),
 		tmp2 = pdf_new_name (resource_name));
   pdf_release_obj (tmp1); pdf_release_obj (tmp2);
-  pdf_add_dict (font_resource, 
-		tmp1 = pdf_new_name ("FontDescriptor"),
-		tmp2 = type1_font_descriptor (tex_name));
-  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+  open_afm_file (tex_name);
+  reset_afm_variables ();
+  scan_afm_file();
+  close_afm_file ();
+  if (!is_a_base_font (fontname)) {
+    pdf_add_dict (font_resource, 
+		  tmp1 = pdf_new_name ("FontDescriptor"),
+		  tmp2 = type1_font_descriptor (tex_name));
+    pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+  }
   pdf_add_dict (font_resource,
 		tmp1 = pdf_new_name ("BaseFont"),
 		tmp2 = pdf_new_name (fontname));  /* fontname is set

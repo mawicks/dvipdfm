@@ -12,3 +12,5 @@ long tell_position (FILE *file);
 
 long file_size (FILE *file);
 
+extern char work_buffer[];
+#define WORK_BUFFER_SIZE 1024
