@@ -12,27 +12,19 @@
 
 #define verbose 0
 
-static pdf_obj *parse_pdf_object (char **start, char *end);
-static pdf_obj *parse_pdf_dict (char **start, char *end);
 static pdf_obj *parse_pdf_array (char **start, char *end);
 static pdf_obj *parse_pdf_string (char **start, char *end);
 static pdf_obj *parse_pdf_name (char **start, char *end);
 static char *parse_ident (char **start, char *end);
-static char *parse_number (char **start, char *end);
 static pdf_obj *parse_pdf_number (char **start, char *end);
 static pdf_obj *parse_pdf_boolean (char **start, char *end);
 static char *parse_pdf_reference (char **start, char *end);
 static pdf_obj *get_pdf_reference (char **start, char *end);
-static void parse_crap (char **start, char *end);
 
-static void skip_white (char **start, char *end);
-static void skip_line (char **start, char *end);
 
 static void add_reference (char *name, pdf_obj *object);
 static void release_reference (char *name);
 static pdf_obj *lookup_reference(char *name);
-
-static pdf_obj *pdf_new_ref (int label, int generation);
 
 static int dump(char *start, char *end)
 {
@@ -44,14 +36,14 @@ static int dump(char *start, char *end)
   fprintf (stderr, "<--\n");
 }
 
-static void skip_white (char **start, char *end)
+void skip_white (char **start, char *end)
 {
   while (*start < end && isspace (**start))
     (*start)++;
   return;
 }
 
-static void skip_line (char **start, char *end)
+void skip_line (char **start, char *end)
 {
   /* PDF spec says that all platforms must end line with '\n' here */
   while (*start < end && **start != '\n') 
@@ -60,7 +52,7 @@ static void skip_line (char **start, char *end)
 }
 
 
-static void parse_crap (char **start, char *end)
+void parse_crap (char **start, char *end)
 {
   skip_white(start, end);
   if (*start != end) {
@@ -118,19 +110,22 @@ static void do_put(char **start, char *end)
 static void do_epdf (char **start, char *end, double x_user, double y_user)
 {
   char *name;
+  pdf_obj *trailer;
   skip_white(start, end);
   dump(*start, end);
   if (*start < end && (name = parse_ident(start, end)) != NULL) {
     fprintf (stderr, "Opening %s\n", name);
-    pdf_open (name, x_user, y_user);
+    trailer = pdf_open (name);
     release (name);
+    pdf_include_page(trailer, x_user, y_user);
+    pdf_release_obj (trailer);
+    pdf_close ();
   } else
     {
       fprintf (stderr, "No file name found\n");
       dump(*start, end);
     }
 }
-
 
 static int is_a_number(const char *s)
 {
@@ -583,7 +578,7 @@ static int parse_pdfmark (char **start, char *end)
   return -1;
 }
 
-static pdf_obj *parse_pdf_dict (char **start, char *end)
+pdf_obj *parse_pdf_dict (char **start, char *end)
 {
   pdf_obj *result, *tmp1, *tmp2;
   skip_white(start, end);
@@ -649,7 +644,7 @@ static pdf_obj *parse_pdf_array (char **start, char *end)
   return result;
 }
 
-static char *parse_number (char **start, char *end)
+char *parse_number (char **start, char *end)
 {
   char *number, *save;
   int length;
@@ -718,8 +713,8 @@ struct named_reference
   pdf_obj *object_ref;
   pdf_obj *object;
 } named_references[MAX_NAMED_REFERENCES];
-static unsigned number_named_references = 0;
 
+static unsigned number_named_references = 0;
 
 static void add_reference (char *name, pdf_obj *object)
 {
@@ -982,7 +977,7 @@ static pdf_obj *parse_pdf_stream (char **start, char *end, pdf_obj
 
 
 
-static pdf_obj *parse_pdf_object (char **start, char *end)
+pdf_obj *parse_pdf_object (char **start, char *end)
 {
   pdf_obj *result, *tmp1=NULL, *tmp2=NULL;
   char *save = *start;
@@ -1126,326 +1121,32 @@ void pdf_parse_special(char *buffer, UNSIGNED_QUAD size, double
   }
 }
 
-FILE *pdf_input_file;
-static int backup_line ()
+static pdf_obj *build_scale_array (int a, int b, int c, int d, int e, int f)
 {
-  int ch;
-  ch = 0;
-  
-  do {
-    seek_relative (pdf_input_file, -2);
-  } while (tell_position (pdf_input_file) > 0 && (ch = fgetc (pdf_input_file)) >= 0 && ch != '\n');
-  if (ch < 0) {
-    fprintf (stderr, "Invalid PDF file\n");
-    return 1;
-  }
-  return 0;
-}
-
-static long xref_pos;
-
-static long find_xref(void)
-{
-  long currentpos, xref_pos;
-  int length;
-  char *start, *end, *number;
-  fprintf (stderr, "find_xref");
-  seek_end (pdf_input_file);
-  do {
-    backup_line();
-    currentpos = tell_position(pdf_input_file);
-    fread (work_buffer, sizeof(char), strlen("startxref"), pdf_input_file);
-    seek_absolute(pdf_input_file, currentpos);
-  } while (strncmp (work_buffer, "startxref", strlen ("startxref")));
-  while (fgetc (pdf_input_file) != '\n');
-  fgets (work_buffer, WORK_BUFFER_SIZE, pdf_input_file);
-  start = work_buffer;
-  end = start+strlen(work_buffer);
-  skip_white(&start, end);
-  fprintf (stderr, "[%s]\n", start);
-  xref_pos = (long) atof (number = parse_number (&start, end));
-  fprintf(stderr, "xref is %ld", xref_pos);
-  release (number);
-  return xref_pos;
-}
-
-static long find_trailer(void)
-{
-  long currentpos;
-  seek_end (pdf_input_file);
-  do {
-    backup_line();
-    currentpos = tell_position(pdf_input_file);
-    fread (work_buffer, sizeof(char), strlen("trailer"), pdf_input_file);
-    seek_absolute(pdf_input_file, currentpos);
-  } while (strncmp (work_buffer, "trailer", strlen ("trailer")));
-  return currentpos;
-}
-
-pdf_obj *parse_trailer (char **start, char *end)
-{
-  if (*start >=  end || strncmp (*start, "trailer", strlen("trailer"))) {
-    fprintf (stderr, "No trailer.  Are you sure this is a PDF file?\n");
-    return NULL;
-  }
-  *start += strlen("trailer");
-  skip_white(start, end);
-  return (parse_pdf_dict (start, end));
-}
-
-struct object 
-{
-  unsigned long position;
-  unsigned generation;
-  /* Object numbers in original file and new file must be different
-     new_ref provides a reference for the object in the new file
-     object space.  When it is first set, an object in the old file
-     is copied to the new file with a new number.  new_ref remains set
-     until the file is closed so that future references can access the
-     object via new_ref instead of copying the object again */
-  pdf_obj *direct;
-  pdf_obj *indirect;
-  int used;
-} *xref_table;
-long num_input_objects;
-
-
-long trailer_pos;
-
-long next_object (int obj)
-{
-  int i;
-  long this_position, result = trailer_pos;  /* Worst case */
-  this_position = xref_table[obj].position;
-  /* Check all other objects to find next one */
-  for (i=0; i<num_input_objects; i++) {
-    if (xref_table[i].position > this_position &&
-	xref_table[i].position < result)
-      result = xref_table[i].position;
-  }
-  /* xref is also an object, but not in the table so
-     check it separately */
-  if (xref_pos > this_position &&
-      xref_pos < result)
-    result = xref_pos;
-  return result;
-}
-
-/* The following routine returns a reference to an object existing
-   only in file.  It does this as follows.  If the object
-   has never been referenced before, it reads the object
-   in and creates a reference to it.  Then it writes
-   the object out, keeping the existing reference. If the
-   object has been read in (and written out) before, it simply
-   returns the retained existing reference to that object */
-
-pdf_obj *pdf_ref_file_obj (int obj_no)
-{
-  pdf_obj *direct, *indirect;
-  if (obj_no < 0 || obj_no >= num_input_objects) {
-    fprintf (stderr, "\n\npdf_ref_file_obj: nonexistent object\n");
-    return NULL;
-  }
-  fprintf (stderr, "\n\npdf_ref_file_obj: obj=%d\n", obj_no);
-  if (xref_table[obj_no].indirect != NULL) {
-    fprintf (stderr, "\npdf_ref_file_obj: obj=%d is already referenced\n",obj_no);
-    return pdf_link_obj (xref_table[obj_no].indirect);
-  }
-  if ((direct = pdf_read_object (obj_no)) == NULL) {
-    fprintf (stderr, "\npdf_ref_file_obj: Could not read object\n");
-    return NULL;
-  }
-  indirect = pdf_ref_obj (direct);
-  xref_table[obj_no].indirect = indirect;
-  xref_table[obj_no].direct = direct;
-  /* Make sure the caller can't doesn't free this object */
-  pdf_write_obj (stderr, direct);
-  pdf_write_obj (stderr, indirect);
-  return pdf_link_obj (indirect);
-}
-
-
-static pdf_obj *pdf_new_ref (int label, int generation) 
-{
-  pdf_obj *result;
-  struct pdf_indirect *indirect;
-  fprintf (stderr, "\nEntered pdf_new_ref\n");
-  fprintf (stderr, "num_input_objects = %d\n", num_input_objects);
-  fprintf (stderr, "label=%d, gen=%d\n", label, generation);
-  if (label >= num_input_objects || label < 0) {
-    fprintf (stderr, "pdf_new_ref: Object doesn't exist\n");
-    return NULL;
-  }
-  result = pdf_new_obj (PDF_INDIRECT);
-  indirect = NEW (1, struct pdf_indirect);
-  result -> data = indirect;
-  indirect -> label = label;
-  indirect -> generation = generation;
-  indirect -> dirty = 1;
-  return result;
-}
-
-pdf_obj *pdf_read_object (int obj_no) 
-{
-  long start_pos, end_pos, length;
-  char *buffer, *number, *parse_pointer, *end;
-  pdf_obj *result;
-  fprintf (stderr, "\nEntered pdf_read: obj = %d\n", obj_no);
-  if (obj_no < 0 || obj_no >= num_input_objects) {
-    fprintf (stderr, "\nTrying to read nonexistent object\n");
-    return NULL;
-  }
-  if (!xref_table[obj_no].used) {
-    fprintf (stderr, "\nTrying to read deleted object\n");
-    return NULL;
-  }
-  seek_absolute (pdf_input_file, start_pos =
-		 xref_table[obj_no].position);
-  end_pos = next_object (obj_no);
-  fprintf (stderr, "\nstart: %d end %d\n", start_pos, end_pos);
-  
-  buffer = NEW (end_pos - start_pos+1, char);
-  fread (buffer, sizeof(char), end_pos-start_pos, pdf_input_file);
-  buffer[end_pos-start_pos] = 0;
-  fprintf (stderr, "Parsing object from:\n");
-  fprintf (stderr, "%s\n", buffer);
-  parse_pointer = buffer;
-  end = buffer+(end_pos-start_pos);
-  skip_white (&parse_pointer, end);
-  number = parse_number (&parse_pointer, end);
-  if ((int) atof(number) != obj_no) {
-    fprintf (stderr, "Object number doesn't match\n");
-    release (buffer);
-    return NULL;
-  }
-  if (number != NULL)
-    release(number);
-  skip_white (&parse_pointer, end);
-  number = parse_number (&parse_pointer, end);
-  if (number != NULL)
-    release(number);
-  skip_white(&parse_pointer, end);
-  if (strncmp(parse_pointer, "obj", strlen("obj"))) {
-    fprintf (stderr, "Didn't find \"obj\"\n");
-    release (buffer);
-    return (NULL);
-  }
-  parse_pointer += strlen("obj");
-  result = parse_pdf_object (&parse_pointer, end);
-  skip_white (&parse_pointer, end);
-  if (strncmp(parse_pointer, "endobj", strlen("endobj"))) {
-    fprintf (stderr, "Didn't find \"endobj\"\n");
-    if (result != NULL)
-      pdf_release_obj (result);
-    result = NULL;
-  }
-  release (buffer);
-  return (result);
-}
-
-pdf_obj *pdf_deref_obj (pdf_obj *obj)
-{
-  pdf_obj *result, *tmp;
-  fprintf (stderr, "\nEntered pdf_deref\n");
-  pdf_write_obj (stderr, obj);
-  if (obj -> type != PDF_INDIRECT) {
-    fprintf(stderr, "\nreturning same obj\n");
-    return pdf_link_obj (obj);
-  }
-  result = pdf_read_object (((struct pdf_indirect *)(obj-> data)) -> label);
-  fprintf (stderr, "\nread object");
-  pdf_write_obj (stderr, result);
-  while (result -> type == PDF_INDIRECT) {
-    fprintf(stderr, "\nderefing again\n");
-    tmp = pdf_read_object (result -> label);
-    pdf_write_obj (stderr, tmp);
-    pdf_release_obj (result);
-    result = tmp;
-  }
-  return result;
-}
-
-void parse_xref (void)
-{
-  long first_obj;
-  int i, length;
-  char *start, *end;
-  xref_pos = find_xref();
-  seek_absolute (pdf_input_file, xref_pos);
-  /* Now at beginning of actual xref table */
-  fgets (work_buffer, WORK_BUFFER_SIZE, pdf_input_file);
-  if (strncmp (work_buffer, "xref", strlen("xref"))) {
-    fprintf (stderr, "No xref.  Are you sure this is a PDF file?\n");
-    return;
-  }
-  fgets (work_buffer, WORK_BUFFER_SIZE, pdf_input_file);
-  sscanf (work_buffer, "%ld %d", &first_obj, &num_input_objects);
-  xref_table = NEW (num_input_objects, struct object);
-  for (i=0; i<num_input_objects; i++) {
-    fread (work_buffer, sizeof(char), 20, pdf_input_file);
-    work_buffer[19] = 0;
-    fprintf (stderr, "[%s]\n", work_buffer);
-    sscanf (work_buffer, "%ld %d", &(xref_table[i].position), 
-	    &(xref_table[i].generation));
-    if (work_buffer[17] != 'n' && work_buffer[17] != 'f') {
-      fprintf (stderr, "PDF file is corrupt\n");
-      fprintf (stderr, "[%s]\n", work_buffer);
-      return;
-    }
-    if (work_buffer[17] == 'n')
-      xref_table[i].used = 1;
-    else
-      xref_table[i].used = 0;
-    xref_table[i].direct = NULL;
-    xref_table[i].indirect = NULL;
-  }
-  for (i=0; i<num_input_objects; i++) {
-    if (xref_table[i].used) {
-      fprintf (stderr, "id:%d\tpos:%ld \tgen:%d\n", i, xref_table[i].position,
-	       xref_table[i].generation);
-    }
-  }
-}
-
-
-static int num_xobjects = 0;
-
-void pdf_open (char *file, double x_user, double y_user)
-{
-  long eof_pos;
-  int i, done;
   pdf_obj *tmp1, *tmp2;
-  pdf_obj *trailer;
+  tmp1 = pdf_new_array();
+  pdf_add_array (tmp1, tmp2 = pdf_new_number (a));  pdf_release_obj (tmp2);
+  pdf_add_array (tmp1, tmp2 = pdf_new_number (b));  pdf_release_obj (tmp2);
+  pdf_add_array (tmp1, tmp2 = pdf_new_number (c));  pdf_release_obj (tmp2);
+  pdf_add_array (tmp1, tmp2 = pdf_new_number (d));  pdf_release_obj (tmp2);
+  pdf_add_array (tmp1, tmp2 = pdf_new_number (e));  pdf_release_obj (tmp2);
+  pdf_add_array (tmp1, tmp2 = pdf_new_number (f));  pdf_release_obj (tmp2);
+  return tmp1;
+}
+
+
+int num_xobjects = 0;
+
+void pdf_include_page(pdf_obj *trailer, double x_user, double y_user)
+{
   pdf_obj *catalog_ref, *catalog, *page_tree_ref, *page_tree,
     *kids_ref, *kids;
   pdf_obj *media_box, *resources, *contents, *contents_ref;
   pdf_obj *new_resources;
   pdf_obj *xobj_dict;
-  char *parse_pointer, *key;
-  if ((pdf_input_file = fopen (file, "r")) == NULL) {
-    fprintf (stderr, "Unable to open file name %s\n", file);
-    return;
-  }
-  seek_end(pdf_input_file);
-  eof_pos = tell_position (pdf_input_file);
-  fprintf (stderr, "eof @ %ld\n", eof_pos);
-  parse_xref();
-  trailer_pos = find_trailer();
-  fprintf (stderr, "trailer @ %ld\n", trailer_pos);
-  seek_absolute (pdf_input_file, trailer_pos);
-  /* Let's go ahead and try to read the rest of the file into
-     work_buffer.  Normally, this shouldn't be that big */
-  if (eof_pos - trailer_pos >= WORK_BUFFER_SIZE) {
-    fprintf (stderr, "PDF file has an unusually large trailer\n");
-    fprintf (stderr, "Unable to read into work buffer\n");
-    return;
-  }
-  fread (work_buffer, sizeof(char), eof_pos-trailer_pos,
-	 pdf_input_file);
-  parse_pointer = work_buffer;
-  trailer = parse_trailer (&parse_pointer,
-			   work_buffer+(eof_pos-trailer_pos));
-  pdf_write_obj (stderr, trailer);
+  pdf_obj *tmp1, *tmp2;
+  int i;
+  char *key;
   /* Now just lookup catalog location */
   catalog_ref = pdf_lookup_dict (trailer, "Root");
   fprintf (stderr, "Catalog:\n");
@@ -1533,13 +1234,8 @@ void pdf_open (char *file, double x_user, double y_user)
   pdf_add_dict (xobj_dict, tmp1 = pdf_new_name ("FormType"), 
 		tmp2 = pdf_new_number(1.0));
   pdf_release_obj (tmp1); pdf_release_obj (tmp2);
-  tmp1 = pdf_new_array();
-  pdf_add_array (tmp1, tmp2 = pdf_new_number (1));  pdf_release_obj (tmp2);
-  pdf_add_array (tmp1, tmp2 = pdf_new_number (0));  pdf_release_obj (tmp2);
-  pdf_add_array (tmp1, tmp2 = pdf_new_number (0));  pdf_release_obj (tmp2);
-  pdf_add_array (tmp1, tmp2 = pdf_new_number (1));  pdf_release_obj (tmp2);
-  pdf_add_array (tmp1, tmp2 = pdf_new_number (0));  pdf_release_obj (tmp2);
-  pdf_add_array (tmp1, tmp2 = pdf_new_number (0));  pdf_release_obj (tmp2);
+
+  tmp1 = build_scale_array (1, 0, 0, 1, 0, 0);
   pdf_add_dict (xobj_dict, tmp2 = pdf_new_name ("Matrix"), tmp1);
   pdf_release_obj (tmp1); pdf_release_obj (tmp2);
   
@@ -1569,27 +1265,6 @@ void pdf_open (char *file, double x_user, double y_user)
   fprintf (stderr, "\n\ncontents:"); pdf_write_obj (stderr, contents);
   fprintf (stderr, "Here.\n");
   sprintf (work_buffer, " q 1 0 0 1 %g %g cm /Fm%d Do Q ", x_user, y_user, num_xobjects);
-  fprintf (stderr, "THere.\n");
   pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
-  fprintf (stderr, "Everywhere.\n");
   pdf_release_obj(contents);
-  fprintf (stderr, "???.\n");
-
-  /* Following loop must be iterated because each write could trigger
-     an additional indirect reference of an object with a lower
-     number! */
-
-  do {
-    done = 1;
-    for (i=0; i<num_input_objects; i++) {
-      if (xref_table[i].direct != NULL) {
-	fprintf (stderr, "\n\nreleasing the following object file# = %d:\n", i);
-	fprintf (stderr, "\n");
-	pdf_release_obj (xref_table[i].direct);
-	xref_table[i].direct = NULL;
-	done = 0;
-      }
-    }
-  } while (!done);
 }
-
