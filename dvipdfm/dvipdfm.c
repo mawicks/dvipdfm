@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.37 1999/02/21 14:11:22 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.38 1999/02/21 14:30:20 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -96,7 +96,7 @@ static void usage (void)
    fprintf (stderr, "dvipdfm comes with ABSOLUTELY NO WARRANTY.\n");
    fprintf (stderr, "This is free software, and you are welcome to redistribute it\n");
    fprintf (stderr, "under certain conditions.  Details are distributed with the software.\n");
-   fprintf (stderr, "\nUsage: dvipdf [options] dvifile\n");
+   fprintf (stderr, "\nUsage: dvipdfm [options] dvifile\n");
    fprintf (stderr, "where [options] is one or more of\n\n");
    fprintf (stderr, "\t-c      \tIgnore color specials (for printing on B&W printers)\n");
    fprintf (stderr, "\t-f filename\tSet font map file name [pdffonts.map]\n");
