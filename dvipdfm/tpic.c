@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tpic.c,v 1.19 2000/10/13 02:13:00 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tpic.c,v 1.20 2001/01/31 02:01:00 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -30,9 +30,13 @@
 #include "tpic.h"
 #include "pdfparse.h"
 #include "pdfdoc.h"
+#include "pdfdev.h"
 #include "dvi.h"
 
-#define MI2DEV 0.072
+/* Following "constant" converts milli-inches to
+   device (in this case PDF stream) coordinates */
+
+#define MI2DEV (0.072/pdf_dev_scale())
 
 double pen_size = 1.0;
 int fill_shape = 0;

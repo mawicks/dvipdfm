@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.105 2000/10/19 19:44:01 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.106 2001/01/31 02:01:00 mwicks Exp $
  
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -110,20 +110,38 @@ int motion_state = GRAPHICS_MODE; /* Start in graphics mode */
 #define FORMAT_BUF_SIZE 4096
 static char format_buffer[FORMAT_BUF_SIZE];
 
-/* Coordinate system in the pdf file is setup so that 1 unit in the
-   PDF content stream's coordinate system represents 65,800 spt (DVI units).
-   Relative motions in the PDF file are printed in decimal
-   with no more than two digits after the decimal point.  A
-   PDF user coordinate of 0.01 represents 658 DVI units.
-   Here are some constants to that effect */
+/* The coordinate system in the pdf file is setup so that 1 unit in the
+   PDF content stream's coordinate system represents 65,800 DVI units.
+   This choice was made so that a PDF coordinate represented only
+   to the hundredths place represents an exact integer number of DVI units.
+   Doing so allows relative motions in a PDF file to be known
+   precisely in DVI units, and allows us to keep track of relative motions
+   using integer arithmetic.  Relative motions in the PDF file are
+   represented in decimal with no more than two digits after the decimal
+   point.  In the PDF stream, a PDF user coordinate of 0.01 represents
+   exactly 658 DVI units.
 
-#define PDF_U 65800L
-#define CENTI_PDF_U 658
-#define PDF_U_TO_A_PTS 1.0002773
+   The "pdfdev" module is the only module that knows the
+   relationship between PDF units and true points.  It provides
+   pdf_dev_scale() to inform other modules of the scale.
+   Modules that render PDF marking operators (such as those
+   that render tpic specials or PS specials) need this value.
+   The overhead of this call is a slight performance hit for
+   rendering images, but allows dvipdfm to set text blazingly fast
+  
+ 
+   Some constants related to this representation follow: */
+
+#define PDF_U 65800L	/* Number of DVI units in a PDF unit */
+#define CENTI_PDF_U 658	/* Number of DVI units in a centi PDF unit */
+
+/* pdf_dev_scale() returns the factor by which a PDF unit
+ * must be multiplied to produce an Adobe point (big point) */
 
 double pdf_dev_scale (void)
 {
-  return  PDF_U_TO_A_PTS;
+  return 65800.0*dvi2pts;
+/*  return  PDF_U_TO_A_PTS; */
 }
 
 
