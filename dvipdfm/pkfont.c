@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pkfont.c,v 1.9 1999/02/21 14:30:23 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pkfont.c,v 1.10 1999/03/23 02:54:42 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -493,7 +493,7 @@ static void do_character (unsigned char flag, int pk_id, pdf_obj *char_procs)
       len = sprintf (work_buffer, " q %.2f 0 0 %.2f %.2f %.2f cm",
 		     w*pix2charu, h*pix2charu, llx, lly);
       pdf_add_stream (glyph, work_buffer, len);
-      {
+      if (w != 0 && h != 0 && packet_length != 0) {
 	unsigned char *pk_data;
 	len = sprintf (work_buffer, "\nBI\n/W %ld\n/H %ld\n/IM true\n/BPC 1\n/I true\n",
 		       w, h);
@@ -506,8 +506,10 @@ static void do_character (unsigned char flag, int pk_id, pdf_obj *char_procs)
 	  ERROR ("pk_do_character:  Error reading character packet from PK file");;
 	add_raster_data (glyph, w, h, dyn_f, (flag&8)>>3, pk_data, pk_data+packet_length);
 	RELEASE (pk_data);
-      }
-      len = sprintf (work_buffer, "\nEI\nQ");
+	len = sprintf (work_buffer, "\nEI");
+	pdf_add_stream (glyph, work_buffer, len);
+      } /* Otherwise we embed an empty stream :-( */
+      len = sprintf (work_buffer, "\nQ");
       pdf_add_stream (glyph, work_buffer, len);
       sprintf (work_buffer, "x%x", (int)code%256);
       pdf_add_dict (char_procs, pdf_new_name (work_buffer),
@@ -520,7 +522,6 @@ static void do_character (unsigned char flag, int pk_id, pdf_obj *char_procs)
 	       packet_length);
     do_skip (packet_length);
   }
-  /* For now, we are ignoring everything */
 }
 
 #define PK_XXX1 240

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/vf.c,v 1.16 1999/03/23 01:54:26 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/vf.c,v 1.17 1999/03/23 02:54:42 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -41,7 +41,7 @@
 #define TEXPT2PT (72.0/72.27)
 #define FW2PT (TEXPT2PT/((double)(FIX_WORD_BASE)))
 
-static unsigned char verbose = 0, debug = 1;
+static unsigned char verbose = 0, debug = 0;
 
 void vf_set_verbose(void)
 {
@@ -738,8 +738,6 @@ void vf_set_char(int ch, int vf_font)
   unsigned char *start, *end;
   mpt_t ptsize;
   int default_font = -1;
-  fprintf (stderr, "vf_set_char(): ch = %c, vf_font=%d\n", ch,
-	   vf_font);
   if (vf_font < num_vf_fonts) {
     /* Initialize to the first font or -1 if undefined */
     ptsize = vf_fonts[vf_font].ptsize;
