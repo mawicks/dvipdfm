@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/vf.c,v 1.4 1998/12/09 04:04:30 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/vf.c,v 1.5 1998/12/09 20:11:53 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -175,7 +175,7 @@ static void read_a_font_def(FILE *vf_file, signed long font_id, int thisfont)
   dev_font->tfm_id = tfm_open (dev_font -> name);
   dev_font->dev_id =
     dev_locate_font (dev_font->name, 
-		     ((double)dev_font->design_size)*FW2PT*vf_fonts[thisfont].mag);
+		     ((double)dev_font->size)*FW2PT*vf_fonts[thisfont].ptsize);
   if (verbose) {
     fprintf (stderr, "[%s/%s]\n", dev_font -> directory, dev_font -> name);
   }
@@ -905,8 +905,11 @@ void vf_set_char(int ch, int vf_font)
 	default:
 	  if (opcode <= SET_CHAR_127) {
 	    vf_set (opcode);
+	  } else if (opcode >= FNT_NUM_0 && opcode <= FNT_NUM_63) {
+	    vf_fnt (opcode - FNT_NUM_0, vf_font);
 	  } else {
 	    fprintf (stderr, "Unexpected opcode: %d\n", opcode);
+	    ERROR ("Unexpected opcode in vf file\n");
 	  }
 	}
     }

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.26 1998/12/09 19:03:02 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.27 1998/12/09 20:11:53 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -595,7 +595,7 @@ void dev_select_font (int dev_font_id)
   if (debug) {
     fprintf (stderr, "(dev_select_font)");
   }
-  if (1) {
+  if (debug) {
     fprintf (stderr, "dev_select_font: oldfont: %d newfont: %d\n",
 	     current_font, dev_font_id);
   }
