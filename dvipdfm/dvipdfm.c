@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.21 1998/12/30 20:54:16 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.22 1998/12/30 21:05:31 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -301,7 +301,14 @@ static void do_args (int argc, char *argv[])
     argc -= 1 ;
     argv += 1;
   }
-  
+  if (argc < 1) {
+    fprintf (stderr, "No dvi filename specified\n");
+    usage();
+  }
+  if (argc > 0) {
+    fprintf (stderr, "Multiple dvi filenames?\n");
+    usage();
+  }
   if (strncmp (".dvi", argv[0]+strlen(argv[0])-4, 4)) {
     dvi_filename = NEW (strlen (argv[0])+1+4, char);
     strcpy (dvi_filename, argv[0]);
@@ -310,16 +317,6 @@ static void do_args (int argc, char *argv[])
   else {
     dvi_filename = NEW (strlen (argv[0])+1, char);
     strcpy (dvi_filename, argv[0]);
-  }
-  argv += 1;
-  argc -= 1;
-  if (dvi_filename == NULL) {
-    fprintf (stderr, "No dvi filename specified\n");
-    usage();
-  }
-  if (argc > 0) {
-    fprintf (stderr, "Multiple dvi filenames?\n");
-    usage();
   }
 }
 
