@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.40 1998/12/23 20:58:44 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.41 1998/12/25 05:05:35 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -262,6 +262,7 @@ static max_pfbs = 0;
 struct a_pfb
 {
   char *pfb_name;
+  char *fontname;
   pdf_obj *direct, *indirect;
   char used_chars[256];
   int encoding_id;
@@ -287,6 +288,13 @@ static void do_a_standard_enc(char **glyphs, char **encoding)
   }
 }
 
+static char partial_enabled = 1;
+
+void type1_disable_partial (void)
+{
+  partial_enabled = 0;
+}
+
 static void parse_glyphs (unsigned char *buffer, unsigned long length,
 			  char **glyphs)
 {
@@ -297,7 +305,6 @@ static void parse_glyphs (unsigned char *buffer, unsigned long length,
 #ifdef MEM_DEBUG
   MEM_START
 #endif
-  fprintf (stderr, "parse_glyphs:\n");
   start = (char *) buffer;
   end = start+length;
   for (i=0; i<256; i++) {
@@ -376,7 +383,6 @@ static void parse_glyphs (unsigned char *buffer, unsigned long length,
 	  if (glyphs[(int)last_number] != NULL) 
 	    RELEASE (glyphs[(int)last_number]);
 	  glyphs[(int)last_number] = glyph;
-	  fprintf (stderr, "(%d/%s)", (int)last_number, glyph);
 	}
 	else {
 	  RELEASE (glyph);
@@ -394,17 +400,124 @@ static void parse_glyphs (unsigned char *buffer, unsigned long length,
 #endif
   return;
 }
+
+
+static unsigned long do_partial_header (unsigned char *filtered, unsigned char
+			*unfiltered, unsigned long length, 
+			char *chars_used, char **glyphs, char *fontname)
+{
+  char *start, *end, *tail, *ident;
+  pdf_obj *pdfobj;
+  unsigned char *filtered_pointer;
+  int state = 0;
+  start = (char *) unfiltered, end = (char *) unfiltered+length;
+  /* Skip first four bytes */
+  tail = start; filtered_pointer = filtered;
+  /* We use the following states:
+     state 0:  Nothing special.
+     state 1:  Saw /FontName
+     state 2:  Saw /Encoding */
+  skip_white (&start, end);
+  while (start < end) {
+    switch (state) {
+    case 0:
+      switch (*start) {
+      case '[':
+      case ']':
+      case '{':
+      case '}':
+	start += 1;
+	break;
+      case '(':
+	pdfobj = parse_pdf_string (&start, end);
+	pdf_release_obj (pdfobj);
+	break;
+      case '/':
+	start += 1;
+	ident = parse_ident (&start, end);
+	if (!strcmp (ident, "Encoding")) {
+	  memcpy (filtered_pointer, tail, start-tail);
+	  filtered_pointer += start-tail;
+	  /* Now substitute our own partial encoding */
+	  {
+	    int i;
+	    filtered_pointer += 
+	      sprintf ((char *) filtered_pointer,
+		       " 256 array \n0 1 255 {1 index exch /.notdef put} for\n");
+	    for (i=0; i<256; i++) {
+	      if (chars_used[i]) {
+		filtered_pointer +=
+		  sprintf ((char *) filtered_pointer, "dup %d /%s put\n", i, glyphs[i]);
+	      }
+	    }
+	    filtered_pointer += 
+	      sprintf ((char *) filtered_pointer, "readonly def");
+	  }
+	  state = 2;
+	} else if (!strcmp (ident, "FontName")) {
+	  memcpy (filtered_pointer, tail, start-tail);
+	  filtered_pointer += start-tail;
+	  filtered_pointer += 
+	    sprintf ((char *) filtered_pointer,
+		     " /%s def", fontname);
+	  state = 1;
+	}
+	RELEASE (ident);
+	break;
+      default:
+	ident = parse_ident (&start, end);
+	RELEASE (ident);
+	break;
+      }
+      break;
+    case 1:
+    case 2:
+      switch (*start) {
+      case '[':
+      case ']':
+      case '{':
+      case '}':
+	start += 1;
+	break;
+      case '(':
+	pdfobj = parse_pdf_string (&start, end);
+	pdf_release_obj (pdfobj);
+	break;
+      case '/':
+	start += 1;
+	ident = parse_ident (&start, end);
+	RELEASE (ident);
+	break;
+      default:
+	ident = parse_ident (&start, end);
+	if (!strcmp (ident, "def")) {
+	  tail = start;
+	  state = 0;
+	}
+	RELEASE (ident);
+	break;
+      }
+    }
+    skip_white (&start, end);
+  }
+  if (state != 0)
+    ERROR ("Premature end of header segment of PFB file");
+  memcpy (filtered_pointer, tail, end-tail);
+  filtered_pointer += end-tail;
+  return (filtered_pointer-filtered);
+}
   
 #define ASCII 1
 #define BINARY 2
 
-static unsigned long do_pfb_header (FILE *file, pdf_obj *stream,
+static unsigned long do_pfb_header (FILE *file, int pfb_id,
 				    char **glyphs)
 {
   int i, ch;
   int stream_type;
-  unsigned char *buffer;
+  unsigned char *buffer, *filtered;
   unsigned long length, nread;
+  fprintf (stderr, "do_pfb_header\n");
   if ((ch = fgetc (file)) < 0 || ch != 128){
     fprintf (stderr, "Got %d, expecting 128\n", ch);
     ERROR ("type1_do_pfb_segment:  Are you sure this is a pfb?");
@@ -415,6 +528,7 @@ static unsigned long do_pfb_header (FILE *file, pdf_obj *stream,
   }
   length = get_low_endian_quad (file);
   buffer = NEW (length, unsigned char);
+  filtered = NEW (length, unsigned char);
   if ((nread = fread(buffer, sizeof(unsigned char), length, file)) ==
       length) {
     for (i=0; i<nread; i++) {
@@ -424,17 +538,26 @@ static unsigned long do_pfb_header (FILE *file, pdf_obj *stream,
     }
     if (glyphs != NULL) {
       parse_glyphs (buffer, length, glyphs);
+    } else {
+      glyphs = (encodings[pfbs[pfb_id].encoding_id]).glyphs;
     }
-    
-    pdf_add_stream (stream, (char *) buffer, nread);
+    if (partial_enabled) {
+      length = do_partial_header (filtered, buffer, length,
+				  pfbs[pfb_id].used_chars, glyphs, 
+				  pfbs[pfb_id].fontname);
+      pdf_add_stream (pfbs[pfb_id].direct, (char *) filtered, length);
+    }
+    else {
+      pdf_add_stream (pfbs[pfb_id].direct, (char *) buffer, length);
+    }
   } else {
     fprintf (stderr, "Found only %ld out of %ld bytes\n", nread, length);
     ERROR ("type1_do_pfb_segment:  Are you sure this is a pfb?");
   }
   RELEASE (buffer);
+  RELEASE (filtered);
   return length;
 }
-
 
 int glyph_cmp (const void *v1, const void *v2)
 {
@@ -598,12 +721,6 @@ static unsigned long do_partial (unsigned char *filtered, unsigned char
 }
 
 
-static char partial_enabled = 1;
-
-void type1_disable_partial (void)
-{
-  partial_enabled = 0;
-}
 
 static unsigned long do_pfb_body (FILE *file, int pfb_id,
 				  char **glyphs)
@@ -693,7 +810,7 @@ static pdf_obj *type1_fontfile (int pfb_id)
     return NULL;
 }
 
-static int type1_pfb_id (const char *pfb_name, int encoding_id)
+static int type1_pfb_id (const char *pfb_name, int encoding_id, char *fontname)
 {
   int i;
   for (i=0; i<num_pfbs; i++) {
@@ -719,6 +836,8 @@ static int type1_pfb_id (const char *pfb_name, int encoding_id)
     pfbs[i].direct = pdf_new_stream(STREAM_COMPRESS);
     pfbs[i].indirect = pdf_ref_obj (pfbs[i].direct);
     pfbs[i].encoding_id = encoding_id;
+    pfbs[i].fontname = NEW (strlen(fontname)+1, char);
+    strcpy (pfbs[i].fontname, fontname);
   }
   return i;
 }
@@ -749,14 +868,14 @@ static void do_pfb (int pfb_id)
   }
   /* Following line doesn't hide PDF stream structure very well */
   if (pfbs[pfb_id].encoding_id >= 0) {
-    length1 = do_pfb_header (type1_binary_file, pfbs[pfb_id].direct,
+    length1 = do_pfb_header (type1_binary_file, pfb_id,
 			     NULL);
     length2 = do_pfb_body (type1_binary_file, pfb_id,
 			   (encodings[pfbs[pfb_id].encoding_id]).glyphs);
   }
   else {
     char **glyphs = NEW (256, char *);
-    length1 = do_pfb_header (type1_binary_file, pfbs[pfb_id].direct,
+    length1 = do_pfb_header (type1_binary_file, pfb_id,
 			     glyphs);
     length2 = do_pfb_body (type1_binary_file, pfb_id,
 			   glyphs);
@@ -1144,7 +1263,7 @@ int type1_font (const char *tex_name, int tfm_font_id, const char *resource_name
 	    mangle_fontname();
 	  }
 	  type1_fonts[num_type1_fonts].pfb_id =
-	    type1_pfb_id (font_record -> pfb_name, encoding_id);
+	    type1_pfb_id (font_record -> pfb_name, encoding_id, fontname);
 	  pdf_add_dict (font_resource, 
 			pdf_new_name ("FontDescriptor"),
 			type1_font_descriptor(font_record -> pfb_name,
@@ -1210,19 +1329,9 @@ void type1_close_all (void)
   for (i=0; i<num_pfbs; i++) {
     do_pfb (i);
     pdf_release_obj (pfbs[i].direct);
-    fprintf (stderr, "\nUsed letters in font (%s): \n",
-	     pfbs[i].pfb_name);
     RELEASE (pfbs[i].pfb_name);
-    for (j=0; j<256; j++) {
-      if ((pfbs[i].used_chars)[j]) {
-	if (isprint (j))
-	  fprintf (stderr, " ('%c'/%d)", j, j);
-	else 
-	  fprintf (stderr, " (<>/%d)", j);
-      }
-    }
-    fprintf (stderr, "\n");
     pdf_release_obj (pfbs[i].indirect);
+    RELEASE (pfbs[i].fontname);
   }
   RELEASE (pfbs);
   /* Now do encodings.  Clearly many pfbs will map to the same
