@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.19 1998/12/05 16:51:17 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.20 1998/12/05 17:25:40 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -799,9 +799,21 @@ MEM_START
     };
     pdf_release_obj (filestring);
     result = pdf_include_page(trailer, x_user, y_user, p);
+#ifdef MEM_DEBUG
+    fprintf (debugfile, "back from include_page, releasing xform\n");
+#endif
     release_xform_info(p);
+#ifdef MEM_DEBUG
+    fprintf (debugfile, "Releasing trailer...\n");
+#endif
     pdf_release_obj (trailer);
+#ifdef MEM_DEBUG
+    fprintf (debugfile, "Closing PDF file...\n");
+#endif
     pdf_close ();
+#ifdef MEM_DEBUG
+    fprintf (debugfile, "Done (Closing PDF file) \n");
+#endif
   } else
     {
       fprintf (stderr, "No file name found in special\n");
@@ -813,6 +825,9 @@ MEM_START
     fprintf (stderr, "\nEPDF special ignored\n");
     return;
   }
+#ifdef MEM_DEBUG
+  fprintf (debugfile, "Adding reference to epdf object\n");
+#endif
   if (objname != NULL) {
     add_reference (objname, result,
 		   pdf_name_value(pdf_lookup_dict(pdf_stream_dict(result), "Name")));
@@ -905,6 +920,9 @@ static void do_dest(char **start, char *end)
 {
   pdf_obj *name;
   pdf_obj *array;
+#ifdef MEM_DEBUG
+MEM_START
+#endif
   skip_white(start, end);
   if ((name = parse_pdf_string(start, end)) == NULL) {
     fprintf (stderr, "\nPDF string expected and not found.\n");
@@ -912,12 +930,18 @@ static void do_dest(char **start, char *end)
     dump(*start, end);
     return;
   }
-  if ((array = parse_pdf_array(start, end)) == NULL)
+  if ((array = parse_pdf_array(start, end)) == NULL) {
+    pdf_release_obj (name);
     return;
-
-  pdf_doc_add_dest (pdf_obj_string_value(name), pdf_obj_string_length(name), array);
+  }
+  pdf_doc_add_dest (pdf_obj_string_value(name),
+		    pdf_obj_string_length(name),
+		    pdf_ref_obj (array));
   pdf_release_obj (name);
   pdf_release_obj (array);
+#ifdef MEM_DEBUG
+MEM_END
+#endif
 }
 
 static void do_docinfo(char **start, char *end)

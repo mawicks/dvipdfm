@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.18 1998/12/05 16:51:16 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.19 1998/12/05 17:25:40 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -507,7 +507,9 @@ static void finish_dests_tree (void)
     pdf_add_array (name_array, pdf_new_string (dests[i].name,
 					       dests[i].length));
     RELEASE (dests[i].name);
-    pdf_add_array (name_array, pdf_link_obj (dests[i].array));
+    /* Don't need link_obj on the following name since we
+       are doing away with dests */
+    pdf_add_array (name_array, dests[i].array);
   }
   RELEASE (dests);
   number_dests = 0;
@@ -527,8 +529,11 @@ static void finish_dests_tree (void)
 }
 
 
-void pdf_doc_add_dest (char *name, unsigned length, pdf_obj *array )
+void pdf_doc_add_dest (char *name, unsigned length, pdf_obj *array_ref)
 {
+#ifdef MEM_DEBUG
+MEM_START
+#endif
   if (number_dests >= max_dests) {
     max_dests += DESTS_ALLOC_SIZE;
     dests = RENEW (dests, max_dests, dest_entry);
@@ -536,8 +541,12 @@ void pdf_doc_add_dest (char *name, unsigned length, pdf_obj *array )
   dests[number_dests].name = NEW (length, char);
   memcpy (dests[number_dests].name, name, length);
   dests[number_dests].length = length;
-  dests[number_dests].array = pdf_ref_obj (array);
+  dests[number_dests].array = array_ref;
   number_dests++;
+#ifdef MEM_DEBUG
+MEM_END
+#endif
+  return;
 }
 
 struct articles

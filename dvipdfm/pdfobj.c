@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.12 1998/12/05 16:51:16 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.13 1998/12/05 17:25:40 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -1492,7 +1492,9 @@ void pdf_close (void)
     fprintf (stderr, "\npdf_close:\n");
     fprintf (stderr, "pdf_input_file=%p\n", pdf_input_file);
   }
-  
+#ifdef MEM_DEBUG
+  fprintf (debugfile, "Starting magic loop\n");
+#endif  
   do {
     done = 1;
     for (i=0; i<num_input_objects; i++) {
@@ -1503,6 +1505,9 @@ void pdf_close (void)
       }
     }
   } while (!done);
+#ifdef MEM_DEBUG
+  fprintf (debugfile, "Releasing XREF Table\n");
+#endif
   RELEASE (xref_table);
   xref_table = NULL;
   num_input_objects = 0;
