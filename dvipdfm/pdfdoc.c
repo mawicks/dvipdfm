@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.44 1999/02/17 03:42:55 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.45 1999/02/17 18:15:59 mwicks Exp $
  
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -413,9 +413,20 @@ static pdf_obj *page_subtree (struct pages *pages, unsigned long npages,
       unsigned long start, end;
       start = (i*npages)/PAGE_CLUSTER;
       end = ((i+1)*npages)/PAGE_CLUSTER;
-      subtree = page_subtree (pages+start, end-start, pdf_link_obj(self_ref));
-      pdf_add_array (kid_array, pdf_ref_obj (subtree));
-      pdf_release_obj (subtree);
+      if (end-start>1) {
+	subtree = page_subtree (pages+start, end-start, pdf_link_obj(self_ref));
+	pdf_add_array (kid_array, pdf_ref_obj (subtree));
+	pdf_release_obj (subtree);
+      }
+      else {
+	pdf_add_array (kid_array, pdf_link_obj(pages[start].page_ref));
+	pdf_add_dict (pages[start].page_dict, pdf_link_obj(parent_name),
+		      pdf_link_obj (self_ref));
+	pdf_release_obj (pages[start].page_dict);
+	pdf_release_obj (pages[start].page_ref);
+	pages[start].page_dict = NULL;
+	pages[start].page_ref = NULL;
+      }
     }
   }
   pdf_release_obj (self_ref);
