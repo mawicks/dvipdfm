@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.35 1999/02/21 05:27:50 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.36 1999/02/21 05:56:26 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -297,13 +297,6 @@ static void do_args (int argc, char *argv[])
 	  }
 	  pop_arg();
 	}
-	{
-	  int i;
-	  for (i=0; i<num_page_ranges; i++) {
-	    fprintf (stderr, "%u - %u\n", page_ranges[i].first,
-		     page_ranges[i].last);
-	  }
-	}
 	break;
       case 'p':
 	{
@@ -446,12 +439,23 @@ int CDECL main (int argc, char *argv[])
   if ((num_page_ranges))
     for (i=0; i<num_page_ranges; i++) {
       int j;
-      for (j=page_ranges[i].first; j<=page_ranges[i].last && j<dvi_npages(); j++) {
-	fprintf (stderr, "[%d", j+1);
-	dvi_do_page (j);
-	at_least_one_page = 1;
-	fprintf (stderr, "]");
-      }
+      if (page_ranges[i].first <= page_ranges[i].last)
+	for (j=page_ranges[i].first; j<=page_ranges[i].last && j<dvi_npages(); j++) {
+	  fprintf (stderr, "[%d", j+1);
+	  dvi_do_page (j);
+	  at_least_one_page = 1;
+	  fprintf (stderr, "]");
+	}
+      else
+	for (j=page_ranges[i].first;
+	     j>=page_ranges[i].last &&
+	       j<dvi_npages() &&
+	       j >= 0; j--) {
+	  fprintf (stderr, "[%d", j+1);
+	  dvi_do_page (j);
+	  at_least_one_page = 1;
+	  fprintf (stderr, "]");
+	}
     }
   if (!at_least_one_page && num_page_ranges) {
     fprintf (stderr, "No pages fall in range!\nFalling back to entire document.\n");

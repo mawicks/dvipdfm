@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mem.h,v 1.32 1999/02/21 05:27:51 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mem.h,v 1.33 1999/02/21 05:56:26 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -33,7 +33,7 @@ extern void *renew (void *p, size_t size, char *function, int line);
 extern void release (void *mem, char *function, int line);
 
 #define MEM_DEBUG 1 
-/* #undef MEM_DEBUG */
+#undef MEM_DEBUG
 
 #ifdef MEM_DEBUG
 extern void mem_debug_init(void);
