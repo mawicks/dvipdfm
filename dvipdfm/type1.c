@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.23 1998/12/21 06:03:52 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.24 1998/12/21 06:14:20 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -793,6 +793,11 @@ void type1_close_all (void)
     do_pfb (pfbs[i].pfb_name, pfbs[i].direct);
     RELEASE (pfbs[i].pfb_name);
     pdf_release_obj (pfbs[i].direct);
+    for (j=0; j<256; j++) {
+      if ((pfbs[i].used_chars)[j]) {
+	fprintf (stderr, "Used %c (%d)\n", j, j);
+      }
+    }
     pdf_release_obj (pfbs[i].indirect);
   }
   RELEASE (pfbs);

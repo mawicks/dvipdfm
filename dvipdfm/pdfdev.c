@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.49 1998/12/21 04:56:02 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.50 1998/12/21 06:14:19 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -135,6 +135,7 @@ static struct dev_font {
   double ptsize;
   mpt_t mptsize;
   pdf_obj *font_resource;
+  char *used_chars;
 } dev_font[MAX_DEVICE_FONTS];
 
 static void reset_text_state(void)
@@ -263,6 +264,15 @@ void dev_set_string (mpt_t xpos, mpt_t ypos, unsigned char *s, int
   }
   len += pdfobj_escape_str (format_buffer+len, FORMAT_BUF_SIZE-len, s, length);
   pdf_doc_add_to_page (format_buffer, len);
+
+  /* Record characters used for partial font embedding */
+  if (dev_font[font_id].used_chars != NULL) {
+    int i;
+    for (i=0; i<length; i++){
+      (dev_font[font_id].used_chars)[s[i]] = 1;
+    }
+  }
+
   text_offset += width;
 }
 
@@ -598,6 +608,7 @@ int dev_locate_font (char *tex_name, mpt_t ptsize)
     /* type1_font_resource on next line always returns an *indirect* obj */ 
     if (type1_id >= 0) { /* If we got one, it must be a physical font */
       dev_font[thisfont].font_resource = type1_font_resource (type1_id);
+      dev_font[thisfont].used_chars = type1_font_used (type1_id);
       dev_font[i].short_name[0] = 'F';
       sprintf (dev_font[i].short_name+1, "%d", ++n_phys_fonts);
     } else { /* No physical font corresponding to this name */
