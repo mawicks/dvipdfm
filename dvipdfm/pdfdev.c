@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.43 1998/12/14 05:34:26 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.44 1998/12/14 16:25:33 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -258,15 +258,13 @@ void dev_set_char (mpt_t xpos, mpt_t ypos, unsigned char ch, mpt_t
   if (motion_state != STRING_MODE)
     string_mode(xpos, ypos);
   else if (kern != 0) {
-    text_offset = xpos-text_xorigin;
+    text_offset -= kern*dev_font[font_id].mptsize/1000l;
     len += sprintf (format_buffer+len, ")%d(", (int) kern);
   }
   len += pdfobj_escape_str (format_buffer+len, FORMAT_BUF_SIZE-len,
 			    &ch, 1);
   pdf_doc_add_to_page (format_buffer, len);
   text_offset += width;
-  /*    case VIRTUAL:
-	vf_set_char (ch , dev_font[font_id].vf_font_id); */
 }
 
 void dev_set_string (mpt_t xpos, mpt_t ypos, unsigned char *s, int
@@ -285,21 +283,13 @@ void dev_set_string (mpt_t xpos, mpt_t ypos, unsigned char *s, int
   if (motion_state != STRING_MODE)
     string_mode(xpos, ypos);
   else if (kern != 0) {
-    text_offset = xpos-text_xorigin;
+    text_offset -= kern*dev_font[font_id].mptsize/1000l;
+    /*    text_offset = xpos-text_xorigin; */
     len += sprintf (format_buffer+len, ")%d(", (int) kern);
   }
   len += pdfobj_escape_str (format_buffer+len, FORMAT_BUF_SIZE-len, s, length);
   pdf_doc_add_to_page (format_buffer, len);
   text_offset += width;
-  /*  case VIRTUAL: */
-  /*  Unfortunately, there seems to be no good way to stream
-       virtual characters so we revert back to the dvi_set single character
-       routine.  This is a very ugly loop between the dvi stuff and the
-       dev stuff. */
-  /*    dvi_push();
-    for (i=0; i<length; i++)
-      dvi_set (s[i]);
-    dvi_pop(); */
 }
 
 void dev_init (double scale)
@@ -506,7 +496,8 @@ static void dev_clear_xform_stack (void)
   return;
 }
 
-void dev_begin_xform (double xscale, double yscale, double rotate)
+void dev_begin_xform (double xscale, double yscale, double rotate,
+		      double x_user, double y_user)
 {
   double c, s;
   if (num_transforms >= MAX_TRANSFORMS) {
@@ -517,8 +508,8 @@ void dev_begin_xform (double xscale, double yscale, double rotate)
   s = ROUND (sin(rotate),1e-5);
   sprintf (work_buffer, " q %g %g %g %g %.2f %.2f cm",
 	   xscale*c, xscale*s, -yscale*s, yscale*c,
-	   (1.0-xscale*c)*dvi_dev_xpos()+yscale*s*dvi_dev_ypos(),
-	   -xscale*s*dvi_dev_xpos()+(1.0-yscale*c)*dvi_dev_ypos());
+	   (1.0-xscale*c)*x_user+yscale*s*y_user,
+	   -xscale*s*x_user+(1.0-yscale*c)*y_user);
   pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
   num_transforms += 1;
   return;
@@ -721,9 +712,10 @@ double dev_phys_y (void)
 }
 
 
-void dev_do_special (void *buffer, UNSIGNED_QUAD size)
+void dev_do_special (void *buffer, UNSIGNED_QUAD size, double x_user,
+		     double y_user)
 {
   graphics_mode();
-  pdf_parse_special (buffer, size, dvi_dev_xpos(), dvi_dev_ypos());
+  pdf_parse_special (buffer, size, x_user, y_user);
 }
 

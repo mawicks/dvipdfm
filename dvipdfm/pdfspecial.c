@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.29 1998/12/12 17:02:18 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.30 1998/12/14 16:25:33 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -611,7 +611,7 @@ static void do_egray(void)
   dev_end_color();
 }
 
-static void do_bxform (char **start, char *end)
+static void do_bxform (char **start, char *end, double x_user, double y_user)
 {
   int error = 0;
   char *save = *start;
@@ -645,7 +645,7 @@ static void do_bxform (char **start, char *end)
     error = 1;
   }
   if (!error) {
-    dev_begin_xform (p->xscale, p->yscale, p->rotate);
+    dev_begin_xform (p->xscale, p->yscale, p->rotate, x_user, y_user);
   } else {
     *start = save;
     dump (*start, end);
@@ -1419,7 +1419,7 @@ MEM_START
     do_egray ();
     break;
   case BXFORM:
-    do_bxform (&start, end);
+    do_bxform (&start, end, x_user, y_user);
     break;
   case EXFORM:
     do_exform ();

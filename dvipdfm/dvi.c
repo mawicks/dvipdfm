@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.29 1998/12/14 04:42:58 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.30 1998/12/14 16:25:32 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -176,7 +176,6 @@ static void get_page_info (void)
 
 /* Following are computed "constants" used for unit conversion */
 static double dvi2pts = 0.0;
-static fixword mpts2dvi = 0, dvi2mpts = 0;
 
 double dvi_tell_mag (void)
 {
@@ -188,10 +187,6 @@ static void do_scales (void)
   dvi2pts = (double) dvi_unit_num / (double) dvi_unit_den;
   dvi2pts *= (72.0)/(254000.0);
   dvi2pts *= (double) dvi_mag / 1000.0;
-  mpts2dvi = ((double) dvi_unit_den / (double) (dvi_unit_num))*
-    (254000.0/72.0)/dvi_mag*(1<<20);
-  dvi2mpts = ((double) dvi_unit_num / (double) (dvi_unit_den))*
-    (72.0/254000.0)*dvi_mag*(1<<20);
 }
 
 
@@ -415,8 +410,8 @@ void dvi_complete (void)
 
 #define HOFFSET 72.0
 #define VOFFSET 72.0
-double dvi_dev_xpos (void)
-{
+
+double dvi_dev_xpos(void) {
   return dvi_state.h*dvi2pts;
 }
 
@@ -854,7 +849,7 @@ static void do_xxx(UNSIGNED_QUAD size)
   }
   if (debug)
     fprintf (stderr, "%s\n", buffer);
-  dev_do_special (buffer, size);
+  dev_do_special (buffer, size, dvi_dev_xpos(), dvi_dev_ypos());
   RELEASE (buffer);
 }
 
