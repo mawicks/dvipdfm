@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfparse.c,v 1.5 1998/11/21 20:18:58 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfparse.c,v 1.6 1998/11/22 07:38:20 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -380,7 +380,7 @@ pdf_obj *parse_pdf_string (char **start, char *end)
 static pdf_obj *parse_pdf_stream (char **start, char *end, pdf_obj
 				  *dict)
 {
-  pdf_obj *result, *new_dict, *tmp1, *tmp2;
+  pdf_obj *result, *new_dict, *tmp1, *tmp2, *length_obj;
   int length;
   if (pdf_lookup_dict(dict, "F")) {
     fprintf (stderr, "File streams not implemented (yet)");
@@ -390,12 +390,14 @@ static pdf_obj *parse_pdf_stream (char **start, char *end, pdf_obj
     fprintf (stderr, "No length specified");
     return NULL;
   }
-  length = pdf_number_value (pdf_deref_obj (tmp1));
+  length = pdf_number_value (length_obj = pdf_deref_obj (tmp1));
+  pdf_release_obj (length_obj);
   skip_white(start, end);
   skip_line(start, end);
   result = pdf_new_stream();
   new_dict = pdf_stream_dict(result);
   pdf_merge_dict (new_dict, dict);
+  pdf_release_obj (dict);
   pdf_add_stream (result, *start, length);
   *start += length;
   skip_white(start, end);
