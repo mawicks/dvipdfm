@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.27 1998/12/24 05:12:46 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.28 1998/12/24 05:18:26 mwicks Exp $
  
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -487,11 +487,6 @@ static pdf_obj *name_subtree (dest_entry *dests, unsigned long ndests)
 #define CLUSTER 4
   int i;
   pdf_obj *result, *name_array, *limit_array, *kid_array;
-  fprintf (stderr, "\n\n*****name_subtree*****\n\n");
-  for (i=0; i<ndests; i++) {
-    fprintf (stderr, "%s\n", dests[i].name);
-  }
-  fprintf (stderr, "ndests=%d\n", ndests);
   result = pdf_new_dict();
   limit_array = pdf_new_array();
   pdf_add_dict (result, pdf_new_name ("Limits"), limit_array);
@@ -522,13 +517,8 @@ static pdf_obj *name_subtree (dest_entry *dests, unsigned long ndests)
       subtree = name_subtree (dests+start, end-start);
       pdf_add_array (kid_array, pdf_ref_obj (subtree));
       pdf_release_obj (subtree);
-      fprintf (stderr, "kid array is\n");
-      pdf_write_obj (stderr, kid_array);
-      fprintf (stderr, "\n");
     }
   }
-  pdf_write_obj (stderr, result);
-  fprintf(stderr, "\n\n");
   return result;
 }
 
@@ -536,32 +526,27 @@ static void finish_dests_tree (void)
 {
   pdf_obj *kid, *name_array;
   int i;
-  fprintf (stderr, "\n\n*****finish_dests_Treee*****\n\n");
-  fprintf (stderr, "ndests=%d\n", number_dests);
-  if (number_dests <= 0){
-    pdf_release_obj (dests_dict);
-    return;
+  if (number_dests > 0) {
+    /* Sort before writing any /Dests entries */
+    qsort(dests, number_dests, sizeof(dests[0]), cmp_dest);
+    kid = name_subtree (dests, number_dests);
+    /* Each entry in dests has been assigned to another object, so
+       we can free the entire array without freeing the entries. */
+    RELEASE (dests);
+    pdf_merge_dict (dests_dict, kid);
+    
+    /* Point /Dests dictionary to the kid */  
+    /*  tmp1 = pdf_new_array();
+	pdf_add_array (tmp1, pdf_ref_obj (kid));
+	pdf_add_dict (dests_dict,
+	pdf_new_name ("Kids"),
+	tmp1); */
+    /* Done with kid.  We only need the reference */
+    pdf_release_obj (kid);
   }
-  /* Sort before writing any /Dests entries */
-  qsort(dests, number_dests, sizeof(dests[0]), cmp_dest);
-  kid = name_subtree (dests, number_dests);
-  /* Each entry in dests has been assigned to another object, so
-     we can free the entire array without freeing the entries. */
-  RELEASE (dests);
-  pdf_merge_dict (dests_dict, kid);
-
-  /* Point /Dests dictionary to the kid */  
-  /*  tmp1 = pdf_new_array();
-  pdf_add_array (tmp1, pdf_ref_obj (kid));
-  pdf_add_dict (dests_dict,
-		pdf_new_name ("Kids"),
-		tmp1); */
-  /* Done with kid.  We only need the reference */
-  pdf_release_obj (kid);
   /* Done with dests */
   pdf_release_obj (dests_dict);
 }
-
 
 void pdf_doc_add_dest (char *name, unsigned length, pdf_obj *array_ref)
 {
