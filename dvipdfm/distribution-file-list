@@ -53,6 +53,8 @@ pdfspecial.c
 pdfspecial.h
 pkfont.c
 pkfont.h
+pngimage.c
+pngimage.h
 standardenc.h
 system.h
 t1crypt.c

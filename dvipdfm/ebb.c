@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.17 1999/02/09 03:33:02 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.18 1999/08/14 04:22:37 mwicks Exp $
 
     This is ebb, a bounding box extraction program.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -31,8 +31,15 @@
 #include "pdfparse.h"
 #include "numbers.h"
 
+#include "config.h"
+
+#ifdef HAVE_LIBPNG
+#include "pngimage.h"
+#include <png.h>
+#endif
+
 #define EBB_PROGRAM "ebb"
-#define EBB_VERSION "Version 0.4"
+#define EBB_VERSION "Version 0.5"
 
 static void usage (void)
 {
@@ -59,7 +66,7 @@ static void do_time(FILE *file)
 }
 
 char *extensions[] = {
-  ".jpeg", ".JPEG", ".jpg", ".JPG", ".pdf", ".PDF"
+  ".jpeg", ".JPEG", ".jpg", ".JPG", ".pdf", ".PDF", ".png", ".PNG"
 };
 
 static char *make_bb_filename (const char *name)
@@ -140,6 +147,40 @@ void do_jpeg (FILE *file, char *filename)
   RELEASE (jpeg);
   return;
 }
+#ifdef HAVE_LIBPNG
+void do_png (FILE *file, char *filename)
+{
+  png_structp png_ptr;
+  png_infop info_ptr;
+  unsigned long width, height;
+  rewind (file);
+  if (verbose) {
+    fprintf (stderr, "%s looks like a PNG file...", filename);
+  }
+  if (!(png_ptr = png_create_read_struct (PNG_LIBPNG_VER_STRING,    
+					  NULL, NULL, NULL)) ||
+      !(info_ptr = png_create_info_struct (png_ptr))) {
+    fprintf (stderr, "\n\nLibpng failed to initialize.  Corrupt PNG file?\n");
+    if (png_ptr)
+      png_destroy_read_struct(&png_ptr, NULL, NULL);
+    fclose (file);
+    return;
+  }
+  png_init_io (png_ptr, file);
+  /* Read PNG header */
+  png_read_info (png_ptr, info_ptr);
+  width = png_get_image_width(png_ptr, info_ptr);
+  height = png_get_image_height(png_ptr, info_ptr);
+  write_bb (filename, 0, 0,
+	    ROUND(width * PIX2PT,1.0),
+	    ROUND(height * PIX2PT,1.0));
+  if (info_ptr)
+    png_destroy_info_struct(png_ptr, &info_ptr);
+  if (png_ptr)
+    png_destroy_read_struct(&png_ptr, NULL, NULL);
+  return;
+}
+#endif /* HAVE_LIBPNG */
 
 void do_pdf (FILE *file, char *filename)
 {
@@ -164,7 +205,7 @@ void do_pdf (FILE *file, char *filename)
   pdf_release_obj (catalog);
   /* Media box can be inherited so start looking for it now */
   media_box = pdf_deref_obj (pdf_lookup_dict (page_tree, "MediaBox"));
-  crop_box = pdf_deref_obj (pdf_lookup_dict (page_tree, "MediaBox"));
+  crop_box = pdf_deref_obj (pdf_lookup_dict (page_tree, "CropBox"));
   while ((kids_ref = pdf_lookup_dict (page_tree, "Kids")) != NULL) {
     kids = pdf_deref_obj (kids_ref);
     pdf_release_obj (page_tree);
@@ -247,6 +288,11 @@ int main (int argc, char *argv[])
     }
     if (check_for_pdf (inputfile)) {
       do_pdf(inputfile, kpse_file_name);
+      fclose (inputfile);
+      continue;
+    }
+    if (check_for_png (inputfile)) {
+      do_png(inputfile, kpse_file_name);
       fclose (inputfile);
       continue;
     }

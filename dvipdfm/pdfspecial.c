@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.43 1999/08/14 03:50:16 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.44 1999/08/14 04:22:37 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -927,7 +927,7 @@ MEM_START
       }
 #ifdef HAVE_LIBPNG
       else if (check_for_png(image_file)) {
-	result = do_png (image_file, NULL);
+	result = start_png_image (image_file, NULL);
       }
 #endif
       else{
