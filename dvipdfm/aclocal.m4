@@ -18,10 +18,13 @@ AC_DEFUN(AC_HAS_KPSE_FORMATS,
 			[AC_MSG_RESULT(yes); AC_DEFINE(HAVE_KPSE_FORMATS)],
 			[AC_MSG_RESULT(no);
 AC_MSG_ERROR([AFM, PS_HEADER, and/or VF formats not found in Kpathsea header files.
-			
-This version of dvipdfm requires that kpathsea and its headers be installed.  If you
-are sure they are installed and in a standard place, maybe you
-need a newer version of kpathsea?
+
+This version of dvipdfm requires that kpathsea and its headers be installed.
+If you are sure they are installed and in a standard place, maybe you need a
+newer version of kpathsea?  You also might try setting the environment
+variable CFLAGS with -I point to the directory containing the headers
+before running configure.
+
 ])])])
 #
 # End of local tests

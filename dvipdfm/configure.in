@@ -17,8 +17,10 @@ AC_HAS_KPSE_FORMATS
 AC_CHECK_LIB(kpathsea, kpse_find_file, [AC_DEFINE(KPATHSEA) LIBS="-lkpathsea $LIBS"],
   AC_MSG_ERROR([kpathsea library not found
   
-This version of dvipdfm requires the kpathsea library and its headers to be pre-installed]))
-
+This version of dvipdfm requires the kpathsea library and its headers.  If
+you know where it is you might try setting the LDFLAGS environment variable
+with -L pointing to the library
+]))
 dnl Check for functions
 AC_CHECK_FUNCS(basename)
 
