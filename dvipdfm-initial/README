@@ -32,7 +32,6 @@ or if you prefer FTP:
         \special's for placing arbitrary PDF stream
 	graphics on every page.
 	
-      - Works great on plain old DVI files.
 
    Limitations (at present):
 
@@ -45,16 +44,6 @@ or if you prefer FTP:
         may be contain compressed streams, however.
         Flate compression of PDF output streams will be
 	supported in a future version.
-	
-      - No package support yet.  Graphics can be included
-        via \special's, but there is no higher level macro
-	support.  There is no interfacet for \includegraphics,
-	for example.  Rotation isn't implemented yet.
-	This should be easy to implement for included figures
-	and will be added soon.
-	
-      - Second generation and linearized PDF files can't
-        be encapsulated as graphic images.
 	
       - This code is in its infancy.  It has worked flawlessly
         for me, but YMMV.

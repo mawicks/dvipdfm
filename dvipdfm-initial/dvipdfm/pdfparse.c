@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfparse.c,v 1.7 1998/11/23 02:52:55 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfparse.c,v 1.8 1998/11/26 20:15:11 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -81,6 +81,8 @@ int is_a_number(const char *s)
 {
   int i;
   for (i=0; i<strlen(s); i++) {
+    if (i == 0 && *s == '-')
+      continue;
     if (!isdigit (*s))
       return 0;
   }
@@ -455,7 +457,7 @@ pdf_obj *parse_pdf_object (char **start, char *end)
        serious looking ahead */
     
     if (*start < end && 
-	(isdigit(**start) || **start == '+' || **start == '-')) {
+	(isdigit(**start) || **start == '+' || **start == '-' || **start == '.')) {
       tmp1 = parse_pdf_number(start, end);
       tmp2 = NULL;
       /* This could be a # # R type reference.  We can't be sure unless
@@ -495,7 +497,3 @@ pdf_obj *parse_pdf_object (char **start, char *end)
   }
   return result;
 }
-
-
-
-

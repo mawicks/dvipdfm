@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfobj.c,v 1.9 1998/11/23 02:52:54 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfobj.c,v 1.10 1998/11/26 20:15:11 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -39,6 +39,7 @@ unsigned next_label = 1;
 FILE *pdf_output_file = NULL;
 FILE *pdf_input_file = NULL;
 unsigned long pdf_output_file_position = 0;
+int pdf_output_line_position = 0;
 char format_buffer[256];
 
 static struct xref_entry 
@@ -64,7 +65,7 @@ static void write_indirect (FILE *file, const struct pdf_indirect *indirect);
 static void release_boolean (struct pdf_obj *data);
 static void write_boolean (FILE *file, const struct pdf_boolean *data);
 
-static void write_null (FILE *file, void *data);
+static void write_null (FILE *file);
 static void release_null (void *data);
 
 static void release_number (struct pdf_number *data);
@@ -194,18 +195,33 @@ static void pdf_out_char (FILE *file, char c)
 {
   fputc (c, file);
   /* Keep tallys for xref table *only* if writing a pdf file */
-  if (file == pdf_output_file)
+  if (file == pdf_output_file) {
     pdf_output_file_position += 1;
+    pdf_output_line_position += 1;
+  }
+  if (file == pdf_output_file && c == '\n')
+    pdf_output_line_position = 0;
 }
 
 static void pdf_out (FILE *file, char *buffer, int length)
 {
   fwrite (buffer, 1, length, file);
   /* Keep tallys for xref table *only* if writing a pdf file */
-  if (file == pdf_output_file)
+  if (file == pdf_output_file) {
     pdf_output_file_position += length;
+    pdf_output_line_position += length;
+  }
 }
 
+static void pdf_out_white (FILE *file)
+{
+  if (file == pdf_output_file && pdf_output_line_position >= 80) {
+    pdf_out_char (file, '\n');
+  } else {
+    pdf_out_char (file, ' ');
+  }
+  return;
+}
 
 pdf_obj *pdf_new_obj(pdf_obj_type type)
 {
@@ -326,7 +342,7 @@ static void release_null (void *data)
   return;
 }
 
-static void write_null (FILE *file, void *data)
+static void write_null (FILE *file)
 {
   pdf_out (file, "null", 4);
 }
@@ -417,7 +433,7 @@ pdf_obj *pdf_new_string (const char *string, unsigned length)
   if (length != 0) {
     data -> length = length;
     data -> string = NEW (length+1, char);
-    bcopy (string, data -> string, length);
+    memcpy (data -> string, string, length);
     data -> string[length] = 0;
   } else {
     data -> length = 0;
@@ -620,12 +636,16 @@ pdf_obj *pdf_new_array (void)
 
 static void write_array (FILE *file, const struct pdf_array *array)
 {
+  if (array -> next == NULL) {
+    write_null (file);
+    return;
+  }
   pdf_out_char (file, '[');
   while (array -> next != NULL) {
     pdf_write_obj (file, array -> this);
     array = array -> next;
     if (array -> next != NULL)
-      pdf_out_char (file, ' ');
+      pdf_out_white (file);
   }
   pdf_out_char (file, ']');
 }
@@ -687,7 +707,7 @@ static void write_dict (FILE *file, const struct pdf_dict *dict)
   pdf_out (file, "<<\n", 3);
   while (dict -> key != NULL) {
     pdf_write_obj (file, dict -> key);
-    pdf_out_char (file, ' ');
+    pdf_out_white (file);
     pdf_write_obj (file, dict -> value);
     dict = dict -> next;
     pdf_out_char (file, '\n');
@@ -913,7 +933,7 @@ void pdf_write_obj (FILE *file, const pdf_obj *object)
     write_stream (file, object -> data);
     break;
   case PDF_NULL:
-    write_null (file, object -> data);
+    write_null (file);
     break;
   case PDF_INDIRECT:
     write_indirect (file, object -> data);
@@ -1383,14 +1403,18 @@ pdf_obj *read_xref (void)
 
 static int num_xobjects = 0;
 
-pdf_obj *pdf_open (char *file)
+pdf_obj *pdf_open (char *filename)
 {
   int i;
   pdf_obj *tmp1, *tmp2;
   pdf_obj *trailer;
   char *parse_pointer;
-  if ((pdf_input_file = fopen (file, "r")) == NULL) {
-    fprintf (stderr, "Unable to open file name (%s)\n", file);
+  if ((pdf_input_file = fopen (filename, "r")) == NULL) {
+    fprintf (stderr, "Unable to open file name (%s)\n", filename);
+    return NULL;
+  }
+  if (!check_for_pdf (pdf_input_file)) {
+    fprintf (stderr, "pdf_open: %s: not a PDF 1.[1-2] file\n", filename);
     return NULL;
   }
   if ((trailer = read_xref()) == NULL) {
@@ -1435,5 +1459,15 @@ void pdf_close (void)
   if (debug) {
     fprintf (stderr, "\nexiting pdf_close:\n");
   }
+}
+
+int check_for_pdf (FILE *file) 
+{
+  rewind (file);
+  if (fread (work_buffer, sizeof(char), strlen("%PDF-1.2"), file) != 8 ||
+      strncmp(work_buffer, "%PDF-1.", 7) ||
+      work_buffer[7] < '0' || work_buffer[7] > '2')
+    return 0;
+  return 1;
 }
 

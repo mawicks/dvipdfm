@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfdev.c,v 1.4 1998/11/20 23:44:15 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfdev.c,v 1.5 1998/11/26 20:15:11 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -252,11 +252,52 @@ static void bop_font_reset(void)
   current_font = -1;
 }
 
+
+
+#define RGB 1
+#define GRAY 2
 struct color {
+  int colortype;
   double r, g, b;
-} colorstack[MAX_COLORS];
+} colorstack[MAX_COLORS], background = {GRAY, 1.0, 1.0, 1.0};
 
 static int num_colors = 0;
+
+static void fill_page (void)
+{
+  if (background.colortype == GRAY && background.g == 1.0)
+    return;
+  if (background.colortype == RGB) {
+    sprintf (format_buffer, " q 0 w %g %g %g rg ", 
+	     background.r, background.g, background.b);
+  } else if (background.colortype == GRAY) {
+    sprintf (format_buffer, " q 0 w %g g ", background.g);
+  }
+  pdf_doc_this_bop (format_buffer, strlen(format_buffer));
+  sprintf (format_buffer,
+	   " 0 0 m %g 0 l %g %g l 0 %g l b Q",
+	   page_width, page_width, page_height, page_height);
+  pdf_doc_this_bop (format_buffer, strlen(format_buffer));
+}
+
+void dev_bg_color (double r, double g, double b)
+{
+  background.colortype = RGB;
+  background.r = r;
+  background.g = g;
+  background.b = b;
+  fill_page();
+  return;
+}
+
+void dev_bg_gray (double value)
+{
+  background.colortype = GRAY;
+  background.g = value;
+  fill_page();
+  return;
+}
+
 static void dev_clear_color_stack (void)
 {
   num_colors = 0;
@@ -269,17 +310,29 @@ static void dev_do_color (void)
     pdf_doc_add_to_page (" 0 g 0 G ", 9);
     return;
   }
-  sprintf (format_buffer, " %g %g %g rg ",
-	   colorstack[num_colors-1].r,
-	   colorstack[num_colors-1].g,
-	   colorstack[num_colors-1].b);
-  pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
-  sprintf (format_buffer, " %g %g %g RG ",
-	   colorstack[num_colors-1].r,
-	   colorstack[num_colors-1].g,
-	   colorstack[num_colors-1].b);
-  pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
+  if (colorstack[num_colors-1].colortype == RGB) {
+    sprintf (format_buffer, " %g %g %g",
+	     colorstack[num_colors-1].r,
+	     colorstack[num_colors-1].g,
+	     colorstack[num_colors-1].b);
+    pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
+    pdf_doc_add_to_page (" rg", 3);
+    pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
+    pdf_doc_add_to_page (" RG ", 4);
+    return;
+  }
+  if (colorstack[num_colors-1].colortype == GRAY) {
+    sprintf (format_buffer, " %g", colorstack[num_colors-1].g);
+    pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
+    pdf_doc_add_to_page (" g", 2);
+    pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
+    pdf_doc_add_to_page (" G ", 3);
+    return;
+  }
+  ERROR ("Internal error: Invalid color item on color stack");
+  return;
 }
+
 
 void dev_begin_color (double r, double g, double b)
 {
@@ -290,6 +343,19 @@ void dev_begin_color (double r, double g, double b)
   colorstack[num_colors].r = r;
   colorstack[num_colors].g = g;
   colorstack[num_colors].b = b;
+  colorstack[num_colors].colortype = RGB;
+  num_colors+= 1;
+  dev_do_color();
+}
+
+void dev_begin_gray (double value)
+{
+  if (num_colors >= MAX_COLORS) {
+    fprintf (stderr, "\ndev_begin_gray:  Exceeded depth of color stack\n");
+    return;
+  }
+  colorstack[num_colors].g = value;
+  colorstack[num_colors].colortype = GRAY;
   num_colors+= 1;
   dev_do_color();
 }
@@ -361,6 +427,7 @@ void dev_bop (void)
   }
     
   pdf_doc_new_page (page_width, page_height);
+  fill_page();
   graphics_mode();
   dev_xpos = 0.0;
   dev_ypos = 0.0;

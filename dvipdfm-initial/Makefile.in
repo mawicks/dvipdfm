@@ -6,10 +6,13 @@ CONFIG=config.h config.cache config.log config.status Makefile
 default:
 	cd kpathsea && $(MAKE) XMAKEARGS=kpsewhich
 	cd dvipdfm && $(MAKE)
-distclean clean: this-distclean
+clean:
+	for d in $(directories); do \
+	  (cd $$d && $(MAKE) $@) ; done;
+distclean: this-distclean
 	for d in $(directories); do \
 	  (cd $$d && $(MAKE) $@) ; done;
 this-distclean:
 	rm -f $(CONFIG)
-install:
+uninstall install:
 	cd dvipdfm && $(MAKE) $@

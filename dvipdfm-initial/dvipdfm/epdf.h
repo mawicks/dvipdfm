@@ -1,5 +1,7 @@
 #ifndef EPDF_H
 #define EPDF_H
+
+#include <stdio.h>
 #include "pdfspecial.h"
 #include "pdfobj.h"
 

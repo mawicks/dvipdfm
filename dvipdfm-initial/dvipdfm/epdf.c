@@ -1,6 +1,8 @@
 #include "pdfobj.h"
 #include "pdfspecial.h"
 #include "io.h"
+#include "epdf.h"
+
 
 static pdf_obj *build_scale_array (int a, int b, int c, int d, int e, int f)
 {
@@ -16,7 +18,6 @@ static pdf_obj *build_scale_array (int a, int b, int c, int d, int e, int f)
 }
 
 double xscale, yscale;
-
 
 void do_scaling(pdf_obj *media_box, struct xform_info *p)
 { 
@@ -87,6 +88,7 @@ pdf_obj *pdf_include_page(pdf_obj *trailer, double x_user, double y_user,
   char *key;
   /* Now just lookup catalog location */
   /* Deref catalog */
+
   if ((catalog = pdf_deref_obj(pdf_lookup_dict (trailer,"Root"))) ==
       NULL) {
     fprintf (stderr, "\nCatalog isn't where I expect it.\n");

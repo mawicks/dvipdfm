@@ -8,7 +8,7 @@
 /* #undef TM_IN_SYS_TIME */
 
 #define PACKAGE "dvipdfm"
-#define VERSION "0.7"
+#define VERSION "0.7.1"
 
 /* Define if you have the basename function.  */
 #define HAVE_BASENAME 1
@@ -20,7 +20,7 @@
 /* #undef HAVE_STRSTR */
 
 /* Define if you have the <unistd.h> header file.  */
-#define HAVE_UNISTD_H 1
+/* #undef HAVE_UNISTD_H */
 
 /* Define if you have the m library (-lm).  */
-#define HAVE_LIBM 1
+/* #undef HAVE_LIBM */
