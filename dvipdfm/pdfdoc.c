@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.25 1998/12/15 01:43:28 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.26 1998/12/23 16:46:55 mwicks Exp $
  
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -119,8 +119,8 @@ static void start_page_tree (void)
   pdf_add_dict (catalog,
 		pdf_new_name ("Pages"),
 		pdf_link_obj (page_tree_label));
-  glob_page_bop = pdf_new_stream();
-  glob_page_eop = pdf_new_stream();
+  glob_page_bop = pdf_new_stream(0);
+  glob_page_eop = pdf_new_stream(0);
   return;
 }
 
@@ -821,8 +821,8 @@ MEM_START
   if (this_page_contents != NULL) {
     finish_last_page();
   }
-  this_page_bop = pdf_new_stream();
-  this_page_eop = pdf_new_stream();
+  this_page_bop = pdf_new_stream(STREAM_COMPRESS);
+  this_page_eop = pdf_new_stream(STREAM_COMPRESS);
   /* Was this page already instantiated by a forward reference to it? */
   if (pages[page_count].page_ref == NULL) {
     /* If not, create it. */
@@ -842,7 +842,7 @@ MEM_START
   pdf_add_array (tmp1, pdf_ref_obj (glob_page_bop));
   pdf_add_array (tmp1, pdf_ref_obj (this_page_bop));
   /* start the contents stream for the new page */
-  this_page_contents = pdf_new_stream();
+  this_page_contents = pdf_new_stream(STREAM_COMPRESS);
   pdf_add_array (tmp1, pdf_ref_obj (this_page_contents));
   pdf_add_array (tmp1, pdf_ref_obj (this_page_eop));
   pdf_add_array (tmp1, pdf_ref_obj (glob_page_eop));
@@ -992,7 +992,7 @@ pdf_obj *begin_form_xobj (double bbllx, double bblly, double bburx,
   save_page_contents = this_page_contents;
   start_current_page_resources(); /* Starts current_page_resources,
 				     this_page_xobjects, and this_page_fonts */
-  this_page_contents = pdf_new_stream ();
+  this_page_contents = pdf_new_stream (STREAM_COMPRESS);
   /* Make a bounding box for this Xobject */
   bbox = pdf_new_array ();
   pdf_add_array (bbox, pdf_new_number (0.0));

@@ -29,6 +29,9 @@
 /* KPATHSEA - Define if you have kpathsea */
 #undef KPATHSEA
 
+/* HAVE_ZLIB - Define if you have zlib and its headers */
+#undef HAVE_ZLIB
+
 /* HAVE_KPSE_FORMATS - Define if you have a
  version of kpathsea with afm, type1, and vf formats */
 #undef HAVE_KPSE_FORMATS

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.31 1998/12/15 21:31:24 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.32 1998/12/23 16:46:56 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -1478,7 +1478,7 @@ pdf_obj *jpeg_build_object(struct jpeg *jpeg, double x_user, double
 {
   pdf_obj *xobject, *xobj_dict;
   double xscale, yscale;
-  xobject = pdf_new_stream();
+  xobject = pdf_new_stream(0);
   sprintf (work_buffer, "Im%d", ++num_images);
   pdf_doc_add_to_page_xobjects (work_buffer, pdf_ref_obj (xobject));
   xobj_dict = pdf_stream_dict (xobject);

@@ -26,6 +26,7 @@ with -L pointing to the directory containing libkpathsea.a
 ]))
 
 AC_TEXMF_TREE
+AC_HAS_ZLIB
   
 dnl Check for functions
 dnl AC_CHECK_FUNCS(basename)

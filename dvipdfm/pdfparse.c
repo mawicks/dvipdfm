@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.c,v 1.16 1998/12/23 06:52:41 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.c,v 1.17 1998/12/23 16:46:56 mwicks Exp $
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
 
@@ -438,7 +438,7 @@ static pdf_obj *parse_pdf_stream (char **start, char *end, pdf_obj
   pdf_release_obj (length_obj);
   skip_white(start, end);
   skip_line(start, end);
-  result = pdf_new_stream();
+  result = pdf_new_stream(0);
   new_dict = pdf_stream_dict(result);
   pdf_merge_dict (new_dict, dict);
   pdf_release_obj (dict);

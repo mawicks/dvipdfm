@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.h,v 1.15 1998/12/12 17:22:13 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.h,v 1.16 1998/12/23 16:46:56 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -104,6 +104,7 @@ struct pdf_stream
   char *stream;  /* Actual stream contents stored in "stream" */
   unsigned long stream_length;
   unsigned long max_length;
+  unsigned char _flags;
 };
 typedef struct pdf_stream pdf_stream;
 
@@ -169,7 +170,8 @@ extern void pdf_merge_dict (pdf_obj *dict1, pdf_obj *dict2);
 extern pdf_obj *pdf_lookup_dict (const pdf_obj *dict, const char *name);
 extern char *pdf_get_dict (const pdf_obj *dict, int index);
 
-extern pdf_obj *pdf_new_stream (void);
+extern pdf_obj *pdf_new_stream (int flags);
+#define STREAM_COMPRESS 1
 extern void pdf_add_stream (pdf_obj *stream, char *stream_data, unsigned
 		     length);
 

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.36 1998/12/23 08:21:36 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.37 1998/12/23 16:46:56 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -699,7 +699,7 @@ static int type1_pfb_id (const char *pfb_name, int encoding_id)
     clear_a_pfb (pfbs+i);
     pfbs[i].pfb_name = NEW (strlen(pfb_name)+1, char);
     strcpy (pfbs[i].pfb_name, pfb_name);
-    pfbs[i].direct = pdf_new_stream();
+    pfbs[i].direct = pdf_new_stream(STREAM_COMPRESS);
     pfbs[i].indirect = pdf_ref_obj (pfbs[i].direct);
     pfbs[i].encoding_id = encoding_id;
   }

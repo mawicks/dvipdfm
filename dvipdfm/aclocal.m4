@@ -41,5 +41,17 @@ fi
 AC_SUBST(TEXMF)
 AC_MSG_RESULT($TEXMF)])
 #
+# Check for zlib
+#
+AC_DEFUN(AC_HAS_ZLIB,
+  [AC_MSG_CHECKING([for zlib header files])
+AC_TRY_COMPILE([#include <zlib.h>], [z_stream p;],
+[AC_MSG_RESULT(yes)
+ AC_CHECK_LIB(z, deflateEnd,
+[AC_DEFINE(HAVE_ZLIB)
+LIBS="$LIBS -lz"])],
+[AC_MSG_RESULT(no)])])
+#
 # End of local tests
 #
+

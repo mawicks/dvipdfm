@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.28 1998/12/14 05:41:38 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.29 1998/12/23 16:46:55 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -844,7 +844,7 @@ char *pdf_get_dict (const pdf_obj *dict, int index)
 }
 
 
-pdf_obj *pdf_new_stream (void)
+pdf_obj *pdf_new_stream (int flags)
 {
   pdf_obj *result;
   pdf_stream *data;
@@ -858,6 +858,7 @@ pdf_obj *pdf_new_stream (void)
 				      be checked by the output routine 
 				   */
   data -> length = pdf_new_number (0);
+  data -> _flags = flags;
   pdf_add_dict (data->dict,
 		pdf_new_name ("Length"),
 		pdf_ref_obj (data -> length));
