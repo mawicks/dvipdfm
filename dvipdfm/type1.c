@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.17 1998/12/21 02:31:56 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.18 1998/12/21 02:51:28 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -48,7 +48,14 @@ struct font_record
   char *enc_name;
 };
 
+struct glyph 
+{
+  char *name;
+  int position;
+};
+
 struct encoding {
+  struct glyph glyphs[256];
   char *enc_name;
   pdf_obj *encoding_ref;
 } encodings[MAX_ENCODINGS];
@@ -144,6 +151,14 @@ pdf_obj *get_encoding (const char *enc_name)
     }
     RELEASE (buffer);
     differences = find_encoding_differences (encoding);
+    /* Save glyph positions in a format easier for partial font
+       embedding */
+    for (i=0; i<256; i++) {
+      tmp = pdf_string_value (pdf_get_array(encoding, i));
+      (encodings[num_encodings].glyphs)[i].name = NEW (strlen(tmp)+1, char);
+      strcpy ((encodings[num_encodings].glyphs)[i].name, tmp);
+      (encodings[num_encodings].glyphs)[i].position = i;
+    }
     pdf_release_obj (encoding);
     result = pdf_new_dict();
     pdf_add_dict (result, pdf_new_name ("Type"),
@@ -354,11 +369,7 @@ static void do_pfb (const char *pfb_name, pdf_obj *stream)
 
 void type1_close_all (void)
 {
-  int i;
-  for (i=0; i<num_encodings; i++) {
-    RELEASE (encodings[i].enc_name);
-    pdf_release_obj (encodings[i].encoding_ref);
-  }
+  int i, j;
   /* Read any necessary font files and flush them */
   for (i=0; i<num_pfbs; i++) {
     do_pfb (pfbs[i].pfb_name, pfbs[i].direct);
@@ -367,6 +378,15 @@ void type1_close_all (void)
     pdf_release_obj (pfbs[i].indirect);
   }
   RELEASE (pfbs);
+  /* Now do encodings */
+  for (i=0; i<num_encodings; i++) {
+    RELEASE (encodings[i].enc_name);
+    pdf_release_obj (encodings[i].encoding_ref);
+    /* Release glyph names for this encoding */
+    for (j=0; j<256; j++) {
+      RELEASE ((encodings[i].glyphs)[j].name);
+    }
+  }
 }
 
 #define FONTNAME 1
