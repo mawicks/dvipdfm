@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tpic.c,v 1.12 1999/02/21 18:24:28 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tpic.c,v 1.13 1999/02/21 19:13:58 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -116,9 +116,9 @@ MEM_END
 static void show_path (int hidden) 
 {
   int len;
-  /* The semantics of a fill_color of 1.0 will be to use current
-     painting color know to dvipdfm */
-  if (fill_shape && fill_color != 0.0) {
+  /* The semantics of a fill_color of 0.0 or 0.5 will be to use current
+     painting color known to dvipdfm */
+  if (fill_shape && fill_color != 0.0 && fill_color != 0.5) {
     len = sprintf (work_buffer, " %.2f g", fill_color);
     pdf_doc_add_to_page (work_buffer, len);
   }
@@ -282,10 +282,6 @@ MEM_START
       ROTATE (cur_x, cur_y, c, s);
       ROTATE (cp1_x, cp1_y, c, s);
       ROTATE (cp2_x, cp2_y, c, s);
-    }
-    if (fill_shape && fill_color != 0.0) {
-      len = sprintf (work_buffer, " %.2f g", fill_color);
-      pdf_doc_add_to_page (work_buffer, len);
     }
     show_path (hidden);
     pdf_doc_add_to_page (" Q", 2);
