@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.10 1998/12/04 20:26:07 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.11 1998/12/05 11:47:25 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -134,6 +134,8 @@ static void dump_xref(void)
 		      output_xref[i-1].file_position, 0L);
     pdf_out (pdf_output_file, format_buffer, length);
   }
+  /* Done with xref table */
+  RELEASE (output_xref);
 }
 
 static void dump_trailer(void)
@@ -307,7 +309,7 @@ pdf_obj *pdf_ref_obj(pdf_obj *object)
 
 static void release_indirect (pdf_indirect *data)
 {
-  free (data);
+  RELEASE (data);
 }
 
 static void write_indirect (FILE *file, const pdf_indirect *indirect)
@@ -368,7 +370,7 @@ pdf_obj *pdf_new_boolean (char value)
 
 static void release_boolean (pdf_obj *data)
 {
-  free (data);
+  RELEASE (data);
 }
 
 static void write_boolean (FILE *file, const pdf_boolean *data)
@@ -402,7 +404,7 @@ pdf_obj *pdf_new_number (double value)
 
 static void release_number (pdf_number *data)
 {
-  free (data);
+  RELEASE (data);
 }
 
 static void write_number (FILE *file, const pdf_number *number)
@@ -499,8 +501,8 @@ static void write_string (FILE *file, const pdf_string *string)
 static void release_string (pdf_string *data)
 {
   if (data -> string != NULL)
-    free (data -> string);
-  free (data);
+    RELEASE (data -> string);
+  RELEASE (data);
 }
 
 void pdf_set_string (pdf_obj *object, unsigned char *string, unsigned length)
@@ -511,7 +513,7 @@ void pdf_set_string (pdf_obj *object, unsigned char *string, unsigned length)
   }
   data = object -> data;
   if (data -> length != 0) {
-    free (data -> string);
+    RELEASE (data -> string);
   }
   if (length != 0) {
     data -> length = length;
@@ -548,7 +550,7 @@ pdf_obj *pdf_new_name (const char *name)  /* name does *not* include the / */
   result -> data = data;
   if (length != 0) {
     data -> name = NEW (length+1, char);
-    memcpy (data -> name, name, length+1);
+    memcpy (data -> name, name, length);
     (data->name)[length] = 0;
   } else 
     data -> name = NULL;
@@ -589,8 +591,8 @@ static void write_name (FILE *file, const pdf_name *name)
 static void release_name (pdf_name *data)
 {
   if (data -> name != NULL)
-    free (data -> name);
-  free (data);
+    RELEASE (data -> name);
+  RELEASE (data);
 }
 
 void pdf_set_name (pdf_obj *object, char *name)
@@ -602,10 +604,10 @@ void pdf_set_name (pdf_obj *object, char *name)
   }
   data = object -> data;
   if (data -> name != NULL) {
-    free (data -> name);
+    RELEASE (data -> name);
   }
   if (length != 0) {
-    data -> name = NEW (length, char);
+    data -> name = NEW (length+1, char);
     memcpy (data -> name, name, length);
     (data->name)[length] = 0;
   } else {
@@ -680,10 +682,10 @@ static void release_array (pdf_array *data)
   while (data != NULL && data -> next != NULL) {
     pdf_release_obj (data -> this);
     next = data -> next;
-    free (data);
+    RELEASE (data);
     data = next;
   }
-  free (data);
+  RELEASE (data);
 }
 
 void pdf_add_array (pdf_obj *array, pdf_obj *object) /* Array is ended
@@ -739,10 +741,10 @@ static void release_dict (pdf_dict *data)
     pdf_release_obj (data -> key);
     pdf_release_obj (data -> value);
     next = data -> next;
-    free (data);
+    RELEASE (data);
     data = next;
   }
-  free (data);
+  RELEASE (data);
 }
 
 void pdf_add_dict (pdf_obj *dict, pdf_obj *key, pdf_obj *value) /* Array is ended
@@ -775,6 +777,7 @@ void pdf_add_dict (pdf_obj *dict, pdf_obj *key, pdf_obj *value) /* Array is ende
     data -> value = value;
   }
   else {
+    pdf_release_obj (key);
     pdf_release_obj (value);
   }
   return;
@@ -886,6 +889,7 @@ static void release_stream (pdf_stream *stream)
   pdf_release_obj (stream -> dict);
   pdf_release_obj (stream -> length);
   fclose (stream -> tmpfile);
+  RELEASE (stream);
 }
 
 pdf_obj *pdf_stream_dict (pdf_obj *stream)
@@ -1017,7 +1021,7 @@ void pdf_release_obj (pdf_obj *object)
     }
   /* This might help detect freeing already freed objects */
     /*  object -> type = -1;*/
-    free (object);
+    RELEASE (object);
   }
 }
 
@@ -1085,7 +1089,7 @@ static long find_xref(void)
   end = start+strlen(work_buffer);
   skip_white(&start, end);
   xref_pos = (long) atof (number = parse_number (&start, end));
-  release (number);
+  RELEASE (number);
   if (debug) {
     fprintf (stderr, ")\n");
     fprintf (stderr, "xref @ %ld\n", xref_pos);
@@ -1234,19 +1238,19 @@ pdf_obj *pdf_read_object (unsigned long obj_no)
   number = parse_number (&parse_pointer, end);
   if ((int) atof(number) != obj_no) {
     fprintf (stderr, "Object number doesn't match\n");
-    release (buffer);
+    RELEASE (buffer);
     return NULL;
   }
   if (number != NULL)
-    release(number);
+    RELEASE(number);
   skip_white (&parse_pointer, end);
   number = parse_number (&parse_pointer, end);
   if (number != NULL)
-    release(number);
+    RELEASE(number);
   skip_white(&parse_pointer, end);
   if (strncmp(parse_pointer, "obj", strlen("obj"))) {
     fprintf (stderr, "Didn't find \"obj\"\n");
-    release (buffer);
+    RELEASE (buffer);
     return (NULL);
   }
   parse_pointer += strlen("obj");
@@ -1258,7 +1262,7 @@ pdf_obj *pdf_read_object (unsigned long obj_no)
       pdf_release_obj (result);
     result = NULL;
   }
-  release (buffer);
+  RELEASE (buffer);
   return (result);
 }
 /* pdf_deref_obj always returns a link instead of the original */ 
@@ -1461,7 +1465,7 @@ void pdf_close (void)
       }
     }
   } while (!done);
-  release (xref_table);
+  RELEASE (xref_table);
   xref_table = NULL;
   num_input_objects = 0;
   fclose (pdf_input_file);

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.9 1998/12/02 16:28:56 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.10 1998/12/05 11:47:25 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -109,7 +109,7 @@ pdf_obj *get_encoding (const char *enc_name)
     full_enc_filename = kpse_find_file (tmp,
 					kpse_tex_ps_header_format,
 					1);
-    release (tmp);
+    RELEASE (tmp);
   }
   if (full_enc_filename == NULL ||
       (encfile = fopen (full_enc_filename, "r")) == NULL ||
@@ -131,7 +131,7 @@ pdf_obj *get_encoding (const char *enc_name)
     skip_white (&start, end);
     while (start < end && *start != '[') {
       if ((junk_ident = parse_ident (&start, end)) != NULL)
-	release (junk_ident);
+	RELEASE (junk_ident);
       else if ((junk_obj = parse_pdf_object (&start, end)) != NULL)
 	pdf_release_obj (junk_obj);
       skip_white(&start, end);
@@ -196,7 +196,7 @@ struct font_record *get_font_record (const char *tex_name)
     if ((record_name = parse_ident (&start, end)) == NULL)
       continue;
     if (strcmp (record_name, tex_name)) {
-      release (record_name);
+      RELEASE (record_name);
       continue;
     }
     break;
@@ -540,13 +540,13 @@ static void fill_in_defaults (struct font_record *font_record, const
   if (font_record -> enc_name != NULL && 
       (!strcmp (font_record->enc_name, "default") ||
        !strcmp (font_record->enc_name, "none"))) {
-    release(font_record->enc_name);
+    RELEASE(font_record->enc_name);
     font_record -> enc_name = NULL;
   }
   if (font_record -> afm_name != NULL && 
       (!strcmp (font_record->afm_name, "default") ||
        !strcmp (font_record->afm_name, "none"))) {
-    release(font_record->afm_name);
+    RELEASE(font_record->afm_name);
     font_record -> afm_name = NULL;
   }
   /* We *must* fill in an afm_name either explicitly or by default */
@@ -562,7 +562,7 @@ static void fill_in_defaults (struct font_record *font_record, const
   /* If a "none" pfb name was specified, set name to null */
   if (font_record -> pfb_name != NULL && 
       !strcmp (font_record->pfb_name, "none")) {
-    release(font_record->pfb_name);
+    RELEASE(font_record->pfb_name);
     font_record -> pfb_name = NULL;
   }
   return;
@@ -594,14 +594,14 @@ pdf_obj *type1_font_resource (const char *tex_name, int tfm_font_id, const char 
     open_afm_file (font_record ->afm_name);
     scan_afm_file();
     close_afm_file ();
-    release (font_record -> afm_name);
+    RELEASE (font_record -> afm_name);
   }
   if (font_record -> pfb_name != NULL) {
     if (!is_a_base_font (fontname))
       pdf_add_dict (font_resource, 
 		    pdf_new_name ("FontDescriptor"),
 		    type1_font_descriptor(font_record -> pfb_name));
-    release (font_record -> pfb_name);
+    RELEASE (font_record -> pfb_name);
   }
   pdf_add_dict (font_resource,
 		pdf_new_name ("BaseFont"),
@@ -629,9 +629,9 @@ pdf_obj *type1_font_resource (const char *tex_name, int tfm_font_id, const char 
     pdf_add_dict (font_resource,
 		  pdf_new_name ("Encoding"),
 		  font_encoding_ref);
-    release (font_record -> enc_name);
+    RELEASE (font_record -> enc_name);
   }
-  release (font_record);
+  RELEASE (font_record);
   font_resource_ref = pdf_ref_obj (font_resource);
   pdf_release_obj (font_resource);
   return font_resource_ref;

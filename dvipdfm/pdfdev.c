@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.11 1998/12/05 02:39:45 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.12 1998/12/05 11:47:24 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -532,12 +532,25 @@ void dev_locate_font (char *tex_name,
   n_dev_fonts += 1;
 }
 
+void dev_close_all_fonts(void)
+{
+  int i;
+  for (i=0; i<n_dev_fonts; i++) {
+    pdf_release_obj (dev_font[i].font_resource);
+    RELEASE (dev_font[i].tex_name);
+  }
+}
+
+
 void dev_select_font (long tex_font_id)
 {
   int i;
   if (debug) {
     fprintf (stderr, "(dev_select_font)");
   }
+#ifdef MEM_DEBUG
+  fprintf (debugfile, "(dev_select_font entered)\n");
+#endif
   for (i=0; i<n_dev_fonts; i++) {
     if (dev_font[i].tex_font_id == tex_font_id)
       break;
@@ -554,6 +567,9 @@ void dev_select_font (long tex_font_id)
   /* Add to Font list in Resource dictionary for this page */
   pdf_doc_add_to_page_fonts (dev_font[i].short_name,
 			     pdf_link_obj(dev_font[i].font_resource));
+#ifdef MEM_DEBUG
+  fprintf (debugfile, "(dev_select_font left)\n");
+#endif
 }
 /* The following routine is here for forms.  Since
    a form is self-contained, it will need its own Tf command
@@ -579,6 +595,9 @@ void dev_reselect_font(void)
 void dev_set_char (unsigned ch, double width)
 {
   int len;
+#ifdef MEM_DEBUG
+  fprintf (debugfile, "%c\n", ch);
+#endif
   if (debug) {
     fprintf (stderr, "(dev_set_char (width=%g)", width);
     if (isprint (ch))

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.c,v 1.8 1998/12/04 20:26:07 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.c,v 1.9 1998/12/05 11:47:25 mwicks Exp $
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
 
@@ -147,6 +147,9 @@ pdf_obj *parse_pdf_dict (char **start, char *end)
 pdf_obj *parse_pdf_array (char **start, char *end)
 {
   pdf_obj *result, *tmp1;
+#ifdef MEM_DEBUG
+MEM_START
+#endif
   skip_white(start, end);
   if (*((*start)++) != '[')
     return NULL;
@@ -167,6 +170,9 @@ pdf_obj *parse_pdf_array (char **start, char *end)
     return NULL;
   }
   (*start)++;
+#ifdef MEM_DEBUG
+MEM_END
+#endif
   return result;
 }
 
@@ -194,6 +200,9 @@ char *parse_number (char **start, char *end)
     return number;
   }
   *start = save;
+#ifdef MEM_DEBUG
+MEM_END
+#endif
   return NULL;
 }
 
@@ -239,7 +248,7 @@ pdf_obj *parse_pdf_name (char **start, char *end)
   (*start)++;
   if ((name = parse_ident(start, end)) != NULL) {
     result = pdf_new_name (name);
-    release (name);
+    RELEASE (name);
     return result;
   }
   return NULL;
@@ -280,7 +289,7 @@ pdf_obj *parse_pdf_null (char **start, char *end)
   skip_white(start, end);
   ident = parse_ident(start, end);
   if (!strcmp (ident, "null")) {
-    release(ident);
+    RELEASE(ident);
     return pdf_new_null();
   }
   *start = save;
@@ -296,7 +305,7 @@ static pdf_obj *parse_pdf_number (char **start, char *end)
   skip_white(start, end);
   if ((number = parse_number(start, end)) != NULL) {
     result = pdf_new_number (atof(number));
-    release (number);
+    RELEASE (number);
     return result;
   }
   return NULL;
@@ -335,7 +344,7 @@ pdf_obj *parse_pdf_hex_string (char **start, char *end)
     skip_white (start, end);
     strlength += 1;
   }
-  release(string);
+  RELEASE(string);
   if (*start == end)
     return NULL;
   *start += 1;
@@ -393,7 +402,7 @@ pdf_obj *parse_pdf_string (char **start, char *end)
   }
   (*start)++;
   result = pdf_new_string (string, strlength);
-  release (string);
+  RELEASE (string);
   return result;
 }
 

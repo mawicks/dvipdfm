@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.h,v 1.5 1998/12/03 22:38:11 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.h,v 1.6 1998/12/05 11:47:24 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -38,6 +38,7 @@ unsigned long dev_tell_ydpi(void);
 
 void dev_locate_font (char *name, unsigned long tex_font_id,
 		      int tfm_font_id, double ptsize);
+void dev_close_all_fonts (void);
 
 void dev_bop (void);
 

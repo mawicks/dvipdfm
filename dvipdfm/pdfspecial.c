@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.16 1998/12/05 02:39:46 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.17 1998/12/05 11:47:25 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -62,15 +62,27 @@ static void do_uxobj (char **start, char *end, double x_user, double y_user);
 
 static void do_bop(char **start, char *end)
 {
+#ifdef MEM_DEBUG
+MEM_START
+#endif
   if (*start != end)
     pdf_doc_bop (*start, end - *start);
+#ifdef MEM_DEBUG
+MEM_END
+#endif
   return;
 }
 
 static void do_eop(char **start, char *end)
 {
+#ifdef MEM_DEBUG
+MEM_START
+#endif
   if (*start != end)
     pdf_doc_eop (*start, end - *start);
+#ifdef MEM_DEBUG
+MEM_END
+#endif
 }
 
 pdf_obj *get_reference(char **start, char *end)
@@ -84,7 +96,7 @@ pdf_obj *get_reference(char **start, char *end)
       *start = save;
       dump(*start, end);
     }
-    release (name);
+    RELEASE (name);
     return result;
   }
   return NULL;
@@ -101,7 +113,7 @@ pdf_obj *get_reference_lvalue(char **start, char *end)
       *start = save;
       dump(*start, end);
     }
-    release (name);
+    RELEASE (name);
     return result;
   }
   return NULL;
@@ -185,7 +197,7 @@ static struct xform_info *new_xform_info (void)
 
 static void release_xform_info (struct xform_info *p)
 {
-  release (p);
+  RELEASE (p);
   return;
 }
 
@@ -226,11 +238,11 @@ static int parse_one_dim_word (char **start, char *end)
   }
   if (i == sizeof(dimensions)/sizeof(dimensions[0])) {
     fprintf (stderr, "\n%s: Invalid dimension\n", dimension_string);
-    release (dimension_string);
+    RELEASE (dimension_string);
     *start = save;
     return -1;
   }
-  release (dimension_string);
+  RELEASE (dimension_string);
   return dimensions[i].key;
 }
 
@@ -266,10 +278,10 @@ double parse_one_unit (char **start, char *end)
     fprintf (stderr, "\n%s: Invalid unit of measurement (should be in, cm, pt, etc.)\n", unit_string);
     *start = save; 
     dump (*start, end);
-    release (unit_string);
+    RELEASE (unit_string);
     return -1.0;
   }
-  release (unit_string);
+  RELEASE (unit_string);
   if (units[i].true)
     return units[i].units;
   else 
@@ -294,7 +306,7 @@ static int parse_dimension (char **start, char *end,
   skip_white(start, end);
   if (dimensions[key].hasdimension &&
       (units = parse_one_unit(start, end)) < 0.0) {
-    release (number_string);
+    RELEASE (number_string);
     fprintf (stderr, "\nExpecting a unit here\n");
     dump (*start, end);
     *start = save;
@@ -337,7 +349,7 @@ static int parse_dimension (char **start, char *end,
     p->rotate = atof (number_string) * M_PI / 180.0;
     break;
   }
-  release(number_string);
+  RELEASE(number_string);
   skip_white(start, end);
   return 1;
 }
@@ -376,6 +388,9 @@ static void do_ann(char **start, char *end)
   pdf_obj *result, *rectangle;
   char *name;
   struct xform_info *p;
+#ifdef MEM_DEBUG
+MEM_START
+#endif
   p = new_xform_info();
   skip_white(start, end);
   name = parse_opt_ident(start, end);
@@ -421,11 +436,14 @@ static void do_ann(char **start, char *end)
        closed later. This seems awkward, but an annotation is always
        considered to be complete */
     release_reference (name);
-    release (name);
+    RELEASE (name);
   }
   else 
     pdf_release_obj (result);
   parse_crap(start, end);
+#ifdef MEM_DEBUG
+MEM_END
+#endif
   return;
 }
 
@@ -477,6 +495,9 @@ static void do_bcolor(char **start, char *end)
 {
   char *save = *start;
   pdf_obj *color_array;
+#ifdef MEM_DEBUG
+  MEM_START
+#endif MEM_DEBUG
   skip_white(start, end);
   if ((color_array = parse_pdf_object(start, end)) == NULL ||
       (color_array -> type != PDF_ARRAY && 
@@ -514,6 +535,9 @@ static void do_bcolor(char **start, char *end)
     dev_begin_gray (pdf_number_value (color_array));
   }
   pdf_release_obj (color_array);
+#ifdef MEM_DEBUG
+  MEM_END
+#endif MEM_DEBUG
   return;
 }
 
@@ -526,12 +550,15 @@ static void do_bgray(char **start, char *end)
     return;
   }
   dev_begin_gray (atof (number_string));
-  release (number_string);
+  RELEASE (number_string);
   return;
 }
 
 static void do_ecolor(void)
 {
+#ifdef MEM_DEBUG
+  fprintf (debugfile, "(do_ecolor)\n");
+#endif MEM_DEBUG
   dev_end_color();
 }
 
@@ -545,6 +572,9 @@ static void do_bxform (char **start, char *end)
   char *save = *start;
   struct xform_info *p;
   p = new_xform_info ();
+#ifdef MEM_DEBUG
+MEM_START
+#endif
   skip_white (start, end);
   while ((*start) < end && isalpha (**start)) {
     skip_white (start, end);
@@ -577,12 +607,21 @@ static void do_bxform (char **start, char *end)
   if (p -> yscale == 0.0)
     p->yscale = 1.0;
   dev_begin_xform (p->xscale, p->yscale, p->rotate);
+#ifdef MEM_DEBUG
+MEM_END
+#endif
   return;
 }
 
 static void do_exform(void)
 {
+#ifdef MEM_DEBUG
+MEM_START
+#endif
   dev_end_xform();
+#ifdef MEM_DEBUG
+MEM_END
+#endif
 }
 
 static void do_outline(char **start, char *end)
@@ -590,6 +629,9 @@ static void do_outline(char **start, char *end)
   pdf_obj *level, *result;
   char *save; 
   static int lowest_level = 255;
+#ifdef MEM_DEBUG
+    fprintf (debugfile, "(do_outline)\n");
+#endif
   skip_white(start, end);
   save = *start; 
   if ((level = parse_pdf_object(start, end)) == NULL) {
@@ -613,7 +655,7 @@ static void do_outline(char **start, char *end)
   };
   parse_crap(start, end);
   pdf_doc_change_outline_depth ((int)pdf_number_value(level)-lowest_level+1);
-  release (level);
+  pdf_release_obj (level);
   pdf_doc_add_outline (result);
   return;
 }
@@ -630,13 +672,13 @@ static void do_article(char **start, char *end)
     return;
   }
   if ((info_dict = parse_pdf_dict(start, end)) == NULL) {
-    release (name);
+    RELEASE (name);
     fprintf (stderr, "Ignoring invalid dictionary\n");  
     return;
   }
   pdf_doc_start_article (name, pdf_link_obj(info_dict));
   add_reference (name, info_dict, NULL);
-  release (name);
+  RELEASE (name);
   parse_crap(start, end);
   return;
 }
@@ -696,7 +738,7 @@ static void do_bead(char **start, char *end)
 		pdf_doc_this_page_ref());
   pdf_doc_add_bead (name, bead_dict);
   if (name != NULL) {
-    release (name);
+    RELEASE (name);
   }
   return;
 }
@@ -707,6 +749,9 @@ static void do_epdf (char **start, char *end, double x_user, double y_user)
   pdf_obj *filestring;
   pdf_obj *trailer, *result;
   struct xform_info *p;
+#ifdef MEM_DEBUG
+MEM_START
+#endif
   skip_white(start, end);
   objname = parse_opt_ident(start, end);
   p = new_xform_info ();
@@ -759,10 +804,13 @@ static void do_epdf (char **start, char *end, double x_user, double y_user)
        closed later. This seems awkward, but an annotation is always
        considered to be complete */
     release_reference (objname);
-    release (objname);
+    RELEASE (objname);
   }
   else
     pdf_release_obj (result);
+#ifdef MEM_DEBUG
+MEM_END
+#endif
 }
 
 static void do_image (char **start, char *end, double x_user, double y_user)
@@ -772,6 +820,9 @@ static void do_image (char **start, char *end, double x_user, double y_user)
   struct jpeg *jpeg;
   struct xform_info *p;
   p = new_xform_info();
+#ifdef MEM_DEBUG
+MEM_START
+#endif
   skip_white(start, end);
   objname = parse_opt_ident(start, end);
   skip_white(start, end);
@@ -816,10 +867,13 @@ static void do_image (char **start, char *end, double x_user, double y_user)
 		   pdf_name_value(pdf_lookup_dict(pdf_stream_dict(result), "Name")));
     /* Read the explanation for the next line in do_annot() */
     release_reference (objname);
-    release (objname);
+    RELEASE (objname);
   }
   else
     pdf_release_obj (result);
+#ifdef MEM_DEBUG
+MEM_END
+#endif
 }
 
 static void do_dest(char **start, char *end)
@@ -851,6 +905,7 @@ static void do_docinfo(char **start, char *end)
     fprintf (stderr, "\nSpecial: docinfo: Dictionary expected and not found\n");
     dump (*start, end);
   }
+  pdf_release_obj (result);
   return;
 }
 
@@ -864,6 +919,7 @@ static void do_docview(char **start, char *end)
     fprintf (stderr, "\nSpecial: docview: Dictionary expected and not found\n");
     dump (*start, end);
   }
+  pdf_release_obj (result);
   return;
 }
 
@@ -874,7 +930,7 @@ static void do_close(char **start, char *end)
   skip_white(start, end);
   if ((name = parse_pdf_reference(start, end)) != NULL) {
     release_reference (name);
-    release (name);
+    RELEASE (name);
   }
   parse_crap(start, end);
   return;
@@ -895,7 +951,7 @@ static void do_obj(char **start, char *end)
   
   if (name != NULL) {
     add_reference (name, result, NULL);
-    release (name);
+    RELEASE (name);
   }
   return;
 }
@@ -1208,7 +1264,7 @@ void pdf_finish_specials (void)
       pdf_release_obj (named_references[i].object);
       named_references[i].object = NULL;
     }
-    release (named_references[i].name);
+    RELEASE (named_references[i].name);
   }
 }
 
@@ -1218,6 +1274,10 @@ void pdf_parse_special(char *buffer, UNSIGNED_QUAD size, double
   int pdfmark;
   char *start = buffer, *end;
   end = buffer + size;
+
+#ifdef MEM_DEBUG
+MEM_START
+#endif
 
   if (!is_pdf_special(&start, end)) {
     fprintf (stderr, "\nNon PDF special ignored\n");
@@ -1312,6 +1372,9 @@ void pdf_parse_special(char *buffer, UNSIGNED_QUAD size, double
     do_uxobj (&start, end, x_user, y_user);
     break;
   }
+#ifdef MEM_DEBUG
+MEM_END
+#endif
 }
 
 /* Compute a transformation matrix
@@ -1437,7 +1500,7 @@ static void do_bxobj (char **start, char *end, double x_user, double y_user)
      It's still linked in the doc module, which will release
      it when it's finished. */
   release_reference (objname);
-  release (objname);
+  RELEASE (objname);
 }
 
 static void do_exobj (void)
@@ -1463,7 +1526,7 @@ static void do_uxobj (char **start, char *end, double x_user, double y_user)
     fprintf (stderr, "\nSpecial: usexobj:  Couldn't find reference to XObject: %s\n",
 	     objname);
   }
-  release (objname);
+  RELEASE (objname);
   sprintf (work_buffer, " q 1 0 0 1 %g %g cm /%s Do Q",
 	   ROUND(x_user, 0.1), ROUND(y_user, 0.1), res_name);
   pdf_doc_add_to_page (work_buffer, strlen(work_buffer));

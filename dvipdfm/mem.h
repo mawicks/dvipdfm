@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mem.h,v 1.2 1998/11/29 19:04:49 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mem.h,v 1.3 1998/12/05 11:47:24 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -28,11 +28,22 @@
 
 #include <stdlib.h>
 
-void *new (size_t size);
+void *new (size_t size, char *function, int line);
+void *renew (void *p, size_t size, char *function, int line);
+void release (void *mem, char *function, int line);
 
-void release (void *mem);
+#define MEM_DEBUG 1
 
-#define NEW(n,type) (type *)(new (((size_t) (n))*sizeof(type)))
-#define RENEW(p,n,type) (type *)(renew ((p),(n)*sizeof(type)))
-
+#ifdef MEM_DEBUG
+extern FILE *debugfile;
+#define NEW(n,type) (type *)(new (((size_t) (n))*sizeof(type),__FUNCTION__,__LINE__))
+#define RENEW(p,n,type) (type *)(renew ((p),(n)*sizeof(type),__FUNCTION__,__LINE__))
+#define RELEASE(p) release ((p),__FUNCTION__,__LINE__)
+#define MEM_START fprintf (debugfile, "Entered %s\n", __FUNCTION__);
+#define MEM_END fprintf (debugfile, "Leaving %s\n", __FUNCTION__);
+#else /* MEM_DEBUG */
+#define NEW(n,type) (type *)(new (((size_t) (n))*sizeof(type),NULL,0))
+#define RENEW(p,n,type) (type *)(renew ((p),(n)*sizeof(type),NULL,0))
+#define RELEASE(p) release ((p),NULL,0)
+#endif MEM_DEBUG
 #endif /* MEM_H */

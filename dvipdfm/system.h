@@ -21,7 +21,7 @@ extern void pdf_doc_add_to_page(char *buffer,unsigned int length);
 extern struct pdf_obj *parse_pdf_null(char **start ,char *end);
 extern void dvi_do_page(int n);
 extern int dvi_npages(void );
-extern void *renew(void *mem,unsigned long size);
+extern void *renew(void *mem, size_t size, char *function, int line);
 #endif /* __STDC__ */
 
 #else

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/jpeg.c,v 1.3 1998/11/30 20:47:02 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/jpeg.c,v 1.4 1998/12/05 11:47:24 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -128,7 +128,7 @@ struct jpeg *jpeg_open (char *filename)
   if (!jpeg_headers(jpeg)) {
     fprintf (stderr, "\n%s: Corrupt JPEG file?\n", filename);
     fclose (file);
-    release (jpeg);
+    RELEASE (jpeg);
     return NULL;
   }
   return jpeg;
@@ -140,7 +140,7 @@ void jpeg_close (struct jpeg *jpeg)
     fprintf (stderr, "jpeg_closed: passed invalid pointer\n");
   }
   fclose (jpeg -> file);
-  release (jpeg);
+  RELEASE (jpeg);
   return;
 }
 

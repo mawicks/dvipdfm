@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.15 1998/12/05 02:39:46 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.16 1998/12/05 11:47:25 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -216,7 +216,7 @@ static void create_docinfo (void)
   pdf_add_dict (docinfo, 
 		pdf_new_name ("Producer"),
 		pdf_new_string (banner, strlen (banner)));
-  release (banner);
+  RELEASE (banner);
   
   time_string = asn_date();
   pdf_add_dict (docinfo, 
@@ -286,11 +286,17 @@ static void start_current_page_resources (void)
 void pdf_doc_add_to_page_fonts (const char *name, pdf_obj
 				   *resource)
 {
+#ifdef MEM_DEBUG
+MEM_START
+#endif
   if (debug) {
     fprintf (stderr, "(pdf_doc_add_to_page_fonts)");
   }
   pdf_add_dict (this_page_fonts,
 		pdf_new_name (name), resource);
+#ifdef MEM_DEBUG
+MEM_END
+#endif
 }
 
 void pdf_doc_add_to_page_xobjects (const char *name, pdf_obj

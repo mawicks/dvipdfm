@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.5 1998/12/04 20:26:06 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.6 1998/12/05 11:47:24 mwicks Exp $
 
     This is ebb, a bounding box extraction program.
     Copyright (C) 1998  by Mark A. Wicks
@@ -124,13 +124,13 @@ void do_jpeg (FILE *file, char *filename)
   if (!jpeg_headers (jpeg)) {
         fprintf (stderr, "\n%s: Corrupt JPEG file?\n", filename);
     fclose (file);
-    release (jpeg);
+    RELEASE (jpeg);
     return;
   }
   write_bb (filename, 0, 0,
 	    ROUND(jpeg -> width * PIX2PT,1.0),
 	    ROUND(jpeg -> height * PIX2PT,1.0));
-  release (jpeg);
+  RELEASE (jpeg);
   return;
 }
 

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.7 1998/12/04 20:26:06 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.8 1998/12/05 11:47:24 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -323,8 +323,8 @@ static void get_a_font_record (struct font_def * a_font)
   a_font -> design_size = get_unsigned_quad (dvi_file);
   dir_length = get_unsigned_byte (dvi_file);
   name_length = get_unsigned_byte (dvi_file);
-  a_font -> directory = malloc (dir_length+1);
-  a_font -> name = malloc (name_length+1);
+  a_font -> directory = NEW (dir_length+1, char);
+  a_font -> name = NEW (name_length+1, char);
   if (fread (a_font -> directory, 1, dir_length, dvi_file) !=
       dir_length) {
     invalid_signature();
@@ -414,12 +414,15 @@ error_t dvi_close (void)
   /* Do some house cleaning */
   fclose (dvi_file);
   for (i=0; i<numfonts; i++) {
-    free (font_def[i].directory);
-    free (font_def[i].name);
+    RELEASE (font_def[i].directory);
+    RELEASE (font_def[i].name);
   }
+  RELEASE (page_loc);
   numfonts = 0;
   numpages = 0;
   dvi_file = NULL;
+  dev_close_all_fonts();
+  tfm_close_all();
   return (NO_ERROR);
 }
 
@@ -879,7 +882,7 @@ static void do_xxx(UNSIGNED_QUAD size)
   if (dvi_debug)
     fprintf (stderr, "%s\n", buffer);
   dev_do_special (buffer, size);
-  release (buffer);
+  RELEASE (buffer);
 }
 
 static void do_xxx1(void)
