@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.65 2000/06/29 12:30:18 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.66 2000/06/30 02:09:20 mwicks Exp $
  
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1129,7 +1129,6 @@ pdf_obj *begin_form_xobj (double xpos, double ypos,
 			  double bburx, double bbury, char *res_name)
 {
   pdf_obj *bbox;
-  fprintf (stderr, "\nBeginform_xobj\n");
   if (xobjects_pending >= sizeof(res_stack)/sizeof(res_stack[0])) {
     fprintf (stderr, "\nForm XObjects nested too deeply.  Limit is %d\n",
 	     sizeof(res_stack)/sizeof(res_stack[0]));
@@ -1172,7 +1171,6 @@ pdf_obj *begin_form_xobj (double xpos, double ypos,
 
 void end_form_xobj (void)
 {
-  fprintf (stderr, "\nendform_xobj, objects=%d\n", xobjects_pending);
   if (xobjects_pending>0) {
     xobjects_pending -= 1;
     dev_close_all_xforms(res_stack[xobjects_pending].xform_depth);

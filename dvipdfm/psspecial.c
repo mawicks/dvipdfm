@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/psspecial.c,v 1.11 2000/06/29 12:30:18 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/psspecial.c,v 1.12 2000/06/30 02:09:20 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -195,6 +195,7 @@ static void do_texfig (char **start, char *end)
   skip_white (start, end);
   if (*start < end && (filename = parse_val_ident (start, end))) {
     p = new_xform_info (); /* Leave this empty */
+    p-> yscale = -1;
     if (validate_image_xform_info (p)) {
       pdf_obj *result;
       result = embed_image (filename, p, 0.0, 0.0, NULL);
@@ -214,6 +215,8 @@ int ps_parse_special (char *buffer, UNSIGNED_QUAD size, double x_user,
 		      double y_user)
 {
   char *start = buffer, *end;
+  static int block_pending = 0;
+  static double pending_x=0.0, pending_y=0.0;
   int result = 0;
   end = buffer + size;
   skip_white (&start, end);
@@ -224,12 +227,20 @@ int ps_parse_special (char *buffer, UNSIGNED_QUAD size, double x_user,
     parse_psfile(&start, end, x_user, y_user);
   } else if (!strncmp (start, "ps::[begin]", strlen("ps::[begin]"))) {
     start += strlen("ps::[begin]");
+    block_pending = 1;
+    pending_x = x_user;
+    pending_y = y_user;
     result = 1; /* Likewise */
     do_raw_ps_special (&start, end, 1, x_user, y_user);
   } else if (!strncmp (start, "ps::[end]", strlen("ps::[end]"))) {
-    start += strlen("ps::[end]");
+    if (block_pending) {
+      start += strlen("ps::[end]");
+      do_raw_ps_special (&start, end, 1, pending_x, pending_y);
+      block_pending = 0;
+    } else {
+      fprintf (stderr, "\nps::[end] without ps::[begin] ignored.\n");
+    }
     result = 1; /* Likewise */
-    do_raw_ps_special (&start, end, 1, x_user, y_user);
   } else if (!strncmp (start, "ps: plotfile", strlen("ps: plotfile"))) {
     /* This is a bizarre, ugly  special case.. Not really postscript
        code */
@@ -241,12 +252,14 @@ int ps_parse_special (char *buffer, UNSIGNED_QUAD size, double x_user,
     /* dvipdfm doesn't distinguish between ps:: and ps: */
     start += 4;
     result = 1; /* Likewise */
-    do_raw_ps_special (&start, end, 1, x_user, y_user);
+    do_raw_ps_special (&start, end, 1, 
+		       block_pending?pending_x:x_user, block_pending?pending_y:y_user);
   } else if (!strncmp (start, "ps:", strlen("ps:")) ||
 	     !strncmp (start, "PS:", strlen("PS:"))) {
     start += 3;
     result = 1; /* Likewise */
-    do_raw_ps_special (&start, end, 1, x_user, y_user);
+    do_raw_ps_special (&start, end, 1,
+		       block_pending?pending_x:x_user, block_pending?pending_y:y_user);
   }
   return result;
 }

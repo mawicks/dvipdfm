@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.31 2000/06/29 12:30:18 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.32 2000/06/30 02:09:20 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1092,7 +1092,6 @@ static int do_operator(char *token,
       pdf_release_obj (tmp1);
     break;
   case TEXFIG:
-    fprintf (stderr, "\nTEXFIG\n");
     if ((tmp6 = POP_STACK()) && (tmp6 -> type == PDF_NUMBER) &&
 	(tmp5 = POP_STACK()) && (tmp5 -> type == PDF_NUMBER) &&
 	(tmp4 = POP_STACK()) && (tmp4 -> type == PDF_NUMBER) &&
@@ -1109,8 +1108,8 @@ static int do_operator(char *token,
       fig_p -> c_ury = pdf_number_value(tmp6)*dvi2pts;
       pdf_scale_image (fig_p);
       sprintf (fig_res_name, "Tf%ld", next_fig);
-      fig_xobj = begin_form_xobj (fig_p->u_llx, fig_p->u_lly, fig_p->c_llx, fig_p->c_lly, 
-				  fig_p->c_urx, fig_p->c_ury, fig_res_name);
+      fig_xobj = begin_form_xobj (fig_p->c_llx, -fig_p->c_ury, fig_p->c_llx, -fig_p->c_lly, 
+				  fig_p->c_urx, -fig_p->c_ury, fig_res_name);
     }
     if (tmp1) pdf_release_obj(tmp1);
     if (tmp2) pdf_release_obj(tmp2);
@@ -1120,7 +1119,6 @@ static int do_operator(char *token,
     if (tmp6) pdf_release_obj(tmp6);
     break;
   case ETEXFIG:
-    fprintf (stderr, "\nETEXFIG\n");
     if (fig_xobj) {
       next_fig += 1;
       end_form_xobj ();
@@ -1128,9 +1126,9 @@ static int do_operator(char *token,
       pdf_release_obj (fig_xobj);
       fig_xobj = NULL;
       pdf_doc_add_to_page (" q", 2);
-      add_xform_matrix (x_user, y_user, fig_p->xscale, fig_p->yscale, fig_p->rotate);
+      add_xform_matrix (x_user, y_user, fig_p->xscale, -fig_p->yscale, fig_p->rotate);
       if (fig_p->depth != 0.0)
-	add_xform_matrix (0.0, -fig_p->depth, 1.0, 1.0, 0.0);
+	add_xform_matrix (0.0, -fig_p->depth, 1.0, -1.0, 0.0);
       release_xform_info (fig_p);
       pdf_doc_add_to_page (work_buffer, 
 			   sprintf (work_buffer, " /%s Do Q", 
