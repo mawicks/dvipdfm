@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.45 1999/08/14 04:38:57 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.46 1999/08/15 00:24:25 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -62,8 +62,7 @@ static void do_content (char **start, char *end, double x_user, double
 static void do_epdf(char **start, char *end, double x_user, double y_user);
 static void do_image(char **start, char *end, double x_user, double y_user);
 static pdf_obj *jpeg_start_image (FILE *file);
-static void finish_image (pdf_obj *image_res, double x_user, double
-			  y_user, struct xform_info *p);
+static void finish_image (pdf_obj *image_res, struct xform_info *p);
 static void do_bxobj (char **start, char *end,
 		      double x_user, double y_user);
 static void do_exobj (void);
@@ -942,7 +941,16 @@ MEM_START
     }
   }
   if (result) {
-    finish_image (result, x_user, y_user, p);
+    finish_image (result, p);
+  }
+  { /* Put reference to object on page */
+    pdf_doc_add_to_page (" q", 2);
+    add_xform_matrix (x_user, y_user, p->xscale, p->yscale, p->rotate);
+    if (p->depth != 0.0)
+      add_xform_matrix (0.0, -p->depth, 1.0, 1.0, 0.0);
+    sprintf (work_buffer, " /%s Do Q", 
+	     pdf_name_value(pdf_lookup_dict(pdf_stream_dict(result), "Name")));
+    pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
   }
   release_xform_info(p);
   if (objname != NULL && result != NULL) {
@@ -1535,8 +1543,7 @@ pdf_obj *jpeg_start_image(FILE *file)
   return (xobject);
 }
 
-void finish_image (pdf_obj *image_res, double x_user, double y_user,
-		   struct xform_info *p)
+static void finish_image (pdf_obj *image_res, struct xform_info *p)
 {
   pdf_obj *image_dict;
   double xscale, yscale;
@@ -1549,7 +1556,9 @@ void finish_image (pdf_obj *image_res, double x_user, double y_user,
 		pdf_new_name ("XObject"));
   pdf_add_dict (image_dict, pdf_new_name ("Subtype"),
 		pdf_new_name ("Image"));
-  {
+  { /* Compute new xscale and yscale based on user specified values
+       and image dimensions (recall that PDF changes dimensions of all
+       images to 1x1 :-( */
     int width, height;
     width = pdf_number_value(pdf_lookup_dict (image_dict, "Width"));
     height = pdf_number_value(pdf_lookup_dict (image_dict, "Height"));
@@ -1557,7 +1566,7 @@ void finish_image (pdf_obj *image_res, double x_user, double y_user,
     yscale = height * dvi_tell_mag() * (72.0 / 100.0);
     if (p->scale != 0) {
       xscale *= p->scale;
-      yscale *= p->scale;;
+      yscale *= p->scale;
     }
     if (p->xscale != 0) {
       xscale *= p->xscale;
@@ -1576,12 +1585,10 @@ void finish_image (pdf_obj *image_res, double x_user, double y_user,
 	xscale = p->yscale;
     }
   }
-  pdf_doc_add_to_page (" q", 2);
-  add_xform_matrix (x_user, y_user, xscale, yscale, p->rotate);
-  if (p->depth != 0.0)
-    add_xform_matrix (0.0, -p->depth, 1.0, 1.0, 0.0);
-  sprintf (work_buffer, " /Im%d Do Q", num_images);
-  pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
+  /* We overwrite p->xscale and p->yscale to pass values back to
+     caller to user */
+  p->xscale = xscale;
+  p->yscale = yscale;
   return;
 }
 
