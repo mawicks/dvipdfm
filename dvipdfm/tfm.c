@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.28.8.5 2000/07/25 04:30:22 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.28.8.6 2000/07/27 01:16:01 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -444,6 +444,7 @@ int tfm_open (const char *tfm_name)
 	invalid_tfm_file ();
       }
       get_tfm (tfm_file, tfm_file_size, &tfm[numtfms]);
+#ifdef HAVE_OMEGA_FORMATS       
     } else if ((full_tfm_file_name = kpse_find_ofm (tfm_name))) {
       need_more_tfms (1);
       a_tfm_init (tfm+numtfms);
@@ -459,6 +460,7 @@ int tfm_open (const char *tfm_name)
 	invalid_ofm_file ();
       }
       get_ofm (tfm_file, tfm_file_size, &tfm[numtfms]);
+#endif       
     } else {
       fprintf (stderr, "%s:  ", tfm_name);
       ERROR ("Unable to find a TFM or OFM file");

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/vf.c,v 1.21.8.3 2000/07/27 00:26:16 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/vf.c,v 1.21.8.4 2000/07/27 01:16:01 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -273,11 +273,13 @@ int vf_locate_font (char *tex_name, mpt_t ptsize)
   full_vf_file_name = kpse_find_file (tex_name, 
 				      kpse_vf_format,
 				      1);
+#ifdef HAVE_OMEGA_FORMATS
   if (!full_vf_file_name) {
     full_vf_file_name = kpse_find_file (tex_name, 
 					kpse_ovf_format,
 					1);
   }
+#endif
   if (full_vf_file_name &&
       (vf_file = FOPEN (full_vf_file_name, FOPEN_RBIN_MODE)) != NULL) {
     if (verbose == 1)
