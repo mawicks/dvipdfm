@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.11 1998/12/12 01:37:18 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.12 1998/12/13 04:32:19 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -246,7 +246,7 @@ static void get_tfm (struct a_tfm *a_tfm)
 
 /* External Routine */
 
-int tfm_open (char *tfm_name)
+int tfm_open (const char *tfm_name)
 {
   int i;
   char *full_tfm_file_name;

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.h,v 1.5 1998/12/12 01:37:19 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.h,v 1.6 1998/12/13 04:32:19 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -32,7 +32,7 @@
 extern void tfm_set_verbose(void);
 extern void tfm_set_debug(void);
 
-extern int tfm_open(char * tex_font_name);
+extern int tfm_open(const char * tex_font_name);
 extern void tfm_close_all (void);
 
 extern double tfm_get_width (int font_id, UNSIGNED_PAIR ch);

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.36 1998/12/11 23:05:28 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.37 1998/12/13 04:32:18 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -266,7 +266,7 @@ void dev_set_char (mpt_t xpos, mpt_t ypos, unsigned char ch, mpt_t width)
       string_mode(xpos, ypos);
     if (abs (xpos-text_xorigin-text_offset) > 10) {
       len += sprintf (format_buffer+len, ")%d(",
-	       (int)((text_xorigin+text_offset-xpos)/current_ptsize));
+		      (int)((1000l*(text_xorigin+text_offset-xpos))/current_mptsize));
       text_offset = xpos-text_xorigin;
     }
     len += pdfobj_escape_str (format_buffer+len, FORMAT_BUF_SIZE-len,
@@ -293,7 +293,7 @@ void dev_set_string (mpt_t xpos, mpt_t ypos, unsigned char *s, int length, mpt_t
       string_mode(xpos, ypos);
     if (abs (xpos-text_xorigin-text_offset) > 10) {
       len += sprintf (format_buffer+len, ")%d(",
-	       (int)((text_xorigin+text_offset-xpos)/current_ptsize));
+		      (int)((1000l*(text_xorigin+text_offset-xpos))/current_mptsize));
       text_offset = xpos-text_xorigin;
     }
     len += pdfobj_escape_str (format_buffer+len, FORMAT_BUF_SIZE-len, s, length);
@@ -712,21 +712,6 @@ Maybe in the future, I'll substitute some other font.");
   dev_font[thisfont].tex_name = NEW (strlen(tex_name)+1, char);
   strcpy (dev_font[thisfont].tex_name, tex_name);
   return (thisfont);
-}
-
-int dev_font_tfm (int dev_font_id)
-{
-  return dev_font[dev_font_id].tfm_font_id;
-}
-
-double dev_font_size (int dev_font_id)
-{
-  return dev_font[dev_font_id].ptsize;
-}
-
-mpt_t dev_font_mptsize (int dev_font_id)
-{
-  return dev_font[dev_font_id].mptsize;
 }
 
 void dev_close_all_fonts(void)
