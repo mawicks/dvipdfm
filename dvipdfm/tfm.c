@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.19 1999/04/01 00:33:55 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.20 1999/04/06 04:09:23 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -64,6 +64,8 @@ struct a_tfm
   SIGNED_QUAD *param;
   char *tex_name;
   fixword *unpacked_widths;
+  fixword *unpacked_heights;
+  fixword *unpacked_depths;
 };
 
 struct a_tfm tfm[MAX_FONTS];
@@ -243,11 +245,47 @@ static void unpack_widths(struct a_tfm *a_tfm)
   return;
 }
 
+static void unpack_heights(struct a_tfm *a_tfm)
+{
+  int i;
+  UNSIGNED_QUAD charinfo;
+  UNSIGNED_PAIR height_index;
+  a_tfm -> unpacked_heights = NEW (256, fixword);
+  for (i=0; i<256; i++) {
+    (a_tfm ->unpacked_heights)[i] = 0;
+  }
+  for (i=(a_tfm->bc); i<=(a_tfm->ec); i++ ) {
+    charinfo = (a_tfm->char_info)[i-(a_tfm->bc)];
+    height_index = (charinfo / 0x100000ul) & 0xf;
+    (a_tfm->unpacked_heights)[i] = (a_tfm->height)[height_index];
+  }
+  return;
+}
+
+static void unpack_depths(struct a_tfm *a_tfm)
+{
+  int i;
+  UNSIGNED_QUAD charinfo;
+  UNSIGNED_PAIR depth_index;
+  a_tfm -> unpacked_depths = NEW (256, fixword);
+  for (i=0; i<256; i++) {
+    (a_tfm ->unpacked_depths)[i] = 0;
+  }
+  for (i=(a_tfm->bc); i<=(a_tfm->ec); i++ ) {
+    charinfo = (a_tfm->char_info)[i-(a_tfm->bc)];
+    depth_index = (charinfo / 0x10000ul) & 0xf;
+    (a_tfm->unpacked_depths)[i] = (a_tfm->depth)[depth_index];
+  }
+  return;
+}
+
 static void get_tfm (struct a_tfm *a_tfm)
 {
   get_sizes (a_tfm);
   get_arrays (a_tfm);
   unpack_widths (a_tfm);
+  unpack_heights (a_tfm);
+  unpack_depths (a_tfm);
   return;
 }
 
@@ -316,6 +354,8 @@ void tfm_close_all(void)
       RELEASE (tfm[i].param);
     RELEASE (tfm[i].tex_name);
     RELEASE (tfm[i].unpacked_widths);
+    RELEASE (tfm[i].unpacked_heights);
+    RELEASE (tfm[i].unpacked_depths);
   }
 }
 
@@ -331,11 +371,20 @@ fixword tfm_get_fw_width (int font_id, UNSIGNED_BYTE ch)
   return (tfm[font_id].unpacked_widths)[ch];
 }
 
+double tfm_get_height (int font_id, UNSIGNED_BYTE ch)
+{
+  return (tfm[font_id].unpacked_heights)[ch]/FWBASE;
+}
+
+double tfm_get_depth (int font_id, UNSIGNED_BYTE ch)
+{
+  return (tfm[font_id].unpacked_depths)[ch]/FWBASE;
+}
+
 double tfm_get_space (int font_id)
 {
   return (double) (tfm[font_id].param)[1] / FWBASE;
 }
-
 
 UNSIGNED_PAIR tfm_get_firstchar (int font_id)
 {
@@ -362,6 +411,17 @@ double tfm_get_max_width (int font_id)
       max = (tfm[font_id].width)[i];
   }
   return (max/FWBASE);
+}
+
+double tfm_get_min_width (int font_id)
+{
+  SIGNED_QUAD min = 0;
+  int i;
+  for (i=0; i<tfm[font_id].nwidths; i++) {
+    if ((tfm[font_id].width)[i] < min)
+      min = (tfm[font_id].width)[i];
+  }
+  return (min/FWBASE);
 }
 
 double tfm_get_max_height (int font_id)

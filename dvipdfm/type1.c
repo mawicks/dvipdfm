@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.62 1999/03/08 04:37:22 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.63 1999/04/06 04:09:23 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -926,31 +926,18 @@ static void do_pfb (int pfb_id)
 
 
 #define FONTNAME 1
-#define CAPHEIGHT 2
-#define ASCENT   3
-#define DESCENT  4
-#define ISFIXED  5
-#define FONTBBOX 6
-#define ITALICANGLE 7
-#define XHEIGHT  8  
-#define COMMENT  9
-#define SFONTMETRICS 10
-#define EFONTMETRICS 11
-#define SCHARMETRICS 12
-#define ECHARMETRICS 13
-#define CHARDEF      14
+#define ISFIXED  2
+#define ITALICANGLE 3
+#define XHEIGHT  4  
 #define OTHER        99
 
 static struct {
   char *string, value;
 } parse_table[] = 
-{  {"FontName", FONTNAME },  { "CapHeight", CAPHEIGHT },
-   {"Ascender", ASCENT },  { "Descender", DESCENT },
+{  {"FontName", FONTNAME },
    {"IsFixedPitch", ISFIXED },
-   {"FontBBox", FONTBBOX },  { "ItalicAngle", ITALICANGLE },
-   {"XHeight", XHEIGHT },  { "Comment", COMMENT },
-   {"StartFontMetrics", SFONTMETRICS },  { "EndFontMetrics", EFONTMETRICS },
-   {"StartCharMetrics", SCHARMETRICS },  { "EndCharMetrics", ECHARMETRICS },
+   {"ItalicAngle", ITALICANGLE },
+   {"XHeight", XHEIGHT },
 };
 
 
@@ -966,6 +953,7 @@ static int get_afm_token (void)
     if (strlen (buffer) == sizeof(buffer)-1) {
       ERROR ("get_afm_token:  Line to long");
     }
+    start = buffer;
     end = buffer + sizeof(buffer);
     for (i=0; i<sizeof(parse_table)/sizeof(parse_table[0]); i++) {
       if (!strncmp(buffer, parse_table[i].string, strlen(parse_table[i].string))){
@@ -1018,29 +1006,17 @@ static void close_afm_file (void)
   return;
 }
 
-
 static void scan_afm_file (void)
 {
   int token;
   while ((token = get_afm_token()) >= 0) {
+
     skip_white (&start, end); 
     if (start < end)
     switch (token) {
     case FONTNAME:
       if (sscanf (start, " %s ", fontname) != 1)
 	ERROR ("afm: Error reading Fontname");
-      break;
-    case CAPHEIGHT:
-      if (sscanf (start, " %lf", &capheight) != 1)
-	ERROR ("afm: Error reading Capheight");
-      break;
-    case ASCENT:
-      if (sscanf (start, " %lf", &ascent) != 1)
-	ERROR ("afm: Error reading ascent");
-      break;
-    case DESCENT:
-      if (sscanf (start, " %lf", &descent) != 1)
-	ERROR ("afm: Error reading descent");
       break;
     case ISFIXED:
       if (!strncmp(start, "false", 5))
@@ -1050,11 +1026,6 @@ static void scan_afm_file (void)
       else 
 	ERROR ("Can't read value for IsFixedPitch");
       break;
-    case FONTBBOX:
-      if (sscanf (start, " %lf %lf %lf %lf ", &bbllx, &bblly, &bburx, &bbury) != 4 &&
-          sscanf (start, " %lf, %lf, %lf, %lf ", &bbllx, &bblly, &bburx, &bbury) != 4)
-	ERROR ("afm: Error reading FontBBox");
-      break;
     case ITALICANGLE:
       if (sscanf (start, " %lf", &italicangle) != 1)
 	ERROR ("afm: Error reading descent");
@@ -1063,10 +1034,6 @@ static void scan_afm_file (void)
       if (sscanf (start, " %lf", &xheight) != 1)
 	ERROR ("afm: Error reading XHeight");
       break;
-    case COMMENT:
-    case SFONTMETRICS:
-    case EFONTMETRICS:
-    case ECHARMETRICS:
     default:
       break;
     }
@@ -1083,7 +1050,7 @@ static void scan_afm_file (void)
 #define STEMV 80
 
 static pdf_obj *type1_font_descriptor (const char *pfb_name, int encoding_id,
-				int pfb_id)
+				int pfb_id, int tfm_font_id)
 {
   pdf_obj *font_descriptor, *font_descriptor_ref, *tmp1;
   int flags;
@@ -1093,13 +1060,8 @@ static pdf_obj *type1_font_descriptor (const char *pfb_name, int encoding_id,
 		pdf_new_name ("FontDescriptor"));
   pdf_add_dict (font_descriptor,
 		pdf_new_name ("CapHeight"),
-		pdf_new_number (ROUND(capheight,0.01)));
-  pdf_add_dict (font_descriptor,
-		pdf_new_name ("Ascent"),
-		pdf_new_number (ROUND(ascent,0.01)));
-  pdf_add_dict (font_descriptor,
-		pdf_new_name ("Descent"),
-		pdf_new_number (ROUND(descent,0.01)));
+		pdf_new_number (ROUND(1000.0*tfm_get_height(tfm_font_id,
+						     'M'), 0.01)));
   flags = 0;
   if (italicangle != 0.0) flags += ITALIC;
   if (isfixed) flags += FIXED_WIDTH;
@@ -1107,14 +1069,27 @@ static pdf_obj *type1_font_descriptor (const char *pfb_name, int encoding_id,
   pdf_add_dict (font_descriptor,
 		pdf_new_name ("Flags"),
 		pdf_new_number (flags));
-  tmp1 = pdf_new_array ();
-  pdf_add_array (tmp1, pdf_new_number (ROUND(bbllx,1)));
-  pdf_add_array (tmp1, pdf_new_number (ROUND(bblly,1)));
-  pdf_add_array (tmp1, pdf_new_number (ROUND(bburx,1)));
-  pdf_add_array (tmp1, pdf_new_number (ROUND(bbury,1)));
-  pdf_add_dict (font_descriptor,
-		pdf_new_name ("FontBBox"),
-		tmp1);
+  {
+    double max_height, max_depth, max_width;
+    max_height = tfm_get_max_height (tfm_font_id)*1000.0;
+    max_depth = tfm_get_max_depth (tfm_font_id)*1000.0;
+    max_width = tfm_get_max_width (tfm_font_id)*1000.0;
+    pdf_add_dict (font_descriptor,
+		  pdf_new_name ("Ascent"),
+		  pdf_new_number (ROUND(max_height,0.01)));
+    pdf_add_dict (font_descriptor,
+		  pdf_new_name ("Descent"),
+		  pdf_new_number (ROUND(-max_depth,0.01)));
+    tmp1 = pdf_new_array ();
+    pdf_add_array (tmp1, pdf_new_number(-0.10*max_width));
+    pdf_add_array (tmp1,
+		   pdf_new_number(-max_depth-0.10*(max_height+max_depth)));
+    pdf_add_array (tmp1, pdf_new_number(1.10*max_width));
+    pdf_add_array (tmp1, pdf_new_number(max_height+0.10*(max_height+max_depth)));
+    pdf_add_dict (font_descriptor,
+		  pdf_new_name ("FontBBox"),
+		  tmp1);
+  }
   pdf_add_dict (font_descriptor,
 		pdf_new_name ("FontName"),
 		pdf_new_name (fontname));
@@ -1286,7 +1261,7 @@ int type1_font (const char *tex_name, int tfm_font_id, const char *resource_name
 			pdf_new_name ("FontDescriptor"),
 			type1_font_descriptor(font_record -> pfb_name,
 					      encoding_id,
-					      type1_fonts[num_type1_fonts].pfb_id));
+					      type1_fonts[num_type1_fonts].pfb_id, tfm_font_id));
 	}
       }
       /* If we are embedding this font, it may have been used by another virtual
