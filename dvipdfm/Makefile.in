@@ -17,11 +17,6 @@ scripts=dvipdft
 mkinstalldirs=@SHELL@ mkinstalldirs
 .c.o:
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) -o $@ $<
-headers=dvi.h pdflimits.h error.h mfileio.h jpeg.h mem.h numbers.h \
-	pdfdev.h pdfdoc.h pdfparse.h pdfspecial.h tfm.h type1.h epdf.h \
-	vf.h dvicodes.h t1crypt.h pkfont.h tpic.h thumbnail.h htex.h \
-	twiddle.h mpost.h psimage.h psspecial.h colors.h colorsp.h \
-	dvipdfm.h encodings.h ttf.h @TTF_OPT@ macglyphs.h
 src=pdfdev.c pdfdoc.c dvi.c mfileio.c mem.c jpeg.c numbers.c pdfobj.c \
 	pdfparse.c pdfspecial.c tfm.c type1.c dvipdfm.c epdf.c vf.c \
 	t1crypt.c pkfont.c tpic.c thumbnail.c pngimage.c ebb.c htex.c \
@@ -151,11 +146,14 @@ depend.make:
 @MAINT@config.h.in: acconfig.h configure.in
 @MAINT@	autoheader
 @MAINT@	touch config.h.in
-@MAINT@configure: configure.in
+@MAINT@aclocal.m4:  SCCS/s.aclocal.m4
+@MAINT@	get aclocal.m4
+@MAINT@configure: configure.in aclocal.m4
 @MAINT@	autoconf
 @MAINT@#
 @MAINT@ # Automated distributions
 @MAINT@#
+@MAINT@TOPDIR=${HOME}/Projects/rpmtree
 @MAINT@doc/dvipdfm.dvi:	doc/dvipdfm.tex
 @MAINT@	cd doc; tex dvipdfm
 @MAINT@doc/dvipdfm.pdf:	doc/dvipdfm.dvi
@@ -186,12 +184,14 @@ depend.make:
 @MAINT@	tar -zcf ../dvipdfm-binary-linux-i386-static-@VERSION@.tar.gz dvipdfm-bin
 @MAINT@	/bin/rm -rf dvipdfm-bin
 @MAINT@rpm-dist: tarball
-@MAINT@	sed -e s/VERSION/@VERSION@/ dvipdfm.spec.in > /usr/src/redhat/SPECS/dvipdfm-@VERSION@.spec
-@MAINT@	cp -a ../dvipdfm-@VERSION@.tar.gz /usr/src/redhat/SOURCES/
-@MAINT@	rpm -ba /usr/src/redhat/SPECS/dvipdfm-@VERSION@.spec
+@MAINT@	mkdir -p ${TOPDIR}/SOURCES ${TOPDIR}/BUILD ${TOPDIR}/SPECS ${TOPDIR}/RPMS/i386 ${TOPDIR}/SRPMS
+@MAINT@	sed -e s/VERSION/@VERSION@/ dvipdfm.spec.in > ${TOPDIR}/SPECS/dvipdfm-@VERSION@.spec
+@MAINT@	cp -a ../dvipdfm-@VERSION@.tar.gz ${TOPDIR}/SOURCES/
+@MAINT@	rpm -ba ${TOPDIR}/SPECS/dvipdfm-@VERSION@.spec
 @MAINT@web-dist: rpm-dist tarball doc/dvipdfm.pdf
 @MAINT@	rm /home/httpd/html/dvipdfm/dvipdfm.tar.gz
-@MAINT@	cp -a ../dvipdfm-@VERSION@.tar.gz /usr/src/redhat/RPMS/i386/dvipdfm-@VERSION@-1.i386.rpm /usr/src/redhat/SRPMS/dvipdfm-@VERSION@-1.src.rpm /home/httpd/html/dvipdfm/
+
+@MAINT@	cp -a ../dvipdfm-@VERSION@.tar.gz ${TOPDIR}/RPMS/i386/dvipdfm-@VERSION@-1.i386.rpm ${TOPDIR}/SRPMS/dvipdfm-@VERSION@-1.src.rpm /home/httpd/html/dvipdfm/
 @MAINT@	ln -s dvipdfm-@VERSION@.tar.gz /home/httpd/html/dvipdfm/dvipdfm.tar.gz
 @MAINT@	cp -a doc/dvipdfm.pdf /home/httpd/html/dvipdfm/dvipdfm-@VERSION@.pdf
 @MAINT@	rm -f /home/httpd/html/dvipdfm/dvipdfm.pdf

@@ -10,6 +10,7 @@ Distribution: None
 Vendor: Mark A. Wicks
 Packager:  Mark A. Wicks <mwicks@kettering.edu>
 Requires: tetex >= 0.9
+BuildRoot: /var/tmp/rpm/dvipdfm
 
 %description
 dvidpfm is a DVI to PDF translator for use with TeX.
@@ -17,17 +18,20 @@ dvidpfm is a DVI to PDF translator for use with TeX.
 %prep
 %setup -n dvipdfm
 
+%clean
+rm -rf ${RPM_BUILD_ROOT}
+
 %build
-export CFLAGS='-O3 -Wall --pedantic'
 ./configure --prefix=/usr --datadir=/usr/share
-make
+make CFLAGS='-O3 -Wall --pedantic'
 strip dvipdfm
 strip ebb
 
 %install
-make install
+make install prefix=${RPM_BUILD_ROOT}/usr datadir=${RPM_BUILD_ROOT}/usr/share
 
 %files
+%defattr(-,root,root)
 /usr/bin/dvipdfm
 /usr/bin/ebb
 /usr/bin/dvipdft
