@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.63 1999/11/17 01:06:05 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.64 2000/01/13 02:04:52 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -560,16 +560,16 @@ int CDECL main (int argc, char *argv[])
   argv+=1;
   argc-=1;
 
+  /* Process config file, if any */
+  read_config_file();
+
+  do_args (argc, argv);
+
 #ifdef KPATHSEA
   kpse_init_prog ("", font_dpi, NULL, NULL);
   pk_set_dpi (font_dpi);
   kpse_set_program_enabled (kpse_pk_format, 1, kpse_src_texmf_cnf);
 #endif
-
-  /* Process config file, if any */
-  read_config_file();
-
-  do_args (argc, argv);
 
   if (!dvi_filename) {
     fprintf (stderr, "\nNo dvi filename specified.\n\n");
