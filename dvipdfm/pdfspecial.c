@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.22 1998/12/07 01:45:37 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.23 1998/12/07 05:12:36 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -63,12 +63,13 @@ static void do_uxobj (char **start, char *end, double x_user, double y_user);
 static void do_bop(char **start, char *end)
 {
 #ifdef MEM_DEBUG
-MEM_START
+  MEM_START
 #endif
-  if (*start != end)
+  if (*start < end)
     pdf_doc_bop (*start, end - *start);
+  *start = end;
 #ifdef MEM_DEBUG
-MEM_END
+  MEM_END
 #endif
   return;
 }
@@ -76,12 +77,13 @@ MEM_END
 static void do_eop(char **start, char *end)
 {
 #ifdef MEM_DEBUG
-MEM_START
+  MEM_START
 #endif
-  if (*start != end)
+  if (*start < end)
     pdf_doc_eop (*start, end - *start);
+  *start = end;
 #ifdef MEM_DEBUG
-MEM_END
+  MEM_END
 #endif
 }
 
@@ -142,7 +144,6 @@ static void do_put(char **start, char *end)
       if ((data = parse_pdf_dict (start, end)) != NULL &&
 	  data -> type == PDF_DICT) {
 	pdf_merge_dict (result, data);
-	parse_crap(start, end);
       } else{
 	fprintf (stderr, "\nspecial put:  Expecting a dictionary\n");
 	*start = save;
@@ -407,31 +408,29 @@ static void do_pagesize(char **start, char *end)
   if (parse_dimension(start, end, p)) {
     if (p->scale != 0.0 || p->xscale != 0.0 || p->yscale != 0.0) {
       fprintf (stderr, "\nScale meaningless for pagesize\n");
-      release_xform_info (p);
       error = 1;
     }
     if (p->width == 0.0 || p->depth + p->height == 0.0) {
       fprintf (stderr, "\nPage cannot have a zero dimension\n");
-      release_xform_info (p);
       error = 1;
     }
   } else {
-    fprintf (stderr, "\nFailed to find a valid set of dimensions here\n");
+    fprintf (stderr, "\nSpecial: pagesize: Failed to find a valid set of dimensions\n");
     dump (*start, end);
     error = 1;
   }
   if (!error)
     dev_set_page_size (p->width, p->depth + p->height);
   release_xform_info (p);
-  parse_crap(start, end);
   return;
 }
 
 
 static void do_ann(char **start, char *end)
 {
-  pdf_obj *result, *rectangle;
-  char *name;
+  pdf_obj *result = NULL, *rectangle = NULL;
+  char *name = NULL;
+  int error = 0;
   struct xform_info *p;
 #ifdef MEM_DEBUG
 MEM_START
@@ -440,54 +439,43 @@ MEM_START
   skip_white(start, end);
   name = parse_opt_ident(start, end);
   skip_white(start, end);
-  if (!parse_dimension(start, end, p)) {
-      fprintf (stderr, "\nFailed to find a valid dimension here\n");
-      release_xform_info (p);
-      dump (*start, end);
-      return;
+  if (parse_dimension(start, end, p)) {
+    if (p->scale != 0.0 || p->xscale != 0.0 || p->yscale != 0.0) {
+      fprintf (stderr, "\nScale meaningless for annotations\n");
+      error = 1;
+    }
+    if (p->width == 0.0 || p->depth + p->height == 0.0) {
+      fprintf (stderr, "Special ann: Rectangle has a zero dimension\n");
+      fprintf (stderr, "Special ann: Annotations require both horizontal and vertical dimensions\n");
+      error = 1;
+    }
   }
-  if (p->scale != 0.0 || p->xscale != 0.0 || p->yscale != 0.0) {
-    fprintf (stderr, "\nScale meaningless for annotations\n");
-    release_xform_info (p);
-    return;
-  }
-  if (p->width == 0.0 || p->depth + p->height == 0.0) {
-    fprintf (stderr, "Special ann: Rectangle has a zero dimension\n");
-    fprintf (stderr, "Special ann: Annotations require both horizontal and vertical dimensions\n");
-    release_xform_info (p);
-    return;
-  }
-  if ((result = parse_pdf_dict(start, end)) == NULL) {
+  if (!error && (result = parse_pdf_dict(start, end)) != NULL) {
+    rectangle = pdf_new_array();
+    pdf_add_array (rectangle, pdf_new_number(ROUND(dev_tell_x(),0.1)));
+    pdf_add_array (rectangle, pdf_new_number(ROUND(dev_tell_y()-p->depth,0.1)));
+    pdf_add_array (rectangle, pdf_new_number(ROUND(dev_tell_x()+p->width,0.1)));
+    pdf_add_array (rectangle, pdf_new_number(ROUND(dev_tell_y()+p->height,0.1)));
+    pdf_add_dict (result, pdf_new_name ("Rect"),
+		  rectangle);
+    pdf_doc_add_to_page_annots (pdf_ref_obj (result));
+    /* If this object has a named reference, we file it away for
+       later.  Otherwise we release it */
+    if (name != NULL) {
+      add_reference (name, result, NULL);
+      /* An annotation is treated differently from a cos object.
+	 cos objects are kept open for the user.  We forcibly
+         "close" the annotation by calling release_reference */
+      release_reference (name);
+    } else
+      pdf_release_obj (result);
+  } else {
     fprintf (stderr, "Ignoring invalid dictionary\n");
-    release_xform_info (p);
-    return;
-  };
-  rectangle = pdf_new_array();
-  pdf_add_array (rectangle, pdf_new_number(ROUND(dev_tell_x(),0.1)));
-  pdf_add_array (rectangle, pdf_new_number(ROUND(dev_tell_y()-p->depth,0.1)));
-  pdf_add_array (rectangle, pdf_new_number(ROUND(dev_tell_x()+p->width,0.1)));
-  pdf_add_array (rectangle, pdf_new_number(ROUND(dev_tell_y()+p->height,0.1)));
-  release_xform_info (p);
-  pdf_add_dict (result, pdf_new_name ("Rect"),
-		rectangle);
-  pdf_doc_add_to_page_annots (pdf_ref_obj (result));
-
-  if (name != NULL) {
-    add_reference (name, result, NULL);
-    /* An annotation is treated differently from a cos object.
-       The previous line adds both a direct link and an indirect link
-       to "result".  For cos objects this prevents the direct link
-       prevents the object from being flushed immediately.  
-       So that an "ann" doesn't behave like an OBJ, the ANN should be
-       immediately unlinked.  Otherwise the ANN would have to be
-       closed later. This seems awkward, but an annotation is always
-       considered to be complete */
-    release_reference (name);
-    RELEASE (name);
+    error = 1;
   }
-  else 
-    pdf_release_obj (result);
-  parse_crap(start, end);
+  release_xform_info (p);
+  if (name)
+    RELEASE (name);
 #ifdef MEM_DEBUG
 MEM_END
 #endif
@@ -498,90 +486,102 @@ static void do_bgcolor(char **start, char *end)
 {
   char *save = *start;
   pdf_obj *color;
+  int error = 0;
   skip_white(start, end);
-  if ((color = parse_pdf_object(start, end)) == NULL ||
-      (color -> type != PDF_ARRAY && 
-       color -> type != PDF_NUMBER )) {
-    fprintf (stderr, "\nSpecial: background color: Expecting color specified by an array or number\n");
-    *start = save;
-    dump (*start, end);
-    return;
-  }
-  if (color -> type == PDF_ARRAY) {
-    int i;
-    for (i=1; i<=4; i++) {
-      if (pdf_get_array (color, i) == NULL ||
-	  pdf_get_array (color, i) -> type != PDF_NUMBER)
+  if ((color = parse_pdf_object(start, end)) != NULL &&
+      (color -> type == PDF_ARRAY ||
+       color -> type == PDF_NUMBER )) {
+    switch (color -> type) {
+      int i;
+    case PDF_ARRAY:
+      for (i=1; i<=5; i++) {
+	if (pdf_get_array (color, i) == NULL ||
+	    pdf_get_array (color, i) -> type != PDF_NUMBER)
+	  break;
+      }
+      switch (i) {
+      case 4:
+	dev_bg_rgb_color (pdf_number_value (pdf_get_array (color,1)),
+			  pdf_number_value (pdf_get_array (color,2)),
+			  pdf_number_value (pdf_get_array (color,3)));
 	break;
-    }
-    if (i < 4 || i > 5) {
-      fprintf (stderr, "\nSpecial: begincolor: Expecting either RGB or CMYK color array\n");
-      *start = save;
-      dump (*start, end);
-      return;
-    }
-    if (i == 4) {
-      dev_bg_rgb_color (pdf_number_value (pdf_get_array (color,1)),
-			pdf_number_value (pdf_get_array (color,2)),
-			pdf_number_value (pdf_get_array (color,3)));
-    }
-    if (i == 5) {
-      dev_bg_cmyk_color (pdf_number_value (pdf_get_array (color,1)),
-			 pdf_number_value (pdf_get_array (color,2)),
-			 pdf_number_value (pdf_get_array (color,3)),
-			 pdf_number_value (pdf_get_array (color,4)));
+      case 5:
+	dev_bg_cmyk_color (pdf_number_value (pdf_get_array (color,1)),
+			   pdf_number_value (pdf_get_array (color,2)),
+			   pdf_number_value (pdf_get_array (color,3)),
+			   pdf_number_value (pdf_get_array (color,4)));
+	break;
+      default:
+	fprintf (stderr, "\nSpecial: begincolor: Expecting either RGB or CMYK color array\n");
+	error = 1;
+      }
+      break;
+    case PDF_NUMBER:
+      dev_bg_gray (pdf_number_value (color));
     }
   } else {
-    dev_bg_gray (pdf_number_value (color));
+    fprintf (stderr, "\nSpecial: background color: Expecting color specified by an array or number\n");
+    error = 1;
   }
-  pdf_release_obj (color);
+  if (error) {
+    *start = save;
+    dump (*start, end);
+  }
+  if (color)
+    pdf_release_obj (color);
   return;
 }
 
 static void do_bcolor(char **start, char *end)
 {
   char *save = *start;
-  pdf_obj *color_array;
+  pdf_obj *color;
+  int error = 0;
 #ifdef MEM_DEBUG
   MEM_START
 #endif /* MEM_DEBUG */
   skip_white(start, end);
-  if ((color_array = parse_pdf_object(start, end)) == NULL ||
-      (color_array -> type != PDF_ARRAY && 
-       color_array -> type != PDF_NUMBER )) {
-    fprintf (stderr, "\nSpecial: begincolor: Expecting color specified by an array or number\n");
-    *start = save;
-    dump (*start, end);
-    return;
-  }
-  if (color_array -> type == PDF_ARRAY) {
-    int i;
-    for (i=1; i<=4; i++) {
-      if (pdf_get_array (color_array, i) == NULL ||
-	  pdf_get_array (color_array, i) -> type != PDF_NUMBER)
+  if ((color = parse_pdf_object(start, end)) != NULL &&
+      (color -> type == PDF_ARRAY ||
+       color -> type == PDF_NUMBER )) {
+    switch (color -> type) {
+      int i;
+    case PDF_ARRAY:
+      for (i=1; i<=5; i++) {
+	if (pdf_get_array (color, i) == NULL ||
+	    pdf_get_array (color, i) -> type != PDF_NUMBER)
+	  break;
+      }
+      switch (i) {
+      case 4:
+	dev_begin_rgb_color (pdf_number_value (pdf_get_array (color,1)),
+			     pdf_number_value (pdf_get_array (color,2)),
+			     pdf_number_value (pdf_get_array (color,3)));
 	break;
-    }
-    if (i < 4 || i > 5) {
-      fprintf (stderr, "\nSpecial: begincolor: Expecting either RGB or CMYK color array\n");
-      dump (*start, end);
-      *start = save;
-      return;
-    }
-    if (i == 4) {
-      dev_begin_rgb_color (pdf_number_value (pdf_get_array (color_array,1)),
-			   pdf_number_value (pdf_get_array (color_array,2)),
-			   pdf_number_value (pdf_get_array (color_array,3)));
-    }
-    if (i == 5) {
-      dev_begin_cmyk_color (pdf_number_value (pdf_get_array (color_array,1)),
-			    pdf_number_value (pdf_get_array (color_array,2)),
-			    pdf_number_value (pdf_get_array (color_array,3)),
-			    pdf_number_value (pdf_get_array (color_array,4)));
+      case 5:
+	dev_begin_cmyk_color (pdf_number_value (pdf_get_array (color,1)),
+			      pdf_number_value (pdf_get_array (color,2)),
+			      pdf_number_value (pdf_get_array (color,3)),
+			      pdf_number_value (pdf_get_array (color,4)));
+	break;
+      default:
+	fprintf (stderr, "\nSpecial: begincolor: Expecting either RGB or CMYK color array\n");
+	error = 1;
+      }
+      break;
+    case PDF_NUMBER:
+      dev_begin_gray (pdf_number_value (color));
     }
   } else {
-    dev_begin_gray (pdf_number_value (color_array));
+    fprintf (stderr, "\nSpecial: Begincolor: Expecting color specified by an array or number\n");
+    error = 1;
   }
-  pdf_release_obj (color_array);
+  if (error) {
+    *start = save;
+    dump (*start, end);
+  }
+  if (color)
+    pdf_release_obj (color);
 #ifdef MEM_DEBUG
   MEM_END
 #endif /* MEM_DEBUG */
@@ -592,12 +592,12 @@ static void do_bgray(char **start, char *end)
 {
   char *number_string;
   skip_white(start, end);
-  if ((number_string = parse_number (start, end)) == NULL) {
+  if ((number_string = parse_number (start, end)) != NULL) {
+    dev_begin_gray (atof (number_string));
+    RELEASE (number_string);
+  } else {
     fprintf (stderr, "\nSpecial: begingray: Expecting a numerical grayscale specification\n");
-    return;
   }
-  dev_begin_gray (atof (number_string));
-  RELEASE (number_string);
   return;
 }
 
@@ -616,6 +616,7 @@ static void do_egray(void)
 
 static void do_bxform (char **start, char *end)
 {
+  int error = 0;
   char *save = *start;
   struct xform_info *p;
   p = new_xform_info ();
@@ -623,37 +624,35 @@ static void do_bxform (char **start, char *end)
   MEM_START
 #endif
   skip_white (start, end);
-  if (!parse_dimension (start, end, p)) {
-    fprintf (stderr, "\nFailed to find transformation parameters\n");
+  if (parse_dimension (start, end, p)) {
+    if (!validate_image_xform_info (p)) {
+      fprintf (stderr, "\nSpecified dimensions are inconsistent\n");
+      fprintf (stderr, "\nSpecial will be ignored\n");
+      error = 1;
+    }
+    if (p -> width != 0.0 || p -> height != 0.0 || p -> depth != 0.0) {
+      fprintf (stderr, "Special: bt: width, height, and depth are meaningless\n");
+      fprintf (stderr, "Special: bt: These will be ignored\n");
+      /* This isn't really a fatal error */
+    }
+    if (p -> scale != 0.0) {
+      p->xscale = p->scale;
+      p->yscale = p->scale;
+    }
+    if (p -> xscale == 0.0)
+      p->xscale = 1.0;
+    if (p -> yscale == 0.0)
+      p->yscale = 1.0;
+  } else {
+    fprintf (stderr, "\nError in transformation parameters\n");
+    error = 1;
+  }
+  if (!error) {
+    dev_begin_xform (p->xscale, p->yscale, p->rotate);
+  } else {
     *start = save;
     dump (*start, end);
-    release_xform_info (p);
-    return;
   }
-  if (!validate_image_xform_info (p)) {
-    fprintf (stderr, "\nSpecified dimensions are inconsistent\n");
-    fprintf (stderr, "\nSpecial will be ignored\n");
-    *start = save;
-    release_xform_info (p);
-    dump (*start, end);
-    return;
-  }
-  if (p -> width != 0.0 || p -> height != 0.0 || p -> depth != 0.0) {
-    fprintf (stderr, "Special: bt: width, height, and depth are meaningless\n");
-    *start = save;
-    release_xform_info (p);
-    dump (*start, end);
-    return;
-  }
-  if (p -> scale != 0.0) {
-    p->xscale = p->scale;
-    p->yscale = p->scale;
-  }
-  if (p -> xscale == 0.0)
-    p->xscale = 1.0;
-  if (p -> yscale == 0.0)
-    p->yscale = 1.0;
-  dev_begin_xform (p->xscale, p->yscale, p->rotate);
   release_xform_info (p);
 #ifdef MEM_DEBUG
 MEM_END
@@ -674,7 +673,8 @@ MEM_END
 
 static void do_outline(char **start, char *end)
 {
-  pdf_obj *level, *result;
+  pdf_obj *level = NULL, *result;
+  int error = 0;
   char *save; 
   static int lowest_level = 255;
 #ifdef MEM_DEBUG
@@ -682,29 +682,29 @@ static void do_outline(char **start, char *end)
 #endif
   skip_white(start, end);
   save = *start; 
-  if ((level = parse_pdf_object(start, end)) == NULL) {
-    fprintf (stderr, "\nExpecting number for object level.\n");
-    dump (*start, end);
-    return;
-  }
-  if ((level -> type) != PDF_NUMBER) {
-    fprintf (stderr, "\nExpecting number for object level.\n");
-    pdf_release_obj (level);
+  if ((level = parse_pdf_object(start, end)) != NULL &&
+      level -> type == PDF_NUMBER) {
+    /* Make sure we know where the starting level is */
+    if ( (int) pdf_number_value (level) < lowest_level)
+      lowest_level = (int) pdf_number_value (level);
+
+    if ((result = parse_pdf_dict(start, end)) != NULL) {
+      pdf_doc_change_outline_depth
+	((int)pdf_number_value(level)-lowest_level+1);
+      pdf_doc_add_outline (result);
+    } else {
+      fprintf (stderr, "\nIgnoring invalid dictionary\n");
+      error = 1;
+    }
+  } else {
+    fprintf (stderr, "\nSpecial: outline: Expecting number for object level.\n");
     *start = save;
-    return;
+    error = 1;
   }
-   /* Make sure we know where the starting level is */
-  if ( (int) pdf_number_value (level) < lowest_level)
-     lowest_level = (int) pdf_number_value (level);
-   
-  if ((result = parse_pdf_dict(start, end)) == NULL) {
-    fprintf (stderr, "Ignoring invalid dictionary\n");
-    return;
-  };
-  parse_crap(start, end);
-  pdf_doc_change_outline_depth ((int)pdf_number_value(level)-lowest_level+1);
-  pdf_release_obj (level);
-  pdf_doc_add_outline (result);
+  if (error)
+    dump (*start, end);
+  if (level)
+    pdf_release_obj (level);
   return;
 }
 
@@ -727,66 +727,76 @@ static void do_article(char **start, char *end)
   pdf_doc_start_article (name, pdf_link_obj(info_dict));
   add_reference (name, info_dict, NULL);
   RELEASE (name);
-  parse_crap(start, end);
   return;
 }
 
 static void do_bead(char **start, char *end)
 {
-  pdf_obj *bead_dict, *rectangle, *article, *info_dict;
-  char *name, *save = *start;
+  pdf_obj *bead_dict, *rectangle, *article, *info_dict = NULL;
+  int error = 0;
+  char *name = NULL, *save = *start;
   struct xform_info *p;
+  p = new_xform_info();
   skip_white(start, end);
   if (*((*start)++) != '@' || (name = parse_ident(start, end)) == NULL) {
     fprintf (stderr, "Article reference expected.\nWhich article does this go with?\n");
-    *start = save;
-    dump(*start, end);
-    return;
+    error = 1;
   }
-  skip_white(start, end);
-  p = new_xform_info();
-  if (!parse_dimension(start, end, p)) {
-    fprintf (stderr, "\nFailed to find a dimension for this bead\n");
-    release_xform_info (p);
-    return;
+  /* If okay so far, try to get a bounding box */
+  if (!error) {
+    skip_white(start, end);
+    if (!parse_dimension(start, end, p)) {
+      fprintf (stderr, "\nSpecial: thread: Error in bounding box specification for this bead\n");
+      error = 1;
+    }
+    if (p->scale != 0.0 || p->xscale != 0.0 || p->yscale != 0.0) {
+      fprintf (stderr, "\nScale meaningless for annotations\n");
+      error = 1;
+    }
+    if (p->width == 0.0 || p->depth + p->height == 0.0) {
+      fprintf (stderr, "Special thread: Rectangle has a zero dimension\n");
+      error = 1;
+    }
   }
-  if (p->scale != 0.0 || p->xscale != 0.0 || p->yscale != 0.0) {
-    fprintf (stderr, "\nScale meaningless for annotations\n");
-    release_xform_info (p);
-    return;
+  if (!error) {
+    skip_white (start, end);
+    if (**start == '<')
+      if ((info_dict = parse_pdf_dict (start, end)) ==
+	NULL) {
+	fprintf (stderr, "Special: thread: Error in dictionary\n");
+	error = 1;
+      }
+    } else
+      info_dict = pdf_new_dict();
+  if (!error && name && info_dict) {
+    /* Does this article exist yet */
+    if ((article = lookup_object (name)) == NULL) {
+      pdf_doc_start_article (name, pdf_link_obj (info_dict));
+      add_reference (name, info_dict, NULL);
+    } else {
+      pdf_merge_dict (article, info_dict);
+      pdf_release_obj (info_dict);
+      info_dict = NULL;
+    }
+    bead_dict = pdf_new_dict ();
+    rectangle = pdf_new_array();
+    pdf_add_array (rectangle, pdf_new_number(ROUND(dev_tell_x(),0.1)));
+    pdf_add_array (rectangle, pdf_new_number(ROUND(dev_tell_y()-p->depth,0.1)));
+    pdf_add_array (rectangle, pdf_new_number(ROUND(dev_tell_x()+p->width,0.1)));
+    pdf_add_array (rectangle, pdf_new_number(ROUND(dev_tell_y()+p->height,0.1)));
+    pdf_add_dict (bead_dict, pdf_new_name ("R"),
+		  rectangle);
+    pdf_add_dict (bead_dict, pdf_new_name ("P"),
+		  pdf_doc_this_page_ref());
+    pdf_doc_add_bead (name, bead_dict);
   }
-  if (p->width == 0.0 || p->depth + p->height == 0.0) {
-    fprintf (stderr, "Special bead: Rectangle has a zero dimension\n");
-    release_xform_info (p);
-    return;
-  }
-  skip_white (start, end);
-  if (**start == '<')
-    info_dict = parse_pdf_dict (start, end);
-  else
-    info_dict = pdf_new_dict();
-  /* Does this article exist yet */
-  if ((article = lookup_object (name)) == NULL) {
-    pdf_doc_start_article (name, pdf_link_obj (info_dict));
-    add_reference (name, info_dict, NULL);
-  } else {
-    pdf_merge_dict (article, info_dict);
-    pdf_release_obj (info_dict);
-  }
-  bead_dict = pdf_new_dict ();
-  rectangle = pdf_new_array();
-  pdf_add_array (rectangle, pdf_new_number(ROUND(dev_tell_x(),0.1)));
-  pdf_add_array (rectangle, pdf_new_number(ROUND(dev_tell_y()-p->depth,0.1)));
-  pdf_add_array (rectangle, pdf_new_number(ROUND(dev_tell_x()+p->width,0.1)));
-  pdf_add_array (rectangle, pdf_new_number(ROUND(dev_tell_y()+p->height,0.1)));
   release_xform_info(p);
-  pdf_add_dict (bead_dict, pdf_new_name ("R"),
-		rectangle);
-  pdf_add_dict (bead_dict, pdf_new_name ("P"),
-		pdf_doc_this_page_ref());
-  pdf_doc_add_bead (name, bead_dict);
   if (name != NULL) {
     RELEASE (name);
+  }
+  if (error) {
+    *start = save;
+    dump (*start, end);
   }
   return;
 }
@@ -977,7 +987,6 @@ static void do_docinfo(char **start, char *end)
   pdf_obj *result;
   if ((result = parse_pdf_dict(start, end)) != NULL) {
     pdf_doc_merge_with_docinfo (result);
-    parse_crap(start, end);
   } else {
     fprintf (stderr, "\nSpecial: docinfo: Dictionary expected and not found\n");
     dump (*start, end);
@@ -991,7 +1000,6 @@ static void do_docview(char **start, char *end)
   pdf_obj *result;
   if ((result = parse_pdf_dict(start, end)) != NULL) {
     pdf_doc_merge_with_catalog (result);
-    parse_crap(start, end);
   } else {
     fprintf (stderr, "\nSpecial: docview: Dictionary expected and not found\n");
     dump (*start, end);
@@ -1009,7 +1017,6 @@ static void do_close(char **start, char *end)
     release_reference (name);
     RELEASE (name);
   }
-  parse_crap(start, end);
   return;
 }
 
@@ -1023,9 +1030,6 @@ static void do_obj(char **start, char *end)
     fprintf (stderr, "Special object: Ignored.\n");
     return;
   };
-
-  parse_crap(start, end);
-  
   if (name != NULL) {
     add_reference (name, result, NULL);
     RELEASE (name);
@@ -1035,8 +1039,9 @@ static void do_obj(char **start, char *end)
 
 static void do_content(char **start, char *end)
 {
-  skip_white(start, end);
-  pdf_doc_add_to_page (*start, end-*start);
+  if (*start < end)
+    pdf_doc_add_to_page (*start, end-*start);
+  *start = end;
 }
 
 
@@ -1455,6 +1460,7 @@ MEM_START
     do_uxobj (&start, end, x_user, y_user);
     break;
   }
+  /*  parse_crap (&start, end); */
 #ifdef MEM_DEBUG
 MEM_END
 #endif

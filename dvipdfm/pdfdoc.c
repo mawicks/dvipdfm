@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.21 1998/12/07 01:45:36 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.22 1998/12/07 05:12:36 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -577,6 +577,8 @@ void pdf_doc_start_article (char *name, pdf_obj *info)
   if (number_articles >= MAX_ARTICLES) {
     ERROR ("pdf_doc_add_article:  Too many articles\n");
   }
+  if (name == NULL || strlen (name) == 0)
+    ERROR ("pdf_doc_start_article called null name");
   articles[number_articles].name = NEW (strlen(name)+1, char);
   strcpy (articles[number_articles].name, name);
   articles[number_articles].info = info;
@@ -657,6 +659,7 @@ void finish_articles(void)
     pdf_release_obj (articles[i].first);
     pdf_release_obj (articles[i].last);
     pdf_release_obj (articles[i].info);
+    RELEASE (articles[i].name);
   }
 }
 
