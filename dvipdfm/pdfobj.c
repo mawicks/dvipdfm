@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.26 1998/12/13 22:04:21 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.27 1998/12/14 05:34:26 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -470,25 +470,25 @@ int pdfobj_escape_str (char *buffer, int bufsize, unsigned char *s, int len)
   int result = 0, i;
   for (i=0; i<len; i++) {
     /* Exit as fast as possible for printable characters */
-    if (isprint(s[i]) && s[i] != '(' && s[i] != ')' && s[i] != '\\') {
-      buffer[result++] = s[i];
-    }
-    else {
+    switch (s[i]) {
+    case '(':
       buffer[result++] = '\\';
-      switch (s[i]) {
-      case '(':
-	buffer[result++] = '(';
-	break;
-      case ')':
-	buffer[result++] = ')';
-	break;
-      case '\\':
-	buffer[result++] = '\\';
-	break;
-      default:
+      buffer[result++] = '(';
+      break;
+    case ')':
+      buffer[result++] = '\\';
+      buffer[result++] = ')';
+      break;
+    case '\\':
+      buffer[result++] = '\\';
+      buffer[result++] = '\\';
+      break;
+    default:
+      if (isprint (s[i]))
+	buffer[result++] = s[i];
+      else
 	result += sprintf (buffer+result, "%03o", s[i]);
-	break;
-      }
+      break;
     }
     if (result+4 > bufsize)
       ERROR ("pdfobj_escape_str: Buffer overflow");

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.42 1998/12/14 04:50:59 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.43 1998/12/14 05:34:26 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -247,16 +247,17 @@ void dev_set_char (mpt_t xpos, mpt_t ypos, unsigned char ch, mpt_t
 {
   int len = 0;
   long kern;
+  kern =
+    (1000l*(text_xorigin+text_offset-xpos))/dev_font[font_id].mptsize;
   if (font_id != current_font)
     dev_set_font(font_id); /* Force a Tf since we are actually trying
 			      to write a character */
-  if (ypos != text_yorigin ||
-      abs(text_xorigin+text_offset-xpos) > dev_font[font_id].mptsize)
+  else if (ypos != text_yorigin ||
+	   abs(text_xorigin+text_offset-xpos) > dev_font[font_id].mptsize)
     text_mode();
   if (motion_state != STRING_MODE)
     string_mode(xpos, ypos);
-  if ((kern =
-       (1000l*(text_xorigin+text_offset-xpos))/dev_font[font_id].mptsize) != 0) {
+  else if (kern != 0) {
     text_offset = xpos-text_xorigin;
     len += sprintf (format_buffer+len, ")%d(", (int) kern);
   }
@@ -273,16 +274,17 @@ void dev_set_string (mpt_t xpos, mpt_t ypos, unsigned char *s, int
 {
   int len = 0;
   long kern;
+  kern =
+    (1000l*(text_xorigin+text_offset-xpos))/dev_font[font_id].mptsize;
   if (font_id != current_font)
     dev_set_font(font_id); /* Force a Tf since we are actually trying
 			       to write a character */
-  if (ypos != text_yorigin ||
-      abs(text_xorigin+text_offset-xpos) > dev_font[font_id].mptsize)
+  else if (ypos != text_yorigin ||
+      kern > 32000)
     text_mode();
   if (motion_state != STRING_MODE)
     string_mode(xpos, ypos);
-  if ((kern =
-       (1000l*(text_xorigin+text_offset-xpos))/dev_font[font_id].mptsize) != 0) {
+  else if (kern != 0) {
     text_offset = xpos-text_xorigin;
     len += sprintf (format_buffer+len, ")%d(", (int) kern);
   }
