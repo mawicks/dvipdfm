@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.26 2000/01/13 01:33:21 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.27 2000/01/24 03:06:10 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1130,7 +1130,7 @@ static int do_operator(char *token)
   return !error;
 }
 
-static void do_one_ps_line (char **start, char *end)
+static int do_one_ps_line (char **start, char *end)
 {
   char *token, *save = NULL;
   pdf_obj *obj;
@@ -1148,17 +1148,25 @@ static void do_one_ps_line (char **start, char *end)
     } else if (**start == '(' &&
 	       (obj = parse_pdf_string (start, end))) {
       PUSH (obj);
+    } else if (**start == '/') {
+      fprintf (stderr, "\nUnable to handle names in raw PS code.");
+      dump (*start, end);
+      error = 1;
     } else {
       token = parse_ident (start, end);
-      if (!do_operator (token)) {
+      if (!token || !do_operator (token)) {
 	error = 1;
       }
-      RELEASE (token);
+      if (token)
+	RELEASE (token);
     }
     skip_white (start, end);
   }
-  if (*start < end)
+  if (*start < end) {
+    fprintf (stderr, "\nRemainder of line unparsed.");
     dump (*start, end);
+  }
+  return !error;
 }
 
 static char line_buffer[1024];
@@ -1174,7 +1182,10 @@ int parse_contents (FILE *image_file)
     char *start, *end;
     start = line_buffer;
     end = start+strlen(line_buffer);
-    do_one_ps_line (&start, end);
+    if (!do_one_ps_line (&start, end)) {
+      error = 1;
+      break;
+    }
   }
   return !error;
 }
@@ -1253,7 +1264,9 @@ pdf_obj *mp_include (FILE *image_file,  struct xform_info *p,
      if (!xobj)
        return NULL;
      /* Flesh out the contents */
-     parse_contents (image_file);
+     if (!parse_contents (image_file)) {
+       fprintf (stderr, "Errors occured while interpreting MetaPost file.\n\n");
+     }
      /* Finish off the form */
      end_form_xobj();
    }
