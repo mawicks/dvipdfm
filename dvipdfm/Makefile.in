@@ -17,7 +17,7 @@ scripts=dvipdft
 headers=dvi.h pdflimits.h error.h mfileio.h jpeg.h mem.h numbers.h \
 	pdfdev.h pdfdoc.h pdfparse.h pdfspecial.h tfm.h type1.h epdf.h \
 	vf.h dvicodes.h t1crypt.h pkfont.h tpic.h thumbnail.h htex.h \
-	twiddle.h mpost.h psimage.h psspecial.h
+	twiddle.h mpost.h psimage.h psspecial.h colors.h
 src=pdfdev.c pdfdoc.c dvi.c mfileio.c mem.c jpeg.c numbers.c pdfobj.c \
 	pdfparse.c pdfspecial.c tfm.c type1.c dvipdfm.c epdf.c vf.c \
 	t1crypt.c pkfont.c tpic.c thumbnail.c pngimage.c ebb.c htex.c \

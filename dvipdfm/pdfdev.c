@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.85 1999/09/05 05:49:10 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.86 1999/09/05 13:16:43 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -360,6 +360,25 @@ struct color {
   double c1, c2, c3, c4;
 } colorstack[MAX_COLORS], background = {GRAY, 1.0, 1.0, 1.0, 1.0},
     default_color = {GRAY, 0.0, 0.0, 0.0, 0.0};
+
+#include "colors.h"
+
+struct color color_by_name (char *s) 
+{
+  int i;
+  struct color result;
+  for (i=0; i<sizeof(colors_by_name)/sizeof(colors_by_name[0]); i++) {
+    if (!strcmp (s, colors_by_name[i].name)) {
+      break;
+    }
+  }
+  if (i == sizeof(colors_by_name)/sizeof(colors_by_name[0])) {
+    fprintf (stderr, "Color \"%s\" no known.  Using default color.\n", s);
+    result = default_color;
+  } else
+    result = colors_by_name[i].color;
+  return result;
+}
 
 static int num_colors = 0;
 

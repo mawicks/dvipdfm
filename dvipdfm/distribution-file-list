@@ -14,6 +14,7 @@ acconfig.h
 aclocal.m4
 ascii85.c
 c-auto.h
+colors.h
 config
 config.h.in
 configure
@@ -79,6 +80,8 @@ pngimage.c
 pngimage.h
 psimage.c
 psimage.h
+psspecial.c
+psspecial.h
 standardenc.h
 system.h
 t1crypt.c
