@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.16 1998/12/23 21:10:21 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.17 1998/12/30 19:36:10 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -39,6 +39,7 @@
 #include "type1.h"
 #include "pdfspecial.h"
 #include "pdfparse.h"
+#include "vf.h"
 
 #ifndef HAVE_BASENAME /* If system doesn't have basename, kpath library does */
 const char *basename (const char *s);
@@ -104,16 +105,18 @@ static void usage (void)
    fprintf (stderr, "\nUsage: dvipdf [options] dvifile\n");
    fprintf (stderr, "where [options] is one or more of\n\n");
    fprintf (stderr, "\t-c      \tIgnore color specials (for printing on B&W printers)\n");
-   fprintf (stderr, "\t-f filename\tFont map file name [pdffonts.map]\n");
-   fprintf (stderr, "\t-o filename\tOutput file name [dvifile.pdf]\n");
-   fprintf (stderr, "\t-l \t\tlandscape mode\n");
-   fprintf (stderr, "\t-m number\tAdditional magnification\n");
-   fprintf (stderr, "\t-p papersize\tpapersize is [letter], legal, ledger, tabloid, a4, or a3\n");
-   fprintf (stderr, "\t-x dimension\tHorizontal offset [1.0in]\n");
-   fprintf (stderr, "\t-y dimension\tVertical offset [1.0in]\n");
+   fprintf (stderr, "\t-f filename\tSet font map file name [pdffonts.map]\n");
+   fprintf (stderr, "\t-o filename\tSet output file name [dvifile.pdf]\n");
+   fprintf (stderr, "\t-l \t\tLandscape mode\n");
+   fprintf (stderr, "\t-m number\tSet additional magnification\n");
+   fprintf (stderr, "\t-p papersize\tSet papersize (letter, legal, ledger, tabloid, a4, or a3) [letter]\n");
+   fprintf (stderr, "\t-x dimension\tSet horizontal offset [1.0in]\n");
+   fprintf (stderr, "\t-y dimension\tSet vertical offset [1.0in]\n");
    fprintf (stderr, "\t-e          \tDisable partial font embedding [default is enabled])\n");
-   fprintf (stderr, "\t-z          \tDisable stream compression [default is enabled])\n");
-   fprintf (stderr, "\nAll dimensions are \"true\" when specified on the command line\n");
+   fprintf (stderr, "\t-z number\tSet compression level (0-9) [default is 9])\n");
+   fprintf (stderr, "\t-v          \tBe verbose\n");
+   fprintf (stderr, "\t-vv         \tBe more verbose\n");
+   fprintf (stderr, "\nAll dimensions entered on the command are \"true\" TeX dimensions.\n");
    exit(1);
 }
 
@@ -123,11 +126,14 @@ static landscape_mode = 0;
 static ignore_colors = 0;
 static double mag = 1.0, x_offset=72.0, y_offset=72.0;
 
+#define pop_arg() {argv += 1; argc -= 1;}
+
 static void do_args (int argc, char *argv[])
 {
-  while (argc > 0) {
-    if (*argv[0] == '-') {
-      switch (*(argv[0]+1)) {
+  char *flag;
+  while (argc > 0 && *argv[0] == '-') {
+    for (flag=argv[0]+1; *flag != 0; flag++) {
+      switch (*flag) {
       case 'm':
 	if (argc < 2) {
 	  fprintf (stderr, "Magnification specification missing a number\n");
@@ -148,8 +154,7 @@ static void do_args (int argc, char *argv[])
 	    RELEASE (result);
 	  }
 	}
-	argv += 2;
-	argc -= 2;
+	pop_arg();
 	break;
       case 'x':
 	if (argc < 2) {
@@ -180,8 +185,7 @@ static void do_args (int argc, char *argv[])
 	    usage();
 	  }
 	}
-	argv += 2;
-	argc -= 2;
+	pop_arg();
 	break;
       case 'y':
 	if (argc < 2) {
@@ -212,16 +216,14 @@ static void do_args (int argc, char *argv[])
 	    usage();
 	  }
 	}
-	argv += 2;
-	argc -= 2;
+	pop_arg();
 	break;
       case 'o':  
 	if (argc < 2)
 	  ERROR ("Missing output file name");
 	pdf_filename = NEW (strlen(argv[1])+1,char);
 	strcpy (pdf_filename, argv[1]);
-	argv += 2;
-	argc -= 2;
+	pop_arg();
 	break;
       case 'p':
 	{
@@ -231,59 +233,84 @@ static void do_args (int argc, char *argv[])
 	  paper_width = paper_size.width;
 	  paper_height = paper_size.height;
 	  paper_specified = 1;
-	  argv += 2;
-	  argc -= 2;
+	  pop_arg();
 	}
 	break;
       case 'c':
 	ignore_colors = 1;
-	argv += 1;
-	argc -= 1;
 	break;
       case 'l':
 	landscape_mode = 1;
-	argv += 1;
-	argc -= 1;
 	break;
       case 'f':
 	type1_set_mapfile (argv[1]);
-	argv += 2;
-	argc -= 2;
+	pop_arg();
 	break;
       case 'e':
 	type1_disable_partial();
-	argv += 1;
-	argc -= 1;
+	break;
+      case 'v':
+	dvi_set_verbose();
+	type1_set_verbose();
+	vf_set_verbose();
+	pdf_obj_set_verbose();
+	pdf_doc_set_verbose();
 	break;
       case 'z':
-	pdf_obj_disable_compression();
-	argv += 1;
-	argc -= 1;
+	if (argc < 2) {
+	  fprintf (stderr, "\nCompression specification missing number for level\n");
+	  usage();
+	}
+	{
+	  char *result, *end, *start = argv[1];
+	  int level = 9;
+	  end = start + strlen(argv[1]);
+	  result = parse_number (&start, end);
+	  if (result != NULL && start == end) {
+	    level = (int) atof (result);
+	  }
+	  else {
+	    fprintf (stderr, "\nError in number following magnification specification\n");
+	    usage();
+	  }
+	  if (result != NULL) {
+	    RELEASE (result);
+	  }
+	  if (level >= 0 && level <= 9) {
+	    pdf_obj_set_compression(level);
+	  } else {
+	    fprintf (stderr, "\nNumber following compression specification is out of range\n\n");
+	    usage();
+	  }
+	}
+	pop_arg();
 	break;
       default:
 	usage();
       }
-    } else {
-      if (dvi_filename != NULL) {
-	fprintf (stderr, "Multiple filenames specified\n");
-	exit(1);
-      }
-      if (strncmp (".dvi", argv[0]+strlen(argv[0])-4, 4)) {
-	dvi_filename = NEW (strlen (argv[0])+1+4, char);
-	strcpy (dvi_filename, argv[0]);
-	strcat (dvi_filename, ".dvi");
-      }
-      else {
-	dvi_filename = NEW (strlen (argv[0])+1, char);
-	strcpy (dvi_filename, argv[0]);
-      }
-      argv += 1;
-      argc -= 1;
     }
+    argc -= 1 ;
+    argv += 1;
   }
+  
+  if (strncmp (".dvi", argv[0]+strlen(argv[0])-4, 4)) {
+    dvi_filename = NEW (strlen (argv[0])+1+4, char);
+    strcpy (dvi_filename, argv[0]);
+    strcat (dvi_filename, ".dvi");
+  }
+  else {
+    dvi_filename = NEW (strlen (argv[0])+1, char);
+    strcpy (dvi_filename, argv[0]);
+  }
+  argv += 1;
+  argc -= 1;
   if (dvi_filename == NULL) {
     fprintf (stderr, "No dvi filename specified\n");
-    exit(1);
+    usage();
+  }
+  if (argc > 0) {
+    fprintf (stderr, "Multiple dvi filenames?\n");
+    usage();
   }
 }
 

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/vf.c,v 1.11 1998/12/17 02:01:26 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/vf.c,v 1.12 1998/12/30 19:36:11 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -41,7 +41,15 @@
 #define TEXPT2PT (72.0/72.27)
 #define FW2PT (TEXPT2PT/((double)(FIX_WORD_BASE)))
 
-static verbose = 1, debug = 0;
+static unsigned char verbose = 0, debug = 0;
+
+void vf_set_verbose(void)
+{
+  if (verbose < 255) {
+    verbose += 1;
+  }
+}
+
 
 struct font_def {
   signed long font_id /* id used internally in vf file */;
@@ -248,15 +256,13 @@ int vf_locate_font (char *tex_name, mpt_t ptsize)
   int thisfont = -1;
   char *full_vf_file_name;
   FILE *vf_file;
-  if (verbose)
-    fprintf (stderr, "VF: (%s@%ld pt)\n", tex_name, ptsize);
   full_vf_file_name = kpse_find_file (tex_name, 
 				      kpse_vf_format,
 				      1);
   if (full_vf_file_name &&
       (vf_file = fopen (full_vf_file_name, "rb")) != NULL) {
     if (verbose) {
-      fprintf (stderr, "VF path: %s\n", full_vf_file_name);
+      fprintf (stderr, "(%s)", full_vf_file_name);
     }
     if (num_vf_fonts >= max_vf_fonts) {
       resize_vf_fonts (max_vf_fonts + VF_ALLOC_SIZE);

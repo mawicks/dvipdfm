@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.34 1998/12/25 01:39:31 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.35 1998/12/30 19:36:10 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -43,7 +43,7 @@
 
 FILE *pdf_output_file = NULL;
 FILE *pdf_input_file = NULL;
-unsigned long pdf_output_file_position = 0;
+unsigned long pdf_output_file_position = 0, compression_saved = 0;
 int pdf_output_line_position = 0;
 #define FORMAT_BUF_SIZE 256
 char format_buffer[FORMAT_BUF_SIZE];
@@ -97,7 +97,18 @@ static void write_stream (FILE *file, pdf_stream *stream);
 static void release_stream (pdf_stream *stream);
 static int pdf_match_name (const pdf_obj *name_obj, const char *name);  /* Name does not include the / */
 
-static int debug = 0, verbose = 0;
+static unsigned char debug = 0, verbose = 0;
+static char compression_level = 9;
+
+void pdf_obj_set_compression (int level)
+{
+  if (level >= 0 && level <= 9) 
+    compression_level = level;
+  else {
+    ERROR("set_compression: compression level");
+  }
+  return;
+}
 
 void pdf_obj_set_debug(void)
 {
@@ -106,7 +117,8 @@ void pdf_obj_set_debug(void)
 
 void pdf_obj_set_verbose(void)
 {
-  verbose = 1;
+  if (verbose < 255)
+    verbose += 1;
 }
 
 
@@ -170,14 +182,21 @@ static void dump_trailer(void)
   pdf_out (pdf_output_file, "%%EOF\n", 6);
 }
 
-
 void pdf_out_flush (void)
 {
   if (pdf_output_file) {
-    if (verbose) fprintf (stderr, "pdf_obj_out_flush:  dumping xref\n");
+    if (debug) fprintf (stderr, "pdf_obj_out_flush:  dumping xref\n");
     dump_xref();
-    if (verbose) fprintf (stderr, "pdf_obj_out_flush:  dumping trailer\n");
+    if (debug) fprintf (stderr, "pdf_obj_out_flush:  dumping trailer\n");
     dump_trailer();
+    if (verbose) {
+      if (compression_level>0) {
+	fprintf (stderr, "\nCompression eliminated approximately %ld bytes",
+		 compression_saved);
+      }
+    }
+    fprintf (stderr, "\n%ld bytes written",
+	     pdf_output_file_position);
     fclose (pdf_output_file);
   }
 }
@@ -872,13 +891,6 @@ char *pdf_get_dict (const pdf_obj *dict, int index)
   return result;
 }
 
-static char compression_enabled = 1;
-
-void pdf_obj_disable_compression (void)
-{
-  compression_enabled = 0;
-}
-
 pdf_obj *pdf_new_stream (int flags)
 {
   pdf_obj *result, *filters = NULL;
@@ -899,7 +911,7 @@ pdf_obj *pdf_new_stream (int flags)
 		pdf_ref_obj (data -> length));
 
 #ifdef HAVE_ZLIB
-  if ((flags & STREAM_COMPRESS) && compression_enabled) {
+  if ((flags & STREAM_COMPRESS) && compression_level > 0) {
     if (!filters) {
       filters = pdf_new_array();
       pdf_add_dict (data -> dict, pdf_new_name ("Filter"), filters);
@@ -913,6 +925,7 @@ pdf_obj *pdf_new_stream (int flags)
   data -> stream = NULL;
   return result;
 }
+
 
 static void write_stream (FILE *file, pdf_stream *stream)
 {
@@ -929,16 +942,17 @@ static void write_stream (FILE *file, pdf_stream *stream)
 
 #ifdef HAVE_ZLIB
   /* Apply compression filter if requested */
-  if ((stream -> _flags & STREAM_COMPRESS) && compression_enabled) {
+  if ((stream -> _flags & STREAM_COMPRESS) && compression_level > 0) {
     int z_error;
     buffer_length = filtered_length + filtered_length/1000 + 13;
     buffer = NEW (buffer_length, unsigned char);
     if ((z_error = compress2 (buffer, &buffer_length, filtered,
-			      filtered_length, COMPRESS_LEVEL)) != 0) {
+			      filtered_length, compression_level)) != 0) {
       ERROR ("Zlib error");
     }
     RELEASE (filtered);
     filtered = buffer;
+    compression_saved += (filtered_length-buffer_length)-strlen("/Filter [/FlateDecode]\n");
     filtered_length = buffer_length;
   }
 #endif /* HAVE_ZLIB */

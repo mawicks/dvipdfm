@@ -1,10 +1,11 @@
 Installation:
 
-   To compile and install this package, you an *installed* version
-of the kpathsea library.  Specificically, this means the kpathsea
-headers must be in your preprocessor search path (-I) and the kpathsea
-library must be your linker search path (-L).  In other words
-   
+   To compile and install this package, you an *installed* version of the
+kpathsea library.  Specifically, this means the kpathsea headers must be in
+your preprocessor search path (-I) and the kpathsea library must be in your
+linker search path (-L).  The kpathsea library is included in source form
+with the "texk" bundle or the "web2c" bundle, available on CTAN.
+
    1.  Unbundle the gzip'ed tar file.
    2.  Set the CPPFLAGS, CFLAGS, and LDFLAGS environment variables
        with any options you want and also any -I or -L options

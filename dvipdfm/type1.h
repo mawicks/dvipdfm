@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.h,v 1.10 1998/12/23 20:58:44 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.h,v 1.11 1998/12/30 19:36:11 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -28,6 +28,7 @@
 
 #include "pdfobj.h"
 
+extern void type1_set_verbose(void);
 extern pdf_obj *type1_font_resource (int type1_id);
 extern char *type1_font_used (int type1_id);
 extern void type1_disable_partial (void);

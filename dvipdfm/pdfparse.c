@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.c,v 1.17 1998/12/23 16:46:56 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.c,v 1.18 1998/12/30 19:36:11 mwicks Exp $
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
 
@@ -368,9 +368,11 @@ pdf_obj *parse_pdf_string (char **start, char *end)
   unsigned char *string;
   int strlength;
   skip_white(start, end);
-  if (*start == end || *((*start)++) != '(')
-    return NULL;
   save = *start;
+  if (*start == end || **start != '(') {
+    return NULL;
+  }
+  ++(*start);
   string = NEW (end - *start, unsigned char);
   strlength = 0;
   balance = 0;
@@ -413,6 +415,7 @@ pdf_obj *parse_pdf_string (char **start, char *end)
   }
   if (*start >= end) {
     fprintf (stderr, "\nString object ended prematurely\n");
+    dump (save, *start);
     return NULL;
   }
   (*start)++;

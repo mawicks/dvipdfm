@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.32 1998/12/23 16:46:56 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.33 1998/12/30 19:36:11 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -714,23 +714,26 @@ static void do_outline(char **start, char *end)
 
 static void do_article(char **start, char *end)
 {
-  char *name, *save = *start;
+  char *name = NULL, *save = *start;
+  int error = 0;
   pdf_obj *info_dict;
   skip_white (start, end);
   if (*((*start)++) != '@' || (name = parse_ident(start, end)) == NULL) {
     fprintf (stderr, "Article name expected.\n");
     *start = save;
-    dump(*start, end);
-    return;
+    dump (*start, end);
+    error = 1;
   }
-  if ((info_dict = parse_pdf_dict(start, end)) == NULL) {
+  if (!error && (info_dict = parse_pdf_dict(start, end)) == NULL) {
+    fprintf (stderr, "Ignoring invalid dictionary\n");
+    error = 1;
+  }
+  if (!error) {
+    pdf_doc_start_article (name, pdf_link_obj(info_dict));
+    add_reference (name, info_dict, NULL);
+  }
+  if (name)
     RELEASE (name);
-    fprintf (stderr, "Ignoring invalid dictionary\n");  
-    return;
-  }
-  pdf_doc_start_article (name, pdf_link_obj(info_dict));
-  add_reference (name, info_dict, NULL);
-  RELEASE (name);
   return;
 }
 
@@ -808,9 +811,10 @@ static void do_bead(char **start, char *end)
 
 static void do_epdf (char **start, char *end, double x_user, double y_user)
 {
-  char *filename, *objname;
-  pdf_obj *filestring;
-  pdf_obj *trailer, *result;
+  char *filename = NULL, *objname = NULL, *save;
+  pdf_obj *filestring = NULL;
+  pdf_obj *trailer, *result = NULL;
+  int error = 0;
   struct xform_info *p;
 #ifdef MEM_DEBUG
 MEM_START
@@ -819,59 +823,49 @@ MEM_START
   objname = parse_opt_ident(start, end);
   p = new_xform_info ();
   skip_white(start, end);
+  save = *start;
   if (!parse_dimension(start, end, p)) {
     fprintf (stderr, "\nFailed to find dimensions for encapsulated figure\n");
-    release_xform_info (p);
-    return;
+    error = 1;
   }
-  if (!validate_image_xform_info (p)) {
-    fprintf (stderr, "\nSpecified dimensions are inconsistent\n");
-    fprintf (stderr, "\nSpecial will be ignored\n");
-    release_xform_info (p);
-    return;
+  if (!error && (filestring = parse_pdf_string(start, end)) == NULL) {
+    fprintf (stderr, "\nMissing filename\n");
+    error = 1;
   }
-  if (*start < end && (filestring = parse_pdf_string(start, end)) !=
-      NULL) {
+  if (!error) {
     filename = pdf_string_value(filestring);
+  }
+  if (!error && !validate_image_xform_info (p)) {
+    fprintf (stderr, "\nSpecified dimensions are inconsistent\n");
+    dump (save, end);
+    error = 1;
+  }
+  if (!error) {
     fprintf (stderr, "(%s)", filename);
-    if (debug) fprintf (stderr, "Opening %s\n", filename);
-    if ((trailer = pdf_open (filename)) == NULL) {
-      fprintf (stderr, "\nSpecial ignored\n");
-      release_xform_info (p);
-      return;;
-    };
-    pdf_release_obj (filestring);
-    result = pdf_include_page(trailer, x_user, y_user, p);
-    release_xform_info(p);
-    pdf_release_obj (trailer);
-    pdf_close ();
-  } else
-    {
-      fprintf (stderr, "No file name found in special\n");
-      release_xform_info (p);
-      dump(*start, end);
-      return;
+    if ((trailer = pdf_open (filename)) != NULL) {
+      result = pdf_include_page(trailer, x_user, y_user, p);
+      pdf_release_obj (trailer);
+      pdf_close ();
+    } else {
+      fprintf (stderr, "Error trying to include PDF file.\n");
+      error = 1;
     }
-  if (result == NULL) {
-    fprintf (stderr, "\nEPDF special ignored\n");
-    return;
   }
-  if (objname != NULL) {
-    add_reference (objname, result,
+  release_xform_info (p);
+  if (objname != NULL && result != NULL) {
+    add_reference (objname, pdf_link_obj (result),
 		   pdf_name_value(pdf_lookup_dict(pdf_stream_dict(result), "Name")));
-    /* An annotation is treated differently from a cos object.
-       The previous line adds both a direct link and an indirect link
-       to "result".  For cos objects this prevents the direct link
-       prevents the object from being flushed immediately.  
-       So that an "ann" doesn't behave like an OBJ, the ANN should be
-       immediately unlinked.  Otherwise the ANN would have to be
-       closed later. This seems awkward, but an annotation is always
-       considered to be complete */
+    /* Immediately unlink the object.  Read explanation in do_ann() */ 
     release_reference (objname);
-    RELEASE (objname);
   }
-  else
+  if (objname) 
+    RELEASE (objname);
+  if (filestring)
+    pdf_release_obj (filestring);
+  if (result)
     pdf_release_obj (result);
+  if (error)
+    fprintf (stderr, "\nEPDF special ignored.\n");
 #ifdef MEM_DEBUG
 MEM_END
 #endif
@@ -879,63 +873,61 @@ MEM_END
 
 static void do_image (char **start, char *end, double x_user, double y_user)
 {
-  char *filename, *objname;
-  pdf_obj *filestring, *result;
+  char *filename = NULL, *objname = NULL, *save;
+  pdf_obj *filestring = NULL, *result = NULL;
   struct jpeg *jpeg;
+  int error = 0;
   struct xform_info *p;
-  p = new_xform_info();
 #ifdef MEM_DEBUG
 MEM_START
 #endif
   skip_white(start, end);
   objname = parse_opt_ident(start, end);
+  p = new_xform_info();
   skip_white(start, end);
-
+  save = *start;
   if (!parse_dimension(start, end, p)) {
     fprintf (stderr, "\nFailed to find dimensions for encapsulated image\n");
     release_xform_info (p);
-    return;
+    error = 1;
   }
-  if (!validate_image_xform_info (p)) {
-    fprintf (stderr, "\nSpecified dimensions are inconsistent\n");
-    fprintf (stderr, "\nSpecial will be ignored\n");
-    release_xform_info (p);
-    return;
+  if (!error && (filestring = parse_pdf_string(start, end)) == NULL) {
+    fprintf (stderr, "\nMissing filename\n");
+    error = 1;
   }
-  if (*start < end && (filestring = parse_pdf_string(start, end)) !=
-      NULL) {
+  if (!error) {
     filename = pdf_string_value(filestring);
+  }
+  if (!error && !validate_image_xform_info (p)) {
+    fprintf (stderr, "\nSpecified dimensions are inconsistent\n");
+    dump (save, end);
+    error = 1;
+  }
+  if (!error) {
     fprintf (stderr, "(%s)", filename);
-    if (debug) fprintf (stderr, "Opening %s\n", filename);
-    if ((jpeg = jpeg_open(filename)) == NULL) {
-      fprintf (stderr, "\nSpecial ignored\n");
-      release_xform_info (p);
-      return;
-    };
-    pdf_release_obj (filestring);
-    result = jpeg_build_object(jpeg, x_user, y_user, p);
-    release_xform_info (p);
-    jpeg_close (jpeg);
-  } else
-    {
-      fprintf (stderr, "No file name found in special\n");
-      release_xform_info (p);
-      dump(*start, end);
-      return;
+    if ((jpeg = jpeg_open(filename)) != NULL) {
+      result = jpeg_build_object(jpeg, x_user, y_user, p);
+      jpeg_close (jpeg);
+    } else {
+      fprintf (stderr, "Error trying to include JPEG file.\n");
+      error = 1;
     }
-  if (result == NULL) {
-    fprintf (stderr, "\nSpecial ignored\n");
-    return;
   }
-  if (objname != NULL) {
-    add_reference (objname, result, 
+  release_xform_info(p);
+  if (objname != NULL && result != NULL) {
+    add_reference (objname, pdf_link_obj (result), 
 		   pdf_name_value(pdf_lookup_dict(pdf_stream_dict(result), "Name")));
-    /* Read the explanation for the next line in do_annot() */
+    /* Read the explanation for the next line in do_ann() */
     release_reference (objname);
-    RELEASE (objname);
   }
-  else
+  if (objname)
+    RELEASE (objname);
+  if (filestring)
+    pdf_release_obj (filestring);
+  if (result)
     pdf_release_obj (result);
+  if (error)
+    fprintf (stderr, "Image special ignored.\n");
 #ifdef MEM_DEBUG
 MEM_END
 #endif

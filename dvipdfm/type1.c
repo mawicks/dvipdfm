@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.45 1998/12/26 04:53:34 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.46 1998/12/30 19:36:11 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -44,6 +44,14 @@
 #include "t1crypt.h"
 
 static const char *map_filename = "pdffonts.map";
+static unsigned char verbose = 0;
+
+void type1_set_verbose(void)
+{
+  if (verbose < 255) {
+    verbose += 1;
+  }
+}
 
 struct font_record 
 {
@@ -138,6 +146,9 @@ int get_encoding (const char *enc_name)
       fclose (encfile);
     sprintf (work_buffer, "Can't find or open encoding file: %s", enc_name) ;
     ERROR (work_buffer);
+  }
+  if (verbose) {
+    fprintf (stderr, "(%s)", full_enc_filename);
   }
   /* Got one and opened it */
   {
@@ -234,9 +245,6 @@ struct font_record *get_font_record (const char *tex_name)
   result -> pfb_name = parse_ident (&start, end); /* May be null */
   return result;
 }
-
-
-
 
 static unsigned long get_low_endian_quad (FILE *file)
 {
@@ -513,7 +521,7 @@ static unsigned long do_pfb_header (FILE *file, int pfb_id,
       pdf_add_stream (pfbs[pfb_id].direct, (char *) buffer, length);
     }
   } else {
-    fprintf (stderr, "Found only %ld out of %ld bytes\n", nread, length);
+    fprintf (stderr, "Found only %ld of %ld bytes\n", nread, length);
     ERROR ("type1_do_pfb_segment:  Are you sure this is a pfb?");
   }
   RELEASE (buffer);
@@ -623,16 +631,17 @@ static unsigned long do_partial_body (unsigned char *filtered, unsigned char
       qsort (used_glyphs, nused, sizeof (char *), glyph_cmp); 
     }
     nleft = nused;
-    fprintf (stderr, "\nEmbedding %d glyphs\n", nused);
     filtered_pointer += sprintf ((char *) filtered_pointer, " %d",
 				 nused);
     skip_white(&start, end);
     /* The following ident *should* be the number of glyphs in this
        file */
     ident = parse_ident (&start, end);
+    if (verbose>1) {
+      fprintf (stderr, "\nEmbedding %d of %s glyphs", nused,ident);
+    }
     if (ident == NULL || !is_a_number (ident) || nused > atof (ident)) 
       ERROR ("More glyphs needed than present in file");
-    fprintf (stderr, "File has %s glyphs\n", ident);
     RELEASE (ident);
     tail = start;
     while (start < end && *start != '/') start++;
@@ -674,10 +683,13 @@ static unsigned long do_partial_body (unsigned char *filtered, unsigned char
       ERROR ("Premature end of glyph definitions in font file");
     }
     if (nleft != 0)
-      ERROR ("Didn't find all the required glyphs in the font");
+      ERROR ("Didn't find all the required glyphs in the font.\nPossibly the encoding is incorrect.");
     /* Include the rest of the file verbatim */
     memcpy (filtered_pointer, start, end-start);
     filtered_pointer += end-start;
+  }
+  if (verbose>1) {
+    fprintf (stderr, " (eliminated %ld bytes)\n", length-(filtered_pointer-filtered));
   }
   return (filtered_pointer-filtered);
 }
@@ -704,7 +716,7 @@ static unsigned long do_pfb_body (FILE *file, int pfb_id,
   filtered = NEW (length, unsigned char);
   if ((nread = fread(buffer, sizeof(unsigned char), length, file)) ==
       length) {
-    if (partial_enabled && glyphs != NULL && partial_enabled) {
+    if (partial_enabled && glyphs != NULL) {
       /* For partial font embedding we need to decrypt the binary
 	 portin of the pfb */
       crypt_init(EEKEY);
@@ -821,6 +833,9 @@ static void do_pfb (int pfb_id)
   int ch;
   full_pfb_name = kpse_find_file (pfbs[pfb_id].pfb_name, kpse_type1_format,
 				  1);
+  if (verbose) {
+    fprintf (stderr, "(%s)", full_pfb_name);
+  }
   if (full_pfb_name == NULL ||
       (type1_binary_file = fopen (full_pfb_name, FOPEN_RBIN_MODE)) == NULL) {
     fprintf (stderr, "type1_fontfile:  Unable to find or open binary font file (%s)",
@@ -942,7 +957,12 @@ static int open_afm_file (const char *afm_name)
 				  1);
   if (full_afm_name &&
       (type1_afm_file = fopen (full_afm_name, FOPEN_R_MODE)) != NULL)
+  {
+    if (verbose) {
+      fprintf (stderr, "(%s)", full_afm_name);
+    }
     return 1;
+  }
   else
     return 0;
 }
@@ -1192,6 +1212,14 @@ int type1_font (const char *tex_name, int tfm_font_id, const char *resource_name
   /* Fill in default value for afm_name, enc, and pfb_name if not from
      map file */
   fill_in_defaults (font_record, tex_name);
+  if (verbose>1){
+    fprintf (stderr, "\nfontmap: %s -> %s/%s", tex_name,
+	     font_record->afm_name,
+	     font_record->pfb_name?font_record->pfb_name:"none");
+    if (font_record->enc_name)
+      fprintf (stderr, "(%s)", font_record->enc_name);
+    fprintf (stderr, "\n");
+  }
   if (open_afm_file (font_record ->afm_name)) { /* If we have an AFM
 						   file, assume we
 						   have a "physical"

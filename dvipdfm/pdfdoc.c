@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.31 1998/12/25 01:39:31 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.32 1998/12/30 19:36:10 mwicks Exp $
  
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -75,12 +75,12 @@ static void finish_dests_tree(void);
 static void finish_pending_xobjects(void);
 static void start_articles(void);
 
-static verbose = 0;
-static debug = 0;
+static unsigned char verbose = 0, debug=0;
 
 void pdf_doc_set_verbose(void)
 {
-  verbose = 1;
+  if (verbose < 255) 
+    verbose += 1;
 }
 
 void pdf_doc_set_debug(void)
@@ -472,7 +472,7 @@ void pdf_doc_change_outline_depth(int new_depth)
 
 static void finish_outline(void)
 {
-  if (verbose)
+  if (debug)
     fprintf (stderr, "(finish_outline)");
   /* Link it into the catalog */
   /* Point /Outline attribute to indirect reference */

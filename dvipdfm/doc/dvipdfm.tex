@@ -1,4 +1,4 @@
-% $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/doc/dvipdfm.tex,v 1.13 1998/12/15 18:37:07 mwicks Exp $
+% $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/doc/dvipdfm.tex,v 1.14 1998/12/30 19:36:11 mwicks Exp $
 \special{ pdf: pagesize width 8.5truein height 11.0truein}
 \special{  pdf:  docview <</PageMode /UseOutlines>>}%
 \catcode`\ =11\def\space{ }\catcode`\ =10
@@ -116,7 +116,7 @@
 @thispage /FitH @ypos ]  >> }}}%
 %
 \def\link#1#2{\setbox0\hbox{\setlink{#1}}%
-   \special{pdf: ann width \the\wd0\space height \the\ht0\space depth \the\dp0
+   \leavevmode\special{pdf: ann width \the\wd0\space height \the\ht0\space depth \the\dp0
      << /Type /Annot /Subtype /Link /Border [ 0 0 0 ] /A << /S /GoTo
      /D (#2) >> >>}\box0\relax}%
 %
@@ -147,8 +147,8 @@
 %
 \title{Dvipdfm User's Manual}
 \author{Mark A. Wicks}
-\version{Version 0.7.4}
-\date{December 3, 1998}
+\version{Version 0.9.0}
+\date{December 30, 1998}
 \maketitle
 \section{Introduction}
 This package is a DVI (\TeX) to PDF conversion utility,
@@ -171,12 +171,20 @@ has multiple segments.
 \item{$\bullet$} {\it Ability to include a \link{JPEG image}{jpegimage} as an encapsulated
 object.}
 
-\item{$\bullet$} {\it A color stack.} A color stack allows you to change the current color, pushing the
+\item{$\bullet$} {\it An internal color stack.} A color stack allows you to change the current color, pushing the
 current color onto a stack.  At any time, the original color
 can be popped from the stack.  This is useful, for example, in
 headlines, that may have a different color from the current text.
 The headline macro can restore the current color without knowing
 what it is.
+
+\item{$\bullet$} {\it Support for partial font embedding and Flate compression
+to reduce file size}
+
+\item{$\bullet$} {\it Balanced page and destination trees.} Balancing
+these trees improves reader access speed 
+on very large documents.
+
 \endlist
 
 The electronic version of the document exercises
@@ -245,8 +253,67 @@ will begin to produce PDF content streams or PDF objects that
 may be included using a DVI to PDF translator.  Either
 of these may be easily embedded using \dvipdfm\ or a similar driver.
 
-\section{General Concepts and Syntax}
+\section{Command Line Options}
+\link{Table~1}{commandline} lists the options
+that are available on the command line.
+\par\noindent
+Note: Several flags may be specified at once:
+\example
+\begintt
+dvipdfm -ecz 9 test.dvi
+\endtt
 
+\topinsert
+{\dest{commandline}}
+\centerline{\colored{\blue}{\subheadingfont Table~1---Command line options
+recognized by |dvipdfm|}}
+\bigskip\nobreak
+\centerline{\vbox{\halign{{\tt #}\hskip
+1em\strut&\vtop{\leftskip0pt\rightskip0pt\hsize=3.0in\noindent #}\cr
+\omit\hfil\it Option\hfil&\omit\hfil \it Description \hfil\cr
+\noalign{\smallskip\begincolor\red\hrule\endcolor\smallskip}
+-c&{\it Disable color specials}  Specifying this option
+forces all color commands to be ignored.  This is useful for printing a color document
+on a black and white printer.\cr
+\noalign{\smallskip}
+-e&{\it Disable partial font embedding.}  This may be useful
+for forms which need complete fonts, or if you run accross a PFB
+file that \dvipdfm\ cannot correctly parse.\cr
+\noalign{\smallskip}
+-f&{\it Set font map file name}.  See
+the \link{Font Mapping}{fontmap} section for additional information.\cr
+\noalign{\smallskip}
+-m&{\it Specify an additional magnification for
+the document}.\cr
+\noalign{\smallskip}
+-o {\it filename}&{\it Set the output PDF file name}.\cr
+\noalign{\smallskip}
+-p {\it papersize}&{\it Specify the output papersize.}
+Valid paper sizes are |letter|, |legal|, |ledger|, |tabloid|,
+|a4|, or |a3|.  The default is |letter|.  Arbitrary paper
+sizes can be specified via \TeX\ special commands,
+which is the recommended method.\cr
+\noalign{\smallskip}
+-l&{\it Landscape the document.}  This is only
+meaningful for paper sizes specified on the command line.\cr
+\noalign{\smallskip}
+-x {\it number}&{\it Specify the horizontal offset
+for the document.}  The default is 1.0in.\cr
+\noalign{\smallskip}
+-y {\it number}&{\it Specify the vertical offset
+for the document.}  The default is 1.0in.\cr
+\noalign{\smallskip}
+-z {\it number}&{\it Specify the compression level.}
+Valid compression levels range from 0 to 9, with 0 indicating
+no compression.  A compression level of 9 is the default.\cr
+\noalign{\smallskip}
+-v&{\it Be verbose.}  Among other things, dvipdfm
+will display complete file names as various files are opened.\cr
+\noalign{\smallskip}
+-vv&{\it Be more verbose.}\cr}}}
+\endinsert
+
+\section{General Concepts and Syntax for TeX Specials}
 Each \TeX\ |\special|
 represents a separate command to the \dvipdfm\ 
 driver.  Each |special| must begin with ``|pdf:|''
@@ -281,10 +348,10 @@ are defined by the driver.
 The driver defined variables are for
 referencing objects such as the current page, future pages,
 or the current location on the current page.
-The driver defined variables appear in \link{Table~1}{drivervariables}.
+The driver defined variables appear in \link{Table~2}{drivervariables}.
 \topinsert
 {\dest{drivervariables}}
-\centerline{\colored{\blue}{\subheadingfont Table~1---List of driver
+\centerline{\colored{\blue}{\subheadingfont Table~2---List of driver
 defined variables}}
 \bigskip\nobreak
 \centerline{\vbox{\halign{{\tt #}\hskip
@@ -292,14 +359,23 @@ defined variables}}
 \omit\hfil\it Variable\hfil&\omit\hfil \it Description \hfil\cr
 \noalign{\smallskip\begincolor\red\hrule\endcolor\smallskip}
 @catalog&A reference to the document's catalog.\cr
+\noalign{\smallskip}
 @names&A reference to the document's /Names dictionary.\cr
+\noalign{\smallskip}
 @pages&A reference to the root of the document's /Pages tree.\cr
+\noalign{\smallskip}
 @resources&A reference to the current page resource dictionary.\cr
+\noalign{\smallskip}
 @thispage&A reference to the current page.\cr
+\noalign{\smallskip}
 @page{\it n}&A reference to page {\it n}.\cr
+\noalign{\smallskip}
 @nextpage&A reference to the page following |@thispage|.\cr
+\noalign{\smallskip}
 @prevpage&A reference to the page preceding |@thispage|.\cr
+\noalign{\smallskip}
 @ypos&A {\it number} representing the current vertical position in units of PDF points.\cr
+\noalign{\smallskip}
 @xpos&A {\it number} representing the current horizontal position in units of PDF points.\cr
 }}}
 \endinsert
@@ -521,13 +597,10 @@ The {\it name} parameter is required.  The {\it dimension} parameter
 defined the rectangular area belonging to the bead in
 the same manner as for |annot|.
 The optional PDF dictionary 
-should supplied on one of the beads.  It keys are
+should supplied on one of the beads.  Its keys are
 similar to the |/Info| dictionary accessed via the |docinfo| command
 and would typically include the |/Title| and |/Author| keys.
-Keys may only be written once.  In other words, if the author
-and title supplied on the first bead of an article differ
-from the article and title supplied on the second bead, those
-specified on the first bead will be used.
+Keys in the dictionary may be overwritten by subsequent {\tt thread} commands.
 \example
 \begintt
 \special {pdf: thread @somearticle << /Title (Some title)
@@ -898,8 +971,7 @@ Notice that any resources required for the object
 are also embedded.  In this case, the Times Roman font
 resource was embedded along with the content stream.
 
-\section{Font Mapping}
-
+\dest{fontmap}\section{Font Mapping}
 \TeX\ font names can be
 mapped into arbitrary physical (PostScript) font names via
 the map file named |pdffonts.map|.  The file is

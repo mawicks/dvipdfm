@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/vf.h,v 1.6 1998/12/14 04:42:58 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/vf.h,v 1.7 1998/12/30 19:36:11 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -25,6 +25,7 @@
 #ifndef _VH_H_
 #define _VH_H_
 
+extern void vf_set_verbose(void);
 extern int vf_locate_font (char *tex_name, mpt_t ptsize);
 extern void vf_set_char(int ch, int vf_font);
 extern void vf_close_all_fonts(void);
