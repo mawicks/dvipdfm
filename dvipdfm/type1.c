@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.29 1998/12/22 18:45:34 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.30 1998/12/22 20:08:33 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -246,22 +246,6 @@ struct font_record *get_font_record (const char *tex_name)
 
 
 
-static int is_a_base_font (char *name)
-{
-  static char *basefonts[] = {
-    "Courier",			"Courier-Bold",		"Courier-Oblique",
-    "Courier-BoldOblique",	"Helvetica",		"Helvetica-Bold",
-    "Helvetica-Oblique",	"Helvetica-BoldOblique",	"Symbol",
-    "Times-Roman",		"Times-Bold",		"Times-Italic",
-    "Times-BoldItalic",		"ZapfDingbats"
-  };
-  int i;
-  for (i=0; i<14; i++) {
-    if (!strcmp (name, basefonts[i]))
-      return 1;
-  }
-  return 0;
-}
 
 static unsigned long get_low_endian_quad (FILE *file)
 {
@@ -279,6 +263,25 @@ static unsigned long get_low_endian_quad (FILE *file)
     result = result*256u + bytes[i];
   }
   return result;
+}
+
+/* PFB section */
+static num_pfbs = 0;
+static max_pfbs = 0;
+struct a_pfb
+{
+  char *pfb_name;
+  pdf_obj *direct, *indirect;
+  char used_chars[256];
+  int encoding_id;
+} *pfbs = NULL;
+
+static void clear_a_pfb (struct a_pfb *pfb)
+{
+  int i;
+  for (i=0; i<256; i++) {
+    (pfb->used_chars)[i] = 0;
+  }
 }
 
 #define ASCII 1
@@ -316,7 +319,7 @@ static unsigned long do_pfb_header (FILE *file, pdf_obj *stream)
   return length;
 }
 
-static unsigned long do_pfb_body (FILE *file, pdf_obj *stream)
+static unsigned long do_pfb_body (FILE *file, int pfb_id)
 {
   int i, ch;
   int stream_type;
@@ -342,7 +345,7 @@ static unsigned long do_pfb_body (FILE *file, pdf_obj *stream)
     for (i=0; i<nread; i++) {
       buffer[i] = encrypt(buffer[i]);
     }
-    pdf_add_stream (stream, (char *) buffer, nread);
+    pdf_add_stream (pfbs[pfb_id].direct, (char *) buffer, nread);
   } else {
     fprintf (stderr, "Found only %ld/%ld bytes\n", nread, length);
     ERROR ("type1_do_pfb_segment:  Are you sure this is a pfb?");
@@ -383,23 +386,6 @@ static unsigned long do_pfb_trailer (FILE *file, pdf_obj *stream)
   return length;
 }
 
-static num_pfbs = 0;
-static max_pfbs = 0;
-struct a_pfb
-{
-  char *pfb_name;
-  pdf_obj *direct, *indirect;
-  char used_chars[256];
-  int encoding_id;
-} *pfbs = NULL;
-
-static void clear_a_pfb (struct a_pfb *pfb)
-{
-  int i;
-  for (i=0; i<256; i++) {
-    (pfb->used_chars)[i] = 0;
-  }
-}
 
 static pdf_obj *type1_fontfile (int pfb_id) 
 {
@@ -439,32 +425,32 @@ static int type1_pfb_id (const char *pfb_name, int encoding_id)
   return i;
 }
 
-static void do_pfb (const char *pfb_name, pdf_obj *stream)
+static void do_pfb (int pfb_id)
 {
   char *full_pfb_name;
-  int ch;
   FILE *type1_binary_file;
   pdf_obj *stream_dict;
   unsigned long length1, length2, length3;
-  full_pfb_name = kpse_find_file (pfb_name, kpse_type1_format,
+  int ch;
+  full_pfb_name = kpse_find_file (pfbs[pfb_id].pfb_name, kpse_type1_format,
 				  1);
   if (full_pfb_name == NULL ||
       (type1_binary_file = fopen (full_pfb_name, FOPEN_RBIN_MODE)) == NULL) {
     fprintf (stderr, "type1_fontfile:  Unable to find or open binary font file (%s)",
-	     pfb_name);
+	     pfbs[pfb_id].pfb_name);
     ERROR ("This existed when I checked it earlier!");
     return;
   }
   /* Following line doesn't hide PDF stream structure very well */
-  length1 = do_pfb_header (type1_binary_file, stream);
-  length2 = do_pfb_body (type1_binary_file, stream);
-  length3 = do_pfb_trailer (type1_binary_file, stream);
+  length1 = do_pfb_header (type1_binary_file, pfbs[pfb_id].direct);
+  length2 = do_pfb_body (type1_binary_file, pfb_id);
+  length3 = do_pfb_trailer (type1_binary_file, pfbs[pfb_id].direct);
   if ((ch = fgetc (type1_binary_file)) != 128 ||
       (ch = fgetc (type1_binary_file)) != 3)
     ERROR ("type1_fontfile:  Are you sure this is a pfb?");
   /* Got entire file! */
   fclose (type1_binary_file);
-  stream_dict = pdf_stream_dict (stream);
+  stream_dict = pdf_stream_dict (pfbs[pfb_id].direct);
   pdf_add_dict (stream_dict, pdf_new_name("Length1"),
 		pdf_new_number (length1));
   pdf_add_dict (stream_dict, pdf_new_name("Length2"),
@@ -748,6 +734,23 @@ char *type1_font_used (int type1_id)
   }
 }
 
+static int is_a_base_font (char *name)
+{
+  static char *basefonts[] = {
+    "Courier",			"Courier-Bold",		"Courier-Oblique",
+    "Courier-BoldOblique",	"Helvetica",		"Helvetica-Bold",
+    "Helvetica-Oblique",	"Helvetica-BoldOblique",	"Symbol",
+    "Times-Roman",		"Times-Bold",		"Times-Italic",
+    "Times-BoldItalic",		"ZapfDingbats"
+  };
+  int i;
+  for (i=0; i<14; i++) {
+    if (!strcmp (name, basefonts[i]))
+      return 1;
+  }
+  return 0;
+}
+
 int type1_font (const char *tex_name, int tfm_font_id, const char *resource_name)
 {
   int i, result = -1;
@@ -859,7 +862,7 @@ void type1_close_all (void)
 
   /* Read any necessary font files and flush them */
   for (i=0; i<num_pfbs; i++) {
-    do_pfb (pfbs[i].pfb_name, pfbs[i].direct);
+    do_pfb (i);
     pdf_release_obj (pfbs[i].direct);
     fprintf (stderr, "\nUsed letters in font (%s): \n",
 	     pfbs[i].pfb_name);
