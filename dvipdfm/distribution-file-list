@@ -48,7 +48,6 @@ jpeg.c
 jpeg.h
 latex-support/Makefile
 latex-support/dvipdfm.def
-latex-support/hdvipdfm.def
 latex-support/mwicks.bb
 latex-support/mwicks.jpeg
 latex-support/something.bb
