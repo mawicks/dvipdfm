@@ -12,7 +12,7 @@ datadir=@datadir@
 texmf=@TEXMF@
 dvipdfmdir=$(texmf)/dvipdfm
 psheaderdir=$(texmf)/dvips
-programs=dvipdfm ebb
+programs=dvipdfm ebb dvipdft
 headers=dvi.h pdflimits.h error.h mfileio.h jpeg.h mem.h numbers.h \
 	pdfdev.h pdfdoc.h pdfparse.h pdfspecial.h tfm.h type1.h epdf.h \
 	vf.h dvicodes.h t1crypt.h pkfont.h tpic.h thumbnail.h

@@ -5,7 +5,7 @@ FILENAME=$_
 echo FILENAME: $FILENAME
 dvipdfm -e -z0 $FILENAME
 
-# gs -r12 -dNOPAUSE -dBATCH -sDEVICE=png16 -sOutputFile=$TMP/$1.%d $1.pdf
-gs -r12 -dNOPAUSE -dBATCH -sDEVICE=jpeg  -sOutputFile=$TMP/$1.%d $1.pdf
+gs -r12 -dNOPAUSE -dBATCH -sDEVICE=png16 -sOutputFile=$TMP/$1.%d $1.pdf
+# gs -r12 -dNOPAUSE -dBATCH -sDEVICE=jpeg  -sOutputFile=$TMP/$1.%d $1.pdf
 
 dvipdfm -t $@

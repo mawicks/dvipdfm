@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/thumbnail.c,v 1.2 1999/08/13 02:24:31 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/thumbnail.c,v 1.3 1999/08/13 13:20:07 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -115,7 +115,7 @@ pdf_obj *do_png (FILE *file)
     pdf_add_dict (dict, pdf_new_name ("ColorSpace"),
 		  pdf_new_name ("DeviceRGB"));
     for (i=0; i<height; i++) {
-      pdf_add_stream (result, rows[i], rowbytes);
+      pdf_add_stream (result, (char *) rows[i], rowbytes);
       RELEASE (rows[i]);
     }
     RELEASE (rows);
@@ -128,7 +128,7 @@ pdf_obj *do_png (FILE *file)
 }
 
 
-static char sigbytes[4];
+static unsigned char sigbytes[4];
 
 pdf_obj *do_thumbnail (const char *thumb_filename) 
 {
