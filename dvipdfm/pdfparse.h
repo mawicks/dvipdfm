@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.h,v 1.2 1998/12/04 20:26:07 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.h,v 1.3 1998/12/12 01:37:18 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -53,28 +53,28 @@
 #include "numbers.h"
 #include "pdfobj.h"
 
-int is_a_number(const char *s);
+extern int is_a_number(const char *s);
 
-char *parse_ident (char **start, char *end);
-char *parse_number (char **start, char*end);
-void parse_crap (char **start, char *end);
-void skip_white (char **start, char *end);
-void skip_line (char **start, char *end);
+extern char *parse_ident (char **start, char *end);
+extern char *parse_number (char **start, char*end);
+extern void parse_crap (char **start, char *end);
+extern void skip_white (char **start, char *end);
+extern void skip_line (char **start, char *end);
 
-pdf_obj *parse_pdf_string (char **start, char*end);
-pdf_obj *parse_pdf_name (char **start, char*end);
-pdf_obj *parse_pdf_array (char **start, char*end);
-pdf_obj *parse_pdf_object (char **start, char*end);
-pdf_obj *parse_pdf_dict (char **start, char*end);
-pdf_obj *parse_pdf_ident (char **start, char*end);
-pdf_obj *parse_pdf_boolean (char **start, char*end);
-pdf_obj *parse_pdf_null (char **start, char*end);
-char *parse_pdf_reference (char **start, char*end);
-char *parse_opt_ident (char **start, char*end);
+extern pdf_obj *parse_pdf_string (char **start, char*end);
+extern pdf_obj *parse_pdf_name (char **start, char*end);
+extern pdf_obj *parse_pdf_array (char **start, char*end);
+extern pdf_obj *parse_pdf_object (char **start, char*end);
+extern pdf_obj *parse_pdf_dict (char **start, char*end);
+extern pdf_obj *parse_pdf_ident (char **start, char*end);
+extern pdf_obj *parse_pdf_boolean (char **start, char*end);
+extern pdf_obj *parse_pdf_null (char **start, char*end);
+extern char *parse_pdf_reference (char **start, char*end);
+extern char *parse_opt_ident (char **start, char*end);
 
-void pdf_finish_specials(void);
-pdf_obj *pdf_read_object (unsigned long obj_no);
+extern void pdf_finish_specials(void);
+extern pdf_obj *pdf_read_object (unsigned long obj_no);
 
-void dump (char *start, char *end);
+extern void dump (char *start, char *end);
 
 #endif  /* PDFPARSE_H */

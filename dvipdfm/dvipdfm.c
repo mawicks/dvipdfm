@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.6 1998/12/05 11:47:24 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.7 1998/12/12 01:37:18 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -26,7 +26,6 @@
 #include <stdio.h>
 #include <string.h>
 #include "c-auto.h"
-#include "system.h"
 #include "dvi.h"
 #ifdef KPATHSEA
 #include <kpathsea/progname.h>
@@ -36,7 +35,7 @@
 #include "pdfdev.h"
 #include "type1.h"
 
-#ifndef HAVE_BASENAME
+#ifndef HAVE_BASENAME /* If system doesn't have basename, kpath library does */
 const char *basename (const char *s);
 #endif /* HAVE_BASENAME */
 
@@ -175,7 +174,6 @@ static void cleanup(void)
   RELEASE (dvi_filename);
   RELEASE (pdf_filename);
 }
-
 
 int CDECL main (int argc, char *argv[]) 
 {

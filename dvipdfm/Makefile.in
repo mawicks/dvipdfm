@@ -1,4 +1,11 @@
-
+CC = @CC@
+CFLAGS = @CFLAGS@
+INSTALL = @INSTALL@
+LIBS = @LIBS@
+srcdir = @srcdir@
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+bindir = @bindir@
 programs=dvipdfm ebb
 headers = acdefines.h dvi.h pdflimits.h error.h mfileio.h jpeg.h mem.h numbers.h \
 	pdfdev.h pdfdoc.h pdfparse.h pdfspecial.h tfm.h type1.h epdf.h \
@@ -12,19 +19,19 @@ eobjects=ebb.o jpeg.o pdfobj.o mem.o mfileio.o numbers.o pdfparse.o
 check default all: $(programs) 
 
 ebb: $(eobjects)
-	$(CC) -o ebb $(eobjects)
+	$(CC) -o ebb $(eobjects) $(LIBS)
 
 dvipdfm:  $(objects)
-	$(CC) -o dvipdfm $(objects)
-
+	$(CC) -o dvipdfm $(objects) $(LIBS)
+clean:
+	rm -f *.o *.dvi *~ *.log 
+	rm -f $(programs)
 install: install-exec install-data
 uninstall: uninstall-exec uninstall-data
-
 install-exec: all
 	$(INSTALL) $(bindir) $(programs)
 install-data:
 # pdffonts.map.
-	$(SHELL) $(top_srcdir)/../mkinstalldirs $(psheaderdir)/dvipdfm
 	if test ! -r $(psheaderdir)/dvipdfm/pdffonts.map \
 	   || grep 'original pdffonts.map --' $(psheaderdir)/dvipdfm/pdffonts.map \
 	   >/dev/null; then  \

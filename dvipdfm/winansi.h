@@ -1,4 +1,4 @@
-char *winansi_encoding[256] = {
+static char *winansi_encoding[256] = {
   ".notdef", ".notdef", ".notdef", ".notdef", ".notdef",
   ".notdef", ".notdef", ".notdef", ".notdef", ".notdef",
   ".notdef", ".notdef", ".notdef", ".notdef", ".notdef",

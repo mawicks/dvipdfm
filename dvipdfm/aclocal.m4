@@ -10,7 +10,7 @@ AC_DEFUN(AC_TZ_HAS_TM_GMTOFF,
 AC_TRY_COMPILE([#include <time.h>], [struct tm *tp; tp->tm_gmtoff],
 	[AC_MSG_RESULT(yes); AC_DEFINE(HAVE_TM_GMTOFF)], [AC_MSG_RESULT(no)])])
 AC_DEFUN(AC_HAS_KPSE_FORMATS,
-	[AC_MSG_CHECKING([whether kpathsea knows about required file formats])
+	[AC_MSG_CHECKING([whether you have kpathsea headers and they whether they know about the required file formats])
 	 AC_TRY_COMPILE([#include <stdio.h>
 #include <kpathsea/tex-file.h>],
 	     	        [kpse_afm_format;kpse_tex_ps_header_format;

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.h,v 1.11 1998/12/11 21:18:33 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.h,v 1.12 1998/12/12 01:37:18 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -122,66 +122,66 @@ typedef struct pdf_indirect pdf_indirect;
 
 struct pdf_obj *pdf_new_obj (pdf_obj_type type);
 
-void pdf_out_init (const char *filename);
+extern void pdf_out_init (const char *filename);
 
-void pdf_out_flush (void);
+extern void pdf_out_flush (void);
 
-pdf_obj *pdf_new_obj(pdf_obj_type type);
+extern pdf_obj *pdf_new_obj(pdf_obj_type type);
 
-pdf_obj *pdf_link_obj(pdf_obj *object);
+extern pdf_obj *pdf_link_obj(pdf_obj *object);
 
-pdf_obj *pdf_new_null (void);
+extern pdf_obj *pdf_new_null (void);
 
-pdf_obj *pdf_new_boolean (char value);
-void pdf_set_boolean (pdf_obj *object, char value);
+extern pdf_obj *pdf_new_boolean (char value);
+extern void pdf_set_boolean (pdf_obj *object, char value);
 
-pdf_obj *pdf_new_number (double value);
-void pdf_set_number (pdf_obj *object, double value);
-double pdf_number_value (pdf_obj *number);
+extern pdf_obj *pdf_new_number (double value);
+extern void pdf_set_number (pdf_obj *object, double value);
+extern double pdf_number_value (pdf_obj *number);
 
-char *pdf_name_value (pdf_obj *object);
+extern char *pdf_name_value (pdf_obj *object);
 
-pdf_obj *pdf_new_string (const void *string, unsigned length);
-void pdf_set_string (pdf_obj *object, unsigned char *string, unsigned length);
-void *pdf_string_value (pdf_obj *object);
+extern pdf_obj *pdf_new_string (const void *string, unsigned length);
+extern void pdf_set_string (pdf_obj *object, unsigned char *string, unsigned length);
+extern void *pdf_string_value (pdf_obj *object);
 
 #define pdf_obj_string_value(s) ((void *)(((pdf_string *)((s)->data)) -> string))
 #define pdf_obj_string_length(s) (((pdf_string *)((s)->data)) -> length)
 
-pdf_obj *pdf_new_name (const char *name);  /* Name does not include the / */
-int pdf_check_name (const char *name);  /* Tell whether name is a
+extern pdf_obj *pdf_new_name (const char *name);  /* Name does not include the / */
+extern int pdf_check_name (const char *name);  /* Tell whether name is a
 					   valid PDF name */
 
-pdf_obj *pdf_new_array (void);
-void pdf_add_array (pdf_obj *array, pdf_obj *object); /* Array is ended
+extern pdf_obj *pdf_new_array (void);
+extern void pdf_add_array (pdf_obj *array, pdf_obj *object); /* Array is ended
 							 by a node with NULL
 							 this pointer */
-pdf_obj *pdf_get_array (pdf_obj *array, int index);
-pdf_obj *pdf_new_dict (void);
-void pdf_add_dict (pdf_obj *dict, pdf_obj *key, pdf_obj *value);  /* Array is ended
+extern pdf_obj *pdf_get_array (pdf_obj *array, int index);
+extern pdf_obj *pdf_new_dict (void);
+extern void pdf_add_dict (pdf_obj *dict, pdf_obj *key, pdf_obj *value);  /* Array is ended
 								     by a node with NULL
 								     this pointer */
-void pdf_merge_dict (pdf_obj *dict1, pdf_obj *dict2);
-pdf_obj *pdf_lookup_dict (const pdf_obj *dict, const char *name);
-char *pdf_get_dict (const pdf_obj *dict, int index);
+extern void pdf_merge_dict (pdf_obj *dict1, pdf_obj *dict2);
+extern pdf_obj *pdf_lookup_dict (const pdf_obj *dict, const char *name);
+extern char *pdf_get_dict (const pdf_obj *dict, int index);
 
-pdf_obj *pdf_new_stream (void);
-void pdf_add_stream (pdf_obj *stream, char *stream_data, unsigned
+extern pdf_obj *pdf_new_stream (void);
+extern void pdf_add_stream (pdf_obj *stream, char *stream_data, unsigned
 		     length);
 
-pdf_obj *pdf_stream_dict(pdf_obj *stream);
+extern pdf_obj *pdf_stream_dict(pdf_obj *stream);
 
-void pdf_release_obj (pdf_obj *object);
-pdf_obj *pdf_deref_obj (pdf_obj *object);
-pdf_obj *pdf_ref_obj (pdf_obj *object);
-pdf_obj *pdf_new_ref (unsigned long label, int generation);
-pdf_obj *pdf_ref_file_obj (unsigned long obj_no);
-void pdf_write_obj (FILE *file, const pdf_obj *object);
-pdf_obj *pdf_open (char *filename);
-void pdf_close (void);
+extern void pdf_release_obj (pdf_obj *object);
+extern pdf_obj *pdf_deref_obj (pdf_obj *object);
+extern pdf_obj *pdf_ref_obj (pdf_obj *object);
+extern pdf_obj *pdf_new_ref (unsigned long label, int generation);
+extern pdf_obj *pdf_ref_file_obj (unsigned long obj_no);
+extern void pdf_write_obj (FILE *file, const pdf_obj *object);
+extern pdf_obj *pdf_open (char *filename);
+extern void pdf_close (void);
 
-int pdfobj_escape_str (char *buffer, int size, unsigned char *s, int len);
-int check_for_pdf (FILE *file);
+extern int pdfobj_escape_str (char *buffer, int size, unsigned char *s, int len);
+extern int check_for_pdf (FILE *file);
 
 #endif  /* PDFOBJ_H */
 

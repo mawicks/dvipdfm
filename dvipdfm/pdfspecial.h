@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.h,v 1.3 1998/12/03 02:40:39 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.h,v 1.4 1998/12/12 01:37:18 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -40,12 +40,12 @@ struct xform_info
   double rotate;
 };
 
-void pdf_parse_special(char *buffer, UNSIGNED_QUAD size, double
+extern void pdf_parse_special(char *buffer, UNSIGNED_QUAD size, double
 		       x_user, double y_user);
-void pdf_finish_specials(void);
-pdf_obj *get_reference(char **start, char *end);
+extern void pdf_finish_specials(void);
+extern pdf_obj *get_reference(char **start, char *end);
 
-void add_xform_matrix (double xoff, double yoff, double xscale, double
+extern void add_xform_matrix (double xoff, double yoff, double xscale, double
 		       yscale, double rotate);
 
 #ifndef M_PI

@@ -3,6 +3,8 @@
 
 #define VERSION 0
 
+#define PACKAGE "package"
+
 /* HAVE_TIMEZONE - Define if <time.h> has timezone as an external variable */
 #undef HAVE_TIMEZONE
 

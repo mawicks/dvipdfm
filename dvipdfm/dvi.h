@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.h,v 1.7 1998/12/11 21:18:33 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.h,v 1.8 1998/12/12 01:37:18 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -22,43 +22,46 @@
 	mwicks@kettering.edu
 */
 
-	
+#ifndef _DVI_H_
+#define _DVI_H_	
 
 #include "error.h"
 #include "numbers.h"
 #include "pdfdev.h"
 
-error_t dvi_open (char *filename);
+extern error_t dvi_open (char *filename);
 
-void dvi_set_verbose (void);
-void dvi_set_debug (void);
+extern void dvi_set_verbose (void);
+extern void dvi_set_debug (void);
 
-void dvi_close (void);  /* Closes data structures created by dvi_open */
-void dvi_complete (void);  /* Closes output file being written by an
+extern void dvi_close (void);  /* Closes data structures created by dvi_open */
+extern void dvi_complete (void);  /* Closes output file being written by an
 			      actual driver */
 
-void dvi_init (char *outputfile);
+extern void dvi_init (char *outputfile);
 
-double dvi_tell_mag (void);
-double dvi_unit_size (void);
+extern double dvi_tell_mag (void);
+extern double dvi_unit_size (void);
 
-void dvi_vf_init (int dev_font_id);
-void dvi_vf_finish (void);
+extern void dvi_vf_init (int dev_font_id);
+extern void dvi_vf_finish (void);
 
-void dvi_set (SIGNED_QUAD ch);
-void dvi_rule (SIGNED_QUAD width, SIGNED_QUAD height);
-void dvi_right (SIGNED_QUAD x);
-void dvi_put (SIGNED_QUAD ch);
-void dvi_push (void);
-void dvi_pop (void);
-void dvi_w0 (void);
-void dvi_w (SIGNED_QUAD ch);
-void dvi_x0(void);
-void dvi_x (SIGNED_QUAD ch);
-void dvi_down (SIGNED_QUAD y);
-void dvi_y (SIGNED_QUAD ch);
-void dvi_y0(void);
-void dvi_z (SIGNED_QUAD ch);
-void dvi_z0(void);
-double dvi_dev_xpos(void);
-double dvi_dev_ypos(void);
+extern void dvi_set (SIGNED_QUAD ch);
+extern void dvi_rule (SIGNED_QUAD width, SIGNED_QUAD height);
+extern void dvi_right (SIGNED_QUAD x);
+extern void dvi_put (SIGNED_QUAD ch);
+extern void dvi_push (void);
+extern void dvi_pop (void);
+extern void dvi_w0 (void);
+extern void dvi_w (SIGNED_QUAD ch);
+extern void dvi_x0(void);
+extern void dvi_x (SIGNED_QUAD ch);
+extern void dvi_down (SIGNED_QUAD y);
+extern void dvi_y (SIGNED_QUAD ch);
+extern void dvi_y0(void);
+extern void dvi_z (SIGNED_QUAD ch);
+extern void dvi_z0(void);
+extern double dvi_dev_xpos(void);
+extern double dvi_dev_ypos(void);
+
+#endif /* _DVI_H_ */

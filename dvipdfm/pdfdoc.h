@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.h,v 1.8 1998/12/04 20:26:06 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.h,v 1.9 1998/12/12 01:37:18 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -27,60 +27,60 @@
 #define PDFDOC_H
 
 #include "pdfobj.h"
-void pdf_doc_new_page (void);
-pdf_obj *pdf_doc_this_page_ref (void);
-pdf_obj *pdf_doc_this_page (void);
-pdf_obj *pdf_doc_page_tree (void);
-pdf_obj *pdf_doc_catalog (void);
-pdf_obj *pdf_doc_names (void);
-pdf_obj *pdf_doc_next_page_ref (void);
-pdf_obj *pdf_doc_prev_page_ref (void);
-pdf_obj *pdf_doc_ref_page (unsigned long page_no);
+extern void pdf_doc_new_page (void);
+extern pdf_obj *pdf_doc_this_page_ref (void);
+extern pdf_obj *pdf_doc_this_page (void);
+extern pdf_obj *pdf_doc_page_tree (void);
+extern pdf_obj *pdf_doc_catalog (void);
+extern pdf_obj *pdf_doc_names (void);
+extern pdf_obj *pdf_doc_next_page_ref (void);
+extern pdf_obj *pdf_doc_prev_page_ref (void);
+extern pdf_obj *pdf_doc_ref_page (unsigned long page_no);
 
-void pdf_doc_add_to_page_resources (const char *name, pdf_obj
+extern void pdf_doc_add_to_page_resources (const char *name, pdf_obj
 				    *resources);
-void pdf_doc_add_to_page_fonts (const char *name, pdf_obj
+extern void pdf_doc_add_to_page_fonts (const char *name, pdf_obj
 				*font);
-void pdf_doc_add_to_page_xobjects (const char *name, pdf_obj
+extern void pdf_doc_add_to_page_xobjects (const char *name, pdf_obj
 				    *xobject);
-pdf_obj *pdf_doc_current_page_resources(void);
+extern pdf_obj *pdf_doc_current_page_resources(void);
 
-void pdf_doc_add_to_page_annots (pdf_obj *annot);
+extern void pdf_doc_add_to_page_annots (pdf_obj *annot);
 
-void pdf_doc_add_dest (char *name, unsigned length, pdf_obj *array);
+extern void pdf_doc_add_dest (char *name, unsigned length, pdf_obj *array);
 
-void pdf_doc_start_article (char *name, pdf_obj *info);
-void pdf_doc_add_bead (char *name, pdf_obj *partial_dict);
+extern void pdf_doc_start_article (char *name, pdf_obj *info);
+extern void pdf_doc_add_bead (char *name, pdf_obj *partial_dict);
 
-void pdf_doc_merge_with_docinfo (pdf_obj *dictionary);
-void pdf_doc_merge_with_catalog (pdf_obj *dictionary);
+extern void pdf_doc_merge_with_docinfo (pdf_obj *dictionary);
+extern void pdf_doc_merge_with_catalog (pdf_obj *dictionary);
 
-void pdf_doc_add_to_page (char *buffer, unsigned length);
+extern void pdf_doc_add_to_page (char *buffer, unsigned length);
 
-void pdf_doc_change_outline_depth (int new_depth);
-void pdf_doc_add_outline (pdf_obj *dict);
+extern void pdf_doc_change_outline_depth (int new_depth);
+extern void pdf_doc_add_outline (pdf_obj *dict);
 
-void pdf_doc_set_page_size (double width, double height);
+extern void pdf_doc_set_page_size (double width, double height);
      
-void pdf_doc_init (char *filename);
+extern void pdf_doc_init (char *filename);
 
-void pdf_doc_comment (char *comment);
+extern void pdf_doc_comment (char *comment);
      
-void pdf_doc_finish (void);
+extern void pdf_doc_finish (void);
 
-void pdf_doc_setverbose();
-void pdf_doc_setdebug();
+extern void pdf_doc_setverbose();
+extern void pdf_doc_setdebug();
 
-void pdf_doc_bop (char *string, unsigned length);
-void pdf_doc_eop (char *string, unsigned length);
-void pdf_doc_this_bop (char *string, unsigned length);
-void pdf_doc_this_eop (char *string, unsigned length);
+extern void pdf_doc_bop (char *string, unsigned length);
+extern void pdf_doc_eop (char *string, unsigned length);
+extern void pdf_doc_this_bop (char *string, unsigned length);
+extern void pdf_doc_this_eop (char *string, unsigned length);
 
-void doc_make_form_xobj (pdf_obj *stream, pdf_obj *bbox, pdf_obj
+extern void doc_make_form_xobj (pdf_obj *stream, pdf_obj *bbox, pdf_obj
 			 *resources);
-pdf_obj *begin_form_xobj (double bbllx, double bblly, double bburx,
+extern pdf_obj *begin_form_xobj (double bbllx, double bblly, double bburx,
 			  double bbury);
-void end_form_xobj (void);
+extern void end_form_xobj (void);
 
 #endif /* PDFDOC_H */
 

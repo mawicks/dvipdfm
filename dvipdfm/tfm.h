@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.h,v 1.4 1998/12/10 22:29:33 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.h,v 1.5 1998/12/12 01:37:19 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -29,17 +29,17 @@
 
 #include "numbers.h"
 
-void tfm_set_verbose(void);
-void tfm_set_debug(void);
+extern void tfm_set_verbose(void);
+extern void tfm_set_debug(void);
 
-int tfm_open(char * tex_font_name);
-void tfm_close_all (void);
+extern int tfm_open(char * tex_font_name);
+extern void tfm_close_all (void);
 
-double tfm_get_width (int font_id, UNSIGNED_PAIR ch);
-fixword tfm_get_fw_width (int font_id, UNSIGNED_PAIR ch);
-double tfm_get_space (int font_id);
+extern double tfm_get_width (int font_id, UNSIGNED_PAIR ch);
+extern fixword tfm_get_fw_width (int font_id, UNSIGNED_PAIR ch);
+extern double tfm_get_space (int font_id);
 
-UNSIGNED_PAIR tfm_get_firstchar (int font_id);
-UNSIGNED_PAIR tfm_get_lastchar (int font_id);
+extern UNSIGNED_PAIR tfm_get_firstchar (int font_id);
+extern UNSIGNED_PAIR tfm_get_lastchar (int font_id);
 
 #endif /* TFM_H */

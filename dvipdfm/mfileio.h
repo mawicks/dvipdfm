@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mfileio.h,v 1.2 1998/12/02 16:28:56 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mfileio.h,v 1.3 1998/12/12 01:37:18 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -26,18 +26,19 @@
 #include <stdio.h>
 #include "numbers.h"
 
-UNSIGNED_BYTE read_byte (FILE *);
+extern UNSIGNED_BYTE read_byte (FILE *);
 
-void seek_absolute (FILE *file, long pos);
-void seek_relative (FILE *file, long pos);
+extern void seek_absolute (FILE *file, long pos);
+extern void seek_relative (FILE *file, long pos);
 
-void seek_end (FILE *file);
+extern void seek_end (FILE *file);
 
-long tell_position (FILE *file);
+extern long tell_position (FILE *file);
 
-long file_size (FILE *file);
+extern long file_size (FILE *file);
 
-char *mfgets (char *buffer, unsigned long size, FILE *file);
+extern char *mfgets (char *buffer, unsigned long size, FILE *file);
 
 extern char work_buffer[];
+
 #define WORK_BUFFER_SIZE 1024
