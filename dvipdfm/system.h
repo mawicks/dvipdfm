@@ -8,10 +8,13 @@
 #ifdef WIN32
 #  undef ERROR
 #  undef NO_ERROR
-#  undef CDECL
-#  define CDECL __cdecl
+#  undef RGB
+#  undef CMYK
+#  undef SETLINEJOIN
+#  undef SETMITERLIMIT
 #  pragma warning(disable : 4101 4018)
 #else
+#  define __cdecl
 #  define CDECL
 #endif /* WIN32 */
 

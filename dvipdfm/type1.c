@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.101 2000/01/15 16:40:06 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.102 2000/01/17 15:47:21 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -779,7 +779,7 @@ MEM_END
   return length;
 }
 
-int glyph_cmp (const void *v1, const void *v2)
+int CDECL glyph_cmp (const void *v1, const void *v2)
 {
   char *s1, *s2;
   s1 = *((char **) v1);
@@ -787,7 +787,7 @@ int glyph_cmp (const void *v1, const void *v2)
   return (strcmp (s1, s2));
 }
 
-int glyph_match (const void *key, const void *v)
+int CDECL glyph_match (const void *key, const void *v)
 {
   char *s;
   s = *((char **) v);
