@@ -1,8 +1,8 @@
 directories = kpathsea/kpathsea dvipdfm
 export XMAKEARGS=kpsewhich
-export prefix=@prefix@
-export datadir=@datadir@
-export bindir=@bindir@
+prefix=@prefix@
+datadir=@datadir@
+bindir=@bindir@
 CONFIG=config.h config.cache config.log config.status Makefile
 default:
 	cd kpathsea && $(MAKE)

@@ -1,0 +1,5 @@
+
+  The kpathsea library is included unmodified (other than
+deleting branches of the tree irrelevant to dvipdfm).
+Thanks to Karl Berry and Olaf Weber for developing this
+package and making it available.  

@@ -4,9 +4,10 @@ INSTALL=@INSTALL@
 CFLAGS += @CFLAGS@  @DEFS@ -I../kpathsea/
 LIBDIR = ../kpathsea/kpathsea/STATIC
 INCDIR = ../kpathsea/
-prefix = @prefix@
-exec_prefix = @exec_prefix@
-BINDIR = @bindir@
+prefix=@prefix@
+datadir=@datadir@
+exec_prefix=@exec_prefix@
+BINDIR=@bindir@
 HEADERS = acdefines.h dvi.h pdflimits.h error.h io.h jpeg.h mem.h numbers.h \
 	pdfdev.h pdfdoc.h pdfparse.h pdfspecial.h tfm.h type1.h epdf.h
 SRC = pdfdev.c pdfdoc.c dvi.c io.c mem.c jpeg.c numbers.c pdfobj.c \
