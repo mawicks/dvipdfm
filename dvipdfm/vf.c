@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/vf.c,v 1.2 1998/12/08 19:53:33 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/vf.c,v 1.3 1998/12/08 21:59:48 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -41,8 +41,6 @@
 #define FW2PT (TEXPT2PT/((double)(FIX_WORD_BASE)))
 
 static verbose = 1;
-
-
 struct font_def {
   signed long font_id /* id used internally in vf file */;
   unsigned long checksum, size, design_size;
@@ -79,7 +77,7 @@ static void clear_vf_characters(void)
 }
 
 
-static int read_header(FILE *vf_file) 
+static int read_header(FILE *vf_file, int thisfont) 
 {
   int i, result = 1, ch;
 
@@ -97,11 +95,11 @@ static int read_header(FILE *vf_file)
     /* Skip checksum */
     get_unsigned_quad(vf_file);
     
-    vf_fonts[num_vf_fonts].design_size =
+    vf_fonts[thisfont].design_size =
       get_unsigned_quad(vf_file);
     if (verbose) 
       fprintf (stderr, "Design size: %g (TeX) pts\n",
-	       (double)vf_fonts[num_vf_fonts].design_size/(double)
+	       (double)vf_fonts[thisfont].design_size/(double)
 	       FIX_WORD_BASE);
   } else { /* Try to fail gracefully and return an error to caller */
     fprintf (stderr, "VF file may be corrupt\n");
@@ -126,7 +124,7 @@ static void resize_vf_fonts(int size)
   return;
 }
 
-static void read_a_char_def(FILE *vf_file, unsigned long pkt_len,
+static void read_a_char_def(FILE *vf_file, int thisfont, unsigned long pkt_len,
 			    unsigned long ch)
 {
   unsigned char *pkt;
@@ -139,7 +137,7 @@ static void read_a_char_def(FILE *vf_file, unsigned long pkt_len,
     get_unsigned_triple (vf_file);
     if (fread (pkt, 1, pkt_len, vf_file) != pkt_len)
       ERROR ("VF file ended prematurely.");
-    (vf_fonts[num_vf_fonts].ch_pkt)[ch] = pkt;
+    (vf_fonts[thisfont].ch_pkt)[ch] = pkt;
     {
       int i;
       fputc ('[', stderr);
@@ -149,27 +147,27 @@ static void read_a_char_def(FILE *vf_file, unsigned long pkt_len,
       fprintf (stderr, "]\n");
     }
   }
-  (vf_fonts[num_vf_fonts].pkt_len)[ch] = pkt_len;
+  (vf_fonts[thisfont].pkt_len)[ch] = pkt_len;
   return;
 }
 
-static void read_a_font_def(FILE *vf_file, signed long font_id)
+static void read_a_font_def(FILE *vf_file, signed long font_id, int thisfont)
 {
   dev_font *dev_font;
   int dir_length, name_length;
   if (verbose) {
     fprintf (stderr, "read_a_font_def: font_id = %ld\n", font_id);
   }
-  if (vf_fonts[num_vf_fonts].num_dev_fonts >=
-      vf_fonts[num_vf_fonts].max_dev_fonts) {
-    vf_fonts[num_vf_fonts].max_dev_fonts += VF_ALLOC_SIZE;
-    vf_fonts[num_vf_fonts].dev_fonts = RENEW
-      (vf_fonts[num_vf_fonts].dev_fonts,
-       vf_fonts[num_vf_fonts].max_dev_fonts,
+  if (vf_fonts[thisfont].num_dev_fonts >=
+      vf_fonts[thisfont].max_dev_fonts) {
+    vf_fonts[thisfont].max_dev_fonts += VF_ALLOC_SIZE;
+    vf_fonts[thisfont].dev_fonts = RENEW
+      (vf_fonts[thisfont].dev_fonts,
+       vf_fonts[thisfont].max_dev_fonts,
        struct font_def);
   }
-  dev_font = vf_fonts[num_vf_fonts].dev_fonts+
-    vf_fonts[num_vf_fonts].num_dev_fonts;
+  dev_font = vf_fonts[thisfont].dev_fonts+
+    vf_fonts[thisfont].num_dev_fonts;
   dev_font -> font_id = font_id;
   dev_font -> checksum = get_unsigned_quad (vf_file);
   dev_font -> size = get_unsigned_quad (vf_file);
@@ -182,12 +180,12 @@ static void read_a_font_def(FILE *vf_file, signed long font_id)
   fread (dev_font -> name, 1, name_length, vf_file);
   (dev_font -> directory)[dir_length] = 0;
   (dev_font -> name)[name_length] = 0;
-  vf_fonts[num_vf_fonts].num_dev_fonts += 1;
+  vf_fonts[thisfont].num_dev_fonts += 1;
   dev_font->tfm_id = tfm_open (dev_font -> name);
   dev_font->dev_id =
     dev_locate_font (dev_font->name, 
 		     dev_font->tfm_id,
-		     ((double)dev_font->design_size)*FW2PT*vf_fonts[num_vf_fonts].mag);
+		     ((double)dev_font->design_size)*FW2PT*vf_fonts[thisfont].mag);
   if (verbose) {
     fprintf (stderr, "[%s/%s]\n", dev_font -> directory, dev_font -> name);
   }
@@ -195,7 +193,7 @@ static void read_a_font_def(FILE *vf_file, signed long font_id)
 }
 
 
-void process_vf_file (FILE *vf_file)
+void process_vf_file (FILE *vf_file, int thisfont)
 {
   int eof = 0, code;
   unsigned long font_id;
@@ -205,22 +203,22 @@ void process_vf_file (FILE *vf_file)
     case FNT_DEF1:
       fprintf (stderr, "FNT_DEF1\n");
       font_id = get_unsigned_byte (vf_file);
-      read_a_font_def (vf_file, font_id);
+      read_a_font_def (vf_file, font_id, thisfont);
       break;
     case FNT_DEF2:
       fprintf (stderr, "FNT_DEF2\n");
       font_id = get_unsigned_pair (vf_file);
-      read_a_font_def (vf_file, font_id);
+      read_a_font_def (vf_file, font_id, thisfont);
       break;
     case FNT_DEF3:
       fprintf (stderr, "FNT_DEF3\n");
       font_id = get_unsigned_triple(vf_file);
-      read_a_font_def (vf_file, font_id);
+      read_a_font_def (vf_file, font_id, thisfont);
       break;
     case FNT_DEF4:
       fprintf (stderr, "FNT_DEF4\n");
       font_id = get_signed_quad(vf_file);
-      read_a_font_def (vf_file, font_id);
+      read_a_font_def (vf_file, font_id, thisfont);
       break;
     default:
       if (code < 242) {
@@ -228,7 +226,7 @@ void process_vf_file (FILE *vf_file)
 	/* For a short packet, code is the pkt_len */
 	fprintf (stderr, "CHAR_PKT[%d]\n", code);
 	ch = get_unsigned_byte (vf_file);
-	read_a_char_def (vf_file, code, ch);
+	read_a_char_def (vf_file, thisfont, code, ch);
 	break;
       }
       if (code == 243) {
@@ -237,7 +235,7 @@ void process_vf_file (FILE *vf_file)
 	pkt_len = get_unsigned_quad(vf_file);
 	ch = get_unsigned_quad (vf_file);
 	if (ch < 256) 
-	  read_a_char_def (vf_file, pkt_len, ch);
+	  read_a_char_def (vf_file, thisfont, pkt_len, ch);
 	else
 	  ERROR ("Long character in VF file.  I can't handle long characters!\n");
 	break;
@@ -261,12 +259,14 @@ void process_vf_file (FILE *vf_file)
    each point size.  Since VFs are pretty small, I guess
    this is tolerable for now.  In any case, 
    the PDF file will never repeat a physical font name */
-
+/* Note: This code needs to be reentrant since it could recurse */
+/* Global variables such as num_vf_fonts require careful attention */
 int vf_font_locate (char *tex_name, double ptsize)
 {
-  int result = -1;
+  int thisfont = -1;
   char *full_vf_file_name;
   FILE *vf_file;
+  fprintf (stderr, "vf_font_locate: (%s@%g)\n", tex_name, ptsize);
   full_vf_file_name = kpse_find_file (tex_name, 
 				      kpse_vf_format,
 				      1);
@@ -278,18 +278,18 @@ int vf_font_locate (char *tex_name, double ptsize)
     if (num_vf_fonts >= max_vf_fonts) {
       resize_vf_fonts (max_vf_fonts + VF_ALLOC_SIZE);
     }
-    vf_fonts[num_vf_fonts].ptsize = ptsize;
-    read_header(vf_file);
-    vf_fonts[num_vf_fonts].mag =
-      ptsize/(vf_fonts[num_vf_fonts].design_size*FW2PT);
+    thisfont = num_vf_fonts++;
+    vf_fonts[thisfont].ptsize = ptsize;
+    read_header(vf_file, thisfont);
+    vf_fonts[thisfont].mag =
+      ptsize/(vf_fonts[thisfont].design_size*FW2PT);
     if (verbose)
-      fprintf (stderr, "Mag: %g\n", vf_fonts[num_vf_fonts].mag);
+      fprintf (stderr, "Mag: %g\n", vf_fonts[thisfont].mag);
     clear_vf_characters();
-    process_vf_file (vf_file);
+    process_vf_file (vf_file, thisfont);
     fclose (vf_file);
-    result = ++num_vf_fonts;
   }
-  return result;
+  return thisfont;
 }
 
 #define next_byte() (*((*start)++))
@@ -411,6 +411,7 @@ static UNSIGNED_QUAD unsigned_quad(unsigned char **start, unsigned char *end)
 static void vf_set (SIGNED_QUAD ch)
 {
   /* Defer to the dvi_set() defined in dvi.c */
+  fprintf (stderr, "vf_set: %ld\n", ch);
   dvi_set (ch);
   return;
 }
@@ -689,21 +690,21 @@ static void vf_fnt (SIGNED_QUAD font_id, unsigned long vf_font)
 static void vf_fnt1(unsigned char **start, unsigned char *end,
 		    unsigned long vf_font)
 {
-  vf_fnt (signed_byte(start, end), vf_font);
+  vf_fnt (unsigned_byte(start, end), vf_font);
   return;
 }
 
 static void vf_fnt2(unsigned char **start, unsigned char *end,
 		    unsigned long vf_font)
 {
-  vf_fnt (signed_pair(start, end), vf_font);
+  vf_fnt (unsigned_pair(start, end), vf_font);
   return;
 }
 
 static void vf_fnt3(unsigned char **start, unsigned char *end,
 		    unsigned long vf_font)
 {
-  vf_fnt (signed_triple(start, end), vf_font);
+  vf_fnt (unsigned_triple(start, end), vf_font);
   return;
 }
 
@@ -727,25 +728,25 @@ static void vf_xxx (SIGNED_QUAD len, unsigned char **start, unsigned
 
 static void vf_xxx1(unsigned char **start, unsigned char *end)
 {
-  vf_xxx (signed_byte(start, end), start, end);
+  vf_xxx (unsigned_byte(start, end), start, end);
   return;
 }
 
 static void vf_xxx2(unsigned char **start, unsigned char *end)
 {
-  vf_xxx (signed_pair(start, end), start, end);
+  vf_xxx (unsigned_pair(start, end), start, end);
   return;
 }
 
 static void vf_xxx3(unsigned char **start, unsigned char *end)
 {
-  vf_xxx (signed_triple(start, end), start, end);
+  vf_xxx (unsigned_triple(start, end), start, end);
   return;
 }
 
 static void vf_xxx4(unsigned char **start, unsigned char *end)
 {
-  vf_xxx (signed_quad(start, end), start, end);
+  vf_xxx (unsigned_quad(start, end), start, end);
   return;
 }
 
@@ -762,11 +763,17 @@ void vf_set_char(int ch, int vf_font)
 {
   unsigned char opcode;
   unsigned char *start, *end;
+  int default_font = -1;
   double fw2dvi;
+  fprintf (stderr, "vf_set_char: ch=%d vf_font=%d\n", ch, vf_font);
   if (vf_font < num_vf_fonts) {
     /* Initialize to the first font or -1 if undefined */
     fw2dvi = vf_set_scale(vf_font);
-    dvi_vf_init (vf_fonts[vf_font].num_dev_fonts-1);
+    if (vf_fonts[vf_font].num_dev_fonts > 0)
+      default_font = ((vf_fonts[vf_font].dev_fonts)[0]).dev_id;
+    fprintf (stderr, "Setting default font: %d\n", default_font);
+    dvi_vf_init ();
+    dev_select_font (default_font);
     start = (vf_fonts[vf_font].ch_pkt)[ch];
     end = start + (vf_fonts[vf_font].pkt_len)[ch];
     while (start < end) {

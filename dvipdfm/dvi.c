@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.11 1998/12/08 19:53:32 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.12 1998/12/08 21:59:48 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -1138,15 +1138,13 @@ void dvi_do_page(int n)  /* Most of the work of actually interpreting
    is determined by the virtual font header, which
    may be undefined */
 
-void dvi_vf_init (unsigned font)
+void dvi_vf_init ()
 {
   dvi_push ();
   dvi_state.v = 0; dvi_state.w = 0;
   dvi_state.y = 0; dvi_state.z = 0;
-  current_font = font;
-  if (current_font >= 0)
-    dev_select_font (font_def[current_font].dev_id);
 }
+
 /* After VF subroutine is finished, we simply pop the DVI stack */
 void dvi_vf_finish (void)
 {
