@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.97 1999/09/26 00:22:30 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.98 1999/09/26 01:18:30 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -135,10 +135,13 @@ int current_font = -1;
 #define PHYSICAL 1
 #define VIRTUAL 2
 
+#define TYPE1 1
+#define PK 2
+
 static struct dev_font {
   char short_name[7];	/* Needs to be big enough to hold name "Fxxx"
 			   where xxx is number of largest font */
-  int used_on_this_page;
+  unsigned char used_on_this_page, format;
   char *tex_name;
   int tfm_font_id;
   double ptsize;
@@ -777,15 +780,16 @@ static int locate_type1_font (char *tex_name, mpt_t ptsize)
      been asked for in some other point size.  Make sure it doesn't already exist. */
   int i, thisfont;
   if (debug) {
-    fprintf (stderr, "dev_locate_font: fontname: (%s) ptsize: %ld, id: %d\n",
+    fprintf (stderr, "locate_type1_font: fontname: (%s) ptsize: %ld, id: %d\n",
 	     tex_name, ptsize, n_dev_fonts);
   }
   if (ptsize == 0)
     ERROR ("dev_locate_font called with point size of zero");
   need_more_dev_fonts(1);
-  thisfont = n_dev_fonts;
+  thisfont = n_dev_fonts; /* Use a local variable to handle recursion */
   for (i=0; i<thisfont; i++) {
-    if (dev_font[i].tex_name && strcmp (tex_name, dev_font[i].tex_name) == 0) {
+    if (dev_font[i].format == TYPE1 &&
+	dev_font[i].tex_name && strcmp (tex_name, dev_font[i].tex_name) == 0) {
       break;
     }
   }
@@ -793,8 +797,8 @@ static int locate_type1_font (char *tex_name, mpt_t ptsize)
 			    new short name */
     int type1_id = -1;
     dev_font[thisfont].tfm_font_id = tfm_open (tex_name);
-    dev_font[i].short_name[0] = 'F';
-    sprintf (dev_font[i].short_name+1, "%d", n_phys_fonts+1);
+    dev_font[thisfont].short_name[0] = 'F';
+    sprintf (dev_font[thisfont].short_name+1, "%d", n_phys_fonts+1);
     type1_id = type1_font (tex_name, 
 			   dev_font[thisfont].tfm_font_id,
 			   dev_font[thisfont].short_name);
@@ -810,7 +814,9 @@ static int locate_type1_font (char *tex_name, mpt_t ptsize)
       dev_font[thisfont].short_name[0] = 0;
       thisfont = -1;
     }
-  } else {	/* Font name was already in table*/
+  } else {	/* Font name was already in table, presumably (but not
+		   necessarily with a
+		   different point size */
     /* Copy the parts that do not depend on point size */
     /* Rebuild everything else */
     dev_font[thisfont].tfm_font_id = dev_font[i].tfm_font_id;
@@ -832,6 +838,7 @@ static int locate_type1_font (char *tex_name, mpt_t ptsize)
      effort for the slight increase in storage requirements. */
 
   if (thisfont >=0) {
+    dev_font[thisfont].format = TYPE1; /* We added one */
     dev_font[thisfont].mptsize = ptsize;
     dev_font[thisfont].ptsize = ROUND(ptsize*dvi2pts,0.01);
     dev_font[thisfont].tex_name = NEW (strlen(tex_name)+1, char);
@@ -851,7 +858,7 @@ static int locate_type1_font (char *tex_name, mpt_t ptsize)
 static int locate_pk_font (char *tex_name, mpt_t ptsize)
      /* Here, the ptsize is in device units, currently millipts */
 {
-  /* This routine is different thanthat for Type 1 fonts.  PK fonts
+  /* This routine is different than that for Type 1 fonts.  PK fonts
      are assumed not to be scaleable and so the same name at a
      different point size should be treated as a separate font */
   int i, thisfont;
@@ -861,11 +868,11 @@ static int locate_pk_font (char *tex_name, mpt_t ptsize)
   }
   if (ptsize == 0)
     ERROR ("locate_pk_font called with point size of zero");
-  need_more_dev_fonts (1);
   thisfont = n_dev_fonts;
   for (i=0; i<thisfont; i++) {
     /* For pk fonts, both name *and* ptsize must match */
-    if (dev_font[i].tex_name && strcmp (tex_name,
+    if (dev_font[i].format == PK &&
+	dev_font[i].tex_name && strcmp (tex_name,
 					dev_font[i].tex_name) == 0 &&
 	dev_font[i].mptsize == ptsize) {
       break;
@@ -874,14 +881,16 @@ static int locate_pk_font (char *tex_name, mpt_t ptsize)
   if (i == thisfont) {  /* Font *name* not found, so load it and give it a
 			    new short name */
     int pk_id = -1;
+    need_more_dev_fonts (1);
     dev_font[thisfont].tfm_font_id = tfm_open (tex_name);
-    dev_font[i].short_name[0] = 'F';
-    sprintf (dev_font[i].short_name+1, "%d", n_phys_fonts+1);
+    dev_font[thisfont].short_name[0] = 'F';
+    sprintf (dev_font[thisfont].short_name+1, "%d", n_phys_fonts+1);
     pk_id = pk_font (tex_name, ptsize*dvi2pts,
 		     dev_font[thisfont].tfm_font_id,
 		     dev_font[thisfont].short_name);
     /* type1_font_resource on next line always returns an *indirect* obj */ 
     if (pk_id >= 0) { /* If we got one, it must be a physical font */
+      dev_font[thisfont].format = PK;
       dev_font[thisfont].font_resource = pk_font_resource (pk_id);
       dev_font[thisfont].used_chars = pk_font_used (pk_id);
       /* Don't set extend or slant for PK fonts for now... */
@@ -909,12 +918,15 @@ int dev_locate_font (char *tex_name, mpt_t ptsize)
 {
   int result;
   /* If there's a type1 font with this name use it */
+  if (debug)
+    fprintf (stderr, "\ndev_locate_font(%s, %ld)\n", tex_name, ptsize);
   result = locate_type1_font (tex_name, ptsize);
   /* If not, try to find a pk font */
-  if (result < 0)
+  if (result < 0) {
     fprintf (stderr, "\nUnable to locate a Type 1 font for (%s)... Hope that's okay.\n",
 	     tex_name);
     result = locate_pk_font (tex_name, ptsize);
+  }
   /* Otherwise we are out of luck */
   return result;
 }
@@ -951,9 +963,6 @@ void dev_close_all_fonts(void)
 void dev_rule (mpt_t xpos, mpt_t ypos, mpt_t width, mpt_t height)
 {
   int len = 0;
-  if (debug) {
-    fprintf (stderr, "(dev_rule)");
-  }
   graphics_mode();
    /* Is using a real stroke the right thing to do?  It seems to preserve
       the logical meaning of a "rule" as opposed to a filled rectangle.
