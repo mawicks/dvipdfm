@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.24 1999/11/24 03:00:27 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.25 1999/12/08 17:56:57 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -113,6 +113,7 @@ static void release_fonts (void)
     mp_fonts = NULL;
   }
   n_mp_fonts = 0;
+  max_mp_fonts = 0;
 }
 
 int mp_is_font_name (char *tex_name)
