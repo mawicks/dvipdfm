@@ -1,6 +1,6 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.33 1999/02/19 21:39:49 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.34 1999/02/21 05:23:06 mwicks Exp $
 
-    This is dvipdf, a DVI to PDF translator.
+    This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
 
     This program is free software; you can redistribute it and/or modify
@@ -25,6 +25,7 @@
 	
 #include <stdio.h>
 #include <string.h>
+#include <limits.h>
 #include "config.h"
 #include <ctype.h>
 #include "dvi.h"
@@ -104,6 +105,7 @@ static void usage (void)
    fprintf (stderr, "\t-m number\tSet additional magnification\n");
    fprintf (stderr, "\t-p papersize\tSet papersize (letter, legal, ledger, tabloid, a4, or a3) [letter]\n");
    fprintf (stderr, "\t-r resolution\tSet resolution (in DPI) for raster fonts [600]\n");
+   fprintf (stderr, "\t-s pages\tSelect page ranges (-)\n");
    fprintf (stderr, "\t-x dimension\tSet horizontal offset [1.0in]\n");
    fprintf (stderr, "\t-y dimension\tSet vertical offset [1.0in]\n");
    fprintf (stderr, "\t-e          \tDisable partial font embedding [default is enabled])\n");
@@ -111,6 +113,7 @@ static void usage (void)
    fprintf (stderr, "\t-v          \tBe verbose\n");
    fprintf (stderr, "\t-vv         \tBe more verbose\n");
    fprintf (stderr, "\nAll dimensions entered on the command line are \"true\" TeX dimensions.\n");
+   fprintf (stderr, "Page ranges for \"-s\" option are physical pages and are separated by commas, e.g., \"-s 1-3,5-6\"\n\n");
    exit(1);
 }
 
@@ -120,6 +123,12 @@ static landscape_mode = 0;
 static ignore_colors = 0;
 static double mag = 1.0, x_offset=72.0, y_offset=72.0;
 static int font_dpi = 600;
+
+struct page_range 
+{
+  unsigned int first, last;
+} *page_ranges = NULL;
+int max_page_ranges = 0, num_page_ranges = 0;
 
 #define pop_arg() {argv += 1; argc -= 1;}
 
@@ -242,6 +251,60 @@ static void do_args (int argc, char *argv[])
 	strcpy (pdf_filename, argv[1]);
 	pop_arg();
 	break;
+      case 's':
+	{
+	  char *result, *end, *start = argv[1];
+	  if (argc < 2)
+	    ERROR ("Missing page selection specification");
+	  end = start + strlen (argv[1]);
+	  while (start < end) {
+	    /* Enlarge page range table if necessary */
+	    if (num_page_ranges >= max_page_ranges) {
+	      max_page_ranges += 4;
+	      page_ranges = RENEW (page_ranges, max_page_ranges,
+				   struct page_range);
+	    }
+	    skip_white (&start, end);
+	    page_ranges[num_page_ranges].first = 0;
+	    if ((result = parse_unsigned (&start, end))) {
+	      page_ranges[num_page_ranges].first = atoi(result)-1;
+	      page_ranges[num_page_ranges].last =
+		page_ranges[num_page_ranges].first;
+	      RELEASE(result);
+	    }
+	    skip_white (&start, end);
+	    if (*start == '-') {
+	      start += 1;
+	      page_ranges[num_page_ranges].last = UINT_MAX;
+	      skip_white (&start, end);
+	      if (start < end &&
+		  ((result = parse_unsigned (&start, end)))) {
+		page_ranges[num_page_ranges].last = atoi(result)-1;
+		RELEASE (result);
+	      }
+	    }
+	    num_page_ranges += 1;
+	    skip_white (&start, end);
+	    if (start < end && *start == ',') {
+	      start += 1;
+	      continue;
+	    }
+	    skip_white (&start, end);
+	    if (start < end) {
+	      fprintf (stderr, "Page selection? %s", start);
+	      ERROR ("Bad page range specification");
+	    }
+	  }
+	  pop_arg();
+	}
+	{
+	  int i;
+	  for (i=0; i<num_page_ranges; i++) {
+	    fprintf (stderr, "%u - %u\n", page_ranges[i].first,
+		     page_ranges[i].last);
+	  }
+	}
+	break;
       case 'p':
 	{
 	  rect paper_size = get_paper_size (argv[1]);
@@ -339,12 +402,14 @@ static void cleanup(void)
 {
   RELEASE (dvi_filename);
   RELEASE (pdf_filename);
+  RELEASE (page_ranges);
 }
 
 int CDECL main (int argc, char *argv[]) 
 {
   int i;
   static int really_quiet = 0;
+  int at_least_one_page = 0;
   if (argc < 2) {
     usage();
     return 1;
@@ -377,11 +442,25 @@ int CDECL main (int argc, char *argv[])
     dev_set_page_size (paper_width, paper_height);
   if (paper_specified)
     dev_page_height();
-  for (i=0; i<dvi_npages(); i++) {
-    fprintf (stderr, "[%d", i+1);
-    dvi_do_page (i);
-    fprintf (stderr, "]");
+  if ((num_page_ranges))
+    for (i=0; i<num_page_ranges; i++) {
+      int j;
+      for (j=page_ranges[i].first; j<=page_ranges[i].last && j<dvi_npages(); j++) {
+	fprintf (stderr, "[%d", j+1);
+	dvi_do_page (j);
+	at_least_one_page = 1;
+	fprintf (stderr, "]");
+      }
+    }
+  if (!at_least_one_page && num_page_ranges) {
+    fprintf (stderr, "No pages fall in range!\nFalling back to entire document.\n");
   }
+  if (!at_least_one_page) /* Fall back to entire document */
+    for (i=0; i<dvi_npages(); i++) {
+      fprintf (stderr, "[%d", i+1);
+      dvi_do_page (i);
+      fprintf (stderr, "]");
+    }
   dvi_close();
   fprintf (stderr, "\n");
   cleanup();
