@@ -36,7 +36,7 @@
   \c@lor@arg{#1}%
   \c@lor@arg{#2}%
   \c@lor@arg{#3}%
-  \edef#5{ (not implemented yet) [ #1 #2 #3 #4 ] }%
+  \edef#5{ [ #1 #2 #3 #4 ] }%
   }
 \def\color@rgb#1#2{\c@lor@@rgb#2\@@#1}
 \def\c@lor@@rgb#1,#2,#3\@@#4{%

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.1 1998/11/27 21:16:37 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.2 1998/11/27 23:35:02 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -60,30 +60,30 @@ static void pdf_label_obj (pdf_obj *object);
 static void pdf_out_char (FILE *file, char c);
 static void pdf_out (FILE *file, char *buffer, int length);
 
-static void release_indirect (struct pdf_indirect *data);
-static void write_indirect (FILE *file, const struct pdf_indirect *indirect);
+static void release_indirect (pdf_indirect *data);
+static void write_indirect (FILE *file, const pdf_indirect *indirect);
 
-static void release_boolean (struct pdf_obj *data);
-static void write_boolean (FILE *file, const struct pdf_boolean *data);
+static void release_boolean (pdf_obj *data);
+static void write_boolean (FILE *file, const pdf_boolean *data);
 
 static void write_null (FILE *file);
 static void release_null (void *data);
 
-static void release_number (struct pdf_number *data);
-static void write_number (FILE *file, const struct pdf_number
+static void release_number (pdf_number *data);
+static void write_number (FILE *file, const pdf_number
 			  *number);
 
-static void write_string (FILE *file, const struct pdf_string *string);
-static void release_string (struct pdf_string *data);
+static void write_string (FILE *file, const pdf_string *string);
+static void release_string (pdf_string *data);
 
-static void write_name (FILE *file, const struct pdf_name *name);
-static void release_name (struct pdf_name *data);
+static void write_name (FILE *file, const pdf_name *name);
+static void release_name (pdf_name *data);
 
-static void write_array (FILE *file, const struct pdf_array *array);
-static void release_array (struct pdf_array *data);
+static void write_array (FILE *file, const pdf_array *array);
+static void release_array (pdf_array *data);
 
-static void write_dict (FILE *file, const struct pdf_dict *dict);
-static void release_dict (struct pdf_dict *data);
+static void write_dict (FILE *file, const pdf_dict *dict);
+static void release_dict (pdf_dict *data);
 
 static void write_stream (FILE *file, const pdf_stream *stream);
 static void release_stream (pdf_stream *stream);
@@ -267,7 +267,7 @@ pdf_obj *pdf_link_obj (pdf_obj *object)
 pdf_obj *pdf_ref_obj(pdf_obj *object)
 {
   pdf_obj *result;
-  struct pdf_indirect *indirect;
+  pdf_indirect *indirect;
   
   if (object == NULL)
     ERROR ("pdf_ref_obj passed null pointer");
@@ -276,16 +276,16 @@ pdf_obj *pdf_ref_obj(pdf_obj *object)
     ERROR ("pdf_ref_obj:  Called with invalid object");
   }
   result = pdf_new_obj (PDF_INDIRECT);
-  indirect = NEW (1, struct pdf_indirect);
+  indirect = NEW (1, pdf_indirect);
   result -> data = indirect;
   if (object -> type == PDF_INDIRECT) { /* If an object is already an indirect reference,
 					   reference the original
 					   object, not the indirect
 					   one */
-    indirect -> label = ((struct pdf_indirect *) (object -> data)) -> label;
-    indirect -> generation = ((struct pdf_indirect *) (object -> data)) -> generation;
-    indirect -> dirty = ((struct pdf_indirect *) (object -> data)) -> dirty;
-    indirect -> dirty_file = ((struct pdf_indirect *) (object -> data)) -> dirty_file;
+    indirect -> label = ((pdf_indirect *) (object -> data)) -> label;
+    indirect -> generation = ((pdf_indirect *) (object -> data)) -> generation;
+    indirect -> dirty = ((pdf_indirect *) (object -> data)) -> dirty;
+    indirect -> dirty_file = ((pdf_indirect *) (object -> data)) -> dirty_file;
   } else {
     if (object -> label == 0) {
       pdf_label_obj (object);
@@ -298,12 +298,12 @@ pdf_obj *pdf_ref_obj(pdf_obj *object)
   return result;
 }
 
-static void release_indirect (struct pdf_indirect *data)
+static void release_indirect (pdf_indirect *data)
 {
   free (data);
 }
 
-static void write_indirect (FILE *file, const struct pdf_indirect *indirect)
+static void write_indirect (FILE *file, const pdf_indirect *indirect)
 {
   int length;
   if (indirect -> dirty) {
@@ -351,20 +351,20 @@ static void write_null (FILE *file)
 pdf_obj *pdf_new_boolean (char value)
 {
   pdf_obj *result;
-  struct pdf_boolean *data;
+  pdf_boolean *data;
   result = pdf_new_obj (PDF_BOOLEAN);
-  data = NEW (1, struct pdf_boolean);
+  data = NEW (1, pdf_boolean);
   result -> data = data;
   data -> value = value;
   return result;
 }
 
-static void release_boolean (struct pdf_obj *data)
+static void release_boolean (pdf_obj *data)
 {
   free (data);
 }
 
-static void write_boolean (FILE *file, const struct pdf_boolean *data)
+static void write_boolean (FILE *file, const pdf_boolean *data)
 {
   if (data -> value) {
     pdf_out (file, "true", 4);
@@ -379,26 +379,26 @@ void pdf_set_boolean (pdf_obj *object, char value)
    if (object == NULL || object -> type != PDF_BOOLEAN) {
      ERROR ("pdf_set_boolean:  Passed non-boolean object");
    }
-   ((struct pdf_boolean *) (object -> data)) -> value = value;
+   ((pdf_boolean *) (object -> data)) -> value = value;
 }
 
 pdf_obj *pdf_new_number (double value)
 {
   pdf_obj *result;
-  struct pdf_number *data;
+  pdf_number *data;
   result = pdf_new_obj (PDF_NUMBER);
-  data = NEW (1, struct pdf_number);
+  data = NEW (1, pdf_number);
   result -> data = data;
   data -> value = value;
   return result;
 }
 
-static void release_number (struct pdf_number *data)
+static void release_number (pdf_number *data)
 {
   free (data);
 }
 
-static void write_number (FILE *file, const struct pdf_number *number)
+static void write_number (FILE *file, const pdf_number *number)
 {
   int count;
   count = sprintf (format_buffer, "%g", number -> value);
@@ -411,7 +411,7 @@ void pdf_set_number (pdf_obj *object, double value)
    if (object == NULL || object -> type != PDF_NUMBER) {
      ERROR ("pdf_set_number:  Passed non-number object");
    }
-   ((struct pdf_number *) (object -> data)) -> value = value;
+   ((pdf_number *) (object -> data)) -> value = value;
 }
 
 double pdf_number_value (pdf_obj *object)
@@ -419,7 +419,7 @@ double pdf_number_value (pdf_obj *object)
   if (object == NULL || object -> type != PDF_NUMBER) {
     ERROR ("pdf_obj_number_value:  Passed non-number object");
   }
-  return ((struct pdf_number *)(object -> data)) -> value;
+  return ((pdf_number *)(object -> data)) -> value;
 }
 
 
@@ -427,9 +427,9 @@ double pdf_number_value (pdf_obj *object)
 pdf_obj *pdf_new_string (const char *string, unsigned length)
 {
   pdf_obj *result;
-  struct pdf_string *data;
+  pdf_string *data;
   result = pdf_new_obj (PDF_STRING);
-  data = NEW (1, struct pdf_string);
+  data = NEW (1, pdf_string);
   result -> data = data;
   if (length != 0) {
     data -> length = length;
@@ -443,10 +443,10 @@ pdf_obj *pdf_new_string (const char *string, unsigned length)
   return result;
 }
 
-char *pdf_string_value (pdf_obj *pdf_string)
+char *pdf_string_value (pdf_obj *a_pdf_string)
 {
-  struct pdf_string *data;
-  data = pdf_string -> data;
+  pdf_string *data;
+  data = a_pdf_string -> data;
   return data -> string;
 }
 
@@ -480,7 +480,7 @@ int pdfobj_escape_c (char *buffer, char ch)
 }
 
 
-static void write_string (FILE *file, const struct pdf_string *string)
+static void write_string (FILE *file, const pdf_string *string)
 {
   char *s = string -> string;
   int i, count;
@@ -492,7 +492,7 @@ static void write_string (FILE *file, const struct pdf_string *string)
   pdf_out_char (file, ')');
 }
 
-static void release_string (struct pdf_string *data)
+static void release_string (pdf_string *data)
 {
   if (data -> string != NULL)
     free (data -> string);
@@ -501,7 +501,7 @@ static void release_string (struct pdf_string *data)
 
 void pdf_set_string (pdf_obj *object, char *string, unsigned length)
 {
-  struct pdf_string *data;
+  pdf_string *data;
   if (object == NULL || object -> type != PDF_STRING) {
      ERROR ("pdf_set_string:  Passed non-string object");
   }
@@ -534,13 +534,13 @@ pdf_obj *pdf_new_name (const char *name)  /* name does *not* include the / */
 {
   pdf_obj *result;
   unsigned length = strlen (name);
-  struct pdf_name *data;
+  pdf_name *data;
   if (!pdf_check_name (name)) {
     fprintf (stderr, "%s\n", name);
     ERROR ("pdf_new_name:  invalid PDF name");
   }
   result = pdf_new_obj (PDF_NAME);
-  data = NEW (1, struct pdf_name);
+  data = NEW (1, pdf_name);
   result -> data = data;
   if (length != 0) {
     data -> name = NEW (length+1, char);
@@ -552,13 +552,13 @@ pdf_obj *pdf_new_name (const char *name)  /* name does *not* include the / */
 
 int pdf_match_name (const pdf_obj *name_obj, const char *name_string)
 {
-  struct pdf_name *data;
+  pdf_name *data;
   data = name_obj -> data;
   return (!strcmp (data -> name, name_string));
 }
 
 
-static void write_name (FILE *file, const struct pdf_name *name)
+static void write_name (FILE *file, const pdf_name *name)
 {
   char *s = name -> name;
   int i, length;
@@ -581,7 +581,7 @@ static void write_name (FILE *file, const struct pdf_name *name)
 }
 
 
-static void release_name (struct pdf_name *data)
+static void release_name (pdf_name *data)
 {
   if (data -> name != NULL)
     free (data -> name);
@@ -590,7 +590,7 @@ static void release_name (struct pdf_name *data)
 
 void pdf_set_name (pdf_obj *object, char *name)
 {
-  struct pdf_name *data;
+  pdf_name *data;
   unsigned length = strlen (name);
   if (object == NULL || object -> type != PDF_NAME) {
      ERROR ("pdf_set_name:  Passed non-name object");
@@ -609,7 +609,7 @@ void pdf_set_name (pdf_obj *object, char *name)
 
 char *pdf_name_value (pdf_obj *object)
 {
-  struct pdf_name *data;
+  pdf_name *data;
   char *result;
   if (object == NULL || object -> type != PDF_NAME) {
      ERROR ("pdf_name_value:  Passed non-name object");
@@ -626,16 +626,16 @@ char *pdf_name_value (pdf_obj *object)
 pdf_obj *pdf_new_array (void)
 {
   pdf_obj *result;
-  struct pdf_array *data;
+  pdf_array *data;
   result = pdf_new_obj (PDF_ARRAY);
-  data = NEW (1, struct pdf_array);
+  data = NEW (1, pdf_array);
   data -> this = NULL;
   data -> next = NULL;
   result -> data = data;
   return result;
 }
 
-static void write_array (FILE *file, const struct pdf_array *array)
+static void write_array (FILE *file, const pdf_array *array)
 {
   if (array -> next == NULL) {
     write_null (file);
@@ -653,7 +653,7 @@ static void write_array (FILE *file, const struct pdf_array *array)
 
 pdf_obj *pdf_get_array (pdf_obj *array, int index)
 {
-  struct pdf_array *data;
+  pdf_array *data;
   if (array == NULL) {
     ERROR ("pdf_get_array: passed NULL object");
   }
@@ -671,9 +671,9 @@ pdf_obj *pdf_get_array (pdf_obj *array, int index)
 
 
 
-static void release_array (struct pdf_array *data)
+static void release_array (pdf_array *data)
 {
-  struct pdf_array *next;
+  pdf_array *next;
   while (data != NULL && data -> next != NULL) {
     pdf_release_obj (data -> this);
     next = data -> next;
@@ -687,13 +687,13 @@ void pdf_add_array (pdf_obj *array, pdf_obj *object) /* Array is ended
 							by a node with NULL
 							this pointer */
 {
-  struct pdf_array *data;
-  struct pdf_array *new_node;
+  pdf_array *data;
+  pdf_array *new_node;
   if (array == NULL || array -> type != PDF_ARRAY) {
      ERROR ("pdf_add_array:  Passed non-array object");
   }
   data = array -> data;
-  new_node = NEW (1, struct pdf_array);
+  new_node = NEW (1, pdf_array);
   new_node -> this = NULL;
   new_node -> next = NULL;
   while (data -> next != NULL)
@@ -703,7 +703,7 @@ void pdf_add_array (pdf_obj *array, pdf_obj *object) /* Array is ended
 }
 
 
-static void write_dict (FILE *file, const struct pdf_dict *dict)
+static void write_dict (FILE *file, const pdf_dict *dict)
 {
   pdf_out (file, "<<\n", 3);
   while (dict -> key != NULL) {
@@ -719,9 +719,9 @@ static void write_dict (FILE *file, const struct pdf_dict *dict)
 pdf_obj *pdf_new_dict (void)
 {
   pdf_obj *result;
-  struct pdf_dict *data;
+  pdf_dict *data;
   result = pdf_new_obj (PDF_DICT);
-  data = NEW (1, struct pdf_dict);
+  data = NEW (1, pdf_dict);
   data -> key = NULL;
   data -> value = NULL;
   data -> next = NULL;
@@ -729,9 +729,9 @@ pdf_obj *pdf_new_dict (void)
   return result;
 }
 
-static void release_dict (struct pdf_dict *data)
+static void release_dict (pdf_dict *data)
 {
-  struct pdf_dict *next;
+  pdf_dict *next;
   while (data != NULL && data -> key != NULL) {
     pdf_release_obj (data -> key);
     pdf_release_obj (data -> value);
@@ -746,8 +746,8 @@ void pdf_add_dict (pdf_obj *dict, pdf_obj *key, pdf_obj *value) /* Array is ende
 								   by a node with NULL
 								   this pointer */
 {
-  struct pdf_dict *data;
-  struct pdf_dict *new_node;
+  pdf_dict *data;
+  pdf_dict *new_node;
   if (dict == NULL || dict -> type != PDF_DICT) {
      ERROR ("pdf_add_dict:  Passed non-dict object");
   }
@@ -759,7 +759,7 @@ void pdf_add_dict (pdf_obj *dict, pdf_obj *key, pdf_obj *value) /* Array is ende
     ERROR ("pdf_add_dict: Passed invalid value");
   }
   data = dict -> data;
-  new_node = NEW (1, struct pdf_dict);
+  new_node = NEW (1, pdf_dict);
   new_node -> key = NULL;
   new_node -> value = NULL;
   new_node -> next = NULL;
@@ -774,14 +774,14 @@ void pdf_add_dict (pdf_obj *dict, pdf_obj *key, pdf_obj *value) /* Array is ende
    stealing it */
 void pdf_merge_dict (pdf_obj *dict1, pdf_obj *dict2)
 {
-  struct pdf_dict *data;
+  pdf_dict *data;
   if (dict1 == NULL || dict1 -> type != PDF_DICT) 
     ERROR ("pdf_merge_dict:  Passed invalid first dictionary");
   if (dict2 == NULL || dict2 -> type != PDF_DICT)
     ERROR ("pdf_merge_dict:  Passed invalid second dictionary");
   data = dict2 -> data;
   while (data -> key != NULL) {
-    struct pdf_name *key = (data -> key) -> data;
+    pdf_name *key = (data -> key) -> data;
     if (key == NULL || pdf_lookup_dict (dict1, key -> name) == NULL) {
       pdf_add_dict (dict1, pdf_link_obj(data -> key),
 		    pdf_link_obj (data -> value));
@@ -792,7 +792,7 @@ void pdf_merge_dict (pdf_obj *dict1, pdf_obj *dict2)
 
 pdf_obj *pdf_lookup_dict (const pdf_obj *dict, const char *name)
 {
-  struct pdf_dict *data;
+  pdf_dict *data;
   if (dict == NULL || dict ->type != PDF_DICT) 
     ERROR ("pdf_lookup_dict:  Passed invalid dictionary");
   data = dict -> data;
@@ -806,7 +806,7 @@ pdf_obj *pdf_lookup_dict (const pdf_obj *dict, const char *name)
 
 char *pdf_get_dict (const pdf_obj *dict, int index)
 {
-  struct pdf_dict *data;
+  pdf_dict *data;
   char *result;
   if (dict == NULL) {
     ERROR ("pdf_get_dict: passed NULL object");
@@ -1169,13 +1169,13 @@ pdf_obj *pdf_ref_file_obj (int obj_no)
 pdf_obj *pdf_new_ref (int label, int generation) 
 {
   pdf_obj *result;
-  struct pdf_indirect *indirect;
+  pdf_indirect *indirect;
   if (label >= num_input_objects || label < 0) {
     fprintf (stderr, "pdf_new_ref: Object doesn't exist\n");
     return NULL;
   }
   result = pdf_new_obj (PDF_INDIRECT);
-  indirect = NEW (1, struct pdf_indirect);
+  indirect = NEW (1, pdf_indirect);
   result -> data = indirect;
   indirect -> label = label;
   indirect -> generation = generation;
@@ -1252,7 +1252,7 @@ pdf_obj *pdf_read_object (int obj_no)
 pdf_obj *pdf_deref_obj (pdf_obj *obj)
 {
   pdf_obj *result, *tmp;
-  struct pdf_indirect *indirect;
+  pdf_indirect *indirect;
   if (obj == NULL)
     return NULL;
   if (obj -> type != PDF_INDIRECT) {

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.h,v 1.1 1998/11/27 21:16:37 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.h,v 1.2 1998/11/27 23:35:01 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -59,10 +59,12 @@ void dev_set_eop (char *s, unsigned length);
 double dev_tell_x (void);
 double dev_tell_y (void);
 
-void dev_begin_color (double r, double g, double b);
+void dev_begin_rgb_color (double r, double g, double b);
+void dev_begin_cmyk_color (double c, double m, double y, double k);
 void dev_begin_gray (double value);
 void dev_end_color (void);
-void dev_bg_color (double r, double g, double b);
+void dev_bg_rgb_color (double r, double g, double b);
+void dev_bg_cmyk_color (double c, double m, double y, double k);
 void dev_bg_gray (double value);
 
 void dev_begin_xform (double xscale, double yscale, double rotate);

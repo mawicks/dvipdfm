@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.h,v 1.1 1998/11/27 21:16:37 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.h,v 1.2 1998/11/27 23:35:02 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -60,25 +60,28 @@ struct pdf_boolean
 {
   char value;
 };
+typedef struct pdf_boolean pdf_boolean;
 
 
 struct pdf_number
 {
   double value;
 };
-
+typedef struct pdf_number pdf_number;
 
 struct pdf_string
 {
   char *string;
   unsigned length;
 };
+typedef struct pdf_string pdf_string;
 
 
 struct pdf_name
 {
   char *name;
 };
+typedef struct pdf_name pdf_name;
 
 
 struct pdf_array
@@ -86,7 +89,7 @@ struct pdf_array
   pdf_obj *this;
   struct pdf_array *next;
 };
-
+typedef struct pdf_array pdf_array;
 
 struct pdf_dict
 {
@@ -94,7 +97,7 @@ struct pdf_dict
   pdf_obj *value;
   struct pdf_dict *next;
 };
-
+typedef struct pdf_dict pdf_dict;
 
 struct pdf_stream
 {
@@ -102,7 +105,6 @@ struct pdf_stream
   pdf_obj *length;  /* Pointer to an object containing the length of the stream */
   FILE *tmpfile;  /* Streams are stored in a temp file */
 };
-
 typedef struct pdf_stream pdf_stream;
 
 struct pdf_indirect
@@ -114,7 +116,7 @@ struct pdf_indirect
 		 when the object is written out */
   FILE *dirty_file;
 };
-
+typedef struct pdf_indirect pdf_indirect;
 
 /* External interface to pdf routines */
 
@@ -141,8 +143,8 @@ pdf_obj *pdf_new_string (const char *string, unsigned length);
 void pdf_set_string (pdf_obj *object, char *string, unsigned length);
 char *pdf_string_value (pdf_obj *object);
 
-#define pdf_obj_string_value(s) (((struct pdf_string *)((s)->data)) -> string)
-#define pdf_obj_string_length(s) (((struct pdf_string *)((s)->data)) -> length)
+#define pdf_obj_string_value(s) (((pdf_string *)((s)->data)) -> string)
+#define pdf_obj_string_length(s) (((pdf_string *)((s)->data)) -> length)
 
 pdf_obj *pdf_new_name (const char *name);  /* Name does not include the / */
 int pdf_match_name (const pdf_obj *name_obj, const char *name);  /* Name does not include the / */

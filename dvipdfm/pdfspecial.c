@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.1 1998/11/27 21:16:37 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.2 1998/11/27 23:35:02 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -393,30 +393,38 @@ static void do_bgcolor(char **start, char *end)
   pdf_obj *color, *tmp;
   double r, g, b;
   skip_white(start, end);
-  if ((color = parse_pdf_object(start, end)) == NULL ) {
-    fprintf (stderr, "\nSpecial: background color: Expecting color specified by an array or number\n");
-    return;
-  }
-  if (color -> type != PDF_ARRAY && 
-      color -> type != PDF_NUMBER ) {
+  if ((color = parse_pdf_object(start, end)) == NULL ||
+      (color -> type != PDF_ARRAY && 
+       color -> type != PDF_NUMBER )) {
     fprintf (stderr, "\nSpecial: background color: Expecting color specified by an array or number\n");
     *start = save;
+    dump (*start, end);
     return;
   }
   if (color -> type == PDF_ARRAY) {
     int i;
     for (i=1; i<=4; i++) {
-      if (pdf_get_array (color, i) == NULL)
+      if (pdf_get_array (color, i) == NULL ||
+	  pdf_get_array (color, i) -> type != PDF_NUMBER)
 	break;
     }
-    if (i != 4) {
-      fprintf (stderr, "\nSpecial: begincolor: Expecting color array with three elements\n");
+    if (i < 4 || i > 5) {
+      fprintf (stderr, "\nSpecial: begincolor: Expecting either RGB or CMYK color array\n");
+      *start = save;
+      dump (*start, end);
       return;
     }
-    r = pdf_number_value (pdf_get_array (color, 1));
-    g = pdf_number_value (pdf_get_array (color, 2));
-    b = pdf_number_value (pdf_get_array (color, 3));
-    dev_bg_color (r, g, b);
+    if (i == 4) {
+      dev_bg_rgb_color (pdf_number_value (pdf_get_array (color,1)),
+			pdf_number_value (pdf_get_array (color,2)),
+			pdf_number_value (pdf_get_array (color,3)));
+    }
+    if (i == 5) {
+      dev_bg_cmyk_color (pdf_number_value (pdf_get_array (color,1)),
+			 pdf_number_value (pdf_get_array (color,2)),
+			 pdf_number_value (pdf_get_array (color,3)),
+			 pdf_number_value (pdf_get_array (color,4)));
+    }
   } else {
     dev_bg_gray (pdf_number_value (color));
   }
@@ -430,30 +438,38 @@ static void do_bcolor(char **start, char *end)
   pdf_obj *color_array, *tmp;
   double r, g, b;
   skip_white(start, end);
-  if ((color_array = parse_pdf_object(start, end)) == NULL ) {
-    fprintf (stderr, "\nSpecial: begincolor: Expecting color specified by an array or number\n");
-    return;
-  }
-  if (color_array -> type != PDF_ARRAY && 
-      color_array -> type != PDF_NUMBER ) {
+  if ((color_array = parse_pdf_object(start, end)) == NULL ||
+      (color_array -> type != PDF_ARRAY && 
+       color_array -> type != PDF_NUMBER )) {
     fprintf (stderr, "\nSpecial: begincolor: Expecting color specified by an array or number\n");
     *start = save;
+    dump (*start, end);
     return;
   }
   if (color_array -> type == PDF_ARRAY) {
     int i;
     for (i=1; i<=4; i++) {
-      if (pdf_get_array (color_array, i) == NULL)
+      if (pdf_get_array (color_array, i) == NULL ||
+	  pdf_get_array (color_array, i) -> type != PDF_NUMBER)
 	break;
     }
-    if (i != 4) {
-      fprintf (stderr, "\nSpecial: begincolor: Expecting color array with three elements\n");
+    if (i < 4 || i > 5) {
+      fprintf (stderr, "\nSpecial: begincolor: Expecting either RGB or CMYK color array\n");
+      dump (*start, end);
+      *start = save;
       return;
     }
-    r = pdf_number_value (pdf_get_array (color_array, 1));
-    g = pdf_number_value (pdf_get_array (color_array, 2));
-    b = pdf_number_value (pdf_get_array (color_array, 3));
-    dev_begin_color (r, g, b);
+    if (i == 4) {
+      dev_begin_rgb_color (pdf_number_value (pdf_get_array (color_array,1)),
+			   pdf_number_value (pdf_get_array (color_array,2)),
+			   pdf_number_value (pdf_get_array (color_array,3)));
+    }
+    if (i == 5) {
+      dev_begin_cmyk_color (pdf_number_value (pdf_get_array (color_array,1)),
+			    pdf_number_value (pdf_get_array (color_array,2)),
+			    pdf_number_value (pdf_get_array (color_array,3)),
+			    pdf_number_value (pdf_get_array (color_array,4)));
+    }
   } else {
     dev_begin_gray (pdf_number_value (color_array));
   }

@@ -53,10 +53,10 @@ void do_scaling(pdf_obj *media_box, struct xform_info *p)
 }
 
 int num_xobjects = 0;
-struct pdf_obj *make_xform (pdf_obj *this_form_contents, pdf_obj *media_box,  
+pdf_obj *make_xform (pdf_obj *this_form_contents, pdf_obj *media_box,  
 			    pdf_obj *resources)
 {
-  struct pdf_obj *contents_ref, *xobj_dict, *tmp1;
+  pdf_obj *contents_ref, *xobj_dict, *tmp1;
   contents_ref = pdf_ref_obj (this_form_contents);  /* Give it a "new" reference */
   xobj_dict = pdf_stream_dict (this_form_contents);
   num_xobjects += 1;
