@@ -1,0 +1,400 @@
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pkfont.c,v 1.1 1999/01/18 15:26:03 mwicks Exp $
+
+    This is dvipdf, a DVI to PDF translator.
+    Copyright (C) 1998  by Mark A. Wicks
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+    
+    The author may be contacted via the e-mail address
+
+	mwicks@kettering.edu
+*/
+
+#include <stdio.h>
+#include "pkfont.h"
+#include "pdfobj.h"
+#include "mfileio.h"
+#include "pdflimits.h"
+#include "mem.h"
+#include "tfm.h"
+#include "error.h"
+#include "system.h"
+#include "numbers.h"
+#include "ctype.h"
+
+#define DPI 600
+
+pdf_obj *pk_encoding_ref = NULL;
+
+static void make_pk_encoding_ref (void)
+{
+  static first = 1;
+  if (first) {
+    int i;
+    pdf_obj *encoding, *differences;
+    encoding = pdf_new_dict();
+    pdf_add_dict (encoding, 
+		  pdf_new_name ("Type"),
+		  pdf_new_name ("Encoding"));
+    differences = pdf_new_array();
+    pdf_add_dict (encoding,
+		  pdf_new_name ("Differences"),
+		  differences);
+    pdf_add_array (differences, pdf_new_number (0.0));
+    for (i=0; i<256; i++) {
+      sprintf (work_buffer, "x%x", i);
+      pdf_add_array (differences, pdf_new_name(work_buffer));
+    }
+    pdf_write_obj (stderr, encoding);
+    pk_encoding_ref = pdf_ref_obj (encoding);
+    pdf_release_obj (encoding);
+  }
+  first = 0;
+  return;
+}
+
+static void release_pk_encoding_ref (void)
+{
+  pdf_release_obj (pk_encoding_ref);
+}
+
+struct a_pk_font 
+{
+  pdf_obj *direct, *indirect;
+  char *tex_name, *pk_file_name;
+  double ptsize;
+  char chars_used[256];
+} *pk_fonts;
+
+void init_pk_record (struct a_pk_font *p)
+{
+  int i;
+  for (i=0; i<256; i++) {
+    (p->chars_used)[i] = 0;
+  }
+  p->tex_name = NULL;
+  p->pk_file_name = NULL;
+}
+
+
+int num_pk_fonts = 0, max_pk_fonts = 0;
+
+int pk_font (char *tex_name, double ptsize, int tfm_font_id, char
+	     *res_name)
+{
+  int i, j;
+  int firstchar, lastchar;
+  pdf_obj *tmp1;
+  for (i=0; i<num_pk_fonts; i++) {
+    if (!strcmp (tex_name, pk_fonts[i].tex_name) &&
+	(ptsize == pk_fonts[i].ptsize))
+      break;
+  }
+  if (i == num_pk_fonts) {
+    char *pk_file_name;
+    kpse_glyph_file_type kpse_file_info;
+    if ((pk_file_name = kpse_find_glyph(tex_name,
+					DPI*ptsize/tfm_get_design_size(tfm_font_id),
+					kpse_pk_format,
+					&kpse_file_info))) {
+      fprintf (stderr, "\nglyph_file = %s\n", pk_file_name);
+      /* Make sure there is enough room in pk_fonts for this entry */
+      if (num_pk_fonts >= max_pk_fonts) {
+	max_pk_fonts += MAX_FONTS;
+	pk_fonts = RENEW (pk_fonts, max_pk_fonts, struct a_pk_font);
+      }
+      init_pk_record (pk_fonts+i);
+      pk_fonts[i].pk_file_name = NEW (strlen(pk_file_name)+1, char);
+      strcpy (pk_fonts[i].pk_file_name, pk_file_name);
+      pk_fonts[i].tex_name = NEW (strlen (tex_name)+1, char);
+      strcpy (pk_fonts[i].tex_name, tex_name);
+      pk_fonts[i].ptsize = ptsize;
+      pk_fonts[i].direct = pdf_new_dict ();
+      pdf_add_dict (pk_fonts[i].direct,
+		    pdf_new_name ("Type"),
+		    pdf_new_name ("Font"));
+      pdf_add_dict (pk_fonts[i].direct,
+		    pdf_new_name ("Name"),
+		    pdf_new_name (res_name));
+      pdf_add_dict (pk_fonts[i].direct,
+		    pdf_new_name ("Subtype"),
+		    pdf_new_name ("Type3"));
+      firstchar = tfm_get_firstchar(tfm_font_id);
+      pdf_add_dict (pk_fonts[i].direct,
+		    pdf_new_name ("FirstChar"),
+		    pdf_new_number (firstchar));
+      lastchar = tfm_get_lastchar(tfm_font_id);
+      pdf_add_dict (pk_fonts[i].direct,
+		    pdf_new_name ("LastChar"),
+		    pdf_new_number (lastchar));
+      tmp1 = pdf_new_array ();
+      for (j=firstchar; j<=lastchar; j++) {
+	pdf_add_array (tmp1,
+		       pdf_new_number(ROUND(tfm_get_width (tfm_font_id, j)*1000.0,0.01)));
+      }
+      pdf_add_dict (pk_fonts[i].direct,
+		    pdf_new_name ("Widths"),
+		    tmp1);
+      {
+	double max_height, max_depth, max_width;
+	max_height = tfm_get_max_height (tfm_font_id)*1000.0;
+	max_depth = tfm_get_max_depth (tfm_font_id)*1000.0;
+	max_width = tfm_get_max_width (tfm_font_id)*1000.0;
+	max_height = ROUND(max_height, 1.0);
+	max_depth = ROUND(max_depth, 1.0);
+	max_width = ROUND(max_width, 1.0);
+	tmp1 = pdf_new_array();
+	pdf_add_array (tmp1, pdf_new_number(-0.10*max_width));
+	pdf_add_array (tmp1,
+		       pdf_new_number(-max_depth-0.20*(max_height+max_depth)));
+	pdf_add_array (tmp1, pdf_new_number(1.10*max_width));
+	pdf_add_array (tmp1, pdf_new_number(max_height+0.10*(max_height+max_depth)));
+	pdf_add_dict (pk_fonts[i].direct, 
+		      pdf_new_name ("FontBBox"), tmp1);
+      }
+      {
+	tmp1 = pdf_new_array();
+	pdf_add_array (tmp1, pdf_new_number (0.001));
+	pdf_add_array (tmp1, pdf_new_number (0.0));
+	pdf_add_array (tmp1, pdf_new_number (0.0));
+	pdf_add_array (tmp1, pdf_new_number (0.001));
+	pdf_add_array (tmp1, pdf_new_number (0.0));
+	pdf_add_array (tmp1, pdf_new_number (0.0));
+	pdf_add_dict (pk_fonts[i].direct, pdf_new_name ("FontMatrix"),
+		      tmp1);
+      }
+      if (pk_encoding_ref == NULL) {
+	make_pk_encoding_ref();
+      }
+      pdf_add_dict (pk_fonts[i].direct,
+		    pdf_new_name ("Encoding"),
+		    pdf_link_obj (pk_encoding_ref));
+      pk_fonts[i].indirect = pdf_ref_obj (pk_fonts[i].direct);
+      num_pk_fonts += 1;
+    } else { /* Found no glyph file */
+      i = -1;
+    }
+  }
+  return i;
+}
+
+pdf_obj *pk_font_resource (int pk_id)
+{
+  if (pk_id >= 0 && pk_id < num_pk_fonts)
+    return pdf_link_obj (pk_fonts[pk_id].indirect);
+  else {
+    fprintf (stderr, "pk_id = %d\n", pk_id);
+    ERROR ("pk_font_resource:  Invalid pk_id\n");
+  }
+}
+
+char *pk_font_used (int pk_id)
+{
+  if (pk_id >= 0 && pk_id < num_pk_fonts) 
+    return pk_fonts[pk_id].chars_used;
+  else {
+    fprintf (stderr, "pk_id = %d\n", pk_id);
+    ERROR ("pk_font_used:  Invalid pk_id\n");
+  }
+}
+
+#define PK_XXX1 240
+#define PK_XXX2 241
+#define PK_XXX3 242
+#define PK_XXX4 243
+#define PK_YYY 244
+#define PK_POST 245
+#define PK_NO_OP 246
+#define PK_PRE 247
+
+static FILE *pk_file;
+
+static void do_skip(unsigned long length) 
+{
+  unsigned long i;
+  for (i=0; i<length; i++) 
+    fgetc (pk_file);
+  return;
+}
+
+static void do_preamble(void)
+{
+  /* Check for id byte */
+  if (fgetc (pk_file) == 89) {
+    /* Skip comment */
+    do_skip (get_unsigned_byte (pk_file));
+    /* Skip other header info.  It's normally used for verifying this
+       is the file wethink it is */
+    do_skip (16);
+  } else {
+    ERROR ("embed_pk_font: PK ID byte is incorrect.  Are you sure this is a PK file?");
+  }
+  return;
+}
+
+#define SHORT_FORM 1
+#define MED_FORM 2
+#define LONG_FORM 3
+static void do_character (unsigned char flag, int pk_id, pdf_obj *char_procs)
+{
+  int format;
+  unsigned long packet_length = 0, code = 0;
+  /* Last three bits of flag determine packet size in a complex way */
+  if ((flag & 4) == 0) {
+    format = SHORT_FORM;
+  } else if ((flag & 7) == 7) {
+    format = LONG_FORM;
+  } else {
+    format = MED_FORM;
+  }
+  switch (format) {
+  case SHORT_FORM:
+    packet_length = (flag & 3) * 256u + get_unsigned_byte (pk_file);
+    code = get_unsigned_byte (pk_file);
+    break;
+  case MED_FORM:
+    packet_length = (flag & 3) * 65536ul + get_unsigned_pair(pk_file);
+    code = get_unsigned_byte (pk_file);
+    break;
+  case LONG_FORM:
+    packet_length = get_unsigned_quad (pk_file);
+    code = get_unsigned_quad (pk_file);
+    ERROR ("Unable to handle long characters in PK files");
+    break;
+  }
+  if ((pk_fonts[pk_id].chars_used)[code%256]) {
+    int dyn_f;
+    unsigned long tfm_width = 0;
+    long dm=0, w=0, h=0;
+    int hoff=0, voff=0;
+    fprintf (stderr, "\nEmbedding code=%ld, length=%ld\n", code,
+	     packet_length);
+    if (isprint (code%256))
+      fprintf (stderr, "(%c)\n", (int) code%256);
+    dyn_f = flag/16;
+    switch (format) {
+    case SHORT_FORM:
+      tfm_width = get_unsigned_triple (pk_file);
+      dm = get_unsigned_byte (pk_file);
+      w = get_unsigned_byte (pk_file);
+      h = get_unsigned_byte (pk_file);
+      hoff = get_signed_byte (pk_file);
+      voff = get_signed_byte (pk_file);
+      packet_length -= 8;
+      break;
+    case MED_FORM:
+      tfm_width = get_unsigned_triple (pk_file);
+      dm = get_unsigned_pair (pk_file);
+      w = get_unsigned_pair (pk_file);
+      h = get_unsigned_pair (pk_file);
+      hoff = get_signed_pair (pk_file);
+      voff = get_signed_pair (pk_file);
+      packet_length -= 13;
+      break;
+    }
+    {
+      pdf_obj *glyph;
+      double char_width, llx, lly, urx, ury;
+      double pix2charu;
+      int len;
+      pix2charu = 72000.0/((double) DPI)/pk_fonts[pk_id].ptsize;
+      char_width = tfm_width / (double) (1<<20) * 1000.0;
+      char_width = ROUND (char_width, 0.01);
+      llx = -hoff*pix2charu;
+      lly = (voff-h)*pix2charu;
+      urx = (w-hoff)*pix2charu;
+      ury = voff*pix2charu;
+      glyph = pdf_new_stream(0);
+      len = sprintf (work_buffer, "%.2f %.2f %.2f %.2f %.2f %.2f d1",
+		     char_width, 0.0,
+		     llx, lly, urx, ury);
+      pdf_add_stream (glyph, work_buffer, len);
+      len = sprintf (work_buffer, " %.2f %.2f m %.2f %.2f l %.2f %.2f l %.2f %.2f l b",
+	       llx, lly, urx, lly, urx, ury, llx, ury);
+      pdf_add_stream (glyph, work_buffer, len);
+      sprintf (work_buffer, "x%x", (int)code%256);
+      pdf_add_dict (char_procs, pdf_new_name (work_buffer),
+		    pdf_ref_obj (glyph));
+      pdf_release_obj (glyph);
+    }
+  } else {
+    /*    fprintf (stderr, "\nSkipping code=%ld, length=%ld\n", code,
+	  packet_length);  */
+  }
+  /* For now, we are ignoring everything */
+  do_skip (packet_length);
+}
+
+
+static void embed_pk_font (int pk_id)
+{
+  if ((pk_file = fopen (pk_fonts[pk_id].pk_file_name,
+			FOPEN_RBIN_MODE))) {
+    int pk_command_byte;
+    pdf_obj *char_procs;
+    char_procs = pdf_new_dict();
+    while ((pk_command_byte = fgetc(pk_file)) >= 0 &&
+	   pk_command_byte != PK_POST) {
+      if (pk_command_byte < 240) {
+	do_character (pk_command_byte, pk_id, char_procs);
+      } else  /* A command byte */
+	switch (pk_command_byte) {
+	case PK_NO_OP:
+	  break;
+	case PK_XXX1:
+	  do_skip(get_unsigned_byte(pk_file));
+	  break;
+	case PK_XXX2:
+	  do_skip(get_unsigned_pair(pk_file));
+	  break;
+	case PK_XXX3:
+	  do_skip(get_unsigned_triple(pk_file));
+	  break;
+	case PK_XXX4:
+	  do_skip(get_unsigned_quad(pk_file));
+	  break;
+	case PK_YYY:
+	  do_skip(4);
+	  break;
+	case PK_PRE:
+	  do_preamble();
+	  break;
+	}
+    }
+    fclose (pk_file);
+    pdf_add_dict (pk_fonts[pk_id].direct,
+		  pdf_new_name ("CharProcs"),
+		  pdf_ref_obj(char_procs));
+    pdf_release_obj (char_procs);
+  } else {
+    ERROR ("embed_pk_font: Failed to open PK file");
+  }
+}
+
+void pk_close_all (void)
+{
+  int i;
+  if (pk_encoding_ref)
+    pdf_release_obj (pk_encoding_ref);
+  for (i=0; i<num_pk_fonts; i++) {
+    embed_pk_font (i);
+    pdf_release_obj (pk_fonts[i].direct);
+    pdf_release_obj (pk_fonts[i].indirect);
+    RELEASE (pk_fonts[i].tex_name);
+    RELEASE (pk_fonts[i].pk_file_name);
+  }
+}
+
+

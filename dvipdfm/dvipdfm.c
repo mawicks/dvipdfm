@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.26 1999/01/11 02:10:28 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.27 1999/01/18 15:25:15 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -328,7 +328,9 @@ int CDECL main (int argc, char *argv[])
     return 1;
   }
 #ifdef KPATHSEA
-  kpse_set_progname (argv[0]);
+  kpse_set_program_name (argv[0], NULL);
+  kpse_init_prog ("", 600, NULL, "cmr10");
+  kpse_set_program_enabled (kpse_pk_format, 1, kpse_src_texmf_cnf);
 #endif
   argv+=1;
   argc-=1;

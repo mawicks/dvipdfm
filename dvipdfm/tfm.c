@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.14 1999/01/11 02:10:30 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.15 1999/01/18 15:25:15 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -29,6 +29,8 @@
 #include "error.h"
 #include "mfileio.h"
 #include "mem.h"
+
+#define FWBASE ((double) (1<<20))
 
 static tfm_verbose = 0;
 static tfm_debug = 0;
@@ -305,7 +307,7 @@ void tfm_close_all(void)
    as a (double) fraction of the design size */
 double tfm_get_width (int font_id, UNSIGNED_BYTE ch)
 {
-  return (double) (tfm[font_id].unpacked_widths)[ch] / 1048576.0;
+  return (double) (tfm[font_id].unpacked_widths)[ch] / FWBASE;
 }
 
 fixword tfm_get_fw_width (int font_id, UNSIGNED_BYTE ch)
@@ -315,7 +317,7 @@ fixword tfm_get_fw_width (int font_id, UNSIGNED_BYTE ch)
 
 double tfm_get_space (int font_id)
 {
-  return (double) (tfm[font_id].param)[1] / 1048576.0;
+  return (double) (tfm[font_id].param)[1] / FWBASE;
 }
 
 
@@ -329,14 +331,41 @@ UNSIGNED_PAIR tfm_get_lastchar (int font_id)
   return tfm[font_id].ec;
 }
 
+double tfm_get_design_size (int font_id)
+{
+  return ((tfm[font_id].header))[1]/FWBASE*(72.0/72.27);
+}
 
 
+double tfm_get_max_width (int font_id)
+{
+  SIGNED_QUAD max = 0;
+  int i;
+  for (i=0; i<tfm[font_id].nwidths; i++) {
+    if ((tfm[font_id].width)[i] > max)
+      max = (tfm[font_id].width)[i];
+  }
+  return (max/FWBASE);
+}
 
+double tfm_get_max_height (int font_id)
+{
+  SIGNED_QUAD max = 0;
+  int i;
+  for (i=0; i<tfm[font_id].nheights; i++) {
+    if ((tfm[font_id].height)[i] > max)
+      max = (tfm[font_id].height)[i];
+  }
+  return (max/FWBASE);
+}
 
-
-
-
-
-
-
-
+double tfm_get_max_depth (int font_id)
+{
+  SIGNED_QUAD max = 0;
+  int i;
+  for (i=0; i<tfm[font_id].ndepths; i++) {
+    if ((tfm[font_id].depth)[i] > max)
+      max = (tfm[font_id].depth)[i];
+  }
+  return (max/FWBASE);
+}

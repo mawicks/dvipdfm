@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.59 1999/01/06 02:54:03 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.60 1999/01/18 15:25:15 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -31,6 +31,7 @@
 #include "error.h"
 #include "numbers.h"
 #include "type1.h"
+#include "pkfont.h"
 #include "mem.h"
 #include "mfileio.h"
 #include "pdfspecial.h"
@@ -585,11 +586,11 @@ MEM_END
 #endif
 }
 
-int dev_locate_font (char *tex_name, mpt_t ptsize)
+static int locate_type1_font (char *tex_name, mpt_t ptsize)
      /* Here, the ptsize is in device units, currently millipts */
 {
   /* Since Postscript fonts are scaleable, this font may have already
-     been asked for.  Make sure it doesn't already exist. */
+     been asked for in some other point size.  Make sure it doesn't already exist. */
   int i, thisfont;
   if (debug) {
     fprintf (stderr, "dev_locate_font: fontname: (%s) ptsize: %ld, id: %d\n",
@@ -651,6 +652,73 @@ int dev_locate_font (char *tex_name, mpt_t ptsize)
   return (thisfont);
 }
 
+static int locate_pk_font (char *tex_name, mpt_t ptsize)
+     /* Here, the ptsize is in device units, currently millipts */
+{
+  /* Since Postscript fonts are scaleable, this font may have already
+     been asked for in some other point size.  Make sure it doesn't already exist. */
+  int i, thisfont;
+  if (debug) {
+    fprintf (stderr, "locate_pk_font: fontname: (%s) ptsize: %ld, id: %d\n",
+	     tex_name, ptsize, n_dev_fonts);
+  }
+  if (ptsize == 0)
+    ERROR ("locate_pk_font called with point size of zero");
+  if (n_dev_fonts == MAX_DEVICE_FONTS)
+    ERROR ("locate_pk_fontt:  Tried to load too many fonts\n");
+  thisfont = n_dev_fonts;
+  for (i=0; i<thisfont; i++) {
+    /* For pk fonts, both name *and* ptsize must match */
+    if (dev_font[i].tex_name && strcmp (tex_name,
+					dev_font[i].tex_name) == 0 &&
+	dev_font[i].mptsize == ptsize) {
+      break;
+    }
+  }
+  if (i == thisfont) {  /* Font *name* not found, so load it and give it a
+			    new short name */
+    int pk_id = -1;
+    dev_font[thisfont].tfm_font_id = tfm_open (tex_name);
+    dev_font[i].short_name[0] = 'F';
+    sprintf (dev_font[i].short_name+1, "%d", n_phys_fonts+1);
+    pk_id = pk_font (tex_name, ptsize*dvi2pts,
+		     dev_font[thisfont].tfm_font_id,
+		     dev_font[thisfont].short_name);
+    /* type1_font_resource on next line always returns an *indirect* obj */ 
+    if (pk_id >= 0) { /* If we got one, it must be a physical font */
+      dev_font[thisfont].font_resource = pk_font_resource (pk_id);
+      dev_font[thisfont].used_chars = pk_font_used (pk_id);
+      n_phys_fonts +=1 ;
+    } else { /* No physical font corresponding to this name */
+      thisfont = -1;
+      dev_font[thisfont].short_name[0] = 0;
+    }
+    if (thisfont >=0) {
+      dev_font[thisfont].mptsize = ptsize;
+      dev_font[thisfont].ptsize = ROUND(ptsize*dvi2pts,0.01);
+      dev_font[thisfont].tex_name = NEW (strlen(tex_name)+1, char);
+      strcpy (dev_font[thisfont].tex_name, tex_name);
+      n_dev_fonts +=1;
+    }
+  } else {
+    thisfont = i;
+  }
+  return (thisfont);
+}
+
+int dev_locate_font (char *tex_name, mpt_t ptsize)
+{
+  int result;
+  /* If there's a type1 font with this name use it */
+  result = locate_type1_font (tex_name, ptsize);
+  /* If not, try to find a pk font */
+  if (result < 0)
+    result = locate_pk_font (tex_name, ptsize);
+  /* Otherwise we are out of luck */
+  return result;
+}
+
+
 int dev_font_tfm (int dev_font_id)
 {
   return dev_font[dev_font_id].tfm_font_id;
@@ -674,6 +742,7 @@ void dev_close_all_fonts(void)
     RELEASE (dev_font[i].tex_name);
   }
   type1_close_all();
+  pk_close_all();
 }
 
 

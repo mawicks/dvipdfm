@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.h,v 1.8 1999/01/18 15:25:16 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pkfont.h,v 1.1 1999/01/18 15:26:03 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -22,29 +22,15 @@
 	mwicks@kettering.edu
 */
 
-	
-#ifndef TFM_H
+#ifndef _PK_FONT_H
+#define _PK_FONT_H
 
-#define TFM_H
+#include "pdfobj.h"
 
-#include "numbers.h"
+int pk_font (char *tex_name, double ptsize, int tfm_id, char
+	     *res_name);
+pdf_obj *pk_font_resource (int pk_id);
+char *pk_font_used (int pk_id);
+void pk_close_all (void);
 
-extern void tfm_set_verbose(void);
-extern void tfm_set_debug(void);
-
-extern int tfm_open(const char * tex_font_name);
-extern void tfm_close_all (void);
-
-extern double tfm_get_width (int font_id, UNSIGNED_BYTE ch);
-extern fixword tfm_get_fw_width (int font_id, UNSIGNED_BYTE ch);
-extern double tfm_get_space (int font_id);
-
-extern UNSIGNED_PAIR tfm_get_firstchar (int font_id);
-extern UNSIGNED_PAIR tfm_get_lastchar (int font_id);
-
-extern double tfm_get_design_size (int font_id);
-extern double tfm_get_max_height (int font_id);
-extern double tfm_get_max_width (int font_id);
-extern double tfm_get_max_depth (int font_id);
-
-#endif /* TFM_H */
+#endif /* _PK_FONT_H */
