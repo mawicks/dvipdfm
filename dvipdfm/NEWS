@@ -1,8 +1,16 @@
+April 8, 1999.
+
+   Version 0.10.5 changes the rule code to use a PDF stroke instead
+of filling a rectangular box.  It also omits some unecessary
+font information from the PDF file for the base 14 PS fonts.
+This is to produce for slightly smaller PDF files when using
+these fonts.
+
 March 30, 1999.
 
    NOTE: VERSION 0.10.4 CHANGES THE NAME/LOCATION OF ITS CONFIGURATION FILES!
 
-   It also fixes a bug that prevents nested virtual fonts and fixes a couple of other
+   It also fixes a bug that caused nested virtual fonts to fail and fixes a couple of other
    fairly insignificant bugs.
 
    Version 0.10.0 introduced PK fonts support and support
