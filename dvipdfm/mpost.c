@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.10 1999/08/28 01:55:56 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.11 1999/08/28 03:27:20 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -37,8 +37,6 @@
 #include "error.h"
 #include "pdfdev.h"
 #include "pdfdoc.h"
-
-#define debug 0
 
 int check_for_mp (FILE *image_file) 
 {
@@ -193,6 +191,7 @@ int mp_parse_headers (FILE *image_file)
       } else
 	return 0;
       mp_locate_font (name, ps_ptsize);
+      RELEASE (name);
     }
   }
   return 1;
@@ -277,9 +276,6 @@ static void void_path (void)
 static void flush_path (void)
 {
   int i, len;
-  if (debug) {
-    fprintf (stderr, "\nflush_path(), n=%d\n", n_path_pts);
-  }
   for (i=0; i<n_path_pts; i++) {
     switch (path[i].type) {
     case 'm': /* moveto */ 
@@ -512,16 +508,28 @@ static int lookup_operator(char *token)
   return operator;
 }
 
+static int state = 0;
+
 static void do_operator(char *token)
 {
   int operator;
   pdf_obj *tmp1=NULL, *tmp2=NULL, *tmp3=NULL, *tmp4 = NULL;
   pdf_obj *tmp5=NULL, *tmp6=NULL;
   int len;
+  /* PS to PDF conversion is not so simple.  We maintain
+     tate so we can change "gsave fill grestore stroke" to "B".
+     We need to keep track of what we have seen.   This code is not
+     too smart and could be easily fooled by real postscript. 
+     It makes some assumptions since it is only looking at MetaPost
+
+     States are as follows:
+     0: Nothing special
+     1: Started a path
+     2: Saw gsave in path
+     3: Saw a painting operator in state 2(fill, stroke, or newpath)
+     4: Saw a grestore in state 3
+  */
   operator = lookup_operator (token);
-  if (debug) {
-    fprintf (stderr, "\nop=%s\n", token);
-  }
   switch (operator) {
   case ADD:
     tmp1 = POP_STACK();
@@ -552,6 +560,7 @@ static void do_operator(char *token)
       }
       len += sprintf (work_buffer+len, " cm");
       pdf_doc_add_to_page (work_buffer, len);
+      /* Transform pending path, if any */
       transform_path (pdf_number_value(pdf_get_array(tmp1, 0)),
 		      pdf_number_value(pdf_get_array(tmp1, 1)),
 		      pdf_number_value(pdf_get_array(tmp1, 2)),
@@ -565,6 +574,11 @@ static void do_operator(char *token)
       pdf_release_obj (tmp1);
     break;
   case CURVETO:
+    if (state <= 1) /* In path now */
+      state = 1;
+    else {
+      fprintf (stderr, "\nUnexpected path segment\n");
+    }
     if ((tmp6 = POP_STACK()) && tmp6->type == PDF_NUMBER &&
 	(tmp5 = POP_STACK()) && tmp5->type == PDF_NUMBER &&
 	(tmp4 = POP_STACK()) && tmp4->type == PDF_NUMBER &&
@@ -626,8 +640,27 @@ static void do_operator(char *token)
     }
     break;
   case FILL:
-    flush_path ();
-    pdf_doc_add_to_page (" f", 2);
+    switch (state) {
+    case 0:
+      state = 0;
+      break;
+    case 1:
+      flush_path ();
+      pdf_doc_add_to_page (" f", 2);
+      state = 0;
+      break;
+    case 2:
+      state = 3;
+      break;
+    case 3:
+      fprintf (stderr, "\nUnexpected fill\n");
+      break;
+    case 4:
+      flush_path ();
+      pdf_doc_add_to_page (" B", 2);
+      state = 0;
+      break;
+    }
     break;
   case FSHOW: 
     {
@@ -645,6 +678,9 @@ static void do_operator(char *token)
 			pdf_string_length(tmp1), 0, mp_fonts[fontid].font_id);
 	graphics_mode();
       }
+      /* Treat fshow as a path terminator of sorts */
+      state = 0;
+
       if (tmp1)
 	pdf_release_obj (tmp1);
       if (tmp2)
@@ -654,10 +690,36 @@ static void do_operator(char *token)
     }
     break;
   case GSAVE:
-    pdf_doc_add_to_page (" q", 2);
+    switch (state) {
+    case 0:
+      pdf_doc_add_to_page (" q", 2);
+      break;
+    case 1:
+      state = 2;
+      break;
+    case 4:
+      state = 2;
+      break;
+    default:
+      fprintf (stderr, "\nUnexpected gsave\n");
+      break;
+    }
     break;
   case GRESTORE:
-    pdf_doc_add_to_page (" Q", 2);
+    switch (state) {
+    case 0:
+      pdf_doc_add_to_page (" Q", 2);
+      break;
+    case 2:
+      state = 1;
+      break;
+    case 3:
+      state = 4;
+      break;
+    default:
+      fprintf (stderr, "\nUnexpected grestore\n");
+      break;
+    }
     break;
   case IDTRANSFORM:
     if ((tmp2 = POP_STACK()) && tmp2 -> type == PDF_NUMBER &&
@@ -676,6 +738,11 @@ static void do_operator(char *token)
     break;
   case LINETO: 
     {
+      if (state <= 1) /* In path now */
+	state = 1;
+      else {
+	fprintf (stderr, "\nUnexpected path segment\n");
+      }
       if ((tmp2 = POP_STACK()) && tmp2-> type == PDF_NUMBER &&
 	  (tmp1 = POP_STACK()) && tmp1-> type == PDF_NUMBER) {
 	x_state = pdf_number_value (tmp1);
@@ -689,6 +756,11 @@ static void do_operator(char *token)
     }
     break;
   case MOVETO:
+    if (state <= 1) /* In path now */
+      state = 1;
+    else {
+      fprintf (stderr, "\nUnexpected path segment\n");
+    }
     if ((tmp2 = POP_STACK()) && tmp2-> type == PDF_NUMBER &&
 	(tmp1 = POP_STACK()) && tmp1-> type == PDF_NUMBER) {
       /* MetaPost likes to ship out a moveto before displayed text.
@@ -725,6 +797,11 @@ static void do_operator(char *token)
       pdf_release_obj (tmp1);
     break;
   case RLINETO: 
+    if (state <= 1) /* In path now */
+      state = 1;
+    else {
+      fprintf (stderr, "\nUnexpected path segment\n");
+    }
     if ((tmp2 = POP_STACK()) && tmp2->type == PDF_NUMBER &&
 	(tmp1 = POP_STACK()) && tmp1->type == PDF_NUMBER) {
       x_state += pdf_number_value (tmp1);
@@ -890,8 +967,27 @@ static void do_operator(char *token)
     void_path ();
     break;
   case STROKE:
-    flush_path();
-    pdf_doc_add_to_page (" S", 2);
+    switch (state) {
+    case 0:
+      state = 0;
+      break;
+    case 1:
+      flush_path ();
+      pdf_doc_add_to_page (" S", 2);
+      state = 0;
+      break;
+    case 2:
+      state = 3;
+      break;
+    case 3:
+      fprintf (stderr, "\nUnexpected fill\n");
+      break;
+    case 4:
+      flush_path ();
+      pdf_doc_add_to_page (" B", 2);
+      state = 0;
+      break;
+    }
     break;
   case SUB:
     tmp2 = POP_STACK();
@@ -943,6 +1039,7 @@ void parse_contents (FILE *image_file)
   top_stack = 0;
   x_state = 0.0;
   y_state = 0.0;
+  state = 0;
   while (!feof(image_file) && mfgets (line_buffer, sizeof(line_buffer),
 				      image_file)) {
     char *start, *end, *token;
