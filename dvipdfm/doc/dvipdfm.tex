@@ -1,4 +1,4 @@
-% $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/doc/dvipdfm.tex,v 1.7 1998/12/04 21:45:16 mwicks Exp $
+% $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/doc/dvipdfm.tex,v 1.8 1998/12/05 02:08:22 mwicks Exp $
 \special{  pdf:  docview <</PageMode /UseOutlines>>}%
 \catcode`\ =11\def\space{ }\catcode`\ =10
 % Page layout
@@ -934,7 +934,7 @@ The keyword |none| in the PFB field name
 the embedded font to be omitted.
 See the file for examples.
 
-\section{La\TeX\ Support}
+\section{La\TeX\ Support and {\tt ebb}}
 Preliminary support for the La\TeX\ graphics bundle and |hyperref|
 are available.  Until drivers for |dvipdfm| are included
 in the standard distributions of these packages,
@@ -942,6 +942,15 @@ I will include them in distributions of |dvipdfm|.
 The file required for the La\TeX\ graphics is
 called |dvipdfm.def| and the file required for |hyperref|
 support is called |hdvipdfm.def|.  
+
+To facilitate La\TeX\ support, I am including a companion program
+called |ebb|, which extracts bounding boxes from graphics files.  If
+you want to include JPEG or PDF files in your document, you can run
+|ebb| on the JPEG and PDF file to create the |.bb| files.
+The bounding box file will be similarly named with an extension of |.bb|.
+For DOS 8+3 compatibility, an original file name extension 
+of |.jpg| or |.pdf| is removed before creating the name of
+the |.bb| file. An extension of |.jpeg| is also recognized and similarly removed.
 
 \newpage
 \section{References}
