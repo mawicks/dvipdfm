@@ -1,10 +1,8 @@
 December 30, 1998.
-
    Version 0.9.0 supports partial font embedding and Flate compression. The
 page tree and destination tree are shipped out as balanced trees.
 
 December 14, 1998.
-
    Version 0.8.3 fixes a memory leak in the vf code found by Akiro Kakuto.
 Another change hopefully makes running ./configure a bit easier.
 
