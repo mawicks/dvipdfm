@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.33 1998/12/11 03:34:30 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.34 1998/12/11 05:59:14 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -204,8 +204,8 @@ static void string_mode (double xpos, double ypos)
     }
     else {
       dely = ypos - text_yorigin;
-      len += sprintf (format_buffer+len, " %g %g TD[(",
-		      (delx/10)/100.0, (dely/10)/100.0);
+      len += sprintf (format_buffer+len, " %.2f %.2f TD[(",
+		      delx/1000.0, dely/1000.0);
       text_leading = dely;
       text_xorigin = xpos;
       text_yorigin = ypos;
@@ -216,6 +216,64 @@ static void string_mode (double xpos, double ypos)
   }
   motion_state = STRING_MODE;
   return;
+}
+
+/* The purpose of the following routine is to force a Tf only
+   when it's actually necessary.  This became a problem when the
+   VF code was added.  The VF spec says to instantiate the
+   first font contained in the VF file before drawing a virtual
+   character.  However, that font may not be used for
+   many characters (e.g. small caps fonts).  For this reason, 
+   dev_select_font() should not force a "physical" font selection.
+   This routine prevents a PDF Tf font selection until there's
+   really a character in that font.  */
+
+static void dev_need_phys_font (void)
+{
+  int len = 0;
+  if (current_phys_font != current_font &&
+      current_font >= 0) {
+    text_mode();
+    len = sprintf (format_buffer, " /%s %.2f Tf", dev_font[current_font].short_name,
+	     dev_font[current_font].mptsize/1000.0);
+    pdf_doc_add_to_page (format_buffer, len);
+    /* Add to Font list in Resource dictionary for this page */
+    if (!dev_font[current_font].used_on_this_page) { 
+      pdf_doc_add_to_page_fonts (dev_font[current_font].short_name,
+				 pdf_link_obj(dev_font[current_font].font_resource));
+      dev_font[current_font].used_on_this_page = 1;
+    }
+    current_phys_font = current_font;
+  }
+  if (current_font < 0) {
+    ERROR ("dev_need_phys_font:  Tried to put a character with no font defined\n");
+  }
+}
+
+void dev_set_char (mpt_t xpos, mpt_t ypos, unsigned ch, mpt_t width)
+{
+  int len = 0;
+  switch (dev_font[current_font].type) {
+  case PHYSICAL:
+    dev_need_phys_font(); /* Force a Tf since we are actually trying
+			     to write a character */
+    if (ypos != text_yorigin ||
+	abs(xpos-text_xorigin-text_offset) > current_mptsize)
+      text_mode();
+    if (motion_state != STRING_MODE)
+      string_mode(xpos, ypos);
+    if (abs (xpos-text_xorigin-text_offset) > 10) {
+      len += sprintf (format_buffer+len, ")%d(",
+	       (int)((text_xorigin+text_offset-xpos)/current_ptsize));
+      text_offset = xpos-text_xorigin;
+    }
+    len += pdfobj_escape_c (format_buffer+len, ch);
+    pdf_doc_add_to_page (format_buffer, len);
+    text_offset += width;
+    break;
+  case VIRTUAL:
+    vf_set_char (ch, dev_font[current_font].vf_font_id);
+  }
 }
 
 void dev_init (char *outputfile)
@@ -267,22 +325,22 @@ static void fill_page (void)
     return;
   switch (background.colortype) {
   case GRAY:
-    sprintf (format_buffer, " q 0 w %g g %g G", background.c1, background.c1);
+    sprintf (format_buffer, " q 0 w %.3f g %.3f G", background.c1, background.c1);
     break;
   case RGB:
-    sprintf (format_buffer, " q 0 w %g %g %g rg %g %g %g RG",
+    sprintf (format_buffer, " q 0 w %.3f %.3f %.3f rg %.3f %.3f %.3f RG",
 	     background.c1, background.c2, background.c3,
 	     background.c1, background.c2, background.c3);
     break;
   case CMYK:
-    sprintf (format_buffer, " q 0 w %g %g %g %g k %g %g %g %g K ",
+    sprintf (format_buffer, " q 0 w %.3f %.3f %.3f %.3f k %.3f %.3f %.3f %.3f K ",
 	     background.c1, background.c2, background.c3, background.c4,
 	     background.c1, background.c2, background.c3, background.c4);
     break;
   }
   pdf_doc_this_bop (format_buffer, strlen(format_buffer));
   sprintf (format_buffer,
-	   " 0 0 m %g 0 l %g %g l 0 %g l b Q ",
+	   " 0 0 m %.2f 0 l %.2f %.2f l 0 %.2f l b Q ",
 	   dev_page_width(), dev_page_width(), dev_page_height(),
 	   dev_page_height());
   pdf_doc_this_bop (format_buffer, strlen(format_buffer));
@@ -333,7 +391,7 @@ void dev_do_color (void)
   }
   switch (colorstack[num_colors-1].colortype) {
   case RGB:
-    len = sprintf (format_buffer, " %g %g %g",
+    len = sprintf (format_buffer, " %.2f %.2f %.2f",
 		   colorstack[num_colors-1].c1,
 		   colorstack[num_colors-1].c2,
 		   colorstack[num_colors-1].c3);
@@ -343,7 +401,7 @@ void dev_do_color (void)
     pdf_doc_add_to_page (" RG", 3);
     break;
   case CMYK:
-    len = sprintf (format_buffer, " %g %g %g %g",
+    len = sprintf (format_buffer, " %.2f %.2f %.2f %.2f",
 		   colorstack[num_colors-1].c1,
 		   colorstack[num_colors-1].c2,
 		   colorstack[num_colors-1].c3,
@@ -354,7 +412,7 @@ void dev_do_color (void)
     pdf_doc_add_to_page (" K ", 3);
     break;
   case GRAY:
-    len = sprintf (format_buffer, " %g", colorstack[num_colors-1].c1);
+    len = sprintf (format_buffer, " %.2f", colorstack[num_colors-1].c1);
     pdf_doc_add_to_page (format_buffer, len);
     pdf_doc_add_to_page (" g", 2);
     pdf_doc_add_to_page (format_buffer, len);
@@ -436,7 +494,7 @@ void dev_begin_xform (double xscale, double yscale, double rotate)
   }
   c = ROUND (cos(rotate),1e-5);
   s = ROUND (sin(rotate),1e-5);
-  sprintf (work_buffer, " q %g %g %g %g %g %g cm",
+  sprintf (work_buffer, " q %.2f %.2f %.2f %.2f %.2f %.2f cm",
 	   xscale*c, xscale*s, -yscale*s, yscale*c,
 	   ROUND((1.0-xscale*c)*dvi_dev_xpos()+yscale*s*dvi_dev_ypos(),0.001),
 	   ROUND(-xscale*s*dvi_dev_xpos()+(1.0-yscale*c)*dvi_dev_ypos(),0.001));
@@ -629,37 +687,6 @@ void dev_select_font (int dev_font_id)
   else
     current_ptsize = 0.0;
 }
-/* The purpose of the following routine is to force a Tf only
-   when it's actually necessary.  This became a problem when the
-   VF code was added.  The VF spec says to instantiate the
-   first font contained in the VF file before drawing a virtual
-   character.  However, that font may not be used for
-   many characters (e.g. small caps fonts).  For this reason, 
-   dev_select_font() should not force a "physical" font selection.
-   This routine prevents a PDF Tf font selection until there's
-   really a character in that font.  */
-
-static void dev_need_phys_font (void)
-{
-  int len = 0;
-  if (current_phys_font != current_font &&
-      current_font >= 0) {
-    text_mode();
-    len = sprintf (format_buffer, " /%s %g Tf", dev_font[current_font].short_name,
-	     dev_font[current_font].mptsize/1000.0);
-    pdf_doc_add_to_page (format_buffer, len);
-    /* Add to Font list in Resource dictionary for this page */
-    if (!dev_font[current_font].used_on_this_page) { 
-      pdf_doc_add_to_page_fonts (dev_font[current_font].short_name,
-				 pdf_link_obj(dev_font[current_font].font_resource));
-      dev_font[current_font].used_on_this_page = 1;
-    }
-    current_phys_font = current_font;
-  }
-  if (current_font < 0) {
-    ERROR ("dev_need_phys_font:  Tried to put a character with no font defined\n");
-  }
-}
 
 /* The following routine is here for forms.  Since
    a form is self-contained, it will need its own Tf command
@@ -676,32 +703,6 @@ void dev_reselect_font(void)
   }
 }
 
-void dev_set_char (mpt_t xpos, mpt_t ypos, unsigned ch, mpt_t width)
-{
-  int len = 0;
-  switch (dev_font[current_font].type) {
-  case PHYSICAL:
-    dev_need_phys_font(); /* Force a Tf since we are actually trying
-			     to write a character */
-    if (ypos != text_yorigin ||
-	abs(xpos-text_xorigin-text_offset) > current_mptsize)
-      text_mode();
-    if (motion_state != STRING_MODE)
-      string_mode(xpos, ypos);
-    if (abs (xpos-text_xorigin-text_offset) > 10) {
-      len += sprintf (format_buffer+len, ")%d(",
-	       (int)((text_xorigin+text_offset-xpos)/current_ptsize));
-      pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
-      text_offset = xpos-text_xorigin;
-    }
-    len += pdfobj_escape_c (format_buffer+len, ch);
-    pdf_doc_add_to_page (format_buffer, len);
-    text_offset += width;
-    break;
-  case VIRTUAL:
-    vf_set_char (ch, dev_font[current_font].vf_font_id);
-  }
-}
 
 void dev_rule (double xpos, double ypos, double width, double height)
 {
@@ -710,7 +711,7 @@ void dev_rule (double xpos, double ypos, double width, double height)
     fprintf (stderr, "(dev_rule)");
   }
   graphics_mode();
-  len = sprintf (format_buffer, " %g %g m %g %g l %g %g l %g %g l b",
+  len = sprintf (format_buffer, " %.2g %.2f m %.2f %.2f l %.2f %.2f l %.2f %.2f l b",
 		 ROUND(xpos,0.01), ROUND(ypos,0.01),
 		 ROUND(xpos+width,0.01), ROUND(ypos,0.01),
 		 ROUND(xpos+width,0.01), ROUND(ypos+height,0.01),
