@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.20 1999/08/22 17:48:11 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.20.2.1 1999/08/23 03:04:01 mwicks Exp $
 
     This is ebb, a bounding box extraction program.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -292,7 +292,7 @@ int main (int argc, char *argv[])
       FCLOSE (inputfile);
       continue;
     }
-#ifdef HAVE_LIB_NG
+#ifdef HAVE_LIBPNG
     if (check_for_png (inputfile)) {
       do_png(inputfile, kpse_file_name);
       FCLOSE (inputfile);

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.49 1999/08/17 17:52:47 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.49.2.1 1999/08/23 03:04:02 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1508,12 +1508,12 @@ static void finish_image (pdf_obj *image_res, struct xform_info *p,
       yscale = p->yscale;
     }
     if (p->width != 0.0) {
-      xscale = p->width/width;
+      xscale = p->width/width*(100.0/72.0);
       if (p->height == 0.0)
 	yscale = xscale;
     }
     if (p->height != 0.0) {
-      yscale = p->height/height;
+      yscale = p->height/height*(100.0/72.0);
       if (p->width == 0.0)
 	xscale = p->yscale;
     }
