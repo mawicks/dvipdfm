@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.42 1998/12/25 06:38:59 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.43 1998/12/26 03:35:12 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -295,110 +295,153 @@ void type1_disable_partial (void)
   partial_enabled = 0;
 }
 
-static void parse_glyphs (unsigned char *buffer, unsigned long length,
+static unsigned long parse_header (unsigned char *filtered, unsigned char *buffer,
+			  unsigned long length, int pfb_id,
 			  char **glyphs)
 {
-  char *start, *end, *ident;
-  double last_number = 0.0;
+  unsigned char *filtered_pointer;
+  int state = 0;
+  char *start, *end, *lead, *saved_lead = NULL;
+  int last_number = 0;
   char *glyph = NULL;
-  int i = 0;
+
 #ifdef MEM_DEBUG
   MEM_START
 #endif
+  {
+    int i;
+    for (i=0; i<256; i++) {
+      glyphs[i] = NEW (strlen (".notdef")+1, char); 
+      strcpy (glyphs[i], ".notdef");
+    }
+  }
+  /* State definitions 
+     state 0: Initial state
+     state 1: Saw /FontName
+     state 2: Saw /Encoding
+     state 3: Saw "dup" in state 2
+     state 4: Saw a number in state 3
+     state 5: Saw a /glyphname in state 4 */
   start = (char *) buffer;
   end = start+length;
-  for (i=0; i<256; i++) {
-    glyphs[i] = NEW (strlen (".notdef")+1, char); 
-    strcpy (glyphs[i], ".notdef");
+  filtered_pointer = filtered;
+  lead = start;
+  skip_white (&start, end);
+  if (lead != start) {
+    memcpy (filtered_pointer, lead, start-lead);
+    filtered_pointer += start-lead;
   }
-  {
-    /* State definitions 
-       state 0: Initial state
-       state 1: Saw /Encoding 
-       state 2: Saw a number after 1
-       state 3: Saw a /glyphname after 2 */
+  while (start < end) {
+    char *save, *ident;
     pdf_obj *pdfobj;
-    int state = 0;
-    skip_white (&start, end);
-    while (start < end) {
-      switch (state) {
-      case 0:
-      case 1:
-	switch (*start) {
-	case '[':
-	case ']':  
-	case '{':
-	case '}':
-	  start += 1;
-	  if (state >= 1)
-	    state = 1;
-	  break;
-	case '(':
-	  pdfobj = parse_pdf_string (&start, end);
-	  if (pdfobj == NULL) {
-	    ERROR ("parse_glyphs:  Error reading encoding from pfb header");
-	  }
-	  pdf_release_obj (pdfobj);
-	  if (state >= 1)
-	    state = 1;
-	  break;
-	case '/':
-	  start += 1;
-	  ident = parse_ident (&start, end);
-	  if (!strcmp (ident, "Encoding")) {
-	    state = 1;
-	  }
-	  RELEASE (ident);
-	  break;
-	default:
-	  ident = parse_ident (&start, end);
-	  if (state == 1 && 
-	      is_a_number (ident)) {
-	    last_number = atof (ident);
-	    state = 2;
-	  } else if (state == 1 &&
-		     !strcmp (ident, "StandardEncoding")) {
-	    do_a_standard_enc(glyphs, standardencoding);
-	  } else if (state == 1 &&
-		     !strcmp (ident, "ISOLatin1Encoding")) {
-	    do_a_standard_enc(glyphs, isoencoding);
-	  }
-	  RELEASE (ident);
-	  break;
-	}
+    switch (state) {
+      /* First three states are very similar.  In most cases we just
+	 ignore other postscript junk and don't change state */
+    case 0:
+    case 1:
+    case 2:
+      lead = start;
+      switch (*start) {
+      case '[':
+      case ']':  
+      case '{':
+      case '}':
+	start += 1;
 	break;
-      case 2:
-	if (*start == '/') {
-	  start += 1;
-	  glyph = parse_ident (&start, end);
-	  state = 3;
-	} else {
+      case '(':
+	pdfobj = parse_pdf_string (&start, end);
+	if (pdfobj == NULL) {
+	  ERROR ("parse_header:  Error parsing pfb header");
+	}
+	pdf_release_obj (pdfobj);
+	if (state >= 1)
 	  state = 1;
-	}
 	break;
-      case 3:
+      case '/':
+	start += 1;
 	ident = parse_ident (&start, end);
-	if (ident != NULL && !strcmp (ident, "put") && 
-	    (int) last_number < 256 && (int) last_number >= 0) {
-	  if (glyphs[(int)last_number] != NULL) 
-	    RELEASE (glyphs[(int)last_number]);
-	  glyphs[(int)last_number] = glyph;
+	if (state == 0 && !strcmp (ident, "FontName")) {
+	  state = 1;
+	} else if (state == 0 && !strcmp (ident, "Encoding")) {
+	  state = 2;
+	} else if (state == 1) {
+	  filtered_pointer += sprintf ((char *)filtered_pointer, "/%s ",
+				       pfbs[pfb_id].fontname);
+	  lead = NULL; /* Means don't copy current input to output */
+	  state = 0;
 	}
-	else {
-	  RELEASE (glyph);
+	RELEASE (ident);
+	break;
+      default:
+	save = start;
+	ident = parse_ident (&start, end);
+	if (state == 2 &&
+	    !strcmp (ident, "dup")) {
+	  saved_lead = save; /* Save this because we may need it
+				 later */
+	  lead = NULL;
+	  state = 3;
+	} else if (state == 2 &&
+		   !strcmp (ident, "StandardEncoding")) {
+	  do_a_standard_enc(glyphs, standardencoding);
+	} else if (state == 2 &&
+		   !strcmp (ident, "ISOLatin1Encoding")) {
+	  do_a_standard_enc(glyphs, isoencoding);
 	}
-	if (ident != NULL)
-	  RELEASE (ident);
-	state = 1;
+	RELEASE (ident);
 	break;
       }
-      skip_white (&start, end);
+      break;
+    case 3:
+      ident = parse_ident (&start, end);
+      if (is_a_number (ident)) {
+	last_number = (int) atof (ident);
+	state = 4;
+      } else {
+	lead = saved_lead;
+	state = 2;
+      }
+      break;
+    case 4:
+      if (*start == '/') {
+	start += 1;
+	glyph = parse_ident (&start, end);
+	state = 5;
+      } else {
+	lead = saved_lead;
+	state = 2;
+      }
+      break;
+    case 5:
+      ident = parse_ident (&start, end);
+      if (ident != NULL && !strcmp (ident, "put") && 
+	  (int) last_number < 256 && (int) last_number >= 0) {
+	if (glyphs[last_number] != NULL) 
+	  RELEASE (glyphs[last_number]);
+	glyphs[last_number] = glyph;
+	if ((pfbs[pfb_id].used_chars)[last_number]) {
+	  lead = saved_lead;
+	}
+      } else {
+	RELEASE (glyph);
+	lead = saved_lead;
+      }
+      if (ident != NULL)
+	RELEASE (ident);
+      state = 2;
+      break;
+    }
+    skip_white (&start, end);
+    if (lead) {
+      memcpy (filtered_pointer, lead, start-lead);
+      filtered_pointer += start-lead;
+      lead = start;
     }
   }
 #ifdef MEM_DEBUG
   MEM_END
-#endif
-  return;
+#endif /* MEM_DEBUG */
+  return filtered_pointer-filtered;
 }
 
 static void dump_glyphs( char **glyphs)
@@ -416,111 +459,6 @@ static void dump_used( char *used_chars)
   return;
 }
 
-static unsigned long do_partial_header (unsigned char *filtered, unsigned char
-			*unfiltered, unsigned long length, 
-			char *chars_used, char **glyphs, char *fontname)
-{
-  char *start, *end, *tail, *ident;
-  pdf_obj *pdfobj;
-  unsigned char *filtered_pointer;
-  int state = 0;
-  start = (char *) unfiltered, end = (char *) unfiltered+length;
-  /* Skip first four bytes */
-  tail = start; filtered_pointer = filtered;
-  /* We use the following states:
-     state 0:  Nothing special.
-     state 1:  Saw /FontName
-     state 2:  Saw /Encoding */
-  skip_white (&start, end);
-  while (start < end) {
-    switch (state) {
-    case 0:
-      switch (*start) {
-      case '[':
-      case ']':
-      case '{':
-      case '}':
-	start += 1;
-	break;
-      case '(':
-	pdfobj = parse_pdf_string (&start, end);
-	pdf_release_obj (pdfobj);
-	break;
-      case '/':
-	start += 1;
-	ident = parse_ident (&start, end);
-	if (!strcmp (ident, "Encoding")) {
-	  memcpy (filtered_pointer, tail, start-tail);
-	  filtered_pointer += start-tail;
-	  /* Now substitute our own partial encoding */
-	  {
-	    int i;
-	    filtered_pointer += 
-	      sprintf ((char *) filtered_pointer,
-		       " 256 array \n0 1 255 {1 index exch /.notdef put} for\n");
-	    for (i=0; i<256; i++) {
-	      if (chars_used[i]) {
-		filtered_pointer +=
-		  sprintf ((char *) filtered_pointer, "dup %d /%s put\n", i, glyphs[i]);
-	      }
-	    }
-	    filtered_pointer += 
-	      sprintf ((char *) filtered_pointer, "readonly def");
-	  }
-	  state = 2;
-	} else if (!strcmp (ident, "FontName")) {
-	  memcpy (filtered_pointer, tail, start-tail);
-	  filtered_pointer += start-tail;
-	  filtered_pointer += 
-	    sprintf ((char *) filtered_pointer,
-		     " /%s def", fontname);
-	  state = 1;
-	}
-	RELEASE (ident);
-	break;
-      default:
-	ident = parse_ident (&start, end);
-	RELEASE (ident);
-	break;
-      }
-      break;
-    case 1:
-    case 2:
-      switch (*start) {
-      case '[':
-      case ']':
-      case '{':
-      case '}':
-	start += 1;
-	break;
-      case '(':
-	pdfobj = parse_pdf_string (&start, end);
-	pdf_release_obj (pdfobj);
-	break;
-      case '/':
-	start += 1;
-	ident = parse_ident (&start, end);
-	RELEASE (ident);
-	break;
-      default:
-	ident = parse_ident (&start, end);
-	if (!strcmp (ident, "def")) {
-	  tail = start;
-	  state = 0;
-	}
-	RELEASE (ident);
-	break;
-      }
-    }
-    skip_white (&start, end);
-  }
-  if (state != 0)
-    ERROR ("Premature end of header segment of PFB file");
-  memcpy (filtered_pointer, tail, end-tail);
-  filtered_pointer += end-tail;
-  return (filtered_pointer-filtered);
-}
-  
 #define ASCII 1
 #define BINARY 2
 
@@ -559,20 +497,12 @@ static unsigned long do_pfb_header (FILE *file, int pfb_id,
 	buffer[i] = '\n';  /* May not be portable to non-Unix
 			      systems */
     }
-    if (glyphs != NULL) {
-      parse_glyphs (buffer, length, glyphs);
-    } else {
-      glyphs = (encodings[pfbs[pfb_id].encoding_id]).glyphs;
-    }
     if (partial_enabled) {
-      filtered = NEW (length+glyph_length(glyphs)+256*14+100, unsigned char);
-      length = do_partial_header (filtered, buffer, length,
-				  pfbs[pfb_id].used_chars, glyphs, 
-				  pfbs[pfb_id].fontname);
+      filtered = NEW (length+strlen(pfbs[pfb_id].fontname)+1, unsigned char);
+      length = parse_header (filtered, buffer, length, pfb_id, glyphs);
       pdf_add_stream (pfbs[pfb_id].direct, (char *) filtered, length);
       RELEASE (filtered);
-    }
-    else {
+    } else {
       pdf_add_stream (pfbs[pfb_id].direct, (char *) buffer, length);
     }
   } else {
