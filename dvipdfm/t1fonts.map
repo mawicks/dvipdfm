@@ -158,6 +158,8 @@ pcrb8r 8r Courier-Bold
 pcrbo8r 8r Courier-BoldOblique
 % Courier
 pcrr8r 8r Courier
+% Narrow Courier
+pcrr8rn 8r Courier -e 0.85
 % Courier-Oblique
 pcrro8r 8r Courier-Oblique
 % Helvetica-Bold
