@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.41 1998/12/25 05:05:35 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.42 1998/12/25 06:38:59 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -401,6 +401,20 @@ static void parse_glyphs (unsigned char *buffer, unsigned long length,
   return;
 }
 
+static void dump_glyphs( char **glyphs)
+{
+  int i;
+  for (i=0; i<256; i++)
+    fprintf (stderr, "(%d/%s)", i, glyphs[i]);
+  return;
+}
+static void dump_used( char *used_chars)
+{
+  int i;
+  for (i=0; i<256; i++)
+    fprintf (stderr, "(%d/%d)", i, used_chars[i]);
+  return;
+}
 
 static unsigned long do_partial_header (unsigned char *filtered, unsigned char
 			*unfiltered, unsigned long length, 
@@ -510,6 +524,17 @@ static unsigned long do_partial_header (unsigned char *filtered, unsigned char
 #define ASCII 1
 #define BINARY 2
 
+static unsigned int glyph_length (char **glyphs) 
+{
+  int i;
+  unsigned result = 0;
+  for (i=0; i<256; i++) {
+    result += strlen (glyphs[i]);
+  }
+  return result;
+}
+
+
 static unsigned long do_pfb_header (FILE *file, int pfb_id,
 				    char **glyphs)
 {
@@ -517,7 +542,6 @@ static unsigned long do_pfb_header (FILE *file, int pfb_id,
   int stream_type;
   unsigned char *buffer, *filtered;
   unsigned long length, nread;
-  fprintf (stderr, "do_pfb_header\n");
   if ((ch = fgetc (file)) < 0 || ch != 128){
     fprintf (stderr, "Got %d, expecting 128\n", ch);
     ERROR ("type1_do_pfb_segment:  Are you sure this is a pfb?");
@@ -528,7 +552,6 @@ static unsigned long do_pfb_header (FILE *file, int pfb_id,
   }
   length = get_low_endian_quad (file);
   buffer = NEW (length, unsigned char);
-  filtered = NEW (length, unsigned char);
   if ((nread = fread(buffer, sizeof(unsigned char), length, file)) ==
       length) {
     for (i=0; i<nread; i++) {
@@ -542,10 +565,12 @@ static unsigned long do_pfb_header (FILE *file, int pfb_id,
       glyphs = (encodings[pfbs[pfb_id].encoding_id]).glyphs;
     }
     if (partial_enabled) {
+      filtered = NEW (length+glyph_length(glyphs)+256*14+100, unsigned char);
       length = do_partial_header (filtered, buffer, length,
 				  pfbs[pfb_id].used_chars, glyphs, 
 				  pfbs[pfb_id].fontname);
       pdf_add_stream (pfbs[pfb_id].direct, (char *) filtered, length);
+      RELEASE (filtered);
     }
     else {
       pdf_add_stream (pfbs[pfb_id].direct, (char *) buffer, length);
@@ -555,7 +580,6 @@ static unsigned long do_pfb_header (FILE *file, int pfb_id,
     ERROR ("type1_do_pfb_segment:  Are you sure this is a pfb?");
   }
   RELEASE (buffer);
-  RELEASE (filtered);
   return length;
 }
 
