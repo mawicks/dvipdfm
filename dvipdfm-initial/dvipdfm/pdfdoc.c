@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfdoc.c,v 1.2.2.2 1998/11/25 20:50:15 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfdoc.c,v 1.2.2.3 1998/11/26 02:05:54 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -371,6 +371,7 @@ void pdf_doc_add_outline (pdf_obj *dict)
   if (outline_depth < 1)
     ERROR ("Can't add to outline at depth < 1");
   new_entry = pdf_new_dict ();
+  pdf_merge_dict (new_entry, dict);
   /* Tell it where its parent is */
   pdf_add_dict (new_entry,
 		pdf_new_name ("Parent"),
@@ -386,18 +387,17 @@ void pdf_doc_add_outline (pdf_obj *dict)
 		  pdf_ref_obj (new_entry));
   }
   else {
-    /* Point our elder sister toward us */
-    pdf_add_dict (outline[outline_depth].entry,
-		  pdf_new_name ("Next"),
-		  pdf_ref_obj (new_entry));
     /* Point us back to sister */
     pdf_add_dict (new_entry,
 		  pdf_new_name ("Previous"),
 		  pdf_ref_obj (outline[outline_depth].entry));
+    /* Point our elder sister toward us */
+    pdf_add_dict (outline[outline_depth].entry,
+		  pdf_new_name ("Next"),
+		  pdf_ref_obj (new_entry));
     /* Bye-Bye sis */
     pdf_release_obj (outline[outline_depth].entry);
   }
-  pdf_merge_dict (new_entry, dict);
   outline[outline_depth].entry = new_entry;
   /* Just born, so don't have any kids */
   outline[outline_depth].kid_count = 0;

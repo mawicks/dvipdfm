@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfobj.c,v 1.9.2.1 1998/11/25 19:46:22 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfobj.c,v 1.9.2.2 1998/11/26 02:05:54 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -39,6 +39,7 @@ unsigned next_label = 1;
 FILE *pdf_output_file = NULL;
 FILE *pdf_input_file = NULL;
 unsigned long pdf_output_file_position = 0;
+int pdf_output_line_position = 0;
 char format_buffer[256];
 
 static struct xref_entry 
@@ -194,18 +195,33 @@ static void pdf_out_char (FILE *file, char c)
 {
   fputc (c, file);
   /* Keep tallys for xref table *only* if writing a pdf file */
-  if (file == pdf_output_file)
+  if (file == pdf_output_file) {
     pdf_output_file_position += 1;
+    pdf_output_line_position += 1;
+  }
+  if (file == pdf_output_file && c == '\n')
+    pdf_output_line_position = 0;
 }
 
 static void pdf_out (FILE *file, char *buffer, int length)
 {
   fwrite (buffer, 1, length, file);
   /* Keep tallys for xref table *only* if writing a pdf file */
-  if (file == pdf_output_file)
+  if (file == pdf_output_file) {
     pdf_output_file_position += length;
+    pdf_output_line_position += length;
+  }
 }
 
+static void pdf_out_white (FILE *file)
+{
+  if (file == pdf_output_file && pdf_output_line_position >= 80) {
+    pdf_out_char (file, '\n');
+  } else {
+    pdf_out_char (file, ' ');
+  }
+  return;
+}
 
 pdf_obj *pdf_new_obj(pdf_obj_type type)
 {
@@ -625,7 +641,7 @@ static void write_array (FILE *file, const struct pdf_array *array)
     pdf_write_obj (file, array -> this);
     array = array -> next;
     if (array -> next != NULL)
-      pdf_out_char (file, ' ');
+      pdf_out_white (file);
   }
   pdf_out_char (file, ']');
 }
@@ -687,7 +703,7 @@ static void write_dict (FILE *file, const struct pdf_dict *dict)
   pdf_out (file, "<<\n", 3);
   while (dict -> key != NULL) {
     pdf_write_obj (file, dict -> key);
-    pdf_out_char (file, ' ');
+    pdf_out_white (file);
     pdf_write_obj (file, dict -> value);
     dict = dict -> next;
     pdf_out_char (file, '\n');

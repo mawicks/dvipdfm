@@ -1,4 +1,4 @@
-% $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/doc/dvipdfm.tex,v 1.16.2.3 1998/11/25 19:46:22 mwicks Exp $
+% $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/doc/dvipdfm.tex,v 1.16.2.4 1998/11/26 02:05:53 mwicks Exp $
 \special{  pdf:  docview <</PageMode /UseOutlines>>}%
 \catcode`\ =11\def\space{ }\catcode`\ =10
 % Page layout
@@ -106,12 +106,12 @@
 %  
 \def\setheading#1{%
   {\headingfont\colored{\blue}{#1}}\raise\baselineskip
-  \hbox{\special{pdf: outline -2 << /Title (#1) /Dest [
+  \hbox{\special{pdf: outline 1 << /Title (#1) /Dest [
 @thispage /FitH @ypos ]  >> }}}%
 %
 \def\setsubheading#1{%
   {\subheadingfont\colored{\blue}{#1}}\raise\baselineskip
-  \hbox{\special{pdf: outline -1 << /Title (#1) /Dest [
+  \hbox{\special{pdf: outline 2 << /Title (#1) /Dest [
 @thispage /FitH @ypos ]  >> }}}%
 %
 \def\link#1#2{\setbox0\hbox{\setlink{#1}}%
