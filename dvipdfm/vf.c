@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/vf.c,v 1.20 1999/09/08 16:51:49 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/vf.c,v 1.21 2000/01/13 00:58:53 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -421,13 +421,14 @@ static void vf_putrule(unsigned char **start, unsigned char *end, mpt_t ptsize)
 
 static void vf_setrule(unsigned char **start, unsigned char *end, mpt_t ptsize)
 {
-  SIGNED_QUAD width, height;
+  SIGNED_QUAD width, height, s_width;
   height = signed_quad (start, end);
   width = signed_quad (start, end);
+  s_width = sqxfw(ptsize, width);
   if (width > 0 && height > 0) {
-    dvi_rule (sqxfw(ptsize,width), sqxfw(ptsize, height));
+    dvi_rule (s_width, sqxfw(ptsize, height));
   }
-  dvi_right (width*ptsize);
+  dvi_right (s_width);
   return;
 }
 
