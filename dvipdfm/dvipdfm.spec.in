@@ -37,6 +37,7 @@ make install
 %doc doc/mwicks.jpeg
 %doc doc/transistor.pdf
 %doc latex-support/dvipdfm.def
+%doc latex-support/hdvipdfm.def
 %doc latex-support/sample.tex
 %doc latex-support/something.pdf
 %doc latex-support/something.bb
