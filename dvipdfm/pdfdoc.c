@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.62 1999/09/19 06:32:18 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.63 1999/09/22 02:26:17 mwicks Exp $
  
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1245,12 +1245,14 @@ void pdf_doc_end_annot (void)
 void pdf_doc_flush_annot (void)
 {
   pdf_obj *rectangle, *new_dict;
+  double grow;
+  grow = pdf_special_tell_grow ();
   if (breaking_state.dirty) {
     rectangle = pdf_new_array ();
-    pdf_add_array (rectangle, pdf_new_number(ROUND(breaking_state.llx, 0.01)));
-    pdf_add_array (rectangle, pdf_new_number(ROUND(breaking_state.lly, 0.01)));
-    pdf_add_array (rectangle, pdf_new_number(ROUND(breaking_state.urx, 0.01)));
-    pdf_add_array (rectangle, pdf_new_number(ROUND(breaking_state.ury, 0.01)));
+    pdf_add_array (rectangle, pdf_new_number(ROUND(breaking_state.llx-grow, 0.01)));
+    pdf_add_array (rectangle, pdf_new_number(ROUND(breaking_state.lly-grow, 0.01)));
+    pdf_add_array (rectangle, pdf_new_number(ROUND(breaking_state.urx+grow, 0.01)));
+    pdf_add_array (rectangle, pdf_new_number(ROUND(breaking_state.ury+grow, 0.01)));
     new_dict = pdf_new_dict ();
     pdf_add_dict (new_dict, pdf_new_name ("Rect"),
 		  rectangle);

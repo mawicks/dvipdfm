@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.62 1999/09/19 15:58:46 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.63 1999/09/22 02:26:16 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -44,7 +44,7 @@
 
 static FILE *dvi_file;
 static char debug = 0;
-static unsigned num_loaded_fonts = 0, stackdepth;
+static unsigned num_loaded_fonts = 0, max_loaded_fonts = 0, stackdepth;
 static unsigned long *page_loc = NULL;
 static unsigned long post_location, dvi_file_size;
 static UNSIGNED_PAIR num_pages = 0;
@@ -63,7 +63,16 @@ struct loaded_font {
   int tfm_id;
   mpt_t size;
   int source;  /* Source is either DVI or VF */
-} loaded_fonts[MAX_FONTS];
+} *loaded_fonts = NULL;
+
+static void need_more_fonts (unsigned n) 
+{
+  if (num_loaded_fonts+n > max_loaded_fonts) {
+    max_loaded_fonts += MAX_FONTS;
+    loaded_fonts = RENEW (loaded_fonts, max_loaded_fonts, struct
+			  loaded_font);
+  }
+}
 
 struct font_def
 {
@@ -261,9 +270,6 @@ static void get_a_font_record (SIGNED_QUAD tex_id)
   def_fonts[num_def_fonts].tex_id = tex_id;
   def_fonts[num_def_fonts].used = 0;
   num_def_fonts +=1;
-  /*  font_id = dvi_locate_font (name, size);
-      loaded_fonts[font_id].source = DVI;
-      loaded_fonts[font_id].tex_id = tex_id; */
   return;
 }
 
@@ -272,7 +278,8 @@ static void get_dvi_fonts (void)
   UNSIGNED_BYTE code;
   SIGNED_QUAD tex_id;
   seek_absolute (dvi_file, post_location+29);
-  while (num_loaded_fonts < MAX_FONTS && (code = get_unsigned_byte(dvi_file)) != POST_POST) {
+  while ((code = get_unsigned_byte(dvi_file)) != POST_POST) {
+    need_more_fonts (1);
     switch (code)
       {
       case FNT_DEF1:
@@ -355,8 +362,7 @@ int dvi_locate_font (char *tex_name, mpt_t ptsize)
   }
   if (verbose)
     fprintf (stderr, "<%s@%.2fpt", tex_name, ptsize*dvi2pts);
-  if (num_loaded_fonts == MAX_FONTS)
-    ERROR ("dvi_locate_font:  Tried to load too many fonts\n");
+  need_more_fonts (1);
   /* This routine needs to be recursive/reentrant.  Load current high water
      mark into an automatic variable  */
   thisfont = num_loaded_fonts++;
@@ -1161,6 +1167,8 @@ void dvi_close (void)
     RELEASE (def_fonts);
   RELEASE (page_loc);
   num_loaded_fonts = 0;
+  if (loaded_fonts)
+    RELEASE (loaded_fonts);
   num_pages = 0;
   dvi_file = NULL;
   dev_close_all_fonts();

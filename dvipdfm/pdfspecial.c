@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.70 1999/09/19 15:58:47 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.71 1999/09/22 02:26:17 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -72,6 +72,16 @@ static void do_uxobj (char **start, char *end, double x_user, double
 		      y_user);
 
 static char ignore_colors = 0;
+static double annot_grow = 0.0;
+
+void pdf_special_set_grow (double g)
+{
+  annot_grow = g;
+}
+double pdf_special_tell_grow (void)
+{
+  return annot_grow;
+}
 
 void pdf_special_ignore_colors(void)
 {
@@ -504,10 +514,10 @@ MEM_START
   }
   if (!error && (result = parse_pdf_dict(start, end)) != NULL) {
     rectangle = pdf_new_array();
-    pdf_add_array (rectangle, pdf_new_number(ROUND(dev_phys_x(),0.01)));
-    pdf_add_array (rectangle, pdf_new_number(ROUND(dev_phys_y()-dvi_tell_mag()*p->depth,0.01)));
-    pdf_add_array (rectangle, pdf_new_number(ROUND(dev_phys_x()+dvi_tell_mag()*p->width,0.01)));
-    pdf_add_array (rectangle, pdf_new_number(ROUND(dev_phys_y()+dvi_tell_mag()*p->height,0.01)));
+    pdf_add_array (rectangle, pdf_new_number(ROUND(dev_phys_x()-annot_grow,0.01)));
+    pdf_add_array (rectangle, pdf_new_number(ROUND(dev_phys_y()-dvi_tell_mag()*p->depth-annot_grow,0.01)));
+    pdf_add_array (rectangle, pdf_new_number(ROUND(dev_phys_x()+dvi_tell_mag()*p->width+annot_grow,0.01)));
+    pdf_add_array (rectangle, pdf_new_number(ROUND(dev_phys_y()+dvi_tell_mag()*p->height+annot_grow,0.01)));
     pdf_add_dict (result, pdf_new_name ("Rect"),
 		  rectangle);
     pdf_doc_add_to_page_annots (pdf_ref_obj (result));
@@ -559,6 +569,7 @@ MEM_END
 #endif
   return;
 }
+
 static void do_eann(char **start, char *end)
 {
 #ifdef MEM_DEBUG

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.59 1999/09/20 19:16:33 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.60 1999/09/22 02:26:16 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -187,6 +187,28 @@ static void do_args (int argc, char *argv[])
 	  result = parse_number (&start, end);
 	  if (result != NULL && start == end) {
 	    mag = atof (result);
+	  }
+	  else {
+	    fprintf (stderr, "\nError in number following magnification specification\n\n");
+	    usage();
+	  }
+	  if (result != NULL) {
+	    RELEASE (result);
+	  }
+	}
+	pop_arg();
+	break;
+      case 'g':
+	if (argc < 2) {
+	  fprintf (stderr, "\nAnnotation \"grow\" specification missing a number\n\n");
+	  usage();
+	}
+	{
+	  char *result, *end, *start = argv[1];
+	  end = start + strlen(argv[1]);
+	  result = parse_number (&start, end);
+	  if (result != NULL && start == end) {
+	    pdf_special_set_grow (atof (result));
 	  }
 	  else {
 	    fprintf (stderr, "\nError in number following magnification specification\n\n");

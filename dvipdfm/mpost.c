@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.22 1999/09/10 02:31:08 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.23 1999/09/22 02:26:16 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -64,8 +64,19 @@ static struct mp_fonts
   char *tex_name;
   int font_id;
   double pt_size;
-} mp_fonts[MAX_FONTS];
-int n_mp_fonts = 0;
+} *mp_fonts = NULL;
+
+int n_mp_fonts = 0, max_mp_fonts = 0;
+
+static void need_more_mp_fonts (unsigned n)
+{
+  if (n_mp_fonts + n > max_mp_fonts) {
+    max_mp_fonts += MAX_FONTS;
+    mp_fonts = RENEW (mp_fonts, max_mp_fonts, struct mp_fonts);
+  }
+}
+
+
 
 int mp_locate_font (char *tex_name, double pt_size)
 {
@@ -75,9 +86,7 @@ int mp_locate_font (char *tex_name, double pt_size)
 	mp_fonts[i].pt_size == pt_size)
       break;
   }
-  if (n_mp_fonts >= MAX_FONTS) {
-    ERROR ("Too many fonts in mp_locate_font()");
-  }
+  need_more_mp_fonts (1);
   if (i == n_mp_fonts) {
     n_mp_fonts += 1;
     mp_fonts[i].tex_name = NEW (strlen(tex_name), char);
@@ -100,6 +109,8 @@ static void release_fonts (void)
     RELEASE (mp_fonts[i].tex_name);
   }
   n_mp_fonts = 0;
+  if (mp_fonts)
+    RELEASE (mp_fonts);
 }
 
 int mp_is_font_name (char *tex_name)

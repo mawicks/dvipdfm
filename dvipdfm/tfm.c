@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.27 1999/09/19 04:56:41 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.28 1999/09/22 02:26:17 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -68,8 +68,16 @@ struct a_tfm
   fixword *unpacked_depths;
 };
 
-struct a_tfm tfm[MAX_FONTS];
-static unsigned numtfms = 0; /* numtfms should equal numfonts in dvi.c */
+struct a_tfm *tfm = NULL;
+static unsigned numtfms = 0, max_tfms = 0; /* numtfms should equal
+					      numfonts in dvi.c */
+static void need_more_tfms (unsigned n)
+{
+  if (numtfms + n > max_tfms) {
+    max_tfms += MAX_FONTS;
+    tfm = RENEW (tfm, max_tfms, struct a_tfm);
+  }
+}
 
 static void invalid_tfm_file (void)
 {
@@ -305,9 +313,7 @@ int tfm_open (const char *tfm_name)
       fprintf (stderr, "\n%s: ", tfm_name);
       ERROR ("tfm_open:  Unable to find TFM file");
     }
-    if (numtfms >= MAX_FONTS) {
-      ERROR ("tfm_open:  Tried to open too many TFM files!");
-    }
+    need_more_tfms (1);
     if (!(tfm_file = FOPEN (full_tfm_file_name, FOPEN_RBIN_MODE))) {
       fprintf (stderr, "tfm_open: %s\n", tfm_name);
     ERROR ("tfm_open:  Specified TFM file cannot be opened");
@@ -357,6 +363,8 @@ void tfm_close_all(void)
     RELEASE (tfm[i].unpacked_heights);
     RELEASE (tfm[i].unpacked_depths);
   }
+  if (tfm)
+    RELEASE (tfm);
 }
 
 /* tfm_get_width returns the width of the font
