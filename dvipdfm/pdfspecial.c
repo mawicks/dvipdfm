@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.57 1999/09/05 01:35:35 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.58 1999/09/05 02:10:59 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -467,7 +467,11 @@ static void do_pagesize(char **start, char *end)
     error = 1;
   }
   if (!error)
-    dev_set_page_size (p->width, p->depth + p->height);
+    /* Since these are physical dimensions, they need to be scaled by
+       mag.  "Virtual" dimensions are scaled by a transformation
+       matrix.  Physical dimensions (e.g, page size and annotations)
+       cannot */
+    dev_set_page_size (dvi_tell_mag()*p->width, dvi_tell_mag()*(p->depth + p->height));
   release_xform_info (p);
   return;
 }
