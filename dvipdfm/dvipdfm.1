@@ -12,10 +12,55 @@ dvipdfm \- Produce PDF files directly from DVI files
 .SH DESCRIPTION
 The program
 .B dvipdfm
-produces a PDF file directly from a DVI file.  
-
+produces a PDF file directly from a DVI file.  DVI files
+are produced by TeX, and (optionally) by
+.B groff
+using
+.BR grodvi .
+The program
+.B dvipdfm
+recognizes a wide range of commonly used
+.BR \especial "s"
+(extensions to the DVI format) that allow it to
+process documents containing, for example, color, hyperlinks,
+and
+.B gpic
+output.  For more details, see the 
+.I "Dvipdfm User's Manual,"
+which is distributed with
+.B dvipdfm.
 
 .SH OPTIONS
+
+.TP 5
+.B \-\^c
+Ignore color
+.BR \especials .
+The
+.B \-\^c
+toggles a flag that disables color
+.B \especial
+processing.
+Unless changed in the configuration file,
+that flag is off, and color
+.BR \especial "s"
+are interpreted normally.
+The
+.B \-\^c
+option may be used to produce a black and white document
+from a document containing color TeX
+.B \especial
+commands.
+
+.TP 5
+.B \-\^e
+Toggle partial font embedding flag.  If partial
+font embedding is off, embedded fonts are
+.I fully
+embedded.
+The default, if not changed in the configuration file,
+is to embed only those glyphs actually used in the document.
+
 .TP 5
 .B -l
 Select landscape mode by exchanging the 
@@ -23,20 +68,6 @@ Select landscape mode by exchanging the
 and
 .I y
 dimensions of the paper.
-
-.TP 5
-.B -c
-Ignore color specials.  The
-.B -c
-option may be used to produce a black and white document
-from a document containing color TeX special commands.
-
-.TP 5
-.B \-\^e
-Toggle partial font embedding flag.  When partial
-font embedding is off, fonts are fully embedded.
-The default, if not changed in the configuration file,
-is to embed only those glyphs actually used in the document.
 
 .TP 5
 .B \-\^m " mag"
@@ -69,7 +100,7 @@ Select the pages of the DVI file to be converted.
 The
 .I page_specification 
 consists of a comma separated list of
-.I page ranges.
+.I page_ranges.
 Each
 .I page_range
 consists of a 
@@ -84,14 +115,14 @@ is implied to be the first page of the DVI file.
 An empty
 .I last_page
 is treated as the last page of the DVI file
-(e.g., "
-.B \-\^s \-
-" includes all pages, "
-.B \-\^s \-,\-
-" includes two copies of all pages in the DVI file,
-and "
-.B \-\^s 1\-10
-" includes the first ten pages of the DVI file.)
+(e.g.,
+.BR "" `` "\-\^s \-" ''
+includes all pages,
+.BR "" `` "\-\^s \-,\-" ''
+includes two copies of all pages in the DVI file,
+and
+.BR `` "\-\^s 1\-10" ''
+includes the first ten pages of the DVI file.)
 
 .TP 5
 .B \-\^v 
@@ -125,7 +156,7 @@ The dimension may be specified in any units understood by TeX (e.g.,
 .B \-\^z compression_level
 Set the compression level to 
 .IR compression_level .
-The compressions levels range from 0 (no compression) to
+Compressions levels range from 0 (no compression) to
 9 (maximum compression) and correspond to the values understood by zlib.
 
 
@@ -135,6 +166,9 @@ The compressions levels range from 0 (no compression) to
 
 .SH "SEE ALSO"
 .BR tex "(1), " dvips "(1)"
+and the
+.I "Kpathsea library"
+info documentation.
 
 .SH AUTHOR
 Mark A. Wicks
