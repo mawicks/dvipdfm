@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.12 1998/12/03 21:41:24 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.13 1998/12/03 22:38:11 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -55,6 +55,10 @@ static void do_image();
 static pdf_obj *jpeg_build_object(struct jpeg *jpeg,
 			   double x_user, double y_user,
 			   struct xform_info *p);
+static void do_bxobj (char **start, char *end,
+		      double x_user, double y_user);
+static void do_exobj (void);
+static void do_uxobj (char **start, char *end);
 
 static void do_bop(char **start, char *end)
 {
@@ -946,6 +950,9 @@ static int is_pdf_special (char **start, char *end)
 #define BXFORM 23
 #define EXFORM 24
 #define PAGESIZE 25
+#define BXOBJ 26
+#define EXOBJ 27
+#define UXOBJ 28
 
 struct pdfmark
 {
@@ -999,7 +1006,13 @@ struct pdfmark
   {"endtransform", EXFORM},
   {"endtrans", EXFORM},
   {"etrans", EXFORM},
-  {"et", EXFORM}
+  {"et", EXFORM},
+  {"beginxobj", BXOBJ},
+  {"bxobj", BXOBJ},
+  {"endxobj", EXOBJ},
+  {"exobj", EXOBJ},
+  {"usexobj", UXOBJ},
+  {"usexobj", UXOBJ}
 };
 
 static int parse_pdfmark (char **start, char *end)
@@ -1288,6 +1301,15 @@ void pdf_parse_special(char *buffer, UNSIGNED_QUAD size, double
   case PAGESIZE:
     do_pagesize(&start, end);
     break;
+  case BXOBJ:
+    do_bxobj (&start, end, x_user, y_user);
+    break;
+  case EXOBJ:
+    do_exobj ();
+    break;
+  case UXOBJ:
+    do_uxobj (&start, end);
+    break;
   }
 }
 
@@ -1377,4 +1399,71 @@ pdf_obj *jpeg_build_object(struct jpeg *jpeg, double x_user, double
   sprintf (work_buffer, " /Im%d Do Q ", num_images);
   pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
   return (xobject);
+}
+
+static void do_bxobj (char **start, char *end, double x_user, double y_user)
+{
+  char *objname;
+  pdf_obj *xobject;
+  struct xform_info *p;
+  skip_white(start, end);
+  if ((objname = parse_opt_ident(start, end)) == NULL) {
+    fprintf (stderr, "\nSpecial: beginxobj:  A form XObject must be named\n");
+    return;
+  }
+  p = new_xform_info ();
+  skip_white(start, end);
+  while ((*start) < end && isalpha (**start)) {
+    skip_white(start, end);
+    if (!parse_dimension(start, end, p)) {
+      fprintf (stderr, "\nFailed to find a valid dimension here\n");
+      dump (*start, end);
+      return;
+    }
+  }
+  if (p->scale != 0.0 || p->xscale != 0.0 || p->yscale != 0.0) {
+    fprintf (stderr, "\nScale information is meaningless for form xobjects\n");
+    return;
+  }
+  if (p->width == 0.0 || p->depth+p->height == 0.0) {
+    fprintf (stderr, "Special: bxobj: Bounding box has a zero dimension\n");
+  }
+  xobject = begin_form_xobj (x_user, y_user-p->depth, x_user+p->width,
+			     y_user+p->height);
+  add_reference (objname, xobject, NULL);
+  /* Next line has Same explanation as for do_ann.  Clumsy
+     has the desired effect.  This module is done with xobject.
+     It's still linked in the doc module, which will release
+     it when it's finished. */
+  release_reference (objname);
+  release (objname);
+}
+
+static void do_exobj (void)
+{
+  end_form_xobj();
+}
+
+static void do_uxobj (char **start, char *end)
+{
+  char *objname, *res_name;
+  pdf_obj *xobj_res;
+  skip_white (start, end);
+  if ((objname = parse_opt_ident(start, end)) == NULL) {
+    fprintf (stderr, "\nSpecial: usexobj:  A form XObject must be named\n");
+    return;
+  }
+  if ((res_name = lookup_ref_res_name (objname)) == NULL) {
+    fprintf (stderr, "\nSpecial: usexobj:  Specified XObject doesn't exist: %s\n", 
+	     objname);
+    return;
+  }
+  if ((xobj_res = lookup_reference (objname)) == NULL) {
+    fprintf (stderr, "\nSpecial: usexobj:  Couldn't find reference to XObject: %s\n",
+	     objname);
+  }
+  release (objname);
+  sprintf (work_buffer, " Do /%s ", res_name);
+  pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
+  pdf_doc_add_to_page_xobjects (res_name, xobj_res);
 }

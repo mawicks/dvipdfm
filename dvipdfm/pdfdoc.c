@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.11 1998/12/03 20:19:48 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.12 1998/12/03 22:38:11 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -918,6 +918,7 @@ pdf_obj *begin_form_xobj (double bbllx, double bblly, double bburx,
     fprintf (stderr, "\nCannot next form XObjects\n");
     return NULL;
   }
+  dev_close_all_xforms();
   xobject_pending = 1;
   /* This is a hack.  We basically treat an xobj as a separate mini
      page unto itself.  Save all the page structures and reinitialize them. */
@@ -937,12 +938,18 @@ pdf_obj *begin_form_xobj (double bbllx, double bblly, double bburx,
   /* Resource is already made, so call doc_make_form_xobj() */
   doc_make_form_xobj (this_page_contents, bbox,
 		      pdf_ref_obj(current_page_resources));
+  /* Make sure the object is self-contained by adding the
+     current font to the object stream */
+  dev_reselect_font();
+  /* Likewise for color */
+  dev_do_color();
   return pdf_link_obj (this_page_contents);
 }
 
 void end_form_xobj (void)
 {
   xobject_pending = 0;
+  dev_close_all_xforms();
   pdf_release_obj (current_page_resources);
   pdf_release_obj (this_page_xobjects);
   pdf_release_obj (this_page_fonts);
@@ -951,6 +958,11 @@ void end_form_xobj (void)
   this_page_xobjects = save_page_xobjects;
   this_page_fonts = save_page_fonts;
   this_page_contents = save_page_contents;
+  /* Must reselect the font again in case there was a font change in
+     the object */
+  dev_reselect_font();
+  /* Must reselect color too */
+  dev_do_color();
   return;
 }
 

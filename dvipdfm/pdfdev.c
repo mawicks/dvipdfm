@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.8 1998/12/03 16:30:08 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.9 1998/12/03 22:38:11 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -321,7 +321,7 @@ static void dev_clear_color_stack (void)
   return;
 }
 
-static void dev_do_color (void) 
+void dev_do_color (void) 
 {
   if (num_colors == 0) {
     pdf_doc_add_to_page (" 0 g 0 G ", 9);
@@ -452,7 +452,7 @@ void dev_end_xform (void)
   return;
 }
 
-static void dev_close_all_xforms (void)
+void dev_close_all_xforms (void)
 {
   if (num_transforms)
     fprintf (stderr, "\nspecial: Closing pending transformations at end of page\n");
@@ -555,6 +555,25 @@ void dev_select_font (long tex_font_id)
   pdf_doc_add_to_page_fonts (dev_font[i].short_name,
 			     pdf_link_obj(dev_font[i].font_resource));
 }
+/* The following routine is here for forms.  Since
+   a form is self-contained, it will need its own Tf command
+   at the beginningg even if it is continuing to set type
+   in the current font.  This routine simply reinstantuates
+   the current font. */
+void dev_reselect_font(void)
+{
+  if (current_font >= 0) {
+  text_mode();
+  sprintf (format_buffer, " /%s %g Tf ", dev_font[current_font].short_name,
+	   ROUND(dev_font[current_font].ptsize*DPI/72,0.01));
+  pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
+  /* Add to Font list in Resource dictionary for the object (which
+     acts like a mini page so it uses pdf_doc_add_to_page_fonts()*/
+  pdf_doc_add_to_page_fonts (dev_font[current_font].short_name,
+			     pdf_link_obj(dev_font[current_font].font_resource));
+  }
+}
+
 
 void dev_set_char (unsigned ch, double width)
 {
