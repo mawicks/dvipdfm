@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tpic.c,v 1.16 1999/09/06 18:31:57 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tpic.c,v 1.17 1999/09/08 16:51:48 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -24,10 +24,11 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include "tpic.h"
-#include "pdfparse.h"
+#include "system.h"
 #include "mem.h"
 #include "mfileio.h"
+#include "tpic.h"
+#include "pdfparse.h"
 #include "pdfdoc.h"
 #include "dvi.h"
 

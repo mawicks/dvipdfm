@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.20 1999/09/06 14:48:12 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.21 1999/09/08 16:51:46 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -25,19 +25,18 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <math.h>
-
+#include <string.h>
 #include "system.h"
+#include "mem.h"
+#include "error.h"
 #include "mfileio.h"
 #include "dvi.h"
 #include "pdfobj.h"
 #include "pdfspecial.h"
 #include "pdfparse.h"
 #include "mpost.h"
-#include "string.h"
 #include "pdfparse.h"
-#include "mem.h"
 #include "pdflimits.h"
-#include "error.h"
 #include "pdfdev.h"
 #include "pdfdoc.h"
 
@@ -1127,7 +1126,7 @@ int parse_contents (FILE *image_file)
     skip_white (&start, end);
     while (start < end && !error) {
       save = start;
-      if (isdigit (*start) || *start == '-') {
+      if (isdigit (*start) || *start == '-' || *start == '.' ) {
 	token = parse_number (&start, end);
 	PUSH (pdf_new_number(atof(token)));
 	RELEASE (token);
@@ -1161,7 +1160,7 @@ int do_raw_ps_special (char **start, char* end, int cleanup)
   skip_white (start, end);
   while (*start < end && !error) {
     save = *start;
-    if (isdigit (**start) || **start == '-') {
+    if (isdigit (**start) || **start == '-' || **start == '.') {
       token = parse_number (start, end);
       PUSH (pdf_new_number(atof(token)));
       RELEASE (token);

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mfileio.c,v 1.6 1999/08/15 04:54:55 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mfileio.c,v 1.7 1999/09/08 16:51:46 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -22,10 +22,11 @@
 	mwicks@kettering.edu
 */
 
-#include "mfileio.h"
-#include "error.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include "system.h"
+#include "mfileio.h"
+#include "error.h"
 
 #ifdef IODEBUG 
 static FILE *iodebug_file = NULL;

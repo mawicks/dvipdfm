@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.26 1999/09/06 19:11:34 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.27 1999/09/08 16:51:46 mwicks Exp $
 
     This is ebb, a bounding box extraction program.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -25,12 +25,12 @@
 #include <time.h>
 #include <string.h>
 #include "system.h"
+#include "mem.h"
 #include "mfileio.h"
+#include "numbers.h"
 #include "pdfobj.h"
 #include "jpeg.h"
-#include "mem.h"
 #include "pdfparse.h"
-#include "numbers.h"
 
 #include "config.h"
 

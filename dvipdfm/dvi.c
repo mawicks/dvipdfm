@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.59 1999/09/06 02:15:09 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.60 1999/09/08 16:51:45 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -27,17 +27,17 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include "system.h"
+#include "mem.h"
 #include "error.h"
-#include "numbers.h"
 #include "mfileio.h"
+#include "numbers.h"
+#include "dvi.h"
+#include "dvicodes.h"
 #include "pdflimits.h"
 #include "pdfdev.h"
 #include "pdfdoc.h"
 #include "tfm.h"
-#include "mem.h"
-#include "dvi.h"
 #include "vf.h"
-#include "dvicodes.h"
 
 
 /* Interal Variables */

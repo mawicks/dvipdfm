@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/psspecial.c,v 1.5 1999/09/06 02:15:11 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/psspecial.c,v 1.6 1999/09/08 16:51:48 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -51,7 +51,7 @@
 struct keys
 {
   char *key;
-  int val;
+  int id;
 } keys[] = {
   {"hoffset", HOFFSET},
   {"voffset", VOFFSET},
@@ -66,7 +66,7 @@ struct keys
   {"urx", URX},
   {"ury", URY},
   {"rwi", RWI},
-  {"rhi", RHI}
+  {"rhi", RHI},
 };
 
 static int parse_psfile (char **start, char *end, double x_user, double y_user) 
@@ -83,7 +83,7 @@ static int parse_psfile (char **start, char *end, double x_user, double y_user)
     skip_white (start, end);
     while (*start < end) {
       parse_key_val (start, end, &key, &val);
-      if (key && val) {
+      if (key) {
 	int i;
 	for (i=0; i<sizeof(keys)/sizeof(keys[0]); i++) {
 	  if (!strcmp (key, keys[i].key))
@@ -93,58 +93,72 @@ static int parse_psfile (char **start, char *end, double x_user, double y_user)
 	  fprintf (stderr, "\nUnknown key in special: %s\n", key);
 	  break;
 	}
-	switch (keys[i].val) {
-	case HOFFSET:
-	  hoffset = atof (val);
-	  break;
-	case VOFFSET:
-	  voffset = atof (val);
-	  break;
-	case HSIZE:
-	  hsize = atof (val);
-	  break;
-	case VSIZE:
-	  vsize = atof (val);
-	  break;
-	case HSCALE:
-	  p -> xscale = atof(val)/100.0;
-	  break;
-	case VSCALE:
-	  p -> yscale = atof(val)/100.0;
-	  break;
-	case ANGLE:
-	  p -> rotate = atof(val)/100.0;
-	  break;
-	case CLIP:
-	  break;
-	case LLX:
-	  p -> user_bbox = 1;
-	  p -> llx = atof(val);
-	  break;
-	case LLY:
-	  p -> user_bbox = 1;
-	  p -> lly = atof(val);
-	  break;
-	case URX:
-	  p -> user_bbox = 1;
-	  p -> urx = atof(val);
-	  break;
-	case URY:
-	  p -> user_bbox = 1;
-	  p -> ury = atof(val);
-	  break;
-	case RWI:
-	  p -> width = atof(val)/10.0;
-	  break;
-	case RHI:
-	  p -> height = atof(val)/10.0;
-	  break;
+	if (val) {
+	  switch (keys[i].id) {
+	  case HOFFSET:
+	    hoffset = atof (val);
+	    break;
+	  case VOFFSET:
+	    voffset = atof (val);
+	    break;
+	  case HSIZE:
+	    hsize = atof (val);
+	    break;
+	  case VSIZE:
+	    vsize = atof (val);
+	    break;
+	  case HSCALE:
+	    p -> xscale = atof(val)/100.0;
+	    break;
+	  case VSCALE:
+	    p -> yscale = atof(val)/100.0;
+	    break;
+	  case ANGLE:
+	    p -> rotate = atof(val)/100.0;
+	    break;
+	  case LLX:
+	    p -> user_bbox = 1;
+	    p -> llx = atof(val);
+	    break;
+	  case LLY:
+	    p -> user_bbox = 1;
+	    p -> lly = atof(val);
+	    break;
+	  case URX:
+	    p -> user_bbox = 1;
+	    p -> urx = atof(val);
+	    break;
+	  case URY:
+	    p -> user_bbox = 1;
+	    p -> ury = atof(val);
+	    break;
+	  case RWI:
+	    p -> width = atof(val)/10.0;
+	    break;
+	  case RHI:
+	    p -> height = atof(val)/10.0;
+	    break;
+	  default:
+	    fprintf (stderr, "\nPSfile key \"%s=%s\" not recognized",
+		     key, val);
+	    error = 1;
+	  }
+	  RELEASE (val);
+	} else {  /* Keywords without values */
+	  switch (keys[i].id) {
+	  case CLIP: /* Ignore */
+	    break;
+	  default:
+	    fprintf (stderr, "\nPSfile key \"%s\" not recognized\n",
+		     key);
+	    error = 1;
+	  }
 	}
-	RELEASE (val);
+	RELEASE (key);
+      } else {
+	fprintf (stderr, "\nError parsing PSfile special\n");
       }
       skip_white (start, end);
-      if (key)
-	RELEASE (key);
     } /* If here and *start == end we got something */
     if (*start == end && validate_image_xform_info (p)) {
       pdf_obj *result;
@@ -153,7 +167,7 @@ static int parse_psfile (char **start, char *end, double x_user, double y_user)
 	pdf_release_obj (result);
     }
   } else {
-    fprintf (stderr, "\nError parsing PSfile special\n");
+    fprintf (stderr, "\nPSfile special has no filename\n");
     error = 1;
   }
   if (filename)

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.c,v 1.28 1999/09/06 18:31:56 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.c,v 1.29 1999/09/08 16:51:47 mwicks Exp $
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
 
@@ -27,15 +27,15 @@
 #include <ctype.h>
 #include <string.h>
 #include "system.h"
+#include "mem.h"
+#include "mfileio.h"
+#include "numbers.h"
+#include "dvi.h"
 #include "pdfparse.h"
 #include "pdfspecial.h"
 #include "pdfobj.h"
 #include "pdfdoc.h"
 #include "pdfdev.h"
-#include "numbers.h"
-#include "mem.h"
-#include "dvi.h"
-#include "mfileio.h"
 
 #define verbose 0
 #define debug 0
@@ -642,9 +642,8 @@ pdf_obj *parse_pdf_object (char **start, char *end)
   return result;
 }
 
-int  parse_key_val (char **start, char *end, char **key, char **val) 
+void parse_key_val (char **start, char *end, char **key, char **val) 
 {
-  char *save = *start;
   *key = NULL;
   *val = NULL;
   skip_white (start, end);
@@ -662,13 +661,6 @@ int  parse_key_val (char **start, char *end, char **key, char **val)
 	}
       }
   }
-  if (!*key || !*val) {
-    fprintf (stderr, "\nExpecting key=value pair\n");
-    dump (save, end);
-    if (*key) RELEASE (*key);
-    return 0;
-  }
-  return 1;
 }
 
 

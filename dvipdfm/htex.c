@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/htex.c,v 1.5 1999/09/06 02:15:10 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/htex.c,v 1.6 1999/09/08 16:51:46 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -24,13 +24,14 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include "htex.h"
-#include "pdfparse.h"
+#include <ctype.h>
+#include "system.h"
 #include "mem.h"
 #include "mfileio.h"
-#include "pdfdoc.h"
 #include "dvi.h"
-#include "ctype.h"
+#include "htex.h"
+#include "pdfparse.h"
+#include "pdfdoc.h"
 
 static int is_htex_special (char **start, char *end)
 {
@@ -241,14 +242,15 @@ int htex_parse_special(char *buffer, UNSIGNED_QUAD size)
       case IMAGE:
 	fprintf (stderr, "\nImage html tag not yet implemented\n");
 	parse_key_val (&buffer, end, &key, &value);
-	RELEASE (key);
-	RELEASE (value);
+	if (key) RELEASE (key);
+	if (value) RELEASE (value);
 	break;
       case BASE:
 	parse_key_val (&buffer, end, &key, &value);
 	if (key && value)
 	  html_set_base (value);
-	RELEASE (key);
+	if (key)
+	  RELEASE (key);
 	break;
       case END_ANCHOR:
 	html_end_anchor ();

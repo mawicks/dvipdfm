@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pkfont.c,v 1.13 1999/09/06 02:15:10 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pkfont.c,v 1.14 1999/09/08 16:51:48 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -23,15 +23,15 @@
 */
 
 #include <stdio.h>
+#include "system.h"
+#include "mem.h"
+#include "error.h"
+#include "mfileio.h"
+#include "numbers.h"
 #include "pkfont.h"
 #include "pdfobj.h"
-#include "mfileio.h"
 #include "pdflimits.h"
-#include "mem.h"
 #include "tfm.h"
-#include "error.h"
-#include "system.h"
-#include "numbers.h"
 #include "ctype.h"
 
 pdf_obj *pk_encoding_ref = NULL;

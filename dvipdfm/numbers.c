@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/numbers.c,v 1.10 1999/02/21 14:30:21 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/numbers.c,v 1.11 1999/09/08 16:51:46 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -22,10 +22,10 @@
 	mwicks@kettering.edu
 */
 
-	
-#include "numbers.h"
+#include "system.h"	
 #include "error.h"
 #include "mfileio.h"
+#include "numbers.h"
 
 UNSIGNED_BYTE get_unsigned_byte (FILE *file)
 {

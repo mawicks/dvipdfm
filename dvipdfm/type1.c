@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.88 1999/09/06 02:15:11 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.89 1999/09/08 16:51:49 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -31,10 +31,10 @@
 #include <time.h>
 #include <ctype.h>
 #include "system.h"
-#include "pdfobj.h"
 #include "mem.h"
 #include "error.h"
 #include "mfileio.h"
+#include "pdfobj.h"
 #include "numbers.h"
 #include "type1.h"
 #include "tfm.h"
@@ -646,6 +646,7 @@ static char *pfb_find_name (FILE *pfb_file)
     case ']':  
     case '{':
     case '}':
+      start += 1;
       if (state == 1) {
 	ERROR ("Garbage following /FontName");
       }

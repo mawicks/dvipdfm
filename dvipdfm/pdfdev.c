@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.90 1999/09/06 14:48:13 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.91 1999/09/08 16:51:46 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -26,15 +26,18 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
+#include "system.h"
+#include "mem.h"
+#include "error.h"
+#include "mfileio.h"
+#include "numbers.h"
+#include "dvi.h"
+#include "tfm.h"
 #include "pdfdev.h"
 #include "pdfdoc.h"
 #include "pdfobj.h"
-#include "error.h"
-#include "numbers.h"
 #include "type1.h"
 #include "pkfont.h"
-#include "mem.h"
-#include "mfileio.h"
 #include "pdfspecial.h"
 #include "pdfparse.h"
 #include "tpic.h"
@@ -43,8 +46,6 @@
 #include "psspecial.h"
 #include "colorsp.h"
 #include "pdflimits.h"
-#include "tfm.h"
-#include "dvi.h"
 
 /* Internal functions */
 static void dev_clear_color_stack (void);

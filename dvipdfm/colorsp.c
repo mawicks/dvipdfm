@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/colorsp.c,v 1.5 1999/09/06 18:31:56 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/colorsp.c,v 1.6 1999/09/08 16:51:45 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -152,7 +152,8 @@ static void local_set_paper_size (char **start, char *end)
   char *key, *val, *val_start, *val_end, *number;
   char *save = *start;
   double width = 0.0, height = 0.0, unit;
-  if (parse_key_val (start, end, &key, &val)) {
+  parse_key_val (start, end, &key, &val);
+  if (key && val) {
     val_start = val;
     val_end = val+strlen(val);
     skip_white (&val_start, val_end);
