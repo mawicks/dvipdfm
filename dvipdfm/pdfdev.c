@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.35 1998/12/11 21:18:33 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.36 1998/12/11 23:05:28 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -760,14 +760,14 @@ void dev_rule (mpt_t xpos, mpt_t ypos, mpt_t width, mpt_t height)
    coordinate with origin at bottom left of page.  All other
    coordinates in this routine are in TeX style coordinates */
 
-double dev_tell_x (void)
+double dev_phys_x (void)
 {
-  return dvi_dev_xpos();
+  return dvi_dev_xpos()+HOFFSET;
 }
 
-double dev_tell_y (void)
+double dev_phys_y (void)
 {
-  return dev_page_height()+dvi_dev_ypos();
+  return dev_page_height()+dvi_dev_ypos()-VOFFSET;
 }
 
 

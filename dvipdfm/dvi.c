@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.21 1998/12/11 21:18:32 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.22 1998/12/11 23:05:28 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -514,12 +514,12 @@ void dvi_complete (void)
 #define VOFFSET 72.0
 double dvi_dev_xpos (void)
 {
-  return dvi_state.h*dvi2pts+HOFFSET;
+  return dvi_state.h*dvi2pts;
 }
 
 double dvi_dev_ypos (void)
 {
-  return -(dvi_state.v*dvi2pts+VOFFSET);
+  return -(dvi_state.v*dvi2pts);
 }
 
 static mpt_t dvi_dev_xpos_mpt (void)
