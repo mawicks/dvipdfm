@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfobj.c,v 1.9.2.6 1998/11/26 13:46:35 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfobj.c,v 1.9.2.7 1998/11/26 13:51:42 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -638,6 +638,7 @@ static void write_array (FILE *file, const struct pdf_array *array)
 {
   if (array -> next == NULL) {
     write_null (file);
+    return;
   }
   pdf_out_char (file, '[');
   while (array -> next != NULL) {
