@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.70 2000/10/13 02:13:00 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.71 2000/10/27 02:25:00 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1220,7 +1220,7 @@ void dvi_vf_init (int dev_font_id)
   if (num_saved_fonts < MAX_VF_NESTING) {
     saved_dvi_font[num_saved_fonts++] = current_font;
   } else
-    ERROR ("Virtual font nested too deep");
+    ERROR ("Virtual fonts nested too deeply!");
   current_font = dev_font_id;
 }
 

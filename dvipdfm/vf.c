@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/vf.c,v 1.25 2000/10/13 02:13:00 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/vf.c,v 1.26 2000/10/27 02:25:00 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -260,48 +260,62 @@ void process_vf_file (FILE *vf_file, int thisfont)
 
 /* Unfortunately, the following code isn't smart enough
    to load the vf only once for multiple point sizes. 
-   You will get a separate copy of each VF in memory for
+   You will get a separate copy of each VF in memory (and a separate
+   opening and reading of the file) for
    each point size.  Since VFs are pretty small, I guess
    this is tolerable for now.  In any case, 
    the PDF file will never repeat a physical font name */
-/* Note: This code needs to be reentrant since it could recurse */
+/* Note: This code needs to be able to recurse */
 /* Global variables such as num_vf_fonts require careful attention */
 int vf_locate_font (char *tex_name, spt_t ptsize)
 {
-  int thisfont = -1;
+  int thisfont = -1, i;
   char *full_vf_file_name;
   FILE *vf_file;
-  full_vf_file_name = kpse_find_file (tex_name, 
-				      kpse_vf_format,
-				      1);
-#ifdef HAVE_OMEGA_FORMATS
-  if (!full_vf_file_name) {
-    full_vf_file_name = kpse_find_file (tex_name, 
-					kpse_ovf_format,
-					1);
+  /* Has this name and ptsize already been loaded as a VF? */
+  for (i=0; i<num_vf_fonts; i++) {
+    if (!strcmp (vf_fonts[i].tex_name, tex_name) &&
+	vf_fonts[i].ptsize == ptsize) 
+      break;
   }
+  if (i != num_vf_fonts) {
+    thisfont = i;
+  } else {
+    /* It's hasn't already been loaded as a VF, so try to load it */
+    full_vf_file_name = kpse_find_file (tex_name, 
+					kpse_vf_format,
+					1);
+#ifdef HAVE_OMEGA_FORMATS
+    if (!full_vf_file_name) {
+      full_vf_file_name = kpse_find_file (tex_name, 
+					  kpse_ovf_format,
+					  1);
+    }
 #endif
-  if (full_vf_file_name &&
-      (vf_file = MFOPEN (full_vf_file_name, FOPEN_RBIN_MODE)) != NULL) {
-    if (verbose == 1)
-      fprintf (stderr, "(VF:%s", tex_name);
-    if (verbose > 1)
-      fprintf (stderr, "(VF:%s", full_vf_file_name);
-    if (num_vf_fonts >= max_vf_fonts) {
-      resize_vf_fonts (max_vf_fonts + VF_ALLOC_SIZE);
+    if (full_vf_file_name &&
+	(vf_file = MFOPEN (full_vf_file_name, FOPEN_RBIN_MODE)) != NULL) {
+      if (verbose == 1)
+	fprintf (stderr, "(VF:%s", tex_name);
+      if (verbose > 1)
+	fprintf (stderr, "(VF:%s", full_vf_file_name);
+      if (num_vf_fonts >= max_vf_fonts) {
+	resize_vf_fonts (max_vf_fonts + VF_ALLOC_SIZE);
+      }
+      thisfont = num_vf_fonts++;
+      { /* Initialize some pointers and such */
+	vf_fonts[thisfont].tex_name = NEW (strlen(tex_name)+1, char);
+	strcpy (vf_fonts[thisfont].tex_name, tex_name);
+	vf_fonts[thisfont].ptsize = ptsize;
+	vf_fonts[thisfont].num_chars = 0;
+	vf_fonts[thisfont].ch_pkt = NULL;
+	vf_fonts[thisfont].pkt_len = NULL;
+      }
+      read_header(vf_file, thisfont);
+      process_vf_file (vf_file, thisfont);
+      if (verbose)
+	fprintf (stderr, ")");
+      MFCLOSE (vf_file);
     }
-    thisfont = num_vf_fonts++;
-    { /* Initialize some pointers and such */
-      vf_fonts[thisfont].ptsize = ptsize;
-      vf_fonts[thisfont].num_chars = 0;
-      vf_fonts[thisfont].ch_pkt = NULL;
-      vf_fonts[thisfont].pkt_len = NULL;
-    }
-    read_header(vf_file, thisfont);
-    process_vf_file (vf_file, thisfont);
-    if (verbose)
-      fprintf (stderr, ")");
-    MFCLOSE (vf_file);
   }
   return thisfont;
 }
@@ -984,6 +998,8 @@ MEM_START
     }
     if (vf_fonts[i].pkt_len)
       RELEASE (vf_fonts[i].pkt_len);
+    if (vf_fonts[i].tex_name)
+      RELEASE (vf_fonts[i].tex_name);
     /* Release each font record */
     for (j=0; j<vf_fonts[i].num_dev_fonts; j++) {
       one_font = &(vf_fonts[i].dev_fonts)[j];
