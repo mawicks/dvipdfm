@@ -19,7 +19,7 @@
 %% http://odo.kettering.edu/dvipdfm/
 %%
 \ProvidesFile{dvipdfm.def}
-        [1998/11/24 vx.x Driver-dependant file]
+        [1999/9/6 vx.x Driver-dependant file]
 \def\c@lor@arg#1{%
   \dimen@#1\p@
   \ifdim\dimen@<\z@\dimen@\maxdimen\fi
@@ -28,7 +28,7 @@
   \fi}
 \def\color@gray#1#2{%
   \c@lor@arg{#2}%
-  \edef#1{bg #2}%
+  \edef#1{gray #2}%
   }
 \def\color@cmyk#1#2{\c@lor@@cmyk#2\@@#1}
 \def\c@lor@@cmyk#1,#2,#3,#4\@@#5{%
@@ -36,14 +36,14 @@
   \c@lor@arg{#1}%
   \c@lor@arg{#2}%
   \c@lor@arg{#3}%
-  \edef#5{ [ #1 #2 #3 #4 ] }%
+  \edef#5{cmyk #1 #2 #3 #4}%
   }
 \def\color@rgb#1#2{\c@lor@@rgb#2\@@#1}
 \def\c@lor@@rgb#1,#2,#3\@@#4{%
   \c@lor@arg{#1}%
   \c@lor@arg{#2}%
   \c@lor@arg{#3}%
-  \edef#4{[ #1 #2 #3 ]}%
+  \edef#4{rgb #1 #2 #3}%
   }
 \def\color@RGB#1#2{\c@lor@@RGB#2\@@#1}
 \def\c@lor@@RGB#1,#2,#3\@@#4{%
@@ -75,12 +75,11 @@
 % \def\c@lor@ps@hsb#1\@@{#1 sethsbcolor}
 % \def\c@lor@ps@cmyk#1\@@{#1 setcmykcolor}
 % \def\c@lor@ps@gray#1\@@{#1 setgray}
-\def\current@color{0}
+\def\current@color{gray 0}
 \def\set@color{%
-            \special{pdf: bc \current@color}\aftergroup\reset@color}
-\def\reset@color{\special{pdf:ec}}
-\def\set@page@color{\special{%
-         pdf: bgc \current@color}}
+            \special{color push \current@color}\aftergroup\reset@color}
+\def\reset@color{\special{color pop}}
+\def\set@page@color{\special{background \current@color}}
 \def\define@color@named#1#2{%
   \expandafter\let\csname col@#1\endcsname\@nnil}
 \def\Ginclude@bmp#1{%
@@ -92,15 +91,34 @@
   \special{pdf: epdf width \the\Gin@req@width\space height
 \the\Gin@req@height\space depth \the\z@ (#1)}}
 \def\Ginclude@eps#1{%
-\message{<#1>}%
-  \special{pdf: image width \the\Gin@req@width\space height
-\the\Gin@req@height\space depth \the\z@ \space
-bbox \Gin@llx\space \Gin@lly\space \Gin@urx\space \Gin@ury (#1)}}
+ \message{<#1>}%
+  \bgroup
+  \def\@tempa{!}%
+  \dimen@\Gin@req@width
+  \dimen@ii.1bp%
+  \divide\dimen@\dimen@ii
+  \@tempdima\Gin@req@height
+  \divide\@tempdima\dimen@ii
+    \special{PSfile="#1"\space
+      llx=\Gin@llx\space
+      lly=\Gin@lly\space
+      urx=\Gin@urx\space
+      ury=\Gin@ury\space
+      \ifx\Gin@scalex\@tempa\else rwi=\number\dimen@\space\fi
+      \ifx\Gin@scaley\@tempa\else rhi=\number\@tempdima\space\fi
+      \ifGin@clip clip\fi}%
+  \egroup}
 \def\Grot@start{%
-\special{pdf: bt rotate \Grot@angle\space }}
-\def\Grot@end{\special{pdf: et}}
-\def\Gscale@start{\special{pdf: bt xscale \Gscale@x\space yscale \Gscale@y}}
-\def\Gscale@end{\special{pdf: et}}
+\special{ps: gsave currentpoint currentpoint translate
+\Grot@angle\space neg rotate neg exch neg exch translate}}
+\def\Grot@end{\special{ps: currentpoint grestore moveto}}
+\def\Gscale@start{\special{ps: gsave currentpoint currentpoint translate
+\Gscale@x\space\Gscale@y\space scale neg exch neg exch translate}}
+% \def\Gscale@start{\special{ps: currentpoint currentpoint translate
+% \Gscale@x\space\Gscale@y\space scale neg exch neg exch translate}}
+\def\Gscale@end{\special{ps: currentpoint grestore moveto}}
+% \def\Gscale@end{\special{ps: currentpoint currentpoint translate
+% 1 \Gscale@x\space div 1 \Gscale@x\space div scale neg exch neg exch translate}}
 % \def\Gin@PS@raw#1{\special{ps: #1}}
 % \def\Gin@PS@restored#1{\special{" #1}}
 % \def\Gin@PS@literal@header#1{\AtBeginDvi{\special{! #1}}}

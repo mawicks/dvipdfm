@@ -1,22 +1,26 @@
-September 6, 1999.
 
-   Added native support for including MetaPost output.  Along
-   with this comes the ability to interpret simple PostScript
-   operators natively.  This allows dvipdfm to process DVI
-   files intended for dvips as long as they don't do anything
-   too fancy.  The internal mini-PostScript interpreter
-   is good enough to process the "rotate" commands produced by
+   WARNING: THE LATEX SUPPORT FILE NAMED DVIPDFM.DEF HAS CHANGED IN VERSION
+	    0.12 TO BE MORE COMPATIBLE WITH DVIPS AND OTHER DVI DRIVERS.  IT
+	    CANNOT BE USED WITH EARLIER VERSIONS OF DVIDFPM. HOWEVER,
+	    EARLIER VERSIONS OF DVIPDFM.DEF CAN BE USED WITH VERSION 0.12.
+
+September 6, 1999 - Version 0.12
+
+   Added native support for including MetaPost output.  Along with this
+   comes the ability to interpret simple PostScript operators natively.
+   This allows dvipdfm to process DVI files intended for dvips as long as
+   they don't do anything too fancy.  The internal mini-PostScript
+   interpreter is good enough to process the "rotate" commands produced by
    the standard dvips graphics driver.
 
    Added support for PostScript files using a helper application such as
-   GhostScript.  PostScript files may be included with either
-   the "PSfile" special or the "plotfile" special.
-   
-   Added support for the "standard" color specials.  Together
-   with the above list, dvipdfm can now process many DVI files
-   targets for dvips (as long as they use very simple PostScript
-   commands).  PostScript code such as that produced
-   by PSTricks is not supported.
+   GhostScript.  PostScript files may be included with either the "PSfile"
+   special or the "plotfile" special.
+
+   Added support for the "standard" color specials.  Together with the above
+   list, dvipdfm can now process many DVI files targets for dvips (as long
+   as they use very simple PostScript commands).  PostScript code such as
+   that produced by PSTricks is not supported.
 
    Added a configuration file for specifying default command line options.
 

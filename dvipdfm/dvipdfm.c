@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.54 1999/09/06 02:15:09 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.55 1999/09/06 16:48:20 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -35,6 +35,7 @@
 #include "pdfdoc.h"
 #include "pdfdev.h"
 #include "type1.h"
+#include "colorsp.h"
 #include "pdfspecial.h"
 #include "pdfparse.h"
 #include "vf.h"
@@ -525,9 +526,11 @@ int CDECL main (int argc, char *argv[])
 
   dvi_init (dvi_filename, pdf_filename, mag, x_offset, y_offset);
 
-  if (ignore_colors)
+  if (ignore_colors) {
+    color_special_ignore_colors();
     pdf_special_ignore_colors();
-
+  }
+  
   if (landscape_mode)
     dev_set_page_size (paper_height, paper_width);
   else

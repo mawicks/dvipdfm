@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/colorsp.c,v 1.3 1999/09/05 21:01:20 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/colorsp.c,v 1.4 1999/09/06 16:48:20 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -28,6 +28,12 @@
 #include "pdfdev.h"
 #include "pdfparse.h"
 #include "dvipdfm.h"
+
+static char ignore_colors = 0;
+void color_special_ignore_colors(void)
+{
+  ignore_colors = 1;
+}
 
 static void do_color_special (char **start, char *end)
 {
@@ -149,11 +155,13 @@ int color_special (char *buffer, UNSIGNED_QUAD size)
   if (!strncmp (start, "color", strlen("color"))) {
     start += strlen("color");
     result = 1; /* This is a color special */
-    do_color_special (&start, end);
+    if (!ignore_colors)
+      do_color_special (&start, end);
   } else if (!strncmp (start, "background", strlen("background"))) {
     start += strlen("background");
     result = 1; /* This is a color special */
-    do_background_special (&start, end);
+    if (!ignore_colors)
+      do_background_special (&start, end);
   } else if (!strncmp (start, "landscape", strlen("landscape"))) {
     set_landscape_mode();
     result = 1;

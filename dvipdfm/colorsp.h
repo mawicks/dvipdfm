@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/colorsp.h,v 1.1 1999/09/05 15:00:14 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/colorsp.h,v 1.2 1999/09/06 16:48:20 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -29,7 +29,7 @@
 #define COLORSP_H
 
 int color_special (char *buffer, UNSIGNED_QUAD size);
-
+void color_special_ignore_colors(void);
 #endif
 
 
