@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.37 1999/01/05 20:27:35 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.38 1999/01/06 02:26:01 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -938,7 +938,7 @@ static void write_stream (FILE *file, pdf_stream *stream)
   /* Always work from a copy of the stream */
   /* All filters read from "filtered" and leave their result in
      "filtered" */
-  filtered = NEW (stream->stream_length, unsigned char);
+  filtered = NEW (stream->stream_length+1, unsigned char);
   memcpy (filtered, stream->stream, stream->stream_length);
   filtered_length = stream->stream_length;
 
@@ -946,7 +946,7 @@ static void write_stream (FILE *file, pdf_stream *stream)
   /* Apply compression filter if requested */
   if ((stream -> _flags & STREAM_COMPRESS) && compression_level > 0) {
     int z_error;
-    buffer_length = filtered_length + filtered_length/1000 + 13;
+    buffer_length = filtered_length + filtered_length/1000 + 14;
     buffer = NEW (buffer_length, unsigned char);
     if ((z_error = compress2 (buffer, &buffer_length, filtered,
 			      filtered_length, compression_level)) != 0) {
@@ -958,6 +958,10 @@ static void write_stream (FILE *file, pdf_stream *stream)
     filtered_length = buffer_length;
   }
 #endif /* HAVE_ZLIB */
+  /* Add a '\n' if the last character wasn't one */
+  if (filtered_length > 0 && filtered[filtered_length-1] != '\n') {
+    filtered[filtered_length++] = '\n';
+  }
   pdf_add_dict (stream->dict,
 		pdf_new_name ("Length"),
 		pdf_new_number(filtered_length));

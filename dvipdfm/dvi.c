@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.39 1998/12/30 19:36:10 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.40 1999/01/06 02:26:00 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -1118,6 +1118,7 @@ void dvi_close (void)
   dev_close_all_fonts();
   vf_close_all_fonts();
   tfm_close_all();
+  dev_close();
   pdf_doc_close();
 }
 

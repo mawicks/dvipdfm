@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.35 1999/01/06 00:52:49 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.36 1999/01/06 02:26:01 mwicks Exp $
  
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -53,6 +53,7 @@ static struct
 static pdf_obj *current_page_resources = NULL;
 static pdf_obj *this_page_contents = NULL;
 static pdf_obj *glob_page_bop, *glob_page_eop;
+static pdf_obj *coord_xform_stream = NULL, *coord_xform_ref = NULL;
 static pdf_obj *this_page_bop = NULL;
 static pdf_obj *this_page_beads = NULL;
 static pdf_obj *this_page_annots = NULL;
@@ -155,6 +156,8 @@ static void start_page_tree (void)
      haven't built the tree yet */
   glob_page_bop = pdf_new_stream(0);
   glob_page_eop = pdf_new_stream(0);
+  coord_xform_stream = pdf_new_stream(0);
+  coord_xform_ref = pdf_ref_obj (coord_xform_stream);
   return;
 }
 
@@ -169,6 +172,18 @@ void pdf_doc_this_bop (char *string, unsigned length)
   if (length > 0)
     pdf_add_stream (this_page_bop, string, length);
 }
+
+void pdf_doc_set_origin (double x, double y)
+{
+  int len;
+  static first = 1;
+  if (first) {
+    len = sprintf (work_buffer, "1 0 0 1 %g %g cm\n", x, y);
+    pdf_add_stream (coord_xform_stream, work_buffer, len);
+    first = 0;
+  }
+}
+
 
 void pdf_doc_eop (char *string, unsigned length)
 {
@@ -431,6 +446,12 @@ static void finish_page_tree(void)
 		pdf_link_obj (page_tree_ref));
   pdf_release_obj (page_tree_ref);
   RELEASE (pages);
+  pdf_add_stream (glob_page_bop, "\n", 1);
+  pdf_release_obj (glob_page_bop);
+  pdf_add_stream (glob_page_eop, "\n", 1);
+  pdf_release_obj (glob_page_eop);
+  pdf_release_obj (coord_xform_stream);
+  pdf_release_obj (coord_xform_ref);
   return;
 }
 
@@ -763,10 +784,12 @@ MEM_START
   if (page_count > 0) {
     /* We keep .page_dict open because we don't know the parent yet */
     if (this_page_bop != NULL) {
+      pdf_add_stream (this_page_bop, "\n", 1);
       pdf_release_obj (this_page_bop);
       this_page_bop = NULL;
     }
     if (this_page_contents != NULL) {
+      pdf_add_stream (this_page_contents, "\n", 1);
       pdf_release_obj (this_page_contents);
       this_page_contents = NULL;
     }
@@ -911,6 +934,7 @@ MEM_START
   tmp1 = pdf_new_array ();
   pdf_add_array (tmp1, pdf_ref_obj (glob_page_bop));
   pdf_add_array (tmp1, pdf_ref_obj (this_page_bop));
+  pdf_add_array (tmp1, pdf_link_obj (coord_xform_ref));
   /* start the contents stream for the new page */
   this_page_contents = pdf_new_stream(STREAM_COMPRESS);
   pdf_add_array (tmp1, pdf_ref_obj (this_page_contents));
@@ -961,8 +985,6 @@ void pdf_doc_close ()
      items */
   finish_docinfo();
   finish_page_tree();
-  pdf_release_obj (glob_page_bop);
-  pdf_release_obj (glob_page_eop);
   /* Add names dict to catalog */
   finish_outline();
   finish_dests_tree();

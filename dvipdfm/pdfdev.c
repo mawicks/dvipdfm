@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.57 1999/01/05 03:10:01 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.58 1999/01/06 02:26:01 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -297,7 +297,10 @@ void dev_init (double scale, double x_offset, double y_offset)
 
 void dev_close (void)
 {
-  graphics_mode();
+  /* Set page origin now that user has had plenty of time
+     to set page size */
+  pdf_doc_set_origin((double) hoffset, (double)
+		     dev_page_height()-voffset);
 }
 
 void dev_add_comment (char *comment)
@@ -574,11 +577,6 @@ MEM_START
   if (debug) {
     fprintf (stderr, "dev_eop:\n");
   }
-  /* Set page size now that we know user had last chance to change
-     it */
-  sprintf (format_buffer, "1 0 0 1 %.2f %.2f cm ",
-	   (double) hoffset, (double) dev_page_height()-voffset);
-  pdf_doc_this_bop (format_buffer, strlen(format_buffer));
   graphics_mode();
   dev_close_all_xforms();
 #ifdef MEM_DEBUG
