@@ -22,9 +22,9 @@ eobjects=ebb.o jpeg.o pdfobj.o mem.o mfileio.o numbers.o pdfparse.o
 
 check default all: $(programs)
 ebb: $(eobjects)
-	$(CC) -o ebb $(eobjects) $(LIBS)
+	$(CC) -o ebb $(eobjects) $(LDFLAGS) $(LIBS)
 dvipdfm:  $(objects)
-	$(CC) -o dvipdfm $(objects) $(LIBS)
+	$(CC) -o dvipdfm $(objects) $(LDFLAGS) $(LIBS)
 include depend.make
 #
 # Install/uninstall
