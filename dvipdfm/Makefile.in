@@ -60,6 +60,11 @@ install-data:
 	   >/dev/null; then  \
 	   $(INSTALL) ./t1fonts.map $(dvipdfmdir)/t1fonts.map; \
 	else true; fi
+	if test ! -r $(dvipdfmdir)/config \
+	   || grep 'original config --' $(dvipdfmdir)/config \
+	   >/dev/null; then  \
+	   $(INSTALL) ./config $(dvipdfmdir)/config; \
+	else true; fi
 	cp $(encodings) $(dvipdfmdir)/
 uninstall-exec:
 	rm -f $(bindir)/$(programs) $(bindir)/$(scripts)
@@ -72,6 +77,9 @@ uninstall-data:
 	else true; fi
 	if grep 'original t1fonts.map --' $(dvipdfmdir)/dvipdfm/t1fonts.map \
 	   >/dev/null 2>&1; then rm -f $(dvipdfmdir)/t1fonts.map; \
+	else true; fi
+	if grep 'original config --' $(dvipdfmdir)/dvipdfm/config \
+	   >/dev/null 2>&1; then rm -f $(dvipdfmdir)/config; \
 	else true; fi
 	cd $(dvipdfmdir); rm -f $(encodings)
 #

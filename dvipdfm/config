@@ -1,3 +1,14 @@
-% Distiller template examples
+% original config -- Made by MAW on 8/31/99
+% Distiller template examples.  Uncomment
+% the appropriate one, or create your own
+
 % The following line works with Frank Siegert's pstill
-D pstill -c -o %o %i > /dev/null
+% D pstill -c -o %o %i
+
+% The following line works with Sebastian Rahtz' GhostScript wrapper
+% script called epstopdf
+D epstopdf %i ; mv %b.pdf %o
+
+% The following line works with Adobe Acrobat Distiller
+% D distill -quiet -pairs %i %o
+
