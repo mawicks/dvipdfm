@@ -526,10 +526,10 @@ fi
 
 
 
-VERSION="0.12.6e-plus"
+VERSION="0.12.6-pre-f"
 
 cat >> confdefs.h <<\EOF
-#define VERSION "0.12.6e-plus"
+#define VERSION "0.12.6-pre-f"
 EOF
 
 cat >> confdefs.h <<\EOF
