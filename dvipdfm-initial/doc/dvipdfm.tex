@@ -4,19 +4,27 @@
 %\special{  pdf:  docview <</PageMode /UseThumbs>>}%
 \special{  pdf:  docview <</PageMode /UseOutlines>>}%
 \catcode`\ =11\def\space{ }\catcode`\ =10
+%
+% Some color definitions
+% 
 \def\colored#1#2{%
-   \special{pdf:content q #1 rg }%
-   #2\special{pdf:content Q }}%
-\def\red#1{\colored{1 0 0}{#1}}%
-\def\green#1{\colored{0 1 0}{#1}}%
-\def\blue#1{\colored{0 0 1}{#1}}%
-\def\yellow#1{\colored{0.8 0.9 0.1}{#1}}%
-\font\maintitlefont=cmr12 at 17.28pt
-\font\headingfont=cmr12 at 14.4pt
-% Variables declared here
+  \special{pdf:bc #1}#2\special{pdf:ec}}%
+\def\red#1{\colored{[1 0 0]}{#1}}%
+\def\green#1{\colored{[0 1 0]}{#1}}%
+\def\blue#1{\colored{[0 0 1]}{#1}}%
+\def\yellow#1{\colored{[0.8 0.9 0.1]}{#1}}%
+%
+% Some font definitions
+%
+\font\maintitlefont=cmss12 at 17.28pt
+\font\headingfont=cmss12 at 14.4pt
+%
 % Miscellaneous token lists
+%
 \newtoks\title\newtoks\author
-% Section levels
+%
+% Counters for section levels
+%
 \newcount\sectioncount\newcount\ssectioncount\newcount\sssectioncount
 \sectioncount0\ssectioncount0\sssectioncount0
 \def\settitle{%
