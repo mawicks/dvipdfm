@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.17 1998/12/30 19:36:10 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.18 1998/12/30 20:14:17 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -26,9 +26,12 @@
 #include <stdio.h>
 #include <string.h>
 #include "c-auto.h"
+#include <ctype.h>
+
 #ifdef HAVE_BASENAME
 #include <libgen.h>
 #endif
+
 #include "dvi.h"
 #ifdef KPATHSEA
 #include <kpathsea/progname.h>
@@ -256,34 +259,37 @@ static void do_args (int argc, char *argv[])
 	pdf_obj_set_verbose();
 	pdf_doc_set_verbose();
 	break;
-      case 'z':
-	if (argc < 2) {
-	  fprintf (stderr, "\nCompression specification missing number for level\n");
-	  usage();
-	}
+      case 'z': 
 	{
-	  char *result, *end, *start = argv[1];
 	  int level = 9;
-	  end = start + strlen(argv[1]);
-	  result = parse_number (&start, end);
-	  if (result != NULL && start == end) {
-	    level = (int) atof (result);
-	  }
-	  else {
-	    fprintf (stderr, "\nError in number following magnification specification\n");
-	    usage();
-	  }
-	  if (result != NULL) {
-	    RELEASE (result);
+	  if (isdigit (*(flag+1))) {
+	    level = *(++flag) - '0';
+	  } else {
+	    char *result, *end, *start = argv[1];
+	    if (argc < 2) {
+	      fprintf (stderr, "\nCompression specification missing number for level\n");
+	      usage();
+	    }
+	    end = start + strlen(argv[1]);
+	    result = parse_number (&start, end);
+	    if (result != NULL && start == end) {
+	      level = (int) atof (result);
+	    }
+	    else {
+	      fprintf (stderr, "\nError in number following compression specification\n");
+	      usage();
+	    }
+	    if (result != NULL) {
+	      RELEASE (result);
+	    }
+	    pop_arg();
 	  }
 	  if (level >= 0 && level <= 9) {
 	    pdf_obj_set_compression(level);
 	  } else {
 	    fprintf (stderr, "\nNumber following compression specification is out of range\n\n");
-	    usage();
 	  }
 	}
-	pop_arg();
 	break;
       default:
 	usage();
