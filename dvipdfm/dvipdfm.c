@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.36 1999/02/21 05:56:26 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.37 1999/02/21 14:11:22 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -438,7 +438,7 @@ int CDECL main (int argc, char *argv[])
     dev_page_height();
   if ((num_page_ranges))
     for (i=0; i<num_page_ranges; i++) {
-      int j;
+      unsigned j;
       if (page_ranges[i].first <= page_ranges[i].last)
 	for (j=page_ranges[i].first; j<=page_ranges[i].last && j<dvi_npages(); j++) {
 	  fprintf (stderr, "[%d", j+1);

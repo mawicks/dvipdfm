@@ -1,5 +1,5 @@
 
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.49 1999/02/21 05:23:06 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.50 1999/02/21 14:11:22 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -91,7 +91,7 @@ void dvi_set_debug(void)
   debug = 1;
 }
 
-int dvi_npages (void)
+unsigned dvi_npages (void)
 {
   return num_pages;
 }
@@ -888,7 +888,7 @@ static void do_eop(void)
 static unsigned char s_buffer[S_BUFFER_SIZE];
 static s_len = 0;
 
-void dvi_do_page(int n)  /* Most of the work of actually interpreting
+void dvi_do_page(unsigned n)  /* Most of the work of actually interpreting
 			    the dvi file is here. */
 {
   unsigned char opcode;
