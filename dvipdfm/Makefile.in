@@ -62,7 +62,7 @@ distclean: clean
 clean:
 	rm -f $(programs) *.o
 	for i in . doc latex-support ; \
-	   do rm -f $$i/*.dvi $$i/*.log $$i/*~; \
+	   do rm -f $$i/*.dvi $$i/*.log $$i/*~ $$i/*.out; \
 	done
 	rm -f doc/dvipdfm.pdf latex-support/sample.pdf
 TAGS:	$(src)
