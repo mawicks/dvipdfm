@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdflimits.h,v 1.4 1998/12/04 20:26:07 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdflimits.h,v 1.5 1998/12/08 05:33:35 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -33,3 +33,4 @@
 #define PAGES_ALLOC_SIZE 128u
 #define DESTS_ALLOC_SIZE 1024u
 #define NAMED_OBJ_ALLOC_SIZE 128u
+#define VF_ALLOC_SIZE 16u

@@ -5,11 +5,12 @@ ac_include ../make/texi.make
 prog_cflags = -DKPATHSEA 
 programs=dvipdfm ebb
 headers = acdefines.h dvi.h pdflimits.h error.h mfileio.h jpeg.h mem.h numbers.h \
-	pdfdev.h pdfdoc.h pdfparse.h pdfspecial.h tfm.h type1.h epdf.h
+	pdfdev.h pdfdoc.h pdfparse.h pdfspecial.h tfm.h type1.h epdf.h \
+	vf.h dvicodes.h
 src = pdfdev.c pdfdoc.c dvi.c mfileio.c mem.c jpeg.c numbers.c pdfobj.c \
-	pdfparse.c pdfspecial.c tfm.c type1.c dvipdfm.c epdf.c
+	pdfparse.c pdfspecial.c tfm.c type1.c dvipdfm.c epdf.c vf.c
 objects = pdfdev.o pdfdoc.o dvi.o mfileio.o mem.o jpeg.o numbers.o pdfobj.o \
-        pdfparse.o pdfspecial.o tfm.o type1.o dvipdfm.o epdf.o
+        pdfparse.o pdfspecial.o tfm.o type1.o dvipdfm.o epdf.o vf.o
 eobjects=ebb.o jpeg.o pdfobj.o mem.o mfileio.o numbers.o pdfparse.o
 
 check default all: $(programs) 

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.18 1998/12/07 20:32:50 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.19 1998/12/08 05:33:35 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -36,6 +36,7 @@
 #include "pdfspecial.h"
 #include "pdflimits.h"
 #include "tfm.h"
+#include "vf.h"
 
 /* Internal functions */
 static void dev_clear_color_stack (void);
@@ -116,11 +117,14 @@ static double text_xorigin = 0.0, text_yorigin = 0.0,
   text_leading =0.0;
 
 int n_dev_fonts = 0;
+int n_phys_fonts = 0;
 int current_font = -1;
 double current_ptsize = 1.0;
 
 #define MAX_DEVICE_FONTS 256
 
+#define PHYSICAL 1
+#define VIRTUAL 2
 struct dev_font {
   char short_name[7];	/* Needs to be big enough to hold name "Fxxx"
 			   where xxx is number of largest font */
@@ -128,6 +132,8 @@ struct dev_font {
   int tfm_font_id;
   double ptsize;
   pdf_obj *font_resource;
+  int type;
+  int vf_font_id; /* Only used for type = VIRTUAL */
 } dev_font[MAX_DEVICE_FONTS];
 
 static void reset_text_state(void)
@@ -535,17 +541,34 @@ int dev_locate_font (char *tex_name,
     }
   }
   if (i == n_dev_fonts) {  /* Font *name* not found, so load it and give it a
-			    short name */
-    dev_font[i].short_name[0] = 'F';
-    sprintf (dev_font[i].short_name+1, "%d", n_dev_fonts+1);
-    /* type1_font_resource on next line always returns an indirect
-       reference */
+			    new short name */
+    /* type1_font_resource on next line always returns an *indirect* obj */ 
     dev_font[i].font_resource = type1_font_resource (tex_name,
 						     tfm_font_id,
 						     dev_font[i].short_name);
+    if (dev_font[i].font_resource) { /* If we got one, it must be a physical font */
+      dev_font[i].type = PHYSICAL;
+      dev_font[i].short_name[0] = 'F';
+      sprintf (dev_font[i].short_name+1, "%d", ++n_phys_fonts);
+    } else { /* No physical font, see if we can locate a virtual one */
+      dev_font[i].vf_font_id = vf_font_locate (tex_name);
+      if (dev_font[i].vf_font_id < 0) {
+	fprintf (stderr, "%s: Can't locate an AFM or VF file\n", tex_name);
+	ERROR ("Not sure how to proceed.  For now this is fatal\n\
+Maybe in the future, I'll substitute some other font.");
+      }
+    }
   } else {	/* Font name was found */
-    strcpy (dev_font[n_dev_fonts].short_name, dev_font[i].short_name);
-    dev_font[n_dev_fonts].font_resource = pdf_link_obj (dev_font[i].font_resource);
+    switch (dev_font[i].type) {
+    case PHYSICAL:
+      strcpy (dev_font[n_dev_fonts].short_name, dev_font[i].short_name);
+      dev_font[n_dev_fonts].font_resource = pdf_link_obj
+	(dev_font[i].font_resource);
+      break;
+    case VIRTUAL:
+      dev_font[n_dev_fonts].vf_font_id = dev_font[i].vf_font_id;
+      break;
+    }
   }
   /* Note that two entries in dev_font may have the same name and
      pointsize.  This only comes into play with virtual fonts. 

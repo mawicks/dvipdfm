@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.10 1998/12/05 11:47:25 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.11 1998/12/08 05:33:35 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -394,18 +394,17 @@ static void reset_afm_variables (void)
   return;
 }
 
-static void open_afm_file (const char *afm_name)
+static int open_afm_file (const char *afm_name)
 {
   static char *full_afm_name;
   reset_afm_variables ();
   full_afm_name = kpse_find_file (afm_name, kpse_afm_format,
 				  1);
-  if (full_afm_name == NULL || 
-      (type1_afm_file = fopen (full_afm_name, FOPEN_R_MODE)) == NULL) {
-    sprintf (work_buffer, "open_afm_file: Unable to find or open AFM file named (%s)", afm_name);
-    ERROR (work_buffer);
-  }
-  return;
+  if (full_afm_name &&
+      (type1_afm_file = fopen (full_afm_name, FOPEN_R_MODE)) != NULL)
+    return 1;
+  else
+    return 0;
 }
 
 static void close_afm_file (void)
@@ -568,72 +567,77 @@ static void fill_in_defaults (struct font_record *font_record, const
   return;
 }
 
-
 pdf_obj *type1_font_resource (const char *tex_name, int tfm_font_id, const char *resource_name)
 {
   int i;
   int firstchar, lastchar;
-  pdf_obj *font_resource, *font_resource_ref, *tmp1;
-  pdf_obj *font_encoding_ref;
+  pdf_obj *font_resource, *tmp1, *font_encoding_ref;
+  pdf_obj *result;
   struct font_record *font_record;
-  font_resource = pdf_new_dict ();
-  pdf_add_dict (font_resource,
-		pdf_new_name ("Type"),
-		pdf_new_name ("Font"));
-  pdf_add_dict (font_resource,
-		pdf_new_name ("Subtype"),
-		pdf_new_name ("Type1"));
-  pdf_add_dict (font_resource,
-		pdf_new_name ("Name"),
-		pdf_new_name (resource_name));
-  /* font_record should always result non-null value with default
-     values filled in */
+  /* font_record should always result in non-null value with default
+     values filled in from pdffonts.map if any */
   font_record = get_font_record (tex_name);
+  /* Fill in default value for afm_name, enc, and pfb_name if not from
+     map file */
   fill_in_defaults (font_record, tex_name);
-  {
-    open_afm_file (font_record ->afm_name);
+  if (open_afm_file (font_record ->afm_name)) { /* If we have an AFM
+						   file, assume we
+						   have a "physical"
+						   font */
     scan_afm_file();
     close_afm_file ();
-    RELEASE (font_record -> afm_name);
+    {
+      font_resource = pdf_new_dict ();
+      pdf_add_dict (font_resource,
+		    pdf_new_name ("Type"),
+		    pdf_new_name ("Font"));
+      pdf_add_dict (font_resource,
+		    pdf_new_name ("Subtype"),
+		    pdf_new_name ("Type1"));
+      pdf_add_dict (font_resource,
+		    pdf_new_name ("Name"),
+		    pdf_new_name (resource_name));
+      if (font_record -> pfb_name != NULL) {
+	if (!is_a_base_font (fontname))
+	  pdf_add_dict (font_resource, 
+			pdf_new_name ("FontDescriptor"),
+			type1_font_descriptor(font_record -> pfb_name));
+      }
+      pdf_add_dict (font_resource,
+		    pdf_new_name ("BaseFont"),
+		    pdf_new_name (fontname));  /* fontname is global and set
+						  by type1_font_descriptor() */
+      firstchar = tfm_get_firstchar(tfm_font_id);
+      pdf_add_dict (font_resource,
+		    pdf_new_name ("FirstChar"),
+		    pdf_new_number (firstchar));
+      lastchar = tfm_get_lastchar(tfm_font_id);
+      pdf_add_dict (font_resource,
+		    pdf_new_name ("LastChar"),
+		    pdf_new_number (lastchar));
+      tmp1 = pdf_new_array ();
+      for (i=firstchar; i<=lastchar; i++) {
+	pdf_add_array (tmp1,
+		       pdf_new_number(ROUND(tfm_get_width (tfm_font_id, i)*1000.0,0.01)));
+      }
+      pdf_add_dict (font_resource,
+		    pdf_new_name ("Widths"),
+		    tmp1);
+      if (font_record -> enc_name != NULL) {
+	font_encoding_ref = get_encoding (font_record -> enc_name);
+	pdf_add_dict (font_resource,
+		      pdf_new_name ("Encoding"),
+		      font_encoding_ref);
+      }
+      result = pdf_ref_obj (font_resource);
+      pdf_release_obj (font_resource);
+    }
+  } else { /* No AFM file.  This isn't fatal.  We still might have a vf! */
+    result = NULL;
   }
-  if (font_record -> pfb_name != NULL) {
-    if (!is_a_base_font (fontname))
-      pdf_add_dict (font_resource, 
-		    pdf_new_name ("FontDescriptor"),
-		    type1_font_descriptor(font_record -> pfb_name));
-    RELEASE (font_record -> pfb_name);
-  }
-  pdf_add_dict (font_resource,
-		pdf_new_name ("BaseFont"),
-		pdf_new_name (fontname));  /* fontname is set
-						     by
-						     type1_font_descriptor() */
-  firstchar = tfm_get_firstchar(tfm_font_id);
-  pdf_add_dict (font_resource,
-		pdf_new_name ("FirstChar"),
-		pdf_new_number (firstchar));
-  lastchar = tfm_get_lastchar(tfm_font_id);
-  pdf_add_dict (font_resource,
-		pdf_new_name ("LastChar"),
-		pdf_new_number (lastchar));
-  tmp1 = pdf_new_array ();
-  for (i=firstchar; i<=lastchar; i++) {
-    pdf_add_array (tmp1,
-		   pdf_new_number(ROUND(tfm_get_width (tfm_font_id, i)*1000.0,0.01)));
-  }
-  pdf_add_dict (font_resource,
-		pdf_new_name ("Widths"),
-		tmp1);
-  if (font_record -> enc_name != NULL) {
-    font_encoding_ref = get_encoding (font_record -> enc_name);
-    pdf_add_dict (font_resource,
-		  pdf_new_name ("Encoding"),
-		  font_encoding_ref);
-    RELEASE (font_record -> enc_name);
-  }
+  RELEASE (font_record -> enc_name);
+  RELEASE (font_record -> afm_name);
+  RELEASE (font_record -> pfb_name);
   RELEASE (font_record);
-  font_resource_ref = pdf_ref_obj (font_resource);
-  pdf_release_obj (font_resource);
-  return font_resource_ref;
+  return result;
 }
-

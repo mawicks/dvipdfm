@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.6 1998/12/07 02:52:32 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.7 1998/12/08 05:33:35 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -59,6 +59,7 @@ struct a_tfm
   SIGNED_QUAD *kern;
   SIGNED_QUAD *exten;
   SIGNED_QUAD *param;
+  char *tex_name;
 };
 
 struct a_tfm tfm[MAX_FONTS];
@@ -224,31 +225,41 @@ static void get_tfm (struct a_tfm *a_tfm)
 
 /* External Routine */
 
-
-int tfm_open (char *tfm_file_name)
+int tfm_open (char *tfm_name)
 {
+  int i;
   char *full_tfm_file_name;
-  full_tfm_file_name = kpse_find_tfm (tfm_file_name);
-  if (full_tfm_file_name == NULL) {
-    fprintf (stderr, "%s: ", tfm_file_name);
-    ERROR ("tfm_open:  Unable to find TFM file");
+  for (i=0; i<numtfms; i++) {
+    if (!strcmp (tfm_name, tfm[i].tex_name))
+      break;
   }
-  if (numtfms >= MAX_FONTS) {
-    ERROR ("tfm_open:  Tried to open too many TFM files!");
-  }
-  if (!(tfm_file = fopen (full_tfm_file_name, FOPEN_RBIN_MODE))) {
-    fprintf (stderr, "tfm_open: %s\n", tfm_file_name);
+  if (i == numtfms) { /* Name hasn't already been loaded */
+    full_tfm_file_name = kpse_find_tfm (tfm_name);
+    if (full_tfm_file_name == NULL) {
+      fprintf (stderr, "%s: ", tfm_name);
+      ERROR ("tfm_open:  Unable to find TFM file");
+    }
+    if (numtfms >= MAX_FONTS) {
+      ERROR ("tfm_open:  Tried to open too many TFM files!");
+    }
+    if (!(tfm_file = fopen (full_tfm_file_name, FOPEN_RBIN_MODE))) {
+      fprintf (stderr, "tfm_open: %s\n", tfm_name);
     ERROR ("tfm_open:  Specified TFM file cannot be opened");
+    }
+    if ((tfm_file_size = file_size(tfm_file)) < 24) {
+      invalid_tfm_file ();
+    }
+    tfm[numtfms].tex_name = NEW (strlen(tfm_name)+1, char);
+    strcpy (tfm[numtfms].tex_name, tfm_name);
+    get_tfm (&tfm[numtfms]);
+    fclose (tfm_file);
+    if (tfm_verbose) {
+      dump_sizes (&tfm[numtfms]);
+    }
+    return numtfms++;
+  } else { /* Name has been loaded before */
+    return i;
   }
-  if ((tfm_file_size = file_size(tfm_file)) < 24) {
-    invalid_tfm_file ();
-  }
-  get_tfm (&tfm[numtfms]);
-  fclose (tfm_file);
-  if (tfm_verbose) {
-    dump_sizes (&tfm[numtfms]);
-  }
-  return numtfms++;
 }
 
 void tfm_close_all(void)
@@ -265,10 +276,9 @@ void tfm_close_all(void)
     RELEASE (tfm[i].kern);
     RELEASE (tfm[i].exten);
     RELEASE (tfm[i].param);
+    RELEASE (tfm[i].tex_name);
   }
 }
-
-
 
 /* tfm_get_width returns the width of the font
    as a fraction of the design size */
