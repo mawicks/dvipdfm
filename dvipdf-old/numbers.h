@@ -24,5 +24,7 @@ SIGNED_QUAD get_signed_quad (FILE *);
 
 UNSIGNED_QUAD get_unsigned_quad (FILE *);
 
+#define ROUND(n,acc) (floor((n)/(acc)+0.5)*(acc)) 
+
 #endif /* NUMBERS_H */
 

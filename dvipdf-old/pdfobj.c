@@ -175,17 +175,22 @@ pdf_obj *pdf_ref_obj(pdf_obj *object)
   if (object == NULL || object -> type == 0) {
     ERROR ("pdf_ref_obj:  Called with invalid object");
   }
-  if (object -> type == PDF_INDIRECT) {
-    ERROR ("pdf_ref_obj:  You can't reference an indirect object!");
-  }
   if (object -> label == 0) {
     pdf_label_obj (object);
   }
   result = pdf_new_obj (PDF_INDIRECT);
   indirect = NEW (1, struct pdf_indirect);
   result -> data = indirect;
-  indirect -> label = object -> label;
-  indirect -> generation = object -> generation;
+  if (object -> type == PDF_INDIRECT) { /* If an object is already an indirect reference,
+					   reference the original
+					   object, not the indirect
+					   one */
+    indirect -> label = ((struct pdf_indirect *) (object -> data)) -> label;
+    indirect -> generation = ((struct pdf_indirect *) (object -> data)) -> generation;
+  } else {
+    indirect -> label = object -> label;
+    indirect -> generation = object -> generation;
+  }
   return result;
 }
 
