@@ -1,9 +1,86 @@
-% Format of this file is
-%    TeXname AFMfilename Encoding binary_font_file
-% 
-%     The fields TeXname and AFMfilename are required
-% To use the default encoding for a font set
-% Encoding to "default."  Binary_font_file is optional
-%
-ptmr8r	ptmr8a	8r.enc
-
+% CharterBT-Bold
+bchb8r bbchb8a 8r.enc bchb8a.pfb
+% CharterBT-BoldItalic
+bchbi8r bbchbi8a 8r.enc bchbi8a.pfb
+% CharterBT-Roman
+bchr8r bchr8a 8r.enc bchr8a.pfb
+% CharterBT-Italic
+bchri8r bchri8a 8r.enc bchri8a.pfb
+% AvantGarde-Demi
+pagd8r pagd8a 8r.enc pagd8a
+% AvantGarde-DemiOblique
+pagdo8r pagdo8a 8r.enc pagdo8a
+% AvantGarde-Book
+pagk8r pagk8a 8r.enc pagk8a
+% AvantGarde-BookOblique
+pagko8r pagko8a 8r.enc pagko8a
+% Bookman-Demi
+pbkd8r pbkd8a 8r.enc pbkd8a
+% Bookman-DemiItalic
+pbkdi8r pbkdi8a 8r.enc pbkdi8a
+% Bookman-Light
+pbkl8r pbkl8a 8r.enc pbkl8a
+% Bookman-LightItalic
+pbkli8r pbkli8a 8r.enc pbkli8a
+% Courier-Bold
+pcrb8r pcrb8a 8r.enc
+% Courier-BoldOblique
+pcrbo8r pcrbo8a 8r.enc
+% Courier
+pcrr8r pcrr8a 8r.enc
+% Courier-Oblique
+pcrro8r pcrro8a 8r.enc
+% Helvetica-Bold
+phvb8r phvb8a 8r.enc
+% Helvetica-Narrow-Bold
+phvb8rn phvb8an 8r.enc
+% Helvetica-BoldOblique
+phvbo8r phvbo8a 8r.enc
+% Helvetica-Narrow-BoldOblique
+phvbo8rn phvbo8an 8r.enc
+% Helvetica
+phvr8r phvr8a 8r.enc
+% Helvetica-Narrow
+phvr8rn phvr8an 8r.enc
+% Helvetica-Oblique
+phvro8r phbro8a 8r.enc
+% Helvetica-Narrow-Oblique
+phvro8rn phvro8an 8r.enc
+% NewCenturySchlbk-Bold
+pncb8r pncb8a 8r.enc pncb8a
+% NewCenturySchlbk-BoldItalic
+pncbi8r pncbi8a 8r.enc pncbi8a
+% NewCenturySchlbk-Roman
+pncr8r pncr8a 8r.enc pncr8a
+% NewCenturySchlbk-Italic
+pncri8r pncri8a 8r.enc
+% Palatino-Bold
+pplb8r pplb8a 8r.enc pplb8a
+% Palatino-BoldItalic
+pplbi8r pplbi8a 8r.enc pplbi8a
+% Palatino-Roman
+pplr8r pplr8a 8r.enc pplr8a
+% Palatino-Italic
+pplri8r pplri8a 8r.enc pplri8a
+% Symbol
+psyr psyr
+% Times-Bold
+ptmb8r ptmb8a 8r.enc
+% Times-BoldItalic
+ptmbi8r ptmbi8a 8r.enc
+% Times-Roman
+ptmr8r ptmr8a 8r.enc
+% Times-Italic
+ptmri8r ptmri8a 8r.enc
+% Utopia-Bold
+putb8r putb8a 8r.enc putb8a
+% Utopia-BoldItalic
+putbi8r putbi8a 8r.enc putbi8a
+% Utopia-Regular
+putr8r putr8a 8r.enc putr8a
+% Utopia-Italic
+putri8r putri8a 8r.enc putri8a.pfb
+% ZapfChancery-MediumItalic
+pzcmi8r pzcmi8a 8r.enc pzcmi8a
+% ZapfDingbats
+pzdr ZapfDingbats
