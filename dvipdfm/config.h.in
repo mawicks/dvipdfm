@@ -37,14 +37,11 @@
 /* HAVE_LIBPNG - Define if you have libpng */
 #undef HAVE_LIBPNG
 
+/* HAVE_SYSTEM - Define if you have the system() command */
+#undef HAVE_SYSTEM
+
 /* Define if you have the strspn function.  */
 #undef HAVE_STRSPN
 
 /* Define if you have the <unistd.h> header file.  */
 #undef HAVE_UNISTD_H
-
-/* Define if you have the m library (-lm).  */
-#undef HAVE_LIBM
-
-/* Define if you have the n library (-ln).  */
-#undef HAVE_LIBN

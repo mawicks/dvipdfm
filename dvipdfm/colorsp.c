@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/colorsp.c,v 1.4 1999/09/06 16:48:20 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/colorsp.c,v 1.5 1999/09/06 18:31:56 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -27,6 +27,7 @@
 #include "mem.h"
 #include "pdfdev.h"
 #include "pdfparse.h"
+#include "pdfspecial.h"
 #include "dvipdfm.h"
 
 static char ignore_colors = 0;
@@ -146,6 +147,58 @@ static void do_background_special (char **start, char *end)
   }
 }
 
+static void local_set_paper_size (char **start, char *end)
+{
+  char *key, *val, *val_start, *val_end, *number;
+  char *save = *start;
+  double width = 0.0, height = 0.0, unit;
+  if (parse_key_val (start, end, &key, &val)) {
+    val_start = val;
+    val_end = val+strlen(val);
+    skip_white (&val_start, val_end);
+    if ((number=parse_number(&val_start, val_end))) {
+      width = atof (number);
+      RELEASE (number);
+      if ((unit = parse_one_unit (&val_start, val_end)) > 0.0) {
+	width *= unit;
+      } else {
+	width = 0.0;
+      }
+    } else {
+      fprintf (stderr, "\nExpecting a number here\n");
+      dump (val_start, end);
+    }
+    skip_white (&val_start, val_end);
+    if (val_start < val_end && *(val_start++) == ',') {
+      skip_white (&val_start, val_end);
+    }
+    if ((number=parse_number(&val_start, val_end))) {
+      height = atof (number);
+      RELEASE (number);
+      if ((unit = parse_one_unit (&val_start, val_end)) > 0.0) {
+	height *= unit;
+      } else {
+	height = 0.0;
+      }
+    } else {
+      fprintf (stderr, "\nExpecting a number here\n");
+      dump (val_start, val_end);
+    }
+    if (key) RELEASE (key);
+    if (val) RELEASE (val);
+  }
+  if (width != 0.0 && height != 0.0) {
+    dev_set_page_size (width, height);
+  } else{
+    fprintf (stderr, "\nError parsing papersize special\n");
+    dump (save, end);
+  }
+}
+
+/* Color_special() handles color specials and also
+   handles papersize and landscape specials since
+   there's no good place to put them  */
+
 int color_special (char *buffer, UNSIGNED_QUAD size)
 {
   char *start = buffer, *end;
@@ -165,13 +218,12 @@ int color_special (char *buffer, UNSIGNED_QUAD size)
   } else if (!strncmp (start, "landscape", strlen("landscape"))) {
     set_landscape_mode();
     result = 1;
+  } else if (!strncmp (start, "papersize", strlen("papersize"))) {
+    local_set_paper_size(&start, end);
+    result = 1;
   }
   return result;
 }
-
-
-
-
 
 
 

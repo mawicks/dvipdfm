@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.64 1999/09/06 14:48:13 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.65 1999/09/06 18:31:56 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -312,7 +312,7 @@ double parse_one_unit (char **start, char *end)
   int errors = 0;
   
   skip_white(start, end);
-  if ((unit_string = parse_ident(start, end)) != NULL) {
+  if ((unit_string = parse_c_ident(start, end)) != NULL) {
     for (i=0; i<sizeof(units)/sizeof(units[0]); i++) {
       if (!strcmp (units[i].s, unit_string))
 	break;
@@ -330,7 +330,7 @@ double parse_one_unit (char **start, char *end)
       result = units[i].units/dvi_tell_mag();
     RELEASE (unit_string);
   }
-  if (errors) {
+  if (!unit_string || errors) {
     fprintf (stderr, "\nExpecting a unit here (e.g., in, cm, pt)\n");
     *start = save; 
     dump(*start, end);
@@ -368,7 +368,7 @@ static int parse_dimension (char **start, char *end,
       if (key >= 0 && number_string != NULL && dimensions[key].hasunits) {
 	skip_white(start, end);
 	if ((units = parse_one_unit(start, end)) < 0.0) {
-	  fprintf (stderr, "\nExpecting a dimension unit here\n");
+	  fprintf (stderr, "\nExpecting a dimension unit\n");
 	  error = 1;
 	}
       }

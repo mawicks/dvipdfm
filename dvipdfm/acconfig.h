@@ -27,5 +27,8 @@
 /* HAVE_LIBPNG - Define if you have libpng */
 #undef HAVE_LIBPNG
 
+/* HAVE_SYSTEM - Define if you have the system() command */
+#undef HAVE_SYSTEM
+
 
 #endif /* _CONFIG_H */

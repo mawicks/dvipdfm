@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.c,v 1.27 1999/09/05 02:56:36 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.c,v 1.28 1999/09/06 18:31:56 mwicks Exp $
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
 
@@ -266,9 +266,6 @@ char *parse_c_ident (char **start, char *end)
     "0123456789@ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
   return parse_gen_ident (start, end, valid_chars);
 }
-
-
-
 
 char *parse_opt_ident(char **start, char *end)
 {

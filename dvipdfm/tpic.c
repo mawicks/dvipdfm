@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tpic.c,v 1.15 1999/08/28 01:55:56 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tpic.c,v 1.16 1999/09/06 18:31:57 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -338,14 +338,19 @@ int tpic_parse_special(char *buffer, UNSIGNED_QUAD size, double
 {
   int i, tpic_command, result = 0;
   char *end = buffer + size;
+  char *token;
   skip_white (&buffer, end);
-  for (i=0; i<(sizeof(tpic_specials)/sizeof(tpic_specials[0])); i++) {
-    if (!strncmp (tpic_specials[i].s, buffer, strlen(tpic_specials[i].s)))
-      break;
-  }
+  if ((token = parse_ident (&buffer, end))) {
+    for (i=0; i<(sizeof(tpic_specials)/sizeof(tpic_specials[0])); i++) {
+      if (!strcmp (tpic_specials[i].s, token))
+	break;
+    }
+    RELEASE (token);
+  } else
+    return 0;
   if (i < sizeof(tpic_specials)/sizeof(tpic_specials[0])) {
     tpic_command = tpic_specials[i].tpic_command;
-    buffer += strlen (tpic_specials[i].s);
+    skip_white (&buffer, end);
     result = 1;
     switch (tpic_command) {
     case TPIC_PN:

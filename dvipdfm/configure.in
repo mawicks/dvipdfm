@@ -36,12 +36,9 @@ AC_HAS_LIBPNG
 AC_HAS_ZLIB
   
 dnl Check for functions
+AC_CHECK_FUNC(system,[AC_DEFINE(HAVE_SYSTEM)])
 
 dnl Checks for libraries.
-dnl Replace `main' with a function in -lm:
-AC_CHECK_LIB(m, main)
-dnl Replace `main' with a function in -ln:
-AC_CHECK_LIB(n, main)
 
 dnl Checks for header files.
 AC_HEADER_STDC

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/psimage.c,v 1.5 1999/09/05 18:02:45 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/psimage.c,v 1.6 1999/09/06 18:31:57 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -23,6 +23,7 @@
 */
 
 #include <stdio.h>
+#include "config.h"
 #include "system.h"
 #include "mem.h"
 #include "mfileio.h"
@@ -56,7 +57,8 @@ static char *last_dot (char *s)
   return NULL;
 }
 
- 
+#ifdef HAVE_SYSTEM  /* No need to build a command line if we don't
+		       have system() */
 static char *build_command_line (char *psname, char *pdfname)
 {
   char *result = NULL, *current;
@@ -103,11 +105,13 @@ static char *build_command_line (char *psname, char *pdfname)
   }
   return result;
 }
+#endif
 
 pdf_obj *ps_include (char *file_name, 
 		     struct xform_info *p,
 		     char *res_name, double x_user, double y_user)
 {
+#ifdef HAVE_SYSTEM
   pdf_obj *result = NULL;
   char *tmp, *cmd;
   FILE *pdf_file = NULL;
@@ -126,6 +130,10 @@ pdf_obj *ps_include (char *file_name,
     RELEASE (cmd);
   }
   return result;
+#else
+  fprintf (stderr, "\n\nCannot include PS/EPS files unless you have and enable system() command.\n");
+  return NULL;
+#endif
 }
 
 int check_for_ps (FILE *image_file) 

@@ -1,6 +1,6 @@
 pdfdev.o: pdfdev.c pdfdev.h numbers.h pdfdoc.h pdfobj.h error.h \
  type1.h pkfont.h mem.h mfileio.h pdfspecial.h pdfparse.h tpic.h \
- htex.h psspecial.h colorsp.h pdflimits.h tfm.h dvi.h colors.h
+ htex.h mpost.h psspecial.h colorsp.h pdflimits.h tfm.h dvi.h colors.h
 pdfdoc.o: pdfdoc.c config.h system.h pdflimits.h pdfobj.h error.h \
  mem.h dvi.h numbers.h pdfdev.h pdfdoc.h pdfspecial.h mfileio.h \
  thumbnail.h
@@ -23,13 +23,13 @@ type1.o: type1.c system.h pdfobj.h mem.h error.h mfileio.h numbers.h \
  type1.h tfm.h pdfparse.h pdflimits.h t1crypt.h twiddle.h winansi.h \
  standardenc.h
 dvipdfm.o: dvipdfm.c config.h system.h dvi.h error.h numbers.h \
- pdfdev.h mem.h mfileio.h pdfdoc.h pdfobj.h type1.h pdfspecial.h \
- pdfparse.h vf.h pkfont.h thumbnail.h psimage.h
+ pdfdev.h mem.h mfileio.h pdfdoc.h pdfobj.h type1.h colorsp.h \
+ pdfparse.h pdfspecial.h vf.h pkfont.h thumbnail.h psimage.h
 epdf.o: epdf.c system.h pdfobj.h pdfdoc.h pdfspecial.h numbers.h \
  mfileio.h epdf.h mem.h
 vf.o: vf.c mfileio.h numbers.h pdflimits.h system.h mem.h error.h \
  tfm.h pdfdev.h dvi.h vf.h dvicodes.h
-t1crypt.o: t1crypt.c
+t1crypt.o: t1crypt.c t1crypt.h
 pkfont.o: pkfont.c pkfont.h pdfobj.h mfileio.h numbers.h pdflimits.h \
  mem.h tfm.h error.h system.h
 tpic.o: tpic.c tpic.h numbers.h pdfparse.h pdfobj.h mem.h mfileio.h \
@@ -43,10 +43,10 @@ htex.o: htex.c htex.h numbers.h pdfparse.h pdfobj.h mem.h mfileio.h \
  pdfdoc.h dvi.h error.h pdfdev.h /usr/include/ctype.h
 mpost.o: mpost.c system.h mfileio.h numbers.h dvi.h error.h pdfdev.h \
  pdfobj.h pdfspecial.h pdfparse.h mpost.h mem.h pdflimits.h pdfdoc.h
-psimage.o: psimage.c system.h mem.h mfileio.h numbers.h pdfobj.h \
- psimage.h pdfspecial.h epdf.h
+psimage.o: psimage.c config.h system.h mem.h mfileio.h numbers.h \
+ pdfobj.h psimage.h pdfspecial.h epdf.h
 psspecial.o: psspecial.c system.h mem.h mfileio.h numbers.h \
  psspecial.h pdfparse.h pdfobj.h pdfspecial.h psimage.h mpost.h \
  pdfdoc.h
 colorsp.o: colorsp.c system.h mem.h pdfdev.h numbers.h pdfparse.h \
- pdfobj.h
+ pdfobj.h pdfspecial.h dvipdfm.h

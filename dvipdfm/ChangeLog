@@ -1,3 +1,21 @@
+1999-09-06  Mark A. Wicks  <mwicks@betelgeuse.wicks.net>
+
+	* Added native MetaPost and native support
+  	  for simple PS operators
+	* Added PS/EPS support with helper program
+	* Added a configuration file
+	* Added standard color specials
+	* Added standard landscape and papersize specials
+	* Added support for PSfile and plotfile specials
+
+1999-08-22  Mark A. Wicks  <mwicks@betelgeuse.wicks.net>
+
+	* Added slantfont and expand font support
+	* Removed dependency on AFM files
+	* Added support for font remapping to work around
+	  some problems with Adobe Reader and certain character positions.
+	* Reworked font code a lot.
+
 1999-02-08  Mark A. Wicks  <mwicks@odo.kettering.edu>
 	* Version 0.10.0 includes 
 	    PK font support

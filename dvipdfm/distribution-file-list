@@ -9,6 +9,7 @@ Makefile.in.spqr
 NEWS
 OBTAINING
 README
+README.FIRST
 TODO
 acconfig.h
 aclocal.m4
