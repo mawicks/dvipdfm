@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.52 1999/01/09 21:08:40 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.53 1999/01/11 02:10:30 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -28,7 +28,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <kpathsea/tex-file.h>
 #include <time.h>
 #include <ctype.h>
 #include "system.h"
@@ -140,7 +139,7 @@ int get_encoding (const char *enc_name)
     RELEASE (tmp);
   }
   if (full_enc_filename == NULL ||
-      (encfile = fopen (full_enc_filename, "r")) == NULL ||
+      (encfile = fopen (full_enc_filename, FOPEN_R_MODE)) == NULL ||
       (filesize = file_size (encfile)) == 0) {
     if (encfile)
       fclose (encfile);
@@ -213,7 +212,7 @@ struct font_record *get_font_record (const char *tex_name)
     full_map_filename = kpse_find_file (map_filename, kpse_tex_ps_header_format,
 					0);
     if (full_map_filename == NULL || 
-	(mapfile = fopen (full_map_filename, "r")) == NULL) {
+	(mapfile = fopen (full_map_filename, FOPEN_R_MODE)) == NULL) {
       fprintf (stderr, "Warning:  No font map file\n");
       mapfile = NULL;
     }

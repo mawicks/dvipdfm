@@ -1,7 +1,7 @@
 CC=@CC@
 CFLAGS=@CFLAGS@
 LDFLAGS=@LDFLAGS@
-CPPFLAGS=@CPPFLAGS@
+CPPFLAGS=@CPPFLAGS@ -I .
 INSTALL=@INSTALL@
 LIBS=@LIBS@
 srcdir=@srcdir@
@@ -56,9 +56,9 @@ uninstall-data:
 # Developer stuff
 #
 maintainerclean: clean distclean
-	rm -f c-auto.h.in configure
+	rm -f config.h.in configure
 distclean: clean
-	rm -f Makefile c-auto.h config.cache confdefs.h
+	rm -f Makefile config.h config.cache confdefs.h
 clean:
 	rm -f $(programs) *.o *.pdf 
 	for i in . doc latex-support ; \
@@ -78,13 +78,13 @@ depend.make:
 @MAINT@Makefile: Makefile.in configure
 @MAINT@	echo "***** You need to rerun ./configure. *****"
 @MAINT@	exit 1
-@MAINT@c-auto.h: c-auto.h.in configure.in
+@MAINT@config.h: config.h.in configure.in
 @MAINT@	echo "***** You need to rerun ./configure. *****"
-@MAINT@	rm c-auto.h
+@MAINT@	rm config.h
 @MAINT@	exit 1
-@MAINT@c-auto.h.in: acconfig.h configure.in
+@MAINT@config.h.in: acconfig.h configure.in
 @MAINT@	autoheader
-@MAINT@	touch c-auto.h.in
+@MAINT@	touch config.h.in
 @MAINT@configure: configure.in
 @MAINT@	autoconf
 @MAINT@dvipdfm-static:  $(objects) Makefile

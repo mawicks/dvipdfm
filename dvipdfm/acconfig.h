@@ -1,5 +1,6 @@
 
 /* Local variables defined by MAW */
+#ifndef _CONFIG_H
 
 #define VERSION 0
 
@@ -26,3 +27,4 @@
 #undef HAVE_KPSE_FORMATS
 
 
+#endif /* _CONFIG_H */

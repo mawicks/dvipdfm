@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.11 1998/12/18 19:42:35 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.12 1999/01/11 02:10:28 mwicks Exp $
 
     This is ebb, a bounding box extraction program.
     Copyright (C) 1998  by Mark A. Wicks
@@ -95,7 +95,7 @@ static void write_bb (char *filename, int bbllx, int bblly, int bburx,
   if (verbose)
     fprintf (stderr, "okay\n");
   bbfilename = make_bb_filename (filename);
-  if ((bbfile = fopen (bbfilename, "w")) == NULL) {
+  if ((bbfile = fopen (bbfilename, FOPEN_W_MODE)) == NULL) {
     fprintf (stderr, "Unable to open output file: %s\n", bbfilename);
     return;
   }

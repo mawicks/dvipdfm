@@ -2,10 +2,8 @@
 
 #define _SYSTEM_H_
 
-#define FOPEN_R_MODE "rb"
-#define FOPEN_RBIN_MODE "rb"
-#define FOPEN_WBIN_MODE "wb"
-
+#include <kpathsea/c-auto.h>
+#include <kpathsea/kpathsea.h>
 
 #ifdef WIN32
 #  undef ERROR
