@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.66 1999/08/17 03:14:06 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.67 1999/08/17 11:13:16 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -168,6 +168,7 @@ static void text_mode (void)
     break;
   }
   motion_state = TEXT_MODE;
+  text_offset = 0;
   return;
 }
 
@@ -244,13 +245,15 @@ static void dev_set_font (int font_id)
   len = sprintf (format_buffer, "/%s %.6g Tf", dev_font[font_id].short_name,
 		 dev_font[font_id].ptsize);
   if (dev_font[font_id].extend != text_extend) {
-    len = sprintf (format_buffer, " %.6g Tz", dev_font[font_id].extend*100);
+    len += sprintf (format_buffer+len, " %.6g Tz", dev_font[font_id].extend*100);
     text_extend = dev_font[font_id].extend;
   }
   if (dev_font[font_id].slant != text_slant) {
-    len = sprintf (format_buffer, " 1 0 %.3g 1 %.7g %.7g Tm",
+    len += sprintf (format_buffer+len, " 1 0 %.3g 1 %.7g %.7g Tm",
 		   dev_font[font_id].slant, text_xorigin*dvi2pts,
 		   text_yorigin*dvi2pts);
+     /* There's no longer any uncertainty about where we are */
+    text_xerror = 0.0; text_yerror = 0.0;
     text_slant = dev_font[font_id].slant;
   }
   pdf_doc_add_to_page (format_buffer, len);
@@ -268,11 +271,11 @@ void dev_set_string (mpt_t xpos, mpt_t ypos, unsigned char *s, int
 {
   int len = 0;
   long kern;
-  kern = (1000.0*(text_xorigin+text_offset-xpos))/dev_font[font_id].mptsize;
   if (font_id != current_font)
     dev_set_font(font_id); /* Force a Tf since we are actually trying
 			       to write a character */
-  else if (ypos != text_yorigin ||
+  kern = (1000.0*(text_xorigin+text_offset-xpos))/dev_font[font_id].mptsize;
+  if (ypos != text_yorigin ||
 	   abs(kern) > 32000) {
     text_mode();
     kern = 0;
