@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.20 1999/04/06 04:09:23 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.21 1999/04/08 04:07:36 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -381,9 +381,19 @@ double tfm_get_depth (int font_id, UNSIGNED_BYTE ch)
   return (tfm[font_id].unpacked_depths)[ch]/FWBASE;
 }
 
+double tfm_get_it_slant (int font_id)
+{
+  return (double) (tfm[font_id].param[0] / FWBASE);
+}
+
 double tfm_get_space (int font_id)
 {
   return (double) (tfm[font_id].param)[1] / FWBASE;
+}
+
+double tfm_get_x_height (int font_id)
+{
+  return (double) (tfm[font_id].param)[4] / FWBASE;
 }
 
 UNSIGNED_PAIR tfm_get_firstchar (int font_id)
@@ -413,15 +423,12 @@ double tfm_get_max_width (int font_id)
   return (max/FWBASE);
 }
 
-double tfm_get_min_width (int font_id)
+int tfm_is_fixed_width (int font_id)
 {
-  SIGNED_QUAD min = 0;
-  int i;
-  for (i=0; i<tfm[font_id].nwidths; i++) {
-    if ((tfm[font_id].width)[i] < min)
-      min = (tfm[font_id].width)[i];
-  }
-  return (min/FWBASE);
+  /* We always have two widths since width[0] = 0.
+     A fixed width font will have width[1] = something
+     and not have any other widths */
+  return (tfm[font_id].nwidths == 2);
 }
 
 double tfm_get_max_height (int font_id)

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.63 1999/04/06 04:09:23 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.64 1999/04/08 04:07:36 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -926,18 +926,12 @@ static void do_pfb (int pfb_id)
 
 
 #define FONTNAME 1
-#define ISFIXED  2
-#define ITALICANGLE 3
-#define XHEIGHT  4  
 #define OTHER        99
 
 static struct {
   char *string, value;
 } parse_table[] = 
 {  {"FontName", FONTNAME },
-   {"IsFixedPitch", ISFIXED },
-   {"ItalicAngle", ITALICANGLE },
-   {"XHeight", XHEIGHT },
 };
 
 
@@ -967,8 +961,8 @@ static int get_afm_token (void)
 }
 
 static double descent, ascent;
-static double bbllx, bblly, bburx, bbury, xheight;
-static double capheight, italicangle;
+static double bbllx, bblly, bburx, bbury;
+static double capheight, italic_angle;
 static int isfixed;
 static char fontname[256];  /* Make as long as buffer */
 
@@ -977,7 +971,7 @@ static void reset_afm_variables (void)
   descent = 0.0; ascent = 0.0;
   bbllx = 0.0; bblly = 0.0;
   bburx = 0.0; bbury = 0.0;
-  capheight = 0.0; italicangle = 0.0;
+  capheight = 0.0; italic_angle = 0.0;
   isfixed = 0;
   return;
 }
@@ -1018,22 +1012,6 @@ static void scan_afm_file (void)
       if (sscanf (start, " %s ", fontname) != 1)
 	ERROR ("afm: Error reading Fontname");
       break;
-    case ISFIXED:
-      if (!strncmp(start, "false", 5))
-	isfixed = 0;
-      else if (!strncmp(start, "true", 4))
-	isfixed = 1;
-      else 
-	ERROR ("Can't read value for IsFixedPitch");
-      break;
-    case ITALICANGLE:
-      if (sscanf (start, " %lf", &italicangle) != 1)
-	ERROR ("afm: Error reading descent");
-      break;
-    case XHEIGHT:
-      if (sscanf (start, " %lf", &xheight) != 1)
-	ERROR ("afm: Error reading XHeight");
-      break;
     default:
       break;
     }
@@ -1062,13 +1040,6 @@ static pdf_obj *type1_font_descriptor (const char *pfb_name, int encoding_id,
 		pdf_new_name ("CapHeight"),
 		pdf_new_number (ROUND(1000.0*tfm_get_height(tfm_font_id,
 						     'M'), 0.01)));
-  flags = 0;
-  if (italicangle != 0.0) flags += ITALIC;
-  if (isfixed) flags += FIXED_WIDTH;
-  flags += SYMBOLIC;
-  pdf_add_dict (font_descriptor,
-		pdf_new_name ("Flags"),
-		pdf_new_number (flags));
   {
     double max_height, max_depth, max_width;
     max_height = tfm_get_max_height (tfm_font_id)*1000.0;
@@ -1093,14 +1064,17 @@ static pdf_obj *type1_font_descriptor (const char *pfb_name, int encoding_id,
   pdf_add_dict (font_descriptor,
 		pdf_new_name ("FontName"),
 		pdf_new_name (fontname));
+#ifndef M_PI
+  #define M_PI (4.0*atan(1.0))
+#endif
+  italic_angle = ROUND(-180.0/M_PI*atan(tfm_get_it_slant(tfm_font_id)),0.1);
   pdf_add_dict (font_descriptor,
 		pdf_new_name ("ItalicAngle"),
-		pdf_new_number (ROUND(italicangle,1)));
-  if (xheight != 0.0) {
-    pdf_add_dict (font_descriptor,
-		  pdf_new_name ("XHeight"),
-		  pdf_new_number (ROUND(xheight,1)));
-  }
+		pdf_new_number(italic_angle));
+  pdf_add_dict (font_descriptor,
+		pdf_new_name ("XHeight"),
+		pdf_new_number
+		(ROUND(tfm_get_x_height(tfm_font_id)*1000.0,0.1)));
   pdf_add_dict (font_descriptor,
 		pdf_new_name ("StemV"),  /* This is required */
 		pdf_new_number (STEMV));
@@ -1110,6 +1084,21 @@ static pdf_obj *type1_font_descriptor (const char *pfb_name, int encoding_id,
 		  pdf_new_name ("FontFile"),
 		  type1_fontfile (pfb_id));
   font_descriptor_ref = pdf_ref_obj (font_descriptor);
+
+  /* Take care of flags */
+  flags = 0;
+  if (italic_angle != 0.0)
+    flags += ITALIC;
+  if (tfm_is_fixed_width(tfm_font_id)) {
+    fprintf (stderr, "Is fixed\n");
+    flags += FIXED_WIDTH;
+  } else
+    fprintf (stderr, "Is not fixed\n");
+
+  flags += SYMBOLIC;
+  pdf_add_dict (font_descriptor,
+		pdf_new_name ("Flags"),
+		pdf_new_number (flags));
   pdf_release_obj (font_descriptor);
   return font_descriptor_ref;
 }

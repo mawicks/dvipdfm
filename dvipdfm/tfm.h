@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.h,v 1.11 1999/04/06 04:09:23 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.h,v 1.12 1999/04/08 04:07:36 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -40,6 +40,8 @@ extern double tfm_get_height (int font_id, UNSIGNED_BYTE ch);
 extern double tfm_get_depth (int font_id, UNSIGNED_BYTE ch);
 extern fixword tfm_get_fw_width (int font_id, UNSIGNED_BYTE ch);
 extern double tfm_get_space (int font_id);
+extern double tfm_get_it_slant (int font_id);
+extern double tfm_get_x_height (int font_id);
 
 extern UNSIGNED_PAIR tfm_get_firstchar (int font_id);
 extern UNSIGNED_PAIR tfm_get_lastchar (int font_id);
@@ -47,7 +49,7 @@ extern UNSIGNED_PAIR tfm_get_lastchar (int font_id);
 extern double tfm_get_design_size (int font_id);
 extern double tfm_get_max_height (int font_id);
 extern double tfm_get_max_width (int font_id);
-extern double tfm_get_min_width (int font_id);
+extern int tfm_is_fixed_width (int font_id);
 extern double tfm_get_max_depth (int font_id);
 
 #endif /* TFM_H */
