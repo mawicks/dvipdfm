@@ -63,7 +63,7 @@ AC_DEFUN(AC_HAS_LIBPNG,
 LIBS="$LIBS -lm"
 AC_TRY_COMPILE([#include <png.h>], [png_infop p;],
 [AC_MSG_RESULT(yes)
- AC_CHECK_LIB(png, png_create_read_struct,
+ AC_CHECK_LIB(png, png_read_image,
 [AC_DEFINE(HAVE_LIBPNG)
 LIBS="$LIBS -lpng"])],
 [AC_MSG_RESULT(no)])])
