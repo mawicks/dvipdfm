@@ -10,7 +10,7 @@ exec_prefix=@exec_prefix@
 bindir=@bindir@
 datadir=@datadir@
 texmf=@TEXMF@
-psheaderdir=$(texmf)/dvips
+dvipdfmdir=$(texmf)/dvipdfm
 programs=dvipdfm ebb
 headers=dvi.h pdflimits.h error.h mfileio.h jpeg.h mem.h numbers.h \
 	pdfdev.h pdfdoc.h pdfparse.h pdfspecial.h tfm.h type1.h epdf.h \
@@ -41,11 +41,11 @@ install-exec: all
 	done
 # pdffonts.map.
 install-data:
-	if test ! -r $(psheaderdir)/dvipdfm/pdffonts.map \
-	   || grep 'original pdffonts.map --' $(psheaderdir)/dvipdfm/pdffonts.map \
+	if test ! -r $(dvipdfmdir)/pdffonts.map \
+	   || grep 'original pdffonts.map --' $(dvipdfmdir)/pdffonts.map \
 	   >/dev/null; then  \
-	   mkdir $(psheaderdir)/dvipdfm 2> /dev/null || true; \
-	   $(INSTALL) ./pdffonts.map $(psheaderdir)/dvipdfm/pdffonts.map; \
+	   mkdir $(dvipdfmdir) 2> /dev/null || true; \
+	   $(INSTALL) ./pdffonts.map $(dvipdfmdir)/pdffonts.map; \
 	else true; fi
 uninstall-exec:
 	rm -f $(bindir)/$(programs)

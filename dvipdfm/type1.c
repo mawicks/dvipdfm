@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.59 1999/02/21 14:30:24 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.60 1999/02/23 15:39:21 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -67,8 +67,8 @@ struct encoding {
      encoding must be obtained directly from the PFB file */
   char *glyphs[256];
   pdf_obj *encoding_ref;
-} encodings[MAX_ENCODINGS];
-int num_encodings = 0;
+} *encodings;
+int num_encodings = 0, max_encodings=0;
 
 void type1_set_mapfile (const char *name)
 {
@@ -175,6 +175,10 @@ int get_encoding (const char *enc_name)
     RELEASE (buffer);
     differences = find_encoding_differences (encoding);
     /* Put the glyph names into a conventional array */
+    if (num_encodings >= max_encodings) {
+       max_encodings += MAX_ENCODINGS;
+       encodings = RENEW (encodings, max_encodings, struct encoding);
+    }
     save_glyphs (encodings[num_encodings].glyphs, encoding);
     pdf_release_obj (encoding);
     result = pdf_new_dict();
@@ -209,7 +213,7 @@ struct font_record *get_font_record (const char *tex_name)
   
   if (first) {
     first = 0;
-    full_map_filename = kpse_find_file (map_filename, kpse_tex_ps_header_format,
+    full_map_filename = kpse_find_file (map_filename, kpse_program_text_format,
 					0);
     if (full_map_filename == NULL || 
 	(mapfile = fopen (full_map_filename, FOPEN_R_MODE)) == NULL) {
@@ -248,7 +252,7 @@ struct font_record *get_font_record (const char *tex_name)
 static unsigned long get_low_endian_quad (FILE *file)
 {
   unsigned long result;
-  unsigned bytes[4];
+  static unsigned bytes[4];
   int ch, i;
   for (i=0; i<4; i++) {
     if ((ch = fgetc (file)) < 0) {
@@ -1368,4 +1372,6 @@ void type1_close_all (void)
       RELEASE ((encodings[i].glyphs)[j]);
     }
   }
+  if (encodings)
+     RELEASE (encodings);
 }
