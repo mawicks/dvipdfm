@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.109 2001/04/14 03:25:00 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.110 2001/05/29 17:43:00 mwicks Exp $
  
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1241,6 +1241,17 @@ double dev_phys_y (void)
   return dev_page_height() + dvi_tell_mag()*dvi_dev_ypos() -voffset;
 }
 
+static int src_special (char *buffer, UNSIGNED_QUAD size) {
+  char *start = buffer;
+  char *end = buffer + size;
+  int result = 0;
+  skip_white (&start, end);
+  if ((start+3 < end) &&
+      (!strncmp ("src:", start, 4)))
+    result = 1;
+  return result;
+}
+
 void dev_do_special (void *buffer, UNSIGNED_QUAD size, spt_t x_user, 
 		     spt_t y_user)
 {
@@ -1252,8 +1263,9 @@ void dev_do_special (void *buffer, UNSIGNED_QUAD size, spt_t x_user,
       !tpic_parse_special (buffer, size, dev_xuser, dev_yuser) &&
       !htex_parse_special (buffer, size) &&
       !color_special (buffer, size) &&
-      !ps_parse_special (buffer, size, dev_xuser, dev_yuser)) {
-    fprintf (stderr, "\nUnrecognized special ignored\n");
+      !ps_parse_special (buffer, size, dev_xuser, dev_yuser) &&
+      !src_special (buffer, size)) {
+    fprintf (stderr, "\nUnrecognized special ignored");
     dump (buffer, ((char *)buffer)+size);
   }
 }
