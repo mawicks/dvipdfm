@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tpic.c,v 1.14 1999/02/21 21:45:01 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tpic.c,v 1.15 1999/08/28 01:55:56 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -36,7 +36,7 @@
 double pen_size = 1.0;
 int fill_shape = 0;
 double fill_color = 0.0; double default_fill_color = 0.5;
-struct path
+static struct path
 {
   double x, y;
 } *path = NULL;

@@ -1,25 +1,25 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.9 1999/08/27 01:11:50 mwicks Exp $
-
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.10 1999/08/28 01:55:56 mwicks Exp $
+    
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
-
+    
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
     (at your option) any later version.
-
+    
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
-
+    
     You should have received a copy of the GNU General Public License
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
     
     The author may be contacted via the e-mail address
-
-	mwicks@kettering.edu
+    
+    mwicks@kettering.edu
 */
 
 #include <stdlib.h>
@@ -37,6 +37,8 @@
 #include "error.h"
 #include "pdfdev.h"
 #include "pdfdoc.h"
+
+#define debug 0
 
 int check_for_mp (FILE *image_file) 
 {
@@ -169,7 +171,7 @@ int mp_parse_headers (FILE *image_file)
   /* Read all headers--act on *Font records */
   save_position = tell_position(image_file);
   while (!feof(image_file) && mfgets (work_buffer, WORK_BUFFER_SIZE,
-				     image_file)) {
+				      image_file)) {
     if (*work_buffer != '%') {
       seek_absolute (image_file, save_position);
       break;
@@ -196,6 +198,198 @@ int mp_parse_headers (FILE *image_file)
   return 1;
 }
 
+struct point {
+  double x, y;
+};
+
+struct curve {
+  double x[3], y[3];
+};
+
+static struct path_element
+{
+  char type;
+  void  *element;
+} *path = NULL;
+static int n_path_pts = 0, max_path_pts = 0;
+static int path_clip = 0, path_close = 0;
+
+#define MORE_PATH_POINTS 64
+
+static void need_points (int n)
+{
+  if (n_path_pts+n > max_path_pts) {
+    max_path_pts += MORE_PATH_POINTS;
+    path = RENEW (path, max_path_pts, struct path_element);
+  }
+  return;
+}
+
+static void clip_path (void)
+{
+  path_clip = 1;
+}
+
+static void close_path (void)
+{
+  path_close = 1;
+}
+
+static void add_point_to_path (double x, double y, char type)
+{
+  struct point *p;
+  need_points (1);
+  path[n_path_pts].type = type;
+  p = NEW (1, struct point);
+  p->x = x; p->y = y;
+  path[n_path_pts].element = p;
+  n_path_pts += 1;
+  return;
+}
+
+static void add_curve_to_path (double x0, double y0,
+			       double x1, double y1,
+			       double x2, double y2)
+{
+  struct curve *c;
+  need_points (1);
+  c = NEW (1, struct curve);
+  path[n_path_pts].type = 'c';
+  (c->x)[0] = x0; (c->y)[0] = y0;
+  (c->x)[1] = x1; (c->y)[1] = y1;
+  (c->x)[2] = x2; (c->y)[2] = y2;
+  path[n_path_pts].element = c;
+  n_path_pts += 1;
+  return;
+}
+
+static void void_path (void)
+{
+  int i;
+  for (i=0; i<n_path_pts; i++) {
+    RELEASE (path[i].element);
+  }
+  path_clip = 0;
+  path_close = 0;
+  n_path_pts = 0;
+}
+
+static void flush_path (void)
+{
+  int i, len;
+  if (debug) {
+    fprintf (stderr, "\nflush_path(), n=%d\n", n_path_pts);
+  }
+  for (i=0; i<n_path_pts; i++) {
+    switch (path[i].type) {
+    case 'm': /* moveto */ 
+      /* Moveto must start a new path */
+      /*      void_path (); */
+    case 'l': /* lineto */ 
+      {
+	struct point *p;
+	p = path[i].element;
+	len = sprintf (work_buffer, " %g %g %c", 
+		       ROUND(p->x, 0.001), ROUND(p->y, 0.001),
+		       path[i].type);
+	pdf_doc_add_to_page (work_buffer, len);
+	RELEASE (p);
+      }
+      break;
+    case 'c': /* curveto */
+      {
+	struct curve *p;
+	p = path[i].element;
+	len = sprintf (work_buffer, " %g %g %g %g %g %g c", 
+		       ROUND((p->x)[0], 0.001), ROUND((p->y)[0], 0.001),
+		       ROUND((p->x)[1], 0.001), ROUND((p->y)[1], 0.001),
+		       ROUND((p->x)[2], 0.001), ROUND((p->y)[2], 0.001));
+	pdf_doc_add_to_page (work_buffer, len);
+	RELEASE (p);
+      }
+      break;
+    default: /* This shouldn't happen! */
+      ERROR ("Internal error in mpost.c, flush_path ()");
+    }
+  }
+  n_path_pts = 0;
+  if (path_close) {
+    pdf_doc_add_to_page (" h", 2);
+    path_close = 0;
+  }
+  if (path_clip) {
+    pdf_doc_add_to_page (" W", 2);
+    path_clip = 0;
+  }
+  return;
+}
+
+static void transform_path (double a, double b, double c, double d,
+			    double e, double f)
+{
+  double an, bn, cn, dn, en, fn, delta, xn, yn;
+  unsigned i;
+  delta = a*d-b*c;
+  if (delta == 0.0) {
+    ERROR ("Determinant exactly zero in transform_path()");
+  }
+  an=d/delta; bn=-b/delta; cn=-c/delta; dn=a/delta;
+  en=(c*f-e*d)/delta, fn=(b*e-a*f)/delta;
+  for (i=0; i<n_path_pts; i++) {
+    switch (path[i].type) {
+    case 'l':
+    case 'm':
+      {
+	struct point *p;
+	p = path[i].element;
+	xn = an*(p->x)+cn*(p->y)+en;
+	yn = bn*(p->x)+dn*(p->y)+fn;
+	p->x = xn;
+	p->y = yn;
+      }
+      break;
+    case 'c':
+      {
+	int j;
+	struct curve *c;
+	c = path[i].element;
+	for (j=0; j<3; j++) {
+	  xn = an*(c->x)[j]+cn*(c->y)[j]+en;
+	  yn = bn*(c->x)[j]+dn*(c->y)[j]+fn;
+	  (c->x)[j] = xn; (c->y)[j] = yn;
+	}
+      }
+    }
+  }
+}
+static void dump_path (void)
+{
+  unsigned i;
+  for (i=0; i<n_path_pts; i++) {
+    switch (path[i].type) {
+    case 'l':
+    case 'm': 
+      {
+	struct point *p;
+	p = path[i].element;
+	fprintf (stderr, "\t%g %g %c\n", p->x, p->y, path[i].type);
+      }
+      break;
+    case 'c': 
+      {
+	struct curve *c;
+	int j;
+	c = path[i].element;
+	for (j=0; j<3; j++) {
+	  fprintf (stderr, "\t%g %g\n", (c->x)[j], (c->y)[j]);
+	}
+	fprintf (stderr, "\t\t\tcurveto\n");
+	break;
+      }
+    }
+  }
+}
+
 #define PS_STACK_SIZE 1024
 static pdf_obj *stack[PS_STACK_SIZE];
 static top_stack;
@@ -205,12 +399,12 @@ int move_pending = 0;
 
 #define PUSH(o) { \
   if (top_stack<PS_STACK_SIZE) { \
-    stack[top_stack++] = o; \
-  } else { \
-    fprintf (stderr, "PS stack overflow including MetaPost file"); \
-    return; \
-  } \
-} \
+				   stack[top_stack++] = o; \
+							     } else { \
+									fprintf (stderr, "PS stack overflow including MetaPost file"); \
+																	 return; \
+																		   } \
+																		       } \
 
 #define POP_STACK() (top_stack>0?stack[--top_stack]:NULL)
 
@@ -325,6 +519,9 @@ static void do_operator(char *token)
   pdf_obj *tmp5=NULL, *tmp6=NULL;
   int len;
   operator = lookup_operator (token);
+  if (debug) {
+    fprintf (stderr, "\nop=%s\n", token);
+  }
   switch (operator) {
   case ADD:
     tmp1 = POP_STACK();
@@ -338,10 +535,10 @@ static void do_operator(char *token)
       PUSH(tmp1);
     break;
   case CLIP:
-    pdf_doc_add_to_page (" W", 2);
+    clip_path();
     break;
   case CLOSEPATH:
-    pdf_doc_add_to_page (" h", 2);
+    close_path();
     break;
   case CONCAT:
     tmp1 = POP_STACK();
@@ -355,6 +552,12 @@ static void do_operator(char *token)
       }
       len += sprintf (work_buffer+len, " cm");
       pdf_doc_add_to_page (work_buffer, len);
+      transform_path (pdf_number_value(pdf_get_array(tmp1, 0)),
+		      pdf_number_value(pdf_get_array(tmp1, 1)),
+		      pdf_number_value(pdf_get_array(tmp1, 2)),
+		      pdf_number_value(pdf_get_array(tmp1, 3)),
+		      pdf_number_value(pdf_get_array(tmp1, 4)),
+		      pdf_number_value(pdf_get_array(tmp1, 5)));
     } else {
       fprintf (stderr, "\nMissing array before \"concat\"\n");
     }
@@ -368,14 +571,14 @@ static void do_operator(char *token)
 	(tmp3 = POP_STACK()) && tmp3->type == PDF_NUMBER &&
 	(tmp2 = POP_STACK()) && tmp2->type == PDF_NUMBER &&
 	(tmp1 = POP_STACK()) && tmp1->type == PDF_NUMBER) {
-      len = sprintf (work_buffer, " %g %g %g %g %g %g c", 
-		     ROUND(pdf_number_value(tmp1),0.01),
-		     ROUND(pdf_number_value(tmp2),0.01),
-		     ROUND(pdf_number_value(tmp3),0.01),
-		     ROUND(pdf_number_value(tmp4),0.01),
-		     ROUND(pdf_number_value(tmp5),0.01),
-		     ROUND(pdf_number_value(tmp6),0.01));
-      pdf_doc_add_to_page (work_buffer, len);
+      add_curve_to_path (pdf_number_value(tmp1),
+			 pdf_number_value(tmp2),
+			 pdf_number_value(tmp3),
+			 pdf_number_value(tmp4),
+			 pdf_number_value(tmp5),
+			 pdf_number_value(tmp6));
+      x_state = pdf_number_value (tmp5);
+      y_state = pdf_number_value (tmp6);
     } else {
       fprintf (stderr, "\nMissing number(s) before \"curveto\"\n");
     }
@@ -386,7 +589,7 @@ static void do_operator(char *token)
     if (tmp5) pdf_release_obj (tmp5);
     if (tmp6) pdf_release_obj (tmp6);
     break;
- case DIV:
+  case DIV:
     tmp2 = POP_STACK();
     tmp1 = POP_STACK();
     if (tmp1 && tmp2)
@@ -423,6 +626,7 @@ static void do_operator(char *token)
     }
     break;
   case FILL:
+    flush_path ();
     pdf_doc_add_to_page (" f", 2);
     break;
   case FSHOW: 
@@ -436,11 +640,6 @@ static void do_operator(char *token)
 	  fprintf (stderr, "\n\"fshow\": Missing font in MetaPost file? %s@%g\n", 
 		   (char *) pdf_string_value(tmp2), pdf_number_value(tmp3));
 	}
-	/* MetaPost ships out a "moveto" before displaying any text.
-	   This confuses Acrobat Reader because it thinks we are
-	   starting a graphics path.  Ship out a "newpath" to end the
-	   path started by the "moveto" */
-	pdf_doc_add_to_page (" n", 2);
 	dev_set_string (x_state/dev_dvi2pts(), y_state/dev_dvi2pts(),
 			pdf_string_value(tmp1),
 			pdf_string_length(tmp1), 0, mp_fonts[fontid].font_id);
@@ -477,15 +676,11 @@ static void do_operator(char *token)
     break;
   case LINETO: 
     {
-      int len;
       if ((tmp2 = POP_STACK()) && tmp2-> type == PDF_NUMBER &&
 	  (tmp1 = POP_STACK()) && tmp1-> type == PDF_NUMBER) {
-	len = sprintf (work_buffer, " %g %g l",
-		       ROUND(pdf_number_value(tmp1),0.01),
-		       ROUND(pdf_number_value(tmp2),0.01));
-	pdf_doc_add_to_page (work_buffer, len);
 	x_state = pdf_number_value (tmp1);
 	y_state = pdf_number_value (tmp2);
+	add_point_to_path (x_state, y_state, 'l');
       }
       if (tmp1)
 	pdf_release_obj (tmp1);
@@ -496,17 +691,13 @@ static void do_operator(char *token)
   case MOVETO:
     if ((tmp2 = POP_STACK()) && tmp2-> type == PDF_NUMBER &&
 	(tmp1 = POP_STACK()) && tmp1-> type == PDF_NUMBER) {
-      len = sprintf (work_buffer, " %g %g m",
-		     ROUND(pdf_number_value (tmp1),0.01),
-		     ROUND(pdf_number_value (tmp2),0.01));
-      pdf_doc_add_to_page (work_buffer, len);
       /* MetaPost likes to ship out a moveto before displayed text.
-	 This causes the reader to choke since it thinks we are
-	 starting a graphics path and PDF makes strong distinctions
-	 between graphics and text.  Save the move but don't actually
-	 do it unless the next operator is a graphics operator */
+	 Save the results so we know where to place the text.  Save
+	 the move but don't actually do it unless the next operator is
+	 a graphics operator */
       x_state = pdf_number_value (tmp1);
       y_state = pdf_number_value (tmp2);
+      add_point_to_path (x_state, y_state, 'm');
     }
     if (tmp1)
       pdf_release_obj (tmp1);
@@ -525,6 +716,7 @@ static void do_operator(char *token)
       pdf_release_obj (tmp2);
     break;
   case NEWPATH:
+    flush_path ();
     pdf_doc_add_to_page (" n", 2);
     break;
   case POP:
@@ -535,10 +727,9 @@ static void do_operator(char *token)
   case RLINETO: 
     if ((tmp2 = POP_STACK()) && tmp2->type == PDF_NUMBER &&
 	(tmp1 = POP_STACK()) && tmp1->type == PDF_NUMBER) {
-      len = sprintf (work_buffer, " %g %g l",
-		     ROUND(x_state+pdf_number_value(tmp1),0.01),
-		     ROUND(y_state+pdf_number_value(tmp2),0.01));
-      pdf_doc_add_to_page (work_buffer, len);
+      x_state += pdf_number_value (tmp1);
+      y_state += pdf_number_value (tmp2);
+      add_point_to_path (x_state, y_state, 'l');
     }
     if (tmp1)
       pdf_release_obj (tmp1);
@@ -551,6 +742,8 @@ static void do_operator(char *token)
       len = sprintf (work_buffer, " %g 0 0 %g 0 0 cm", 
 		     ROUND(pdf_number_value (tmp1),0.01),
 		     ROUND(pdf_number_value (tmp2),0.01));
+      transform_path (pdf_number_value(tmp1), 0.0,
+		      0.0, pdf_number_value(tmp2), 0.0, 0.0);
       pdf_doc_add_to_page (work_buffer, len);
     }
     if (tmp1)
@@ -694,8 +887,10 @@ static void do_operator(char *token)
     break;
   case SHOWPAGE:
     /* Let's ignore this for now */
+    void_path ();
     break;
   case STROKE:
+    flush_path();
     pdf_doc_add_to_page (" S", 2);
     break;
   case SUB:
@@ -716,6 +911,9 @@ static void do_operator(char *token)
 		     ROUND(pdf_number_value (tmp1),0.01),
 		     ROUND(pdf_number_value (tmp2),0.01));
       pdf_doc_add_to_page (work_buffer, len);
+      transform_path (1.0, 0.0, 0.0, 1.0,
+		      pdf_number_value (tmp1),
+		      pdf_number_value (tmp2));
     }
     if (tmp1)
       pdf_release_obj (tmp1);
@@ -779,10 +977,21 @@ static void mp_cleanup (void)
   if (top_stack != 0) {
     fprintf (stderr, "\nMetaPost: PS stack not empty at end of figure!\n");
   }
+  /* Cleanup paths */
   while (top_stack > 0) {
     pdf_obj *p;
     if ((p=POP_STACK()))
       pdf_release_obj (p);
+  }
+  if (n_path_pts > 0) {
+    fprintf (stderr, "\nMetaPost: Pending path at end of figure!\n");
+    dump_path ();
+    void_path ();
+  }
+  if (max_path_pts > 0) {
+    RELEASE (path);
+    path = NULL;
+    max_path_pts = 0;
   }
 }
 
