@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/vf.c,v 1.21.8.1 2000/07/25 03:29:17 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/vf.c,v 1.21.8.2 2000/07/25 04:15:35 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -280,9 +280,10 @@ int vf_locate_font (char *tex_name, mpt_t ptsize)
   }
   if (full_vf_file_name &&
       (vf_file = FOPEN (full_vf_file_name, FOPEN_RBIN_MODE)) != NULL) {
-    if (verbose) {
-      fprintf (stderr, "(%s)", full_vf_file_name);
-    }
+    if (verbose == 1)
+      fprintf (stderr, "(VF:%s", tex_name);
+    if (verbose > 1)
+      fprintf (stderr, "(VF:%s", full_vf_file_name);
     if (num_vf_fonts >= max_vf_fonts) {
       resize_vf_fonts (max_vf_fonts + VF_ALLOC_SIZE);
     }
@@ -295,6 +296,8 @@ int vf_locate_font (char *tex_name, mpt_t ptsize)
     }
     read_header(vf_file, thisfont);
     process_vf_file (vf_file, thisfont);
+    if (verbose)
+      fprintf (stderr, ")");
     FCLOSE (vf_file);
   }
   return thisfont;

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.117.2.3 2000/07/25 03:51:20 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.117.2.4 2000/07/25 04:15:35 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -221,9 +221,10 @@ int get_encoding (const char *enc_name)
     sprintf (work_buffer, "Error opening encoding file: %s", enc_name) ;
     ERROR (work_buffer);
   }
-  if (verbose) {
-    fprintf (stderr, "(%s", full_enc_filename);
-  }
+  if (verbose == 1)
+    fprintf (stderr, "(ENC:%s", enc_name);
+  if (verbose > 1)
+    fprintf (stderr, "(ENC:%s", full_enc_filename);
   {  /* Got one and opened it */
     char *buffer, *start, *end, *junk_ident;
     pdf_obj *junk_obj, *encoding, *differences;
@@ -843,7 +844,7 @@ static unsigned char *get_pfb_segment (unsigned long *length,
       break;
     }
     new_length = get_low_endian_quad (file);
-    if (verbose > 3) {
+    if (verbose > 4) {
       fprintf (stderr, "Length of next PFB segment: %ld\n",
 	       new_length);
     }
@@ -1126,7 +1127,7 @@ static unsigned long parse_body (unsigned char *filtered, unsigned char
        file */
     ident = parse_ident (&start, end);
     if (verbose>1) {
-      fprintf (stderr, "\nEmbedding %d of %s glyphs\n", n_used, ident);
+      fprintf (stderr, "\n  Embedding %d of %s glyphs\n", n_used, ident);
     }
     if (ident == NULL || !is_an_int (ident) || n_used > atof (ident)) 
       ERROR ("More glyphs needed than present in file");
@@ -1182,7 +1183,7 @@ static unsigned long parse_body (unsigned char *filtered, unsigned char
       filtered_pointer += end-start;
     }
     if (verbose>1) {
-      fprintf (stderr, " (subsetting eliminated %ld bytes)", length-(filtered_pointer-filtered));
+      fprintf (stderr, "  (subsetting eliminated %ld bytes)", length-(filtered_pointer-filtered));
     }
   }
   return (filtered? filtered_pointer-filtered: length);
@@ -1414,9 +1415,10 @@ static void do_pfb (int pfb_id)
   int ch;
   full_pfb_name = kpse_find_file (pfbs[pfb_id].pfb_name, kpse_type1_format,
 				  1);
-  if (verbose) {
-    fprintf (stderr, "(%s)", full_pfb_name);
-  }
+  if (verbose == 1)
+    fprintf (stderr, "(PFB:%s", pfbs[pfb_id].pfb_name);
+  if (verbose > 1)
+    fprintf (stderr, "(PFB:%s", full_pfb_name);
   if (full_pfb_name == NULL ||
       (type1_binary_file = FOPEN (full_pfb_name, FOPEN_RBIN_MODE)) == NULL) {
     fprintf (stderr, "type1_fontfile:  Unable to find or open binary font file (%s)",
@@ -1453,6 +1455,11 @@ static void do_pfb (int pfb_id)
       (ch = fgetc (type1_binary_file)) != 3)
     ERROR ("type1_fontfile:  Are you sure this is a pfb?");
   /* Got entire file! */
+  if (verbose > 1)
+    fprintf (stderr, "\n  Embedded size: %ld bytes\n", length1+length2+length3);
+  if (verbose) {
+    fprintf (stderr, ")");
+  }
   FCLOSE (type1_binary_file);
   stream_dict = pdf_stream_dict (pfbs[pfb_id].direct);
   pdf_add_dict (stream_dict, pdf_new_name("Length1"),
@@ -1463,8 +1470,6 @@ static void do_pfb (int pfb_id)
 		pdf_new_number (length3));
   /* Finally, flush the descriptor */
   pdf_release_obj (pfbs[pfb_id].descriptor);
-  if (verbose > 1)
-    fprintf (stderr, "\nEmbedded size: %ld bytes\n", length1+length2+length3);
   return;
 }
 

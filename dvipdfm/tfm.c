@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.28.8.3 2000/07/25 03:29:17 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.28.8.4 2000/07/25 04:15:35 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -433,7 +433,9 @@ int tfm_open (const char *tfm_name)
 	fprintf (stderr, "%s: ", tfm_name);
 	ERROR ("Specified TFM file cannot be opened");
       }
-      if (tfm_verbose)
+      if (tfm_verbose == 1)
+	fprintf (stderr, "(TFM:%s", tfm_name);
+      if (tfm_verbose > 1)
 	fprintf (stderr, "(TFM:%s", full_tfm_file_name);
       if ((tfm_file_size = file_size(tfm_file)) < 24) {
 	invalid_tfm_file ();
@@ -446,7 +448,9 @@ int tfm_open (const char *tfm_name)
 	fprintf (stderr, "%s:  ", tfm_name);
 	ERROR ("TFM file cannot be opened");
       }
-      if (tfm_verbose)
+      if (tfm_verbose == 1)
+	fprintf (stderr, "(OFM:%s", tfm_name);
+      if (tfm_verbose > 1)
 	fprintf (stderr, "(OFM:%s", full_tfm_file_name);
       if ((tfm_file_size = file_size(tfm_file)) < 24) {
 	invalid_ofm_file ();
