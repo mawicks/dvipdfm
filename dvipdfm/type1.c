@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.105 2000/07/09 06:34:53 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.106 2000/07/10 02:14:38 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -447,13 +447,9 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
      characters in the overriding encoding.  Ghostscript doesn't
      have a problem with it. */
 
-  unsigned char *filtered_pointer = NULL;
+  unsigned char *filtered_pointer;
   int state = 0;
   char *start, *end, *lead, *saved_lead = NULL;
-  /* start is current parser pointer */
-  /* lead is a backup point.  This point is maintained until
-     the parser can determine whether the section between lead and
-     start should be included */
   int last_number = 0;
   char *glyph = NULL;
 #ifdef MEM_DEBUG
@@ -467,7 +463,7 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
     }
   }
   /* State definitions 
-     state 0: Initial state - nothing special
+     state 0: Initial state
      state 1: Saw /FontName
      state 2: Saw /Encoding
      state 3: Saw "dup" in state 2
@@ -475,92 +471,21 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
      state 5: Saw a /glyphname in state 4 */
   start = (char *) buffer;
   end = start+length;
-  if (filtered)
-    filtered_pointer = filtered;
+  filtered_pointer = filtered;
   lead = start;
   skip_white (&start, end);
-  if (filtered && lead != start) {
+  if (lead != start) {
     memcpy (filtered_pointer, lead, start-lead);
     filtered_pointer += start-lead;
   }
   while (start < end) {
     char *save, *ident;
-    pdf_obj *pdfobj = NULL;
+    pdf_obj *pdfobj;
     switch (state) {
       /* First three states are very similar.  In most cases we just
 	 ignore other postscript junk and don't change state */
     case 0:
-      switch (*start) {
-      case '[':
-      case ']':
-      case '{':
-      case '}':
-	start += 1;
-	break;
-      case '(':
-	if ((pdfobj = parse_pdf_string (&start, end))) {
-	  pdf_release_obj (pdfobj);
-	}
-	break;
-      case '/':
-	start += 1;
-	ident = parse_ident (&start, end);
-	if (ident && !strcmp (ident, "FontName")) {
-	  fprintf (stderr, "********saw FontName*******");
-	  state = 1;
-	} else if (ident && !strcmp (ident, "Encoding")) {
-	  state = 2;
-	}
-	if (ident)
-	  RELEASE (ident);
-	break;
-      default:
-	if ((ident = parse_ident (&start, end)))
-	  RELEASE (ident);
-	break;	    
-      }
-      break;
     case 1:
-      switch (*start) { /* Ignore arrays and procedures */
-      case '[':
-      case ']':
-      case '{':
-      case '}':
-	fprintf (stderr, "Garbage following /FontName");
-	dump (start, end);
-	ERROR ("Unable to determine FontName");
-	break;
-      case '(':
-	if ((pdfobj = parse_pdf_string (&start, end))) {
-	  fprintf (stderr, "***FontName is -->%s<--***\n", (char *) pdf_string_value(pdfobj));
-	  pdf_release_obj (pdfobj);
-	} else {
-	  fprintf (stderr, "parse_header:  Error parsing FontName");
-	  dump (start, end);
-	  ERROR ("Unable to determine FontName");
-	}
-	if (filtered) {
-	  filtered_pointer += sprintf ((char *)filtered_pointer, "/%s ",
-				       pfbs[pfb_id].fontname);
-	  lead = NULL; /* Means don't copy current input to output */
-	}
-	state = 0;
-      case '/':
-	start += 1;
-	if ((ident = parse_ident (&start, end))) {
-	  fprintf (stderr, "***FontName is -->%s<--***\n", ident);
-	  RELEASE (ident);
-	}
-	state = 0;
-	break;
-      default:
-	fprintf (stderr, "Garbage following /FontName");
-	dump (start, end);
-	ERROR ("Unable to determine FontName");
-
-	break;
-      }
-      break;
     case 2:
       lead = start;
       switch (*start) {
@@ -579,12 +504,28 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
 	  ERROR ("parse_header:  Error parsing a string in pfb header");
 	}
 	pdf_release_obj (pdfobj);
+	if (state == 1) {
+	  filtered_pointer += sprintf ((char *)filtered_pointer, "/%s ",
+				       pfbs[pfb_id].fontname);
+	  lead = NULL; /* Means don't copy current input to output */
+	  state = 0;
+	}
 	if (state >= 2)
 	  state = 2;
 	break;
       case '/':
 	start += 1;
 	ident = parse_ident (&start, end);
+	if (state == 0 && !strcmp (ident, "FontName")) {
+	  state = 1;
+	} else if (state == 0 && !strcmp (ident, "Encoding")) {
+	  state = 2;
+	} else if (state == 1) {
+	  filtered_pointer += sprintf ((char *)filtered_pointer, "/%s ",
+				       pfbs[pfb_id].fontname);
+	  lead = NULL; /* Means don't copy current input to output */
+	  state = 0;
+	}
 	RELEASE (ident);
 	break;
       default:
@@ -633,7 +574,7 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
       /* Here we either decide to keep or remove the encoding entry */
       if (ident != NULL && !strcmp (ident, "put") && 
 	  (int) last_number < 256 && (int) last_number >= 0) {
-	if (filtered && (pfbs[pfb_id].used_chars)[last_number]) {
+	if ((pfbs[pfb_id].used_chars)[last_number]) {
 	  filtered_pointer += 
 	    sprintf((char *) filtered_pointer, "dup %d /%s put\n",
 		    pfbs[pfb_id].remap?twiddle(last_number):last_number,
@@ -656,17 +597,18 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
       break;
     }
     skip_white (&start, end);
-    if (filtered && lead) {
+    if (lead) {
       memcpy (filtered_pointer, lead, start-lead);
       filtered_pointer += start-lead;
       lead = start;
     }
+  }
 #ifdef MEM_DEBUG
   MEM_END
 #endif /* MEM_DEBUG */
-    }
-  return filtered? filtered_pointer-filtered: length;
+  return filtered_pointer-filtered;
 }
+
 
 static void dump_glyphs( char **glyphs)
 {
@@ -815,7 +757,7 @@ static char *pfb_find_name (FILE *pfb_file)
 static unsigned long do_pfb_header (FILE *file, int pfb_id,
 				    char **glyphs)
 {
-  unsigned char *buffer, *filtered = NULL;
+  unsigned char *buffer, *filtered;
   unsigned long length = 0;
 #ifdef MEM_DEBUG
 MEM_START
@@ -824,9 +766,7 @@ MEM_START
   if (partial_enabled) {
     filtered = NEW (length+strlen(pfbs[pfb_id].fontname)+1+1024, unsigned
 		    char);
-  }
-  length = parse_header (filtered, buffer, length, pfb_id, glyphs);
-  if (filtered) {
+    length = parse_header (filtered, buffer, length, pfb_id, glyphs);
     pdf_add_stream (pfbs[pfb_id].direct, (char *) filtered, length);
     RELEASE (filtered);
   } else {
@@ -1013,6 +953,8 @@ static unsigned long do_partial_body (unsigned char *filtered, unsigned char
   }
   return (filtered_pointer-filtered);
 }
+
+
 
 static unsigned long do_pfb_body (FILE *file, int pfb_id,
 				  char **glyphs)
