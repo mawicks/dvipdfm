@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tpic.c,v 1.17 1999/09/08 16:51:48 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tpic.c,v 1.18 2000/01/03 16:28:57 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -32,7 +32,7 @@
 #include "pdfdoc.h"
 #include "dvi.h"
 
-#define MI2DEV (0.072*dvi_tell_mag())
+#define MI2DEV 0.072
 
 double pen_size = 1.0;
 int fill_shape = 0;
