@@ -1,0 +1,10 @@
+
+#define VERSION "0.0"
+#define PACKAGE "dvipdf"
+
+#define PREFIX  /usr/local/texmf
+#define DATADIR ${prefix}/share
+#define BINADIR ${exec_prefix}/bin
+
+
+
