@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.51 1999/01/09 02:23:19 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.52 1999/01/09 21:08:40 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -356,20 +356,29 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
     case 2:
       lead = start;
       switch (*start) {
+	/* Ignore arrays and procedures */
       case '[':
       case ']':  
       case '{':
       case '}':
 	start += 1;
+	if (state >= 2) 
+	  state = 2;
 	break;
       case '(':
 	pdfobj = parse_pdf_string (&start, end);
 	if (pdfobj == NULL) {
-	  ERROR ("parse_header:  Error parsing pfb header");
+	  ERROR ("parse_header:  Error parsing a string in pfb header");
 	}
 	pdf_release_obj (pdfobj);
-	if (state >= 1)
-	  state = 1;
+	if (state == 1) {
+	  filtered_pointer += sprintf ((char *)filtered_pointer, "/%s ",
+				       pfbs[pfb_id].fontname);
+	  lead = NULL; /* Means don't copy current input to output */
+	  state = 0;
+	}
+	if (state >= 2)
+	  state = 2;
 	break;
       case '/':
 	start += 1;
