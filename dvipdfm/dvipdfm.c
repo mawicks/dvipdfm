@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.66 2000/01/15 01:53:11 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.67 2000/01/16 23:05:38 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -544,6 +544,13 @@ static void read_config_file (void)
       RELEASE (argv[--argc]);
     }
   }
+}
+
+void error_cleanup (void)
+{
+  pdf_error_cleanup();
+  remove (pdf_filename);
+  fprintf (stderr, "\nOutput file removed.\n");
 }
 
 int CDECL main (int argc, char *argv[]) 

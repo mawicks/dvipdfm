@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.73 2000/01/15 16:40:06 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.74 2000/01/16 23:05:38 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -174,7 +174,7 @@ static void do_put(char **start, char *end)
 	  data -> type == PDF_DICT) {
 	pdf_merge_dict (result, data);
       } else{
-	fprintf (stderr, "\nspecial put:  Expecting a dictionary\n");
+	fprintf (stderr, "\nSpecial put:  Expecting a dictionary\n");
 	*start = save;
 	dump(*start, end);
       }
@@ -1614,6 +1614,11 @@ MEM_START
       dump (start, end);
       fprintf (stderr, "Invalid pdf special ignored\n");
       break;
+    }
+    skip_white (&start, end);
+    if (start < end) {
+      fprintf (stderr, "\nUnparsed material at end of special ignored...");
+      dump (start, end);
     }
   } else {
     result = 0;

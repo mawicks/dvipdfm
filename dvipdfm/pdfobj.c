@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.63 2000/01/16 20:34:10 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.64 2000/01/16 23:05:38 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -221,6 +221,14 @@ void pdf_out_flush (void)
     FCLOSE (pdf_output_file);
   }
 }
+
+void pdf_error_cleanup (void)
+{
+  /* This routine is the cleanup required for an abnormal exit.
+     For now, simply close the file. */
+  FCLOSE (pdf_output_file);
+}
+
 
 void pdf_set_root (pdf_obj *object)
 {
@@ -624,7 +632,7 @@ pdf_obj *pdf_new_name (const char *name)  /* name does *not* include the / */
   unsigned length = strlen (name);
   pdf_name *data;
   if (!pdf_check_name (name)) {
-    fprintf (stderr, "%s\n", name);
+    fprintf (stderr, "Invalid PDF name \"%s\"\n", name);
     ERROR ("pdf_new_name:  invalid PDF name");
   }
   result = pdf_new_obj (PDF_NAME);
@@ -1039,7 +1047,6 @@ static void write_stream (FILE *file, pdf_stream *stream)
 static void release_stream (pdf_stream *stream)
 {
   pdf_release_obj (stream -> dict);
-/*  FCLOSE (stream -> tmpfile); */
   if (stream -> stream_length > 0)
     RELEASE (stream -> stream);
   RELEASE (stream);

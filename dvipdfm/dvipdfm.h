@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.h,v 1.1 1999/09/05 21:01:21 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.h,v 1.2 2000/01/16 23:05:38 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -25,6 +25,9 @@
 #ifndef DVIDPFM_H
 #define DVIPDFM_H
 
-extern void set_landscape_mode ();
+extern void set_landscape_mode (void);
 
 #endif /* DVIPDFM_H */
+
+
+

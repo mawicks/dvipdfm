@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/error.h,v 1.6 1999/03/08 04:25:42 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/error.h,v 1.7 2000/01/16 23:05:38 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -26,11 +26,17 @@
 #ifndef _ERROR_H_
 #define _ERROR_H_
 
+extern void error_cleanup();
 
 #define FATAL_ERROR -1
 #define NO_ERROR 0
 
-#define ERROR(string) {fprintf(stderr, "\n");fprintf (stderr, string);fprintf (stderr, "\n"); exit(1);}
+#define ERROR(string) { \
+  fprintf(stderr, "\n"); \
+  fprintf (stderr,  string); \
+  fprintf (stderr, "\n");  \
+  error_cleanup(); \
+  exit(1);}
 typedef int error_t;
 
 #endif /* _ERROR_H_ */

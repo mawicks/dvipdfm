@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.29 2000/01/15 16:40:06 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.30 2000/01/16 23:05:38 mwicks Exp $
 
     This is ebb, a bounding box extraction program.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -317,4 +317,11 @@ pdf_obj *get_reference (char **start, char *end)
 {
   fprintf (stderr, "get_reference():  This should never have been called\n");
   return NULL;
+}
+
+void error_cleanup(void)
+{
+  /* For now, this is a do nothing routine, but the stub is required
+     by error.h */
+  return;
 }
