@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.70 1999/08/17 17:52:46 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.71 1999/08/17 18:17:36 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -208,15 +208,16 @@ static void string_mode (mpt_t xpos, mpt_t ypos, double slant, double extend)
     {
       double rounded_delx, desired_delx;
       double rounded_dely, desired_dely;
+
       /* First round dely (it is needed for delx) */
       dely = ypos - text_yorigin;
-      desired_dely = dely*dvi2pts+text_yerror;
+      desired_dely = (dely+text_yerror)*dvi2pts;
       rounded_dely = ROUND(desired_dely,0.01);
-      /* Next round delx */
-      desired_delx = (delx-dely*slant)*dvi2pts+text_xerror;
+      /* Next round delx, precompensating for line transformation matrix */
+      desired_delx = (delx+text_xerror-dely*slant)/extend*dvi2pts;
       rounded_delx = ROUND(desired_delx,0.01);
-      text_xerror = desired_delx - rounded_delx;
       text_yerror = desired_dely - rounded_dely;
+      text_xerror = extend*(desired_delx - rounded_delx)+slant*text_yerror;
       len += sprintf (format_buffer+len, " %.7g %.7g TD[(",
 		      rounded_delx, rounded_dely);
       text_leading = dely;
@@ -247,17 +248,16 @@ static void dev_set_font (int font_id)
   text_mode();
   len = sprintf (format_buffer, "/%s %.6g Tf", dev_font[font_id].short_name,
 		 dev_font[font_id].ptsize);
-  if (dev_font[font_id].extend != text_extend) {
-    len += sprintf (format_buffer+len, " %.6g Tz", dev_font[font_id].extend*100);
-    text_extend = dev_font[font_id].extend;
-  }
-  if (dev_font[font_id].slant != text_slant) {
-    len += sprintf (format_buffer+len, " 1 0 %.3g 1 %.7g %.7g Tm",
-		   dev_font[font_id].slant, text_xorigin*dvi2pts,
-		   text_yorigin*dvi2pts);
+  if (dev_font[font_id].slant != text_slant ||
+      dev_font[font_id].extend != text_extend) {
+    len += sprintf (format_buffer+len, " %.7g 0 %.3g 1 %.7g %.7g Tm",
+		    dev_font[font_id].extend,
+		    dev_font[font_id].slant, text_xorigin*dvi2pts,
+		    text_yorigin*dvi2pts);
      /* There's no longer any uncertainty about where we are */
     text_xerror = 0.0; text_yerror = 0.0;
     text_slant = dev_font[font_id].slant;
+    text_extend = dev_font[font_id].extend;
   }
   pdf_doc_add_to_page (format_buffer, len);
   /* Add to Font list in Resource dictionary for this page */

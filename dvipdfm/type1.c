@@ -1,5 +1,5 @@
 
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.80 1999/08/17 17:52:48 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.81 1999/08/17 18:17:36 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1318,7 +1318,6 @@ int type1_font (const char *tex_name, int tfm_font_id, const char *resource_name
 		    pdf_new_name (font_record->font_name));  /* fontname is global and set
 								 by scan_afm_file() */
     }
-    fprintf (stderr, "Somehwere.");
     if (!is_a_base_font (font_record->font_name)) {
       firstchar = tfm_get_firstchar(tfm_font_id);
       pdf_add_dict (font_resource,
