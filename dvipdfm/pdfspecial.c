@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.53 1999/08/26 21:48:39 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.54 1999/08/31 23:02:01 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1620,3 +1620,15 @@ static void do_uxobj (char **start, char *end, double x_user, double y_user)
     RELEASE (objname);
   return;
 }
+
+static char * distiller_template = NULL;
+
+void set_distiller_template (char *s) 
+{
+  distiller_template = NEW (strlen(s)+1, char);
+  strcpy (distiller_template, s);
+  return;
+}
+
+
+

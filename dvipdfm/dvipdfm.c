@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.46 1999/08/22 17:48:11 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.47 1999/08/31 23:02:00 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -31,6 +31,7 @@
 #include "system.h"
 #include "dvi.h"
 #include "mem.h"
+#include "mfileio.h"
 #include "pdfdoc.h"
 #include "pdfdev.h"
 #include "type1.h"
@@ -139,6 +140,14 @@ static void do_args (int argc, char *argv[])
   while (argc > 0 && *argv[0] == '-') {
     for (flag=argv[0]+1; *flag != 0; flag++) {
       switch (*flag) {
+      case 'D':
+	if (argc < 2) {
+	  fprintf (stderr, "PS->PDF conversion command line template missing\n\n");
+	  usage();
+	}
+	set_distiller_template(argv[1]);
+	pop_arg();
+	break;
       case 'r':
 	if (argc < 2) {
 	  fprintf (stderr, "\nResolution specification missing a number\n\n");
@@ -391,24 +400,26 @@ static void do_args (int argc, char *argv[])
     argc -= 1 ;
     argv += 1;
   }
-  if (argc < 1) {
-    fprintf (stderr, "\nNo dvi filename specified.\n\n");
-    usage();
-  }
   if (argc > 1) {
     fprintf (stderr, "\nMultiple dvi filenames?\n\n");
     usage();
   }
-  if (strncmp (".dvi", argv[0]+strlen(argv[0])-4, 4)) {
-    dvi_filename = NEW (strlen (argv[0])+1+4, char);
-    strcpy (dvi_filename, argv[0]);
-    strcat (dvi_filename, ".dvi");
-  }
-  else {
-    dvi_filename = NEW (strlen (argv[0])+1, char);
-    strcpy (dvi_filename, argv[0]);
+  /* The only legitimate way to have argc == 0 here is
+     is do_args was called from config file.  In that case, there is
+     no dvi file name.  Check for that case  */
+  if (argc > 0) {
+    if (strncmp (".dvi", argv[0]+strlen(argv[0])-4, 4)) {
+      dvi_filename = NEW (strlen (argv[0])+1+4, char);
+      strcpy (dvi_filename, argv[0]);
+      strcat (dvi_filename, ".dvi");
+    }
+    else {
+      dvi_filename = NEW (strlen (argv[0])+1, char);
+      strcpy (dvi_filename, argv[0]);
+    }
   }
 }
+
 
 static void cleanup(void)
 {
@@ -418,24 +429,80 @@ static void cleanup(void)
     RELEASE (page_ranges);
 }
 
+static char *config_file_name = "config";
+static void read_config_file (void)
+{
+  char *full_config_name, *start, *end;
+  char *argv[2], *option;
+  FILE *config_file;
+  
+  if ((full_config_name = kpse_find_file (config_file_name,
+				   kpse_program_text_format,
+				   1)) == NULL) {
+    return;
+  }
+  if (!(config_file = FOPEN (full_config_name, FOPEN_R_MODE))) {
+    fprintf (stderr, "\nError opening configuration file.  Continuing with defaults.\n");
+    return;
+  }
+  while ((start = mfgets (work_buffer, WORK_BUFFER_SIZE,
+			  config_file))) {
+    int argc = 0;
+    end = work_buffer+strlen(work_buffer);
+    skip_white (&start, end);
+    if (start >= end)
+      continue;
+    /* Build up an argument list as if it were passed on the command
+       line */
+    if ((option = parse_ident (&start, end))) {
+      argc = 1;
+      argv[0] = NEW (strlen(option)+2, char);
+      strcpy (argv[0]+1, option);
+      RELEASE (option);
+      *argv[0] = '-';
+      if ((option = parse_ident (&start, end)))
+	{
+	  argc += 1;
+	  argv[1] = NEW (strlen(option)+1, char);
+	  strcpy (argv[1], option);
+	  RELEASE (option);
+	}
+    }
+    do_args (argc, argv);
+    while (argc > 0) {
+      RELEASE (argv[--argc]);
+    }
+  }
+}
+
 int CDECL main (int argc, char *argv[]) 
 {
   int i;
   static int really_quiet = 0;
   int at_least_one_page = 0;
   if (argc < 2) {
+    fprintf (stderr, "\nNo dvi filename specified.\n\n");
     usage();
     return 1;
   }
 #ifdef KPATHSEA
   kpse_set_program_name (argv[0], NULL);
 #endif
+
   argv+=1;
   argc-=1;
   do_args (argc, argv);
 
+  if (!dvi_filename) {
+    fprintf (stderr, "\nNo dvi filename specified.\n\n");
+    usage();
+  }
+
+  /* Process config file, if any */
+  read_config_file();
+
 #ifdef KPATHSEA
-  kpse_init_prog ("", font_dpi, NULL, "cmr10");
+  kpse_init_prog ("", font_dpi, NULL, NULL);
   pk_set_dpi (font_dpi);
   kpse_set_program_enabled (kpse_pk_format, 1, kpse_src_texmf_cnf);
 #endif

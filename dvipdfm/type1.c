@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.86 1999/08/27 01:11:51 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.87 1999/08/31 23:02:01 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -577,6 +577,7 @@ static unsigned char *get_pfb_segment (unsigned long *length,
      concatenated, so we loop through all of them */
   while (1) {
     if ((ch = fgetc (file)) < 0 || ch != 128){
+      sprintf (work_buffer, "get_pfb_segment:  Not a pfb file.\n");
       sprintf (work_buffer, "get_pfb_segment:  pfb header has %d, expecting 128\n", ch);
       ERROR (work_buffer);
     }
@@ -1307,8 +1308,9 @@ int type1_font (const char *tex_name, int tfm_font_id, char *resource_name)
   if (is_a_base_font(font_record->font_name) ||
       (pfb_id = type1_pfb_id(font_record -> font_name, encoding_id,
 			     font_record -> remap)) >= 0) {
-    /* Looks like we have a physical font.  Allocate storage for it */
-    /* Make sure there is enough room in type1_fonts for this entry */
+    /* Looks like we have a physical font (either a reader font or a
+       Type 1 font binary file).  Allocate storage for it.
+       and make sure there is enough room in type1_fonts for this entry */
     if (num_type1_fonts >= max_type1_fonts) {
       max_type1_fonts += MAX_FONTS;
       type1_fonts = RENEW (type1_fonts, max_type1_fonts, struct a_type1_font);
