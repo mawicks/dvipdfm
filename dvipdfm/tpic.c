@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tpic.c,v 1.6 1999/02/05 19:57:22 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tpic.c,v 1.7 1999/02/09 03:14:03 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -29,8 +29,9 @@
 #include "mem.h"
 #include "mfileio.h"
 #include "pdfdoc.h"
+#include "dvi.h"
 
-#define MI2PT (0.072)
+#define MI2DEV (0.072*dvi_tell_mag())
 
 double pen_size = 14.0;
 int fill_shape = 0;
@@ -58,7 +59,7 @@ static void set_pen_size (char **buffer, char *end)
   char *number;
   skip_white (buffer, end);
   if ((number = parse_number(buffer, end))) {
-    pen_size = atof (number) * MI2PT;
+    pen_size = atof (number) * MI2DEV;
     RELEASE (number);
   } else {
     dump (*buffer, end);
@@ -98,8 +99,8 @@ MEM_START
       max_path_length += 256;
       path = RENEW (path, max_path_length, struct path);
     }
-    path[path_length].x = atof(x)*MI2PT;
-    path[path_length].y = atof(y)*MI2PT;
+    path[path_length].x = atof(x)*MI2DEV;
+    path[path_length].y = atof(y)*MI2DEV;
     path_length += 1;
   } else {
     dump (*buffer, end);
@@ -114,7 +115,9 @@ MEM_END
 static void show_path (int hidden) 
 {
   int len;
-  if (fill_shape) {
+  /* The semantics of a fill_color of 1.0 will be to use current
+     painting color know to dvipdfm */
+  if (fill_shape && fill_color != 0.0) {
     len = sprintf (work_buffer, " %.2f g", fill_color);
     pdf_doc_add_to_page (work_buffer, len);
   }
@@ -137,16 +140,23 @@ static void flush_path (double x_user, double y_user, int hidden,
 {
   int len;
 MEM_START
+  /* Make pen_size == 0 equivalent to hidden */
+  if (pen_size == 0)
+    hidden = 1;
   if (path_length > 1) {
     int i;
-    len = sprintf (work_buffer, " q %.2f w", pen_size);
+    len = sprintf (work_buffer, " q");
+    pdf_doc_add_to_page (work_buffer, len);
+    len = sprintf (work_buffer, " %.2f w", pen_size);
+    pdf_doc_add_to_page (work_buffer, len);
+    len = sprintf (work_buffer, " 1 J 1 j");
     pdf_doc_add_to_page (work_buffer, len);
     if (dash_dot != 0.0) {
       if (dash_dot > 0.0) {
 	len = sprintf (work_buffer, " [%.1f %.1f] 0 d",
 		       dash_dot*72.0, dash_dot*36.0);
       } else {
-	len = sprintf (work_buffer, " [%.1f %.1f] 0 d 1 J 1 j", pen_size,
+	len = sprintf (work_buffer, " [%.1f %.1f] 0 d", pen_size,
 		       -dash_dot*72.0);
       }
       pdf_doc_add_to_page (work_buffer, len);
@@ -233,6 +243,9 @@ static void arc (char **buffer, char *end, double x_user, double
   double xc, yc, xr, yr, sa, ea;
 MEM_START
   save = *buffer;
+/* pen_size == 0 is equivalent to hidden */ 
+  if (pen_size == 0)
+    hidden = 1;
   if ((xcs=parse_number(buffer, end)) &&
       (ycs=parse_number(buffer, end)) &&
       (xrs=parse_number(buffer, end)) &&
@@ -243,8 +256,8 @@ MEM_START
     double cp1_x, cp1_y, cp2_x, cp2_y;
     double new_x, new_y;
     int len, i, nsteps;
-    xc=atof (xcs)*MI2PT; yc=atof (ycs)*MI2PT;
-    xr=atof (xrs)*MI2PT; yr=atof (yrs)*MI2PT;
+    xc=atof (xcs)*MI2DEV; yc=atof (ycs)*MI2DEV;
+    xr=atof (xrs)*MI2DEV; yr=atof (yrs)*MI2DEV;
     sa=atof (sas); ea=atof (eas);
 #define ROTATE(x,y,c,s) {new_x=(c)*(x)-(s)*(y);new_y=(s)*(x)+(c)*(y);x=new_x,y=new_y;}
     #define MAX_ANG_STEP 1.0
@@ -256,8 +269,12 @@ MEM_START
     cp1_y = cur_y + inc_ang/3.0*cur_x;
     cp2_x = cur_x + inc_ang/3.0*cur_y;
     cp2_y = cur_y - inc_ang/3.0*cur_x;
-    len = sprintf (work_buffer, " q %.2f w %.2f %.2f m ", pen_size,
-		   x_user+xr*cur_x+xc, y_user-yr*cur_y-yc);
+    len = sprintf (work_buffer, " q");
+    pdf_doc_add_to_page (work_buffer, len);
+    if (pen_size != 0.0)
+      len = sprintf (work_buffer, " %.2f w", pen_size);
+    pdf_doc_add_to_page (work_buffer, len);
+    len = sprintf (work_buffer, " %.2f %.2f m", x_user+xr*cur_x+xc, y_user-yr*cur_y-yc);
     pdf_doc_add_to_page (work_buffer, len);
     ROTATE (cp2_x, cp2_y, c, s);
     ROTATE (cur_x, cur_y, c, s);
@@ -271,7 +288,7 @@ MEM_START
       ROTATE (cp1_x, cp1_y, c, s);
       ROTATE (cp2_x, cp2_y, c, s);
     }
-    if (fill_shape) {
+    if (fill_shape && fill_color != 0.0) {
       len = sprintf (work_buffer, " %.2f g", fill_color);
       pdf_doc_add_to_page (work_buffer, len);
     }

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.14 1999/02/05 19:40:09 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.15 1999/02/09 03:14:02 mwicks Exp $
 
     This is ebb, a bounding box extraction program.
     Copyright (C) 1998  by Mark A. Wicks
@@ -32,7 +32,7 @@
 #include "numbers.h"
 
 #define EBB_PROGRAM "ebb"
-#define EBB_VERSION "Version 0.3"
+#define EBB_VERSION "Version 0.4"
 
 static void usage (void)
 {
@@ -66,6 +66,7 @@ static char *make_bb_filename (char *name)
 {
   int i;
   char *result;
+  name = basename (name);
   for (i=0; i<sizeof(extensions)/sizeof(extensions[0]); i++) {
     if (strlen (extensions[i]) < strlen(name) &&
 	!strncmp (name+strlen(name)-strlen(extensions[i]),
@@ -209,6 +210,7 @@ FILE *inputfile;
 
 int main (int argc, char *argv[]) 
 {
+  kpse_set_program_name (argv[0], NULL);
   argc -= 1;
   argv += 1;
   if (argc == 0)
@@ -232,15 +234,19 @@ int main (int argc, char *argv[])
     }
   }
   for (; argc > 0; argc--, argv++) {
-    if ((inputfile = fopen (argv[0], FOPEN_RBIN_MODE)) == NULL)
+    char *kpse_file_name;
+    if (!(kpse_file_name = kpse_find_pict(argv[0])) ||
+        (inputfile = fopen (kpse_file_name, FOPEN_RBIN_MODE)) == NULL)  {
+      fprintf (stderr, "Can't find file (%s)...skipping\n", argv[0]);
       continue;
+    }
     if (check_for_jpeg (inputfile)) {
-      do_jpeg(inputfile, argv[0]);
+      do_jpeg(inputfile, kpse_file_name);
       fclose (inputfile);
       continue;
     }
     if (check_for_pdf (inputfile)) {
-      do_pdf(inputfile, argv[0]);
+      do_pdf(inputfile, kpse_file_name);
       fclose (inputfile);
       continue;
     }

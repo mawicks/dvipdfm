@@ -1,13 +1,13 @@
 Installation:
 
-   To compile and install this package, you an *installed* version of the
-kpathsea library.  Specifically, this means the kpathsea headers must be in
-your preprocessor search path (-I) and the kpathsea library must be in your
-linker search path (-L).  The kpathsea library is included in source form
-with the "texk" bundle or the "web2c" bundle, available on CTAN.  Similar
-remarks hold for "libz" and its headers; however, dvipdfm will configure and
-compile without libz--you just won't have any compression.  It *requries*
-kpath, however.
+   To compile and install this package, you need an *installed* version of
+the kpathsea library.  Specifically, this means the kpathsea headers must be
+in your preprocessor search path (-I) and the kpathsea library must be in
+your linker search path (-L).  The kpathsea library is included in source
+form with the "texk" bundle or the "web2c" bundle, available on CTAN.
+Similar remarks hold for "libz" and its headers; however, dvipdfm will
+configure and compile without libz--you just won't have any compression.  It
+*requires* kpath, however.
 
 
    1.  Unbundle the gzip'ed tar file.

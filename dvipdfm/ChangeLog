@@ -1,3 +1,10 @@
+1999-02-08  Mark A. Wicks  <mwicks@odo.kettering.edu>
+	* Version 0.10.0 includes 
+	    PK font support
+	    Tpic special support
+	    kpath searching for included pdf and jpeg files via 
+	    the path defined by TEXPICTS
+
 1998-11-30  Mark A. Wicks  <mwicks@odo.kettering.edu>
 
 	* Cleaned up a lot of little things.

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.38 1999/01/20 06:09:47 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.39 1999/02/09 03:14:03 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -762,7 +762,7 @@ static void do_bead(char **start, char *end)
       error = 1;
     }
     if (p->width == 0.0 || p->depth + p->height == 0.0) {
-      fprintf (stderr, "Special thread: Rectangle has a zero dimension\n");
+      fprintf (stderr, "\nSpecial thread: Rectangle has a zero dimension\n");
       error = 1;
     }
   }
@@ -771,7 +771,7 @@ static void do_bead(char **start, char *end)
     if (**start == '<') {
       if ((info_dict = parse_pdf_dict (start, end)) ==
 	NULL) {
-	fprintf (stderr, "Special: thread: Error in dictionary\n");
+	fprintf (stderr, "\nSpecial: thread: Error in dictionary\n");
 	error = 1;
       }
     } else
@@ -842,13 +842,20 @@ MEM_START
     error = 1;
   }
   if (!error) {
-    fprintf (stderr, "(%s)", filename);
-    if ((trailer = pdf_open (filename)) != NULL) {
-      result = pdf_include_page(trailer, x_user, y_user, p);
-      pdf_release_obj (trailer);
-      pdf_close ();
+    char *kpse_file_name;
+    if ((kpse_file_name = kpse_find_pict (filename))) {
+      fprintf (stderr, "(%s", kpse_file_name);
+      if ((trailer = pdf_open (kpse_file_name)) != NULL) {
+	result = pdf_include_page(trailer, x_user, y_user, p);
+	fprintf (stderr, ")");
+	pdf_release_obj (trailer);
+	pdf_close ();
+      } else {
+	fprintf (stderr, "\nError trying to include PDF file.\n");
+	error = 1;
+      }
     } else {
-      fprintf (stderr, "Error trying to include PDF file.\n");
+      fprintf (stderr, "\nError locating PDF file (%s)\n", filename);
       error = 1;
     }
   }
@@ -905,12 +912,19 @@ MEM_START
     error = 1;
   }
   if (!error) {
-    fprintf (stderr, "(%s)", filename);
-    if ((jpeg = jpeg_open(filename)) != NULL) {
-      result = jpeg_build_object(jpeg, x_user, y_user, p);
-      jpeg_close (jpeg);
+    char *kpse_file_name;
+    if ((kpse_file_name = kpse_find_pict (filename))) {
+      fprintf (stderr, "(%s", kpse_file_name);
+      if ((jpeg = jpeg_open(kpse_file_name)) != NULL) {
+	result = jpeg_build_object(jpeg, x_user, y_user, p);
+	fprintf (stderr, ")");
+	jpeg_close (jpeg);
+      } else {
+	fprintf (stderr, "\nError trying to include JPEG file.\n");
+	error = 1;
+      }
     } else {
-      fprintf (stderr, "Error trying to include JPEG file.\n");
+      fprintf (stderr, "\nError locating file (%s)\n", filename);
       error = 1;
     }
   }
