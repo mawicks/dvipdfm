@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.28.8.4 2000/07/25 04:15:35 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.28.8.5 2000/07/25 04:30:22 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -201,6 +201,9 @@ static void ofm_get_sizes (FILE *ofm_file,  UNSIGNED_QUAD ofm_file_size,
   a_tfm -> nextens = get_signed_quad (ofm_file);
   a_tfm -> nfonparm = get_signed_quad (ofm_file);
   a_tfm -> font_direction = get_signed_quad (ofm_file);
+  if (a_tfm->font_direction) {
+    fprintf (stderr, "Warning:  I am probably interpreting font direction incorrectly.\n");
+  }
   if ( a_tfm -> wlenfile != ofm_file_size/4 ||
       sum_of_ofm_sizes (a_tfm) != a_tfm -> wlenfile)
     invalid_ofm_file();
