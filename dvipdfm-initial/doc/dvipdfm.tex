@@ -1,4 +1,4 @@
-% $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/doc/dvipdfm.tex,v 1.7 1998/11/19 20:36:00 mwicks Exp $
+% $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/doc/dvipdfm.tex,v 1.8 1998/11/19 22:59:51 mwicks Exp $
 \special{  pdf:  docview <</PageMode /UseOutlines>>}%
 \catcode`\ =11\def\space{ }\catcode`\ =10
 % Page layout
@@ -7,6 +7,7 @@
 \advance\voffset by 0.5truein
 \advance\hsize by -1.0in
 \advance\vsize by -1.0in
+\def\makefootline{\baselineskip=40pt\line{\the\footline}}
 %
 %  Some helpful symbols
 \def\rtm{{\font\r=cmss10 at 4pt
@@ -24,6 +25,7 @@
 \def\green{[0 1 0]}%
 \def\blue{[0 0.4 0.8]}%
 \def\yellow{[0.8 0.9 0.1]}%
+\def\linkcolor{[0.5 0.0 0.7]}%
 \def\begincolor#1{\special{pdf:bc #1}}%
 \def\endcolor{\special{pdf:ec}}%
 %
@@ -53,7 +55,8 @@
 \sectioncount0\ssectioncount0\sssectioncount0
 %
 \newskip\indentlevel\indentlevel=\parindent
-\newskip\secskip\secskip=20pt plus 1pt minus 2pt
+\newskip\secskip\secskip=24pt plus 1pt minus 2pt
+\newskip\subsecskip\subsecskip=16pt plus 1pt minus 2pt
 \def\beginlist{\par\advance\leftskip by \indentlevel\advance\rightskip by
 \indentlevel\medskip}
 \def\endlist{\par\advance\leftskip by -\indentlevel\advance\rightskip by
@@ -74,14 +77,14 @@
 \def\setdate{%
   {\subheadingfont{\the\date}}%
 }%
-\def\setlink#1{\colored{\red}{#1}}%
+\def\setlink#1{\colored{\linkcolor}{#1}}%
 %  
 \def\setheading#1{%
   {\headingfont\colored{\blue}{#1}}\raise\baselineskip\hbox{\special{pdf: outline 1 << /Title (#1) /Dest [
 @thispage /FitH @ypos ]  >> }}}%
 %
 \def\setsubheading#1{%
-  {\headingfont\colored{\blue}{#1}}\raise\baselineskip\hbox{\special{pdf: outline 2 << /Title (#1) /Dest [
+  {\subheadingfont\colored{\blue}{#1}}\raise\baselineskip\hbox{\special{pdf: outline 2 << /Title (#1) /Dest [
 @thispage /FitH @ypos ]  >> }}}%
 %
 \def\link#1#2{\setbox0\hbox{\setlink{#1}}%
@@ -97,15 +100,16 @@
           \noindent\setversion\hfill\setdate\vskip0.3in}%
 %
 \def\section#1{\advance\sectioncount by 1\ssectioncount0
-\goodbreak\vskip\secskip\goodbreak
-\noindent\setheading{\the\sectioncount. #1}\nobreak\par\medskip\nobreak}%
-\def\subsection#1{\advance\ssectioncount by 1%
-\vskip\secskip\noindent\setsubheading{\the\sectioncount.\the\ssectioncount\
-          #1}\par\nobreak\medskip}%
+\vskip-\lastskip\vskip\secskip\goodbreak
+\noindent\setheading{\the\sectioncount. #1}\medskip\nobreak}%
+\def\subsection#1{\vskip-\lastskip\advance\ssectioncount by 1%
+\vskip\subsecskip\noindent
+\setsubheading{\the\sectioncount.\the\ssectioncount\
+          #1}\par\nobreak\smallskip}%
 %
 \def\display#1{\medskip\line{\quad #1\hfil}\medskip}
 \def\example{\medskip\noindent{\it Example:\quad\nobreak}}
-\def\note{\medskip\noindent{\it Note:\quad\par\nobreak}}
+\def\note{\medskip\noindent{\it Note:\quad\nobreak}}
 \def\syntax{\medskip\noindent{\it Syntax:\quad}}
 \def\description{\medskip\noindent{\it Description:\quad}}
 %
@@ -113,7 +117,6 @@
 %
 \def\dvipdfm{{\tt dvipdfm}}%
 \input verbatim
-\def\ttspecial{$\tt\backslash${\tt special}}%
 %
 \title{Dvipdfm User's Manual}
 \author{Mark A. Wicks}
@@ -121,66 +124,22 @@
 \date{November, 1998}
 \maketitle
 \section{Introduction}
-This package is a DVI (\TeX) to PDF conversion utility.
-This package has the following features:
+This package is a DVI (\TeX) to PDF conversion utility,
+having the following features:
 
 \beginlist
 \item{$\bullet$} Support for outline (bookmark) entries, named destinations,
-annotations (including forms and widgets).
+and annotations (including hyperlinks, forms and widgets).
 
 \item{$\bullet$} Ability to include arbitrary PDF files as encapsulated
-objects along with any embedded resources such as fonts.
+objects along their any embedded resources such as fonts.
 
 \item{$\bullet$} Ability to include JPEG images as encapsulated
 objects.
 
 \item{$\bullet$} A color stack.
 \endlist
-Currently, the widely accepted method to generate PDF file from \TeX\
-is to use Adobe's Acrobat Distiller on a PostScript
-file produced by {\tt dvips}.
-The hyperlink features are accessed by using \TeX\ |special| primitives
-to embed pdfmarks in the PostScript produced by |dvips|.
-H\`an Th\'e Th\`an's PDF\TeX\ project is an alternative method
-of generating PDF from \TeX source.
-Although quite good and fairly mature, the PDF\TeX project
-required modifying \TeX\ itself to add primitives that support the PDF features.
-This |dvipdfm| project demonstrates that many of the features
-of PDF can be accessed by using a DVI driver.
-The PDF features are activated in the driver via \TeX\ \ttspecial primitives.
 
-Even though Distiller is the best method of generating PDF (and
-probably will remain so for some time) I have several reasons for
-seeking alternatives to Distiller.
-First, Distiller isn't available for my principle operating
-system---Linux. Another objection is philosophical.
-A DVI file is a page description.
-Essentially, a DVI file is a program with no branching instructions.
-PostScript is a complete programming language, while PDF is a page description language
-without any branching or decision capabilities.
-\TeX\ is like PostScript (without the graphics)
-while DVI is like PDF (without the graphics or the hyperlinks).
-Creating PDF from DVI using Distiller requires converting a page description to a program,
-and converting that program back to a page description.
-To continue this analogy,
-Pdfmarks are PostScript ``escapes'' and are meant for the Distiller.
-\TeX\ |special| primitives are \TeX\ ``escapes'' and are meant for the DVI driver.
-It seems natural to go directly from DVI to PDF, where \TeX\ replaces
-PostScript, where the DVI driver replaces Distiller,
-and where \TeX\ |special| primitives replace the {\tt pdfmarks}.
-
-Unfortunately, until graphics software
-begins to produce PDF content streams or encapsulated
-PDF objects, PostScript will remain the easiest
-way to include graphics in \TeX\ documents.
-I would hope that in the future, graphics programs
-will produce PDF content streams, or PDF objects that
-may be included into a DVI to PDF translator.  Either
-of these may be easily included using {\tt dvipdfm}
-or a similar driver.
-
-\section{General Concepts and Syntax}
-This document describes the |dvipdfm| driver.
 The electronic version of the document exercises
 some of the hypertext features and serves as
 a sample input file for |dvipdfm|.
@@ -189,22 +148,75 @@ of the Portable Document Format.  The PDF specification
 is distributed by Adobe Systems \link{[1]}{pdfmanual}.
 An excellent source for information about PDF documents
 in general is \link{[2]}{pdfprimer}.  Information about
-using \TeX\ (mainly using Distiller) to construct PDF documents is the
+using \TeX\ to construct PDF documents (mainly using Distiller) is the
 AcroTeX home page\link{[3]}{acrotex}.
 
-Each \TeX\ |special|
+Currently, the widely accepted method to generate PDF file from \TeX\
+is to use Adobe's Acrobat Distiller on a PostScript
+file produced by {\tt dvips}.
+The hyperlink features are accessed by using \TeX\ |special| primitives
+to embed pdfmarks in the PostScript produced by |dvips|.
+H\`an Th\'e Th\`an's PDF\TeX\ project is an alternative method
+of generating PDF from \TeX\ source.
+Although quite good and fairly mature, the PDF\TeX\ project
+modified \TeX\ itself to add primitives that support the PDF features.
+I prefer to work with an unmodified \TeX.
+This |dvipdfm| project demonstrates that many of the features
+of PDF can be accessed by using a DVI driver.
+The PDF features are activated in the driver via
+\TeX\ |special| primitives.
+
+Even though Distiller is the best method of generating PDF (and
+probably will remain so for some time) I have several reasons for
+seeking alternatives to Distiller.
+First, Distiller isn't available for my principle operating
+system---Linux.
+
+My second objection is philosophical.
+\TeX\ is a programming language.
+A DVI file is a page description consisting of very
+simple program instructions that have no branching or
+decision instructions.
+Similarly PostScript is a complete programming language,
+while PDF is a page description language consisting
+of simple program instructions
+without any branching or decision capabilities.
+\TeX\ is like PostScript (without the graphics)
+while DVI is like PDF (without the graphics or the hyperlinks).
+Creating PDF from DVI using Distiller requires converting a page description to a program,
+and converting that program back to a page description.
+To continue this analogy,
+Pdfmarks are PostScript ``escapes'' and are meant for the Distiller.
+\TeX\ |\special| primitives are \TeX\ ``escapes'' and are meant for the DVI driver.
+It seems natural to go directly from DVI to PDF, where \TeX\ replaces
+PostScript, the DVI driver replaces Distiller,
+and \TeX\ |\special| primitives replace the pdfmarks.
+
+Unfortunately, until graphics software
+begins to produce PDF content streams or encapsulated
+PDF objects, PostScript will remain the easiest
+way to include graphics in \TeX\ documents.
+I would hope that in the future, graphics programs
+will begin to produce PDF content streams or PDF objects that
+may be included using a DVI to PDF translator.  Either
+of these may be easily embedded using \dvipdfm\ or a similar driver.
+
+\section{General Concepts and Syntax}
+
+Each \TeX\ |\special|
 represents a separate command to the \dvipdfm\ 
-driver.  Each \ttspecial must begin with ``|pdf:|''
+driver.  Each |special| must begin with ``|pdf:|''
 to identify that ||special|| as a command for the \dvipdfm\ driver.
-A |special| beginning with any other characters is ignored
+A |\special| beginning with any other characters is ignored
 by the driver.  Leading spaces are ignored.  The characters ``|pdf:|''
 are immediately followed by a \dvipdfm\ command.  These commands
-are documented in Section~3.
+are documented in \hbox{Sections~3--6}.
 
 \subsection{PDF Object Syntax and Variable Expansion}
-With one exception, most of the syntax used within the specials follows
+With one exception, the syntax used for PDF objects
+within each |\special| specials follows
 the PDF specification.
-The single, necessary exception is variable expansion.
+The one exception is variable expansion.
 In the syntax specifications that follow, {\it PDF\_Object}
 means that an arbitary PDF object is expected.  Similarly
 {\it PDF\_Array} indicates that a PDF array is expected, {\it PDF\_Dict}
@@ -212,17 +224,18 @@ inciates that a PDF dictionary is expected, etc.
 See the \link{reference manual}{pdfmanual}\
 for a complete list of PDF object types.
 
-The single extension implemented in this driver allows a symbol name of the
-form |@|{\it name} whenever any PDF object is expected.
-The {\it name} may contain the characters contained
-in a PDF name and is delimited by white space.
-A symbol beginning with |@| expands (if defined) to an indirect
-reference to a PDF object.  This feature replaces
+The single extension implemented in this driver
+allows a symbol name of the
+form |@|{\it name} whereever any PDF object is expected.
+The {\it name} may contain any characters allowed
+in a PDF name.
+A user-defined symbol beginning with |@| expands to an indirect
+reference to the user-defined PDF object.  This feature replaces
 the |{|{\it name}|}| syntax used with pdfmarks.
-Some of these named are user defined and some are
-names defined by the driver.
+In addition to the user-defined names, some names
+are defined by the driver.
 The driver defined variables are for
-referencing things like the current page, future pages,
+referencing objects such as the current page, future pages,
 or the current location on the current page.
 The driver defined variables appear in \link{Table~1}{drivervariables}.
 \topinsert
@@ -243,29 +256,29 @@ defined variables\endcolor}
 }}}
 \endinsert
 
-In the syntax specificatins that follow, several
+In the syntax specifications that follow, several
 standard conventions are followed.  Terminal
 characters that appear in the command 
-are typeset in the |tt| font, e.g., |object|.
-Non terminal symbols are typeset in italics.
-Optional parameters are surrounded by italic brackets, e.g.,
-{\it [optional\_argument]}.  An item followed
-by {*} represents an item that may appear
-zero or more times.  An item followed by {\it +}
+are typeset in the |\tt| font, e.g., |object|.
+Nonterminal symbols are typeset in italics.
+Optional parameters are surrounded by brackets, e.g.,
+[{\it optional\_argument}].  An item followed
+by~``{*}'' represents an item that may appear
+zero or more times.  An item followed by~``{+}''
 represents a required item that may appear multiple times.
 
 \subsection{Dimensions and scalings}
 Interaction with the |dvipdfm| driver consists
-of short commands with few arguments delimited by white space.
+of short commands with a few arguments delimited by white space.
 Typically the arguments are PDF objects.
 Two exceptions are dimension specifications and scalings.
 
 In the \TeX\ style, a dimension specification consists of one of the keywords
 |width|, |height|, or |depth| followed by a dimension
 consisting of a numerical value, followed by a unit for the dimension.  The
-unit will typically be |pt| (which represents a \TeX\ points, not a
+unit will typically be |pt| (which represents a \TeX\ point, not a
 PDf point) but |cm| and |in| are also allowed.  The notation
-{\it dimension} in a syntax description means a dimension is expected.
+{\it dimension\/} in a syntax description means a dimension is expected.
 
 A scaling consists of one of the keywords |scale|, |xscale|, or
 |yscale| followed by a numerical value.  The notation
@@ -280,10 +293,10 @@ prefixed with the characters ``|pdf:|''.
                         /Dest [ 1 0 R /FitH 234 ] >>
 \endtt
 
+\subsection{Annotate}
 \hbox to 0pt{\hskip-1.0in\special{pdf: ann width 3.0in height 36pt << /Type /Annot /Subtype /Text
 /Contents (This is a /Text Annotation.  Aren't these things ugly?.  It's a
 good thing they don't print by default.) >>}\hss}
-\subsection{Annotate}
 \syntax
 {\tt annotate} [{\tt @}{\it name}] {\it dimension}+ {\it PDF\_dictionary}
 \description
@@ -297,9 +310,13 @@ other PDF objects to refer to this annotation.
 One or more {\it dimension} parameters are required
 and each consists of the keyword
 {\tt height}, {\tt width}, or {\tt depth} followed
-by an appropriate length, specified as per \TeX.  Each
-length is a number followed by a unit, such as {\tt pt},
-{\tt in}, or {\tt cm}.  A {\tt pt} is a \TeX\ pt, not a PDF pt.
+by an appropriate length, specified as per \TeX\null.
+The |width| must be nonzero and either the |height| or |depth|
+must be nonzero.
+Each length is a number followed by a unit, such as {\tt pt},
+{\tt in}, or {\tt cm}.  Since these values
+would typically be entered by \TeX, a {\tt pt}
+is a \TeX\ point, not a PDF point.
 
 \example The annotation in this subsection
 was typeset with
@@ -321,8 +338,8 @@ was typeset with
 The |article| (or |art|) command initializes an article.  An article
 is a collection of boxed regions in the document that should be
 read consecutively. The {\it name} parameter is required.  The required PDF dictionary 
-is similar to the |docinfo| dictionary and
-should include the |/Title| and |/Author| keys.
+is similar to the |/Info| dictionary accessed via the |docinfo| command
+and would typically include the |/Title| and |/Author| keys.
 \example
 \begintt
 \special {pdf: article @somearticle << /Title (Some title)
@@ -363,9 +380,9 @@ destination object (typically an array).
 {\tt docinfo} {\it PDF\_dictionary}
 \description
 The |docinfo| command adds the keys in the specified dictionary to the
-document's Info dictionary.  All keys are optional, but may include
-the keys |/Author|, |/Title|, |Keywords|, |Subject|,
-and |Creator|.
+document's |/Info| dictionary.  All keys are optional, but may include
+the keys |/Author|, |/Title|, |/Keywords|, |/Subject|,
+and |/Creator|.
 \example
 \begintt
 \special{pdf: docinfo << /Author (Mark A. Wicks)
@@ -377,7 +394,7 @@ and |Creator|.
 {\tt docview} {\it PDF\_dictionary}
 \description
 The |docview| command adds the keys in the specified dictionary to the
-document's catalog dictionary.  All keys are optional, but may include
+document's |/Catalog| dictionary.  All keys are optional, but may include
 the keys |/PageMode|,
 |/URI|, |/OpenAction|, |/AA|
 and |/ViewerPreferences|.  See the PDF Reference Manual
@@ -414,9 +431,9 @@ the {\tt put} command.
 \description
 The |out| (also |outline|) command adds an outline (also called a ``bookmark'') entry
 to the document.
-The parameter {\it level} is an integer representing the
+The parameter {\it level\/} is an integer representing the
 level of the outline entry (beginning with 1) and
-{\it  PDF\_dictionary} must contain
+{\it  PDF\_dictionary\/} must contain
 the two keys {\tt /Title} and either {\tt /Dest} or {\tt /A}.
 It may also contain the {\tt /AA} key.  These keys are documented
 in the PDF Reference Manual.
@@ -435,6 +452,7 @@ entry.  A level~3 outline entry must follow a level~2 outline
 and cannot immediately follow a level 1 outline entry.
 
 \subsection{Put}
+\syntax
 \beginlist
 {\tt put} @{\it name} {\it PDF\_Object}
 \endlist
@@ -444,13 +462,13 @@ or
 \endlist
 \description
 The |put| command modifies an existing PDF object created with |obj|.
-The first form is used when @{\tt name} is an array.  The second
+The first form is used when @{\it name} is an array.  The second
 form is used when @{\tt name} is a dictionary.  Arrays are
 incremented one object at a time.  All keys in {\it PDF\_Dictionary}
 are added to the dictionary represented by @{\it name}.
 \example
 \begintt
-\special{pdf: object @mydict << /Nextpage @thispage >>}
+\special{pdf: put @mydict << /Nextpage @thispage >>}
 \endtt
 
 \subsection{Close}
@@ -464,6 +482,9 @@ indefinitely.  If the object is never closed, it will
 be closed when |dvipdfm| finishes processing the document.
 
 \section{Color Commands}
+The commands in this section deal with manipulation of the color
+stack.
+
 \subsection{Begincolor}
 \syntax
 {\tt begincolor} {\it PDF\_Array}
@@ -494,6 +515,10 @@ the color from the stack.
 
 
 \section{Image Commands}
+The commands in this section deal with embedding
+graphics into your PDF document.  The present
+driver supports PDF and JPEG graphics inclusion.
+
 \subsection{Epdf}
 \syntax
 {\tt epdf} [|@|{\it name}] [{\it dimension}$\vert${\it scaling}]*  {\it PDF\_String}
@@ -526,6 +551,30 @@ taken from the file named by {\it PDF\_String}.
 Otherwise, this command functions just like |epdf|.
 
 \section{Raw Page Marking Commands}
+The commands in this section deal with embedding
+raw PDF graphics operators into your PDF document.
+
+\subsection{Bop}
+\syntax
+{\tt bop} {\it stream}
+\description
+The |bop| command specifies a marking
+stream to be generated at the top of each page.
+The parameter {\it stream} is any sequence
+of marking operators and is added to the page's content stream.  
+The stream is applied {\it to all pages} regardless
+of where it appears in the document.
+\example  The two horizontal lines appearing
+at the top of each page in this document
+were set with
+\begintt
+\special {pdf: bop  q 0 w 0.8 0.5 0 RG
+               54 740 m 504 740 l 504 740.25 l 54 740.25 l b
+               36 760 m 504 760 l 504 760.25 l 36 760.25 l b Q }
+\endtt
+\special {pdf: bop  q 0 w 0.8 0.5 0 RG
+                           54 740 m 504 740 l 504 740.25 l 54 740.25 l b  
+                           36 760 m 504 760 l 504 760.25 l 36 760.25 l b Q }
 
 \subsection{Content}
 \syntax
@@ -538,28 +587,6 @@ is possible to change the color
 state, etc., with this command, it is
 not advised.  Use the color management
 commands to change colors.
-
-\subsection{Bop}
-\syntax
-{\tt bop} {\it stream}
-\description
-The |bop| command specifies a marking
-stream to be generated at the top of each page.
-The parameter {\it stream} is any sequence
-of marking operators and is added to the page's content stream.  
-The stream is applied {\it to all pages} regardless
-of where it appears in the document.
-\example
-\begintt
-\special {pdf: bop  q 0.8 0.5 0 RG 0 0 m 612 0 l
-                                   612 792 l 0 792 l b Q }
-\endtt
-\special {pdf: bop  q 0 w 0.8 0.5 0 RG
-                           54 740 m 504 740 l 504 740.25 l 54 740.25 l b  
-                           36 760 m 504 760 l 504 760.25 l 36 760.25 l b Q }
-%\special {pdf: bop  q 0 w 0.8 0.5 0 RG
-%                           108 740 m 558 740 l 558 740.25 l 108 740.25 l b  
-%                           108 760 m 576 760 l 576 760.25 l 108 760.25 l b Q }
 
 
 \subsection{Eop}
@@ -575,20 +602,32 @@ The stream is applied {\it to all pages} regardless
 of where it appears in the document.
 
 \section{Image Examples}
-The following photograph of the author was included from a JPEG file:
+Figure~1 is a photograph of the author that was included from a JPEG file:
+The image shown in Figure~2 image comes from the same file,
+but is loaded at a 50\% scale.
 
+\topinsert
 \centerline{\reserve{1.50in}{2.05in}{pdf: image (mwicks.jpeg)}}
+\medskip
+\centerline{\subheadingfont
+\begincolor{\blue}Figure~1---A JPEG image of the author.\endcolor}
+\endinsert
 
-The following image comes from the same file, but loaded at 50\% scale.
 
+\topinsert
 \centerline{\reserve{0.75in}{1.025in}{pdf: image scale 0.50 (mwicks.jpeg)}}
+\medskip
+\centerline{\subheadingfont
+\begincolor{\blue}Figure~2---The same JPEG image of the author scaled to 50.\%
+\endcolor}
+\endinsert
 
-Macro support for images is coming.  For now,
-you need to put the graphic image
-in your own box of the correct size so \TeX\ knows
-about it.  No space is reserved for a |special|
+Sophisticated macro support for images is not yet available.  For now,
+you need to enclose the image
+in your own box of the correct size so \TeX\ reserves
+space for it. No space is reserved for a |special|
 unless you reserve it.  I used the following simple
-macro for the previous images:
+Macro for the previous images:
 \begintt
 \def\reserve#1#2#3{\setbox0\hbox{}\wd0=#1
                    \ht0=#2\special{#3}\box0}
@@ -600,29 +639,35 @@ The first image in this section was included with
 \centerline{\reserve{1.50in}{2.05in}{pdf: image (mwicks.jpeg)}}
 \endtt
 
-The following image is an embedded PDF file:
-
-\centerline{\reserve{2.41in}{2.6in}{pdf: epdf (transistor.pdf)}}
-
-Notice that the embedding loaded the resource required
-for the object, which in this case is the times roman font.
-
 Until macro support is more developed, you will need to know
 the dimensions of the image.  By default, JPEG files are included
-at a resolution of 100dpi, so if you know the pixel size
+at a resolution of 100dpi so if you know the pixel size
 of the image, you know how much space to reserve.
+Any \TeX\ magnification is applied to the image
+in addition to any scaling defined in the |\special|.
+For example, this document sets |\magnification=\magstephalf|,
+so the images are actually scaled by 1.095.  The first
+image in this section has a printed width of 1.643in
+even though 1.50in was specified in the |\special|.
+
 Several command line utilities are available to read
 the pixel dimensions of a JPEG file.  For PDF files,
 you can |grep| on |/MediaBox| to get an indication
 of the image size.  The |/MediaBox| dimensions are
 in PDF points.
 
-JPEG images are placed at a resolution of 100 dots-per-\TeX-inches,
-so any \TeX magnification is applied to the image
-in addition to any scaling defined in the |\special|.
-For example, this document sets |\magnification=\magstephalf|,
-so the images are actually scaled by 1.095; the first
-image in this section has a printed width of 1.643in.
+Figure~3 was produced by embedding a PDF file
+using |epdf|.
+
+\topinsert
+\centerline{\reserve{2.41in}{2.6in}{pdf: epdf (transistor.pdf)}}
+\medskip\centerline{\subheadingfont
+\begincolor{\blue}Figure~3---An embedded PDF object.
+\endcolor}
+\endinsert
+Notice that any resources required for the object
+are also embedded.  In this case, the Times Roman font
+resource was embedded along with the content stream.
 
 \newpage
 \section{References}
