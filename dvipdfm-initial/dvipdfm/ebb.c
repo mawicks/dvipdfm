@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/ebb.c,v 1.1.2.1 1998/11/26 07:14:39 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/ebb.c,v 1.1.2.2 1998/11/26 17:01:06 mwicks Exp $
 
     This is ebb, a bounding box extraction program.
     Copyright (C) 1998  by Mark A. Wicks
@@ -23,15 +23,20 @@
 */
 
 #include <stdio.h>
-
+#include <time.h>
 #include "pdfobj.h"
 #include "jpeg.h"
 #include "mem.h"
 #include "pdfparse.h"
+#include "numbers.h"
+
+#define EBB_PROGRAM "ebb"
+#define EBB_VERSION "Version 0.1"
 
 static void usage (void)
 {
-  fprintf (stderr, "%s, version %s, Copyright (C) 1998 by Mark A. Wicks\n", "ebb", "0.1");
+  fprintf (stderr, "%s, version %s, Copyright (C) 1998 by Mark A. Wicks\n",
+	   EBB_PROGRAM, EBB_VERSION);
   fprintf (stderr, "ebb comes with ABSOLUTELY NO WARRANTY.\n");
   fprintf (stderr, "This is free software, and you are welcome to redistribute it\n");
   fprintf (stderr, "under certain conditions.  Details are distributed with the software.\n");
@@ -40,8 +45,16 @@ static void usage (void)
   exit(1);
 }
 
-
 static verbose = 0;
+
+static void do_time(FILE *file)
+{
+  time_t current_time;
+  struct tm *bd_time;
+  time(&current_time);
+  bd_time = localtime(&current_time);
+  fprintf (file, "%%%%CreationDate: %s\n", asctime (bd_time));
+}
 
 static void write_bb (char *filename, int bbllx, int bblly, int bburx,
 		      int bbury) 
@@ -61,8 +74,11 @@ static void write_bb (char *filename, int bbllx, int bblly, int bburx,
     fprintf (stderr, "Bounding box:  %d %d %d %d\n", bbllx, bblly,
 	     bburx, bbury);
   }
-  fprintf (bbfile, "%!\n%%%%BoundingBox: %d %d %d %d\n",
+  fprintf (bbfile, "%%%%Title: %s\n", filename);
+  fprintf (bbfile, "%%%%Creator: %s %s\n", EBB_PROGRAM, EBB_VERSION);
+  fprintf (bbfile, "%%%%BoundingBox: %d %d %d %d\n",
 	   bbllx, bblly, bburx, bbury);
+  do_time(bbfile);
   fclose (bbfile);
   return;
 }
@@ -84,8 +100,8 @@ void do_jpeg (FILE *file, char *filename)
     return;
   }
   write_bb (filename, 0, 0,
-	    (int) (jpeg -> width * PIX2PT), (int) (jpeg -> height *
-						   PIX2PT));
+	    ROUND(jpeg -> width * PIX2PT,1.0),
+	    ROUND(jpeg -> height * PIX2PT,1.0));
   release (jpeg);
   return;
 }
@@ -106,6 +122,8 @@ void do_pdf (FILE *file, char *filename)
     fprintf (stderr, "\nCatalog isn't where I expect it.\n");
     return;
   }
+  /* Got catalog, so done with trailer */
+  pdf_release_obj (trailer);
   /* Lookup page tree in catalog */
   page_tree = pdf_deref_obj (pdf_lookup_dict (catalog, "Pages"));
   /* Media box can be inherited so start looking for it now */
@@ -132,11 +150,13 @@ void do_pdf (FILE *file, char *filename)
 	(bbury = pdf_get_array (media_box, 4)) == NULL) {
       fprintf (stderr, "Invalid mediabox\n");
     }
-    write_bb (filename, pdf_number_value (bbllx), pdf_number_value (bblly),
-	      pdf_number_value (bburx), pdf_number_value (bbury));
+    write_bb (filename,
+	      (int) pdf_number_value (bbllx), (int) pdf_number_value (bblly),
+	      (int) pdf_number_value (bburx), (int) pdf_number_value (bbury));
   }
   pdf_release_obj (media_box);
   pdf_release_obj (page_tree);
+  pdf_close();
 }
 
 FILE *inputfile;

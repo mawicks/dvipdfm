@@ -21,7 +21,7 @@ all:	$(PROGRAMS)
 dvipdfm: $(OBJ)
 	$(CC) $(CFLAGS) -o dvipdfm $(OBJ) -lkpathsea -lm -L$(LIBDIR)
 ebb: ebb.o jpeg.o pdfobj.o mem.o io.o numbers.o pdfparse.o
-	$(CC) $(CFLAGS) -o ebb $+
+	$(CC) $(CFLAGS) -o ebb $+ -lm
 install: dvipdfm
 	$(INSTALL) dvipdfm $(BINDIR)
 	$(INSTALL) ebb $(BINDIR)
@@ -30,8 +30,8 @@ distclean: clean
 clean:
 	rm -f *.o
 	rm -f $(PROGRAMS)
-	rm -f ../doc/*.log ../doc/*.dvi ../doc/dvipdfm.pdf
-	rm -f ../latex-support/*.log ../latex-support/*.dvi ../latex-support/readme.pdf
+	rm -f ../doc/*.log ../doc/*.dvi ../doc/*.aux ../doc/dvipdfm.pdf
+	rm -f ../latex-support/*.log ../latex-support/*.dvi ../latex-support/*.aux ../latex-support/readme.pdf
 	rm -f core
 $(OBJ): $(HEADERS)	
 
