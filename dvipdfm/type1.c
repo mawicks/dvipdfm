@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.32 1998/12/23 01:02:09 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.33 1998/12/23 02:02:19 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -30,6 +30,7 @@
 #include <math.h>
 #include <kpathsea/tex-file.h>
 #include <time.h>
+#include <ctype.h>
 #include "system.h"
 #include "pdfobj.h"
 #include "mem.h"
@@ -288,7 +289,8 @@ static void clear_a_pfb (struct a_pfb *pfb)
 #define ASCII 1
 #define BINARY 2
 
-static unsigned long do_pfb_header (FILE *file, pdf_obj *stream)
+static unsigned long do_pfb_header (FILE *file, pdf_obj *stream,
+				    struct glyph *glyph)
 {
   int i, ch;
   int stream_type;
@@ -442,7 +444,7 @@ static unsigned long do_partial (unsigned char *filtered, unsigned char
       ERROR ("Premature end of glyph definitions in font file");
     }
     if (nused == 0)
-      fprintf (stderr, "%d Missing Glyphs\n", nused);
+      fprintf (stderr, "\nNo Missing Glyphs\n");
     else
       ERROR ("Didn't find all the required glyphs");
     /* Include the rest of the file verbatim */
@@ -453,12 +455,13 @@ static unsigned long do_partial (unsigned char *filtered, unsigned char
 }
 
 
-static unsigned long do_pfb_body (FILE *file, int pfb_id)
+static unsigned long do_pfb_body (FILE *file, int pfb_id,
+				  struct glyph *glyphs)
 {
   int i, ch;
   int stream_type;
   unsigned char *buffer, *filtered;
-  unsigned long length, nread, filtered_length;
+  unsigned long length, nread;
   if ((ch = fgetc (file)) < 0 || ch != 128){
     fprintf (stderr, "Got %d, expecting 128\n", ch);
     ERROR ("type1_do_pfb_segment:  Are you sure this is a pfb?");
@@ -477,14 +480,13 @@ static unsigned long do_pfb_body (FILE *file, int pfb_id)
       buffer[i] = decrypt(buffer[i]);
     }
     crypt_init (EEKEY);
-    if (do_partials && pfbs[pfb_id].encoding_id >= 0) {
-      filtered_length = do_partial (filtered, buffer, length, 
-				    pfbs[pfb_id].used_chars,
-				    encodings[pfbs[pfb_id].encoding_id].glyphs);
-      for (i=0; i<filtered_length; i++) {
+    if (do_partials && glyphs != NULL) {
+      length = do_partial (filtered, buffer, length, 
+			   pfbs[pfb_id].used_chars,
+			   glyphs);
+      for (i=0; i<length; i++) {
 	buffer[i] = encrypt(filtered[i]);
       }
-      length = filtered_length;
     } else {
       for (i=0; i<nread; i++) {
 	buffer[i] = encrypt(buffer[i]);
@@ -588,8 +590,18 @@ static void do_pfb (int pfb_id)
     return;
   }
   /* Following line doesn't hide PDF stream structure very well */
-  length1 = do_pfb_header (type1_binary_file, pfbs[pfb_id].direct);
-  length2 = do_pfb_body (type1_binary_file, pfb_id);
+  if (pfbs[pfb_id].encoding_id >= 0) {
+    length1 = do_pfb_header (type1_binary_file, pfbs[pfb_id].direct,
+			     NULL);
+    length2 = do_pfb_body (type1_binary_file, pfb_id,
+			   (encodings[pfbs[pfb_id].encoding_id]).glyphs);
+  }
+  else {
+    length1 = do_pfb_header (type1_binary_file, pfbs[pfb_id].direct,
+			     NULL);
+    length2 = do_pfb_body (type1_binary_file, pfb_id,
+			   NULL);
+  }
   length3 = do_pfb_trailer (type1_binary_file, pfbs[pfb_id].direct);
   if ((ch = fgetc (type1_binary_file)) != 128 ||
       (ch = fgetc (type1_binary_file)) != 3)
@@ -886,8 +898,8 @@ static void mangle_fontname()
   char ch;
   static first = 1;
   memmove (fontname+7, fontname, strlen(fontname)+1);
-  /* The following line isn't really that random, but it
-     doesn't need to be here */
+  /* The following procedure isn't very random, but it
+     doesn't need to be for this application. */
   if (first) {
     srand (time(NULL));
     first = 0;
@@ -1038,7 +1050,10 @@ void type1_close_all (void)
     RELEASE (pfbs[i].pfb_name);
     for (j=0; j<256; j++) {
       if ((pfbs[i].used_chars)[j]) {
-	fprintf (stderr, " (%c/%d)", j, j);
+	if (isprint (j))
+	  fprintf (stderr, " ('%c'/%d)", j, j);
+	else 
+	  fprintf (stderr, " (<>/%d)", j);
       }
     }
     fprintf (stderr, "\n");
