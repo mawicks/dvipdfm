@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/htex.c,v 1.6 1999/09/08 16:51:46 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/htex.c,v 1.7 1999/09/19 04:56:40 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -93,36 +93,52 @@ static int parse_html_tag (char **start, char *end)
   return result;
 }
 
-static char pending = 0;
-char *pending_value;
-double pending_x, pending_y;
-int pending_type;
-
 #define HREF 1
 #define NAME 2
+static pdf_obj *link_dict = NULL;
+static pending_type = 0;
 
-void html_start_anchor (char *key, char *value) 
+char *base_value = NULL;
+static void html_make_link_dict (char *name)
 {
-  if (pending) {
-    fprintf (stderr, "\nWarning: Nexted html anchors\n");
-  }
-  if (!strcmp (key, "href") || !strcmp(key, "name")) {
-    pending+=1;
-    pending_x = dev_phys_x();
-    pending_y = dev_phys_y();
-    pending_value = value;
-    if (!strcmp (key, "href")) {
-      pending_type = HREF;
-    } else if (!strcmp (key, "name")) {
-      pending_type = NAME;
+  pdf_obj *color;
+  if (!link_dict) {
+    link_dict = pdf_new_dict();
+    pdf_add_dict(link_dict, pdf_new_name("Type"), pdf_new_name ("Annot"));
+    pdf_add_dict(link_dict, pdf_new_name("Subtype"), pdf_new_name ("Link"));
+    color = pdf_new_array ();
+    pdf_add_array (color, pdf_new_number (0));
+    pdf_add_array (color, pdf_new_number (1));
+    pdf_add_array (color, pdf_new_number (1));
+    pdf_add_dict(link_dict, pdf_new_name("C"), color);
+    if (name && *name == '#' && !(base_value)) {
+      pdf_add_dict (link_dict, pdf_new_name("Dest"), pdf_new_string(name+1,strlen(name+1)));
+    } else if (name) {    /* Assume its a URL */
+      char *url;
+      int len;
+      pdf_obj *action;
+      len = strlen(name)+1;
+      if (base_value)
+	len+=strlen(base_value);
+      url = NEW (len, char);
+      if (base_value)
+	strcpy (url, base_value);
+      else
+	url[0] = 0;
+      strcat (url, name);
+      action = pdf_new_dict();
+      pdf_add_dict (action, pdf_new_name ("Type"), pdf_new_name ("Action"));
+      pdf_add_dict (action, pdf_new_name ("S"), pdf_new_name ("URI"));
+      pdf_add_dict (action, pdf_new_name ("URI"),
+		    pdf_new_string (url, len));
+      pdf_add_dict (link_dict, pdf_new_name ("A"), pdf_ref_obj (action));
+      pdf_release_obj (action);
+      RELEASE (url);
     }
+    pdf_doc_begin_annot (link_dict);
   } else {
-    pending_value = NULL;
-    if (value)
-      RELEASE (value);
+    fprintf (stderr, "\nAttempt to nest links\n");
   }
-  if (key)
-    RELEASE (key);
 }
 
 void html_make_dest (char *name) 
@@ -138,77 +154,46 @@ void html_make_dest (char *name)
   pdf_release_obj (array);
 }
 
-char *base_value = NULL;
-
-void html_make_link (char *name, double xll, double yll, double xur, double yur) 
+void html_start_anchor (char *key, char *value) 
 {
-  pdf_obj *link, *box, *color;
-  link = pdf_new_dict();
-  pdf_add_dict(link, pdf_new_name("Type"), pdf_new_name ("Annot"));
-  pdf_add_dict(link, pdf_new_name("Subtype"), pdf_new_name ("Link"));
-  box = pdf_new_array ();
-  pdf_add_array (box, pdf_new_number (xll-2.0));
-  pdf_add_array (box, pdf_new_number (yll-2.0));
-  pdf_add_array (box, pdf_new_number (xur+2.0));
-  /* Set a minimum box height for macro packages or authors
-     that aren't very smart */
-  pdf_add_array (box, pdf_new_number (abs(yur-yll)>11.0?yur+2.0:yur+13.0));
-  pdf_add_dict(link, pdf_new_name("Rect"), box);
-  color = pdf_new_array ();
-  pdf_add_array (color, pdf_new_number (0));
-  pdf_add_array (color, pdf_new_number (1));
-  pdf_add_array (color, pdf_new_number (1));
-  pdf_add_dict(link, pdf_new_name("C"), color);
-  if (name && *name == '#' && !(base_value)) {
-    pdf_add_dict (link, pdf_new_name("Dest"), pdf_new_string(name+1,strlen(name+1)));
-  } else if (name) {    /* Assume its a URL */
-    char *url;
-    int len;
-    pdf_obj *action;
-    len = strlen(name)+1;
-    if (base_value)
-      len+=strlen(base_value);
-    url = NEW (len, char);
-    if (base_value)
-      strcpy (url, base_value);
-    else
-      url[0] = 0;
-    strcat (url, name);
-    action = pdf_new_dict();
-    pdf_add_dict (action, pdf_new_name ("Type"), pdf_new_name ("Action"));
-    pdf_add_dict (action, pdf_new_name ("S"), pdf_new_name ("URI"));
-    pdf_add_dict (action, pdf_new_name ("URI"),
-		  pdf_new_string (url, len));
-    pdf_add_dict (link, pdf_new_name ("A"), pdf_ref_obj (action));
-    pdf_release_obj (action);
-    RELEASE (url);
+  if (pending_type <= 0 && !link_dict) {
+
+  if (!strcmp (key, "href") || !strcmp(key, "name")) {
+    if (!strcmp (key, "href")) {
+      html_make_link_dict (value);
+      pending_type = HREF;
+    } else if (!strcmp (key, "name")) {
+      html_make_dest (value);
+      pending_type = NAME;
+    }
+  } else {
+    fprintf (stderr, "\nWarning: Nested html anchors\n");
   }
-  pdf_doc_add_to_page_annots (pdf_ref_obj (link));
-  pdf_release_obj (link);
+  if (key)
+    RELEASE (key);
+  }
+  if (value) {
+    RELEASE (value);
+  }
 }
 
 void html_end_anchor (void)
 {
-  if (!pending) {
-    fprintf (stderr, "\nhtml_end_anchor:  Ending anchor tag without starting tag!\n");
-  }
-  if (pending > 0) {
-    pending--;
-  }
   switch (pending_type) {
-  case NAME:
-    html_make_dest (pending_value);
-    break;
   case HREF:
-    html_make_link (pending_value, pending_x, pending_y, dev_phys_x(),
-		    dev_phys_y());
+    if (link_dict) {
+      pdf_doc_end_annot ();
+      pdf_release_obj (link_dict);
+      link_dict = NULL;
+      pending_type = 0;
+    } else {
+      fprintf (stderr, "\nhtml_end_anchor:  Ending anchor tag without starting tag!\n");
+    }
     break;
-  default:
-    fprintf (stderr, "html_end_anchor:  Uh Oh!  This can't happen\n");
-    exit(1);
+  case NAME:
+    pending_type = 0;
+    break;
   }
-  if (pending_value)
-    RELEASE (pending_value);
 }
 
 void html_set_base (char *value)

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.58 1999/09/15 22:13:11 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.59 1999/09/19 04:56:41 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -135,10 +135,10 @@ void pdf_obj_set_verbose(void)
 
 void pdf_out_init (const char *filename)
 {
+  char v;
 #ifdef MEM_DEBUG
 MEM_START
 #endif
-  char v;
   if (!(pdf_output_file = FOPEN (filename, FOPEN_WBIN_MODE))) {
     if (strlen(filename) < 128) {
       sprintf (format_buffer, "Unable to open %s\n", filename);

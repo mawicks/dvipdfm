@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.68 1999/09/15 22:13:11 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.69 1999/09/19 04:56:41 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -522,12 +522,55 @@ MEM_START
     } else
       pdf_release_obj (result);
   } else {
-    fprintf (stderr, "Ignoring invalid dictionary\n");
+    fprintf (stderr, "Ignoring annotation with invalid dictionary\n");
     error = 1;
   }
   release_xform_info (p);
   if (name)
     RELEASE (name);
+#ifdef MEM_DEBUG
+MEM_END
+#endif
+  return;
+}
+
+pdf_obj *pending_annot_dict = NULL;
+static void do_bann(char **start, char *end)
+{
+  int error = 0;
+#ifdef MEM_DEBUG
+MEM_START
+#endif
+  if (!pending_annot_dict) {
+    skip_white(start, end);
+    if ((pending_annot_dict = parse_pdf_dict(start, end)) != NULL) {
+      pdf_doc_begin_annot (pending_annot_dict);
+      /* If this object has a named reference, we file it away for
+	 later.  Otherwise we release it */
+    } else {
+      fprintf (stderr, "Ignoring annotation with invalid dictionary\n");
+      error = 1;
+    }
+  } else {
+    fprintf (stderr, "\nCan't begin an annotation when one is pending.\n");
+  }
+#ifdef MEM_DEBUG
+MEM_END
+#endif
+  return;
+}
+static void do_eann(char **start, char *end)
+{
+#ifdef MEM_DEBUG
+MEM_START
+#endif
+  if (pending_annot_dict) {
+    pdf_doc_end_annot ();
+    pdf_release_obj (pending_annot_dict);
+    pending_annot_dict = NULL;
+  } else {
+    fprintf (stderr, "\nTried to end an annotation without starting one!\n");
+  }
 #ifdef MEM_DEBUG
 MEM_END
 #endif
@@ -1156,6 +1199,8 @@ static int is_pdf_special (char **start, char *end)
 #define EXOBJ 27
 #define UXOBJ 28
 #define SCOLOR 29
+#define BANN   30
+#define EANN   31
 
 struct pdfmark
 {
@@ -1205,6 +1250,12 @@ struct pdfmark
   {"bbc", BGCOLOR},
   {"bbg", BGCOLOR},
   {"pagesize", PAGE_SIZE},
+  {"beginann", BANN},
+  {"bann", BANN},
+  {"bannot", BANN},
+  {"eann", EANN},
+  {"endann", EANN},
+  {"eannot", EANN},
   {"begintransform", BXFORM},
   {"begintrans", BXFORM},
   {"btrans", BXFORM},
@@ -1447,6 +1498,12 @@ MEM_START
     switch (pdfmark) {
     case ANN:
       do_ann(&start, end);
+      break;
+    case BANN:
+      do_bann(&start, end);
+      break;
+    case EANN:
+      do_eann(&start, end);
       break;
     case OUTLINE:
       do_outline(&start, end);

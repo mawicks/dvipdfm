@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.h,v 1.29 1999/09/06 14:48:13 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.h,v 1.30 1999/09/19 04:56:41 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -27,6 +27,7 @@
 #define PDFDEV_H
 
 #include "numbers.h"
+#include "pdfobj.h"
 
 typedef signed long mpt_t;
 
@@ -75,5 +76,14 @@ extern double dev_page_width(void);
 /* graphics_mode() would normally be local, but it is needed by the
    MetaPost inclusion routine */
 extern void graphics_mode (void);
-
+extern void dev_stack_depth (unsigned int depth);
+extern void dev_tag_depth (void);
+extern void dev_set_box (void);
+extern void dev_untag_depth (void);
+extern void dev_expand_box (mpt_t width, mpt_t height, mpt_t depth);
 #endif /* PDFDEV_H */
+
+
+
+
+

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.60 1999/09/08 16:51:45 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.61 1999/09/19 04:56:40 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -78,11 +78,18 @@ static unsigned num_def_fonts = 0, max_def_fonts = 0;
 
 static unsigned char verbose = 0;
 
+static unsigned char compute_boxes = 0;
+
 void dvi_set_verbose(void)
 {
   if (verbose < 255) {
   verbose += 1;
   }
+}
+
+void dvi_compute_boxes (unsigned char boxes)
+{
+  compute_boxes = boxes;
 }
 
 void dvi_set_debug(void)
@@ -405,7 +412,7 @@ void dvi_down (SIGNED_QUAD y)
 
 static void do_string (unsigned char *s, int len)
 {
-  mpt_t width = 0;
+  mpt_t width = 0, height = 0, depth = 0;
   int i;
   struct loaded_font *p;
   if (debug) {
@@ -419,14 +426,19 @@ static void do_string (unsigned char *s, int len)
     ERROR ("do_string:  No font selected");
   }
   p = loaded_fonts+current_font;
-  for (i=0; i<len; i++) {
-    width += tfm_get_fw_width(p->tfm_id, s[i]);
-  }
+  width = tfm_string_width (p->tfm_id, s, len);
   width = sqxfw (p->size, width);
   switch (p->type) {
   case PHYSICAL:
     dev_set_string (dvi_state.h, -dvi_state.v, s, len,
 		    width, p->font_id);
+    if (compute_boxes) {
+      height = tfm_string_height (p->tfm_id, s, len);
+      depth = tfm_string_depth (p->tfm_id, s, len);
+      height = sqxfw (p->size, height);
+      depth = sqxfw (p->size, depth);
+      dev_expand_box (width, height, depth);
+    }
     break;
   case VIRTUAL:
     dvi_push();
@@ -440,7 +452,7 @@ static void do_string (unsigned char *s, int len)
 
 void dvi_set (SIGNED_QUAD ch)
 {
-  mpt_t width;
+  mpt_t width, height = 0, depth = 0;
   struct loaded_font *p;
   unsigned char lch = (unsigned char) ch;
   if (current_font < 0) {
@@ -457,8 +469,14 @@ void dvi_set (SIGNED_QUAD ch)
   width = sqxfw (p->size, width);
   switch (p->type) {
   case PHYSICAL:
-    dev_set_string (dvi_state.h, -dvi_state.v, &lch, 1, width,
-		  p->font_id);
+    dev_set_string (dvi_state.h, -dvi_state.v, &lch, 1, width, p->font_id);
+    if (compute_boxes) {
+      height = tfm_get_fw_height (p->tfm_id, ch);
+      depth = tfm_get_fw_depth (p->tfm_id, ch);
+      height = sqxfw (p->size, height);
+      depth = sqxfw (p->size, depth);
+      dev_expand_box (width, height, depth);
+    }
     break;
   case VIRTUAL:
     {
@@ -471,7 +489,7 @@ void dvi_set (SIGNED_QUAD ch)
 
 void dvi_put (SIGNED_QUAD ch)
 {
-  mpt_t width;
+  mpt_t width, height = 0, depth = 0;
   struct loaded_font *p;
   unsigned char lch = (unsigned char) ch;
   if (current_font < 0) {
@@ -482,8 +500,14 @@ void dvi_put (SIGNED_QUAD ch)
   case PHYSICAL:
     width = tfm_get_fw_width (p->tfm_id, ch);
     width = sqxfw (p->size, width);
-    dev_set_string (dvi_state.h, -dvi_state.v, &lch, 1, width,
-		    p->font_id);
+    dev_set_string (dvi_state.h, -dvi_state.v, &lch, 1, width, p->font_id);
+    if (compute_boxes) {
+      height = tfm_get_fw_height (p->tfm_id, ch);
+      depth = tfm_get_fw_depth (p->tfm_id, ch);
+      height = sqxfw (p->size, height);
+      depth = sqxfw (p->size, depth);
+      dev_expand_box (width, height, depth);
+    }
     break;
   case VIRTUAL:    
     vf_set_char (ch, p->font_id);
@@ -537,8 +561,9 @@ void dvi_push (void)
     fprintf (stderr, "Pushing onto stack of depth %d\n",
 	     dvi_stack_depth);
   }
-  if (dvi_stack_depth < DVI_MAX_STACK_DEPTH)
+  if (dvi_stack_depth < DVI_MAX_STACK_DEPTH) {
     dvi_stack[dvi_stack_depth++] = dvi_state;
+  }
   else
     ERROR ("DVI stack exceeded");
 }
@@ -953,9 +978,16 @@ void dvi_do_page(unsigned n)  /* Most of the work of actually interpreting
 	return;
       case PUSH:
 	dvi_push();
+	/* The following line needs to go here instead of in
+	   dvi_push() since logical structure of document is
+	   oblivous to virtual fonts. The following line is used to
+	   box up logically conjoined material in annotations */
+	dev_stack_depth (dvi_stack_depth);
 	break;
       case POP:
 	dvi_pop();
+	/* Above explanation holds for following line too */
+	dev_stack_depth (dvi_stack_depth);
 	break;
       case RIGHT1:
 	do_right1();

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.26 1999/09/16 22:43:05 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.27 1999/09/19 04:56:41 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -368,17 +368,10 @@ double tfm_get_width (int font_id, UNSIGNED_BYTE ch)
   else return 0.0;
 }
 
-fixword tfm_get_fw_width (int font_id, UNSIGNED_BYTE ch)
-{
-  if (tfm[font_id].unpacked_widths)
-    return (tfm[font_id].unpacked_widths)[ch];
-  return 0;
-}
-
 double tfm_get_height (int font_id, UNSIGNED_BYTE ch)
 {
   if (tfm[font_id].unpacked_heights)
-    return (tfm[font_id].unpacked_heights)[ch]/FWBASE;
+    return (double) (tfm[font_id].unpacked_heights)[ch] / FWBASE;
   else return 0.0;
 }
 
@@ -387,6 +380,27 @@ double tfm_get_depth (int font_id, UNSIGNED_BYTE ch)
   if (tfm[font_id].unpacked_depths)
     return (tfm[font_id].unpacked_depths)[ch]/FWBASE;
   else return 0.0;
+}
+
+fixword tfm_get_fw_width (int font_id, UNSIGNED_BYTE ch)
+{
+  if (tfm[font_id].unpacked_widths)
+    return (tfm[font_id].unpacked_widths)[ch];
+  return 0;
+}
+
+fixword tfm_get_fw_height (int font_id, UNSIGNED_BYTE ch)
+{
+  if (tfm[font_id].unpacked_heights)
+    return (tfm[font_id].unpacked_heights)[ch];
+  return 0;
+}
+
+fixword tfm_get_fw_depth (int font_id, UNSIGNED_BYTE ch)
+{
+  if (tfm[font_id].unpacked_depths)
+    return (tfm[font_id].unpacked_depths)[ch];
+  return 0;
 }
 
 double tfm_get_it_slant (int font_id)
@@ -408,6 +422,39 @@ double tfm_get_x_height (int font_id)
   if (tfm[font_id].param)
     return (double) (tfm[font_id].param)[4] / FWBASE;
   else return 0.0;
+}
+
+fixword tfm_string_width (int font_id, unsigned char *s, unsigned len)
+{
+  fixword result = 0;
+  unsigned i;
+  if (tfm[font_id].unpacked_widths) 
+    for (i=0; i<len; i++) {
+      result += tfm[font_id].unpacked_widths[s[i]];
+    }
+  return result;
+}
+
+fixword tfm_string_depth (int font_id, unsigned char *s, unsigned len)
+{
+  fixword result = 0;
+  unsigned i;
+  if (tfm[font_id].unpacked_depths) 
+    for (i=0; i<len; i++) {
+      result = MAX(result, tfm[font_id].unpacked_depths[s[i]]);
+    }
+  return result;
+}
+
+fixword tfm_string_height (int font_id, unsigned char *s, unsigned len)
+{
+  fixword result = 0;
+  unsigned i;
+  if (tfm[font_id].unpacked_heights) 
+    for (i=0; i<len; i++) {
+      result = MAX(result, tfm[font_id].unpacked_heights[s[i]]);
+    }
+  return result;
 }
 
 UNSIGNED_PAIR tfm_get_firstchar (int font_id)

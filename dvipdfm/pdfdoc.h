@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.h,v 1.24 1999/09/10 00:33:57 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.h,v 1.25 1999/09/19 04:56:41 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -87,6 +87,11 @@ extern pdf_obj *begin_form_xobj (double xpos, double ypos,
 extern void end_form_xobj (void);
 extern void pdf_doc_enable_thumbnails (void);
 extern double dev_dvi2pts (void);
-
+extern void pdf_doc_begin_annot (pdf_obj *dict);
+extern void pdf_doc_set_box (void);
+extern void pdf_doc_end_annot (void);
+extern void pdf_doc_flush_annot (void);
+extern void pdf_doc_expand_box (double llx, double lly, double urx,
+				double ury);
 #endif /* PDFDOC_H */
 

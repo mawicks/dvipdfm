@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.60 1999/09/15 22:13:10 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.61 1999/09/19 04:56:41 mwicks Exp $
  
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1206,4 +1206,69 @@ void finish_pending_xobjects (void)
     fprintf (stderr, "\nFinishing a pending form XObject at end of page\n");
     end_form_xobj();
   }
+  return;
 }
+
+static struct
+{
+  pdf_obj *annot_dict;
+  double llx, lly, urx, ury;
+} breaking_state = {NULL};
+
+void pdf_doc_set_box (void)
+{
+  breaking_state.llx = dev_page_width();
+  breaking_state.urx = 0;
+  breaking_state.lly = dev_page_height();
+  breaking_state.ury = 0;
+  return;
+}
+
+void pdf_doc_begin_annot (pdf_obj *dict)
+{
+  breaking_state.annot_dict = dict;
+  pdf_doc_set_box ();
+  dev_tag_depth ();
+  return;
+}
+
+void pdf_doc_end_annot (void)
+{
+  pdf_doc_flush_annot();
+  breaking_state.annot_dict = NULL;
+  dev_untag_depth ();
+  return;
+}
+
+void pdf_doc_flush_annot (void)
+{
+  pdf_obj *rectangle, *new_dict;
+  rectangle = pdf_new_array ();
+  pdf_add_array (rectangle, pdf_new_number(ROUND(breaking_state.llx, 0.01)));
+  pdf_add_array (rectangle, pdf_new_number(ROUND(breaking_state.lly, 0.01)));
+  pdf_add_array (rectangle, pdf_new_number(ROUND(breaking_state.urx, 0.01)));
+  pdf_add_array (rectangle, pdf_new_number(ROUND(breaking_state.ury, 0.01)));
+  new_dict = pdf_new_dict ();
+  pdf_add_dict (new_dict, pdf_new_name ("Rect"),
+		rectangle);
+  pdf_merge_dict (new_dict, breaking_state.annot_dict);
+  pdf_doc_add_to_page_annots (pdf_ref_obj (new_dict));
+  pdf_release_obj (new_dict);
+  return;
+}
+
+void pdf_doc_expand_box (double llx, double lly, double urx, double
+			 ury)
+{
+  breaking_state.llx = MIN (breaking_state.llx, llx);
+  breaking_state.lly = MIN (breaking_state.lly, lly);
+  breaking_state.urx = MAX (breaking_state.urx, urx);
+  breaking_state.ury = MAX (breaking_state.ury, ury);
+  return;
+}
+
+
+
+
+
+
