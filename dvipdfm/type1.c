@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.24 1998/12/21 06:14:20 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.25 1998/12/21 06:27:31 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -342,6 +342,7 @@ pdf_obj *type1_fontfile (const char *pfb_name, int encoding_id)
 {
   int i;
   char *full_pfb_name;
+  fprintf (stderr, "type1_fontfile called with (%s)\n", pfb_name);
   _last_pfb_id = -1;
   full_pfb_name = kpse_find_file (pfb_name, kpse_type1_format,
 				  1);
@@ -367,6 +368,7 @@ pdf_obj *type1_fontfile (const char *pfb_name, int encoding_id)
     pfbs[i].encoding_id = encoding_id;
   }
   _last_pfb_id = i;
+  fprintf (stderr, "returning with id: %d\n", i);
   return pdf_link_obj(pfbs[i].indirect);
 }
 
@@ -791,8 +793,9 @@ void type1_close_all (void)
   /* Read any necessary font files and flush them */
   for (i=0; i<num_pfbs; i++) {
     do_pfb (pfbs[i].pfb_name, pfbs[i].direct);
-    RELEASE (pfbs[i].pfb_name);
     pdf_release_obj (pfbs[i].direct);
+    fprintf (stderr, "Font name (%s)\n", pfbs[i].pfb_name);
+    RELEASE (pfbs[i].pfb_name);
     for (j=0; j<256; j++) {
       if ((pfbs[i].used_chars)[j]) {
 	fprintf (stderr, "Used %c (%d)\n", j, j);

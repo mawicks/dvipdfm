@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.50 1998/12/21 06:14:19 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.51 1998/12/21 06:27:31 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -618,6 +618,7 @@ int dev_locate_font (char *tex_name, mpt_t ptsize)
     /* Copy the parts that do not depend on point size */
     /* Rebuild everything else */
     dev_font[thisfont].tfm_font_id = dev_font[i].tfm_font_id;
+    dev_font[thisfont].used_chars = dev_font[i].used_chars;
     strcpy (dev_font[thisfont].short_name, dev_font[i].short_name);
     dev_font[thisfont].font_resource = pdf_link_obj
       (dev_font[i].font_resource);
