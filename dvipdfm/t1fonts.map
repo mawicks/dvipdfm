@@ -71,29 +71,29 @@ cmssi8 ot1
 cmssi9 ot1
 %
 % CharterBT-Bold
-bchb8r 8r CharterBT-Bold
+bchb8r 8r
 % CharterBT-BoldItalic
-bchbi8r 8r CharterBT-BoldItalic
+bchbi8r 8r
 % CharterBT-Roman
-bchr8r 8r CharterBT-Roman
+bchr8r 8r
 % CharterBT-Italic
-bchri8r 8r CharterBT-Italic
+bchri8r 8r
 % AvantGarde-Demi
-pagd8r 8r AvantGarde-Demi
+pagd8r 8r
 % AvantGarde-DemiOblique
-pagdo8r 8r AvantGarde-DemiOblique
+pagdo8r 8r
 % AvantGarde-Book
-pagk8r 8r AvantGarde-Book
+pagk8r 8r
 % AvantGarde-BookOblique
-pagko8r 8r AvantGarde-BookOblique
+pagko8r 8r
 % Bookman-Demi
-pbkd8r 8r Bookman-Demi
+pbkd8r 8r
 % Bookman-DemiItalic
-pbkdi8r 8r Bookman-DemiItalic
+pbkdi8r 8r
 % Bookman-Light
-pbkl8r 8r Bookman-Light
+pbkl8r 8r
 % Bookman-LightItalic
-pbkli8r 8r Bookman-LightItalic
+pbkli8r 8r
 % Courier-Bold
 pcrb8r 8r Courier-Bold
 % Courier-BoldOblique
@@ -105,35 +105,35 @@ pcrro8r 8r Courier-Oblique
 % Helvetica-Bold
 phvb8r 8r Helvetica-Bold
 % Helvetica-Narrow-Bold
-phvb8rn 8r Helvetica-Narrow-Bold
+phvb8rn 8r
 % Helvetica-BoldOblique
 phvbo8r 8r Helvetica-BoldOblique
 % Helvetica-Narrow-BoldOblique
-phvbo8rn 8r Helvetica-Narrow-BoldOblique
+phvbo8rn 8r
 % Helvetica
 phvr8r 8r Helvetica
 % Helvetica-Narrow
-phvr8rn 8r Helvetica-Narrow
+phvr8rn 8r
 % Helvetica-Oblique
 phvro8r 8r Helvetica-Oblique
 % Helvetica-Narrow-Oblique
-phvro8rn 8r Helvetica-Narrow-Oblique
+phvro8rn 8r
 % NewCenturySchlbk-Bold
-pncb8r 8r NewCenturySchlbk-Bold
+pncb8r 8r
 % NewCenturySchlbk-BoldItalic
-pncbi8r 8r NewCenturySchlbk-BoldItalic
+pncbi8r 8r
 % NewCenturySchlbk-Roman
-pncr8r 8r NewCenturySchlbk-Roman
+pncr8r 8r
 % NewCenturySchlbk-Italic
-pncri8r 8r NewCenturySchlbk-Italic
+pncri8r 8r
 % Palatino-Bold
-pplb8r 8r Palatino-Bold
+pplb8r 8r
 % Palatino-BoldItalic
-pplbi8r 8r Palatino-BoldItalic
+pplbi8r 8r
 % Palatino-Roman
-pplr8r 8r Palatino-Roman
+pplr8r 8r
 % Palatino-Italic
-pplri8r 8r Palatino-Italic
+pplri8r 8r
 % Symbol
 psyr none Symbol
 % Times-Bold
@@ -145,17 +145,17 @@ ptmr8r 8r Times-Roman
 % Times-Italic
 ptmri8r 8r Times-Italic
 % Utopia-Bold
-putb8r 8r Utopia-Bold
+putb8r 8r
 % Utopia-BoldItalic
-putbi8r 8r Utopia-BoldItalic
+putbi8r 8r
 % Utopia-Regular
-putr8r 8r Utopia-Regular
+putr8r 8r
 % Utopia-Italic
-putri8r 8r Utopia-Italic
+putri8r 8r
 % ZapfChancery-MediumItalic
-pzcmi8r 8r ZapfChancery-MediumItalic
+pzcmi8r 8r
 % ZapfDingbats
 pzdr none ZapfDingbats
 % LaTeX Fonts having short file names
-lcirclew10 none - lcirclew
-lcircle10 none - lcircle1
+lcirclew10 none lcirclew
+lcircle10 none lcircle1
