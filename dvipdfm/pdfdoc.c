@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.66 2000/06/30 02:09:20 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.67 2000/07/13 00:27:51 mwicks Exp $
  
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1087,6 +1087,7 @@ static pdf_obj *build_scale_array (double a, double b, double c,
    in required fields.  The caller must initialize
    the stream */
 
+
 void doc_make_form_xobj (pdf_obj *this_form_contents, pdf_obj *bbox,
 			 double refptx, double refpty,
 			 double xscale, double yscale,
@@ -1094,6 +1095,7 @@ void doc_make_form_xobj (pdf_obj *this_form_contents, pdf_obj *bbox,
 {
   pdf_obj *xobj_dict, *tmp1;
   xobj_dict = pdf_stream_dict (this_form_contents);
+  
   pdf_add_dict (xobj_dict, pdf_new_name ("Name"), pdf_new_name(form_name));
   pdf_add_dict (xobj_dict, pdf_link_obj (type_name),
 		pdf_new_name ("XObject"));

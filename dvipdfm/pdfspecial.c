@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.78 2000/06/28 04:02:16 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.79 2000/07/13 00:27:51 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -245,6 +245,12 @@ struct xform_info *new_xform_info (void)
   result -> rotate = 0.0;
   result -> user_bbox = 0;
   result -> clip = 0;
+ /* These next two must be initialized be cause
+    they represent the reference point even
+    if the user doesn't specify one.  We must
+    have a reference point */
+  result -> u_llx = 0.0;
+  result -> u_lly = 0.0;
   return result;
 }
 
