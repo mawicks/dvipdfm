@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.78 1999/08/17 03:14:06 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.79 1999/08/17 17:23:53 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1326,7 +1326,8 @@ int type1_font (const char *tex_name, int tfm_font_id, const char *resource_name
     tmp1 = pdf_new_array ();
     for (i=firstchar; i<=lastchar; i++) {
       pdf_add_array (tmp1,
-		     pdf_new_number(ROUND(tfm_get_width (tfm_font_id, i)*1000.0,0.01)));
+		     pdf_new_number(ROUND(tfm_get_width(tfm_font_id,i)
+					  *1000.0/font_record->extend,0.01)));
     }
     pdf_add_dict (font_resource,
 		  pdf_new_name ("Widths"),

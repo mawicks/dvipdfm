@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.68 1999/08/17 15:08:56 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.69 1999/08/17 17:23:53 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -190,7 +190,7 @@ static void graphics_mode (void)
   return;
 }
 
-static void string_mode (mpt_t xpos, mpt_t ypos, double slant)
+static void string_mode (mpt_t xpos, mpt_t ypos, double slant, double extend)
 {
   mpt_t delx, dely;
   int len = 0;
@@ -276,16 +276,16 @@ void dev_set_string (mpt_t xpos, mpt_t ypos, unsigned char *s, int
   if (font_id != current_font)
     dev_set_font(font_id); /* Force a Tf since we are actually trying
 			       to write a character */
-  kern = (1000.0*(text_xorigin+text_offset-xpos))/dev_font[font_id].mptsize;
+  kern = (1000.0/dev_font[font_id].extend*(text_xorigin+text_offset-xpos))/dev_font[font_id].mptsize;
   if (ypos != text_yorigin ||
 	   abs(kern) > 32000) {
     text_mode();
     kern = 0;
   }
   if (motion_state != STRING_MODE)
-    string_mode(xpos, ypos, dev_font[font_id].slant);
+    string_mode(xpos, ypos, dev_font[font_id].slant, dev_font[font_id].extend);
   else if (kern != 0) {
-    text_offset -= kern*(dev_font[font_id].mptsize/1000.0);
+    text_offset -= kern*dev_font[font_id].extend*(dev_font[font_id].mptsize/1000.0);
     len += sprintf (format_buffer+len, ")%ld(", kern);
   }
   len += pdfobj_escape_str (format_buffer+len, FORMAT_BUF_SIZE-len, s, length);

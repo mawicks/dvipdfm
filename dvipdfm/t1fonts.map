@@ -175,8 +175,8 @@ ptmr8r 8r Times-Roman
 ptmri8r 8r Times-Italic
 ptmbo8r 8r Times-Bold -s 0.167
 ptmro8r 8r Times-Roman -s 0.167
-ptmrre8r 8r Times-Roman -s 1.2
-ptmrrn8r 8r Times-Roman -s 0.82
+ptmrre8r 8r Times-Roman -e 1.2
+ptmrrn8r 8r Times-Roman -e 0.82
 % Utopia-Bold
 putb8r 8r putb8a
 % Utopia-BoldItalic
