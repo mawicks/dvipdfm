@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.60 1999/02/23 15:39:21 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.61 1999/03/02 04:08:53 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -42,7 +42,7 @@
 #include "pdflimits.h"
 #include "t1crypt.h"
 
-static const char *map_filename = "pdffonts.map";
+static const char *map_filename = "t1fonts.map";
 static unsigned char verbose = 0;
 
 void type1_set_verbose(void)

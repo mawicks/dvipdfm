@@ -11,6 +11,7 @@ bindir=@bindir@
 datadir=@datadir@
 texmf=@TEXMF@
 dvipdfmdir=$(texmf)/dvipdfm
+psheaderdir=$(texmf)/dvips
 programs=dvipdfm ebb
 headers=dvi.h pdflimits.h error.h mfileio.h jpeg.h mem.h numbers.h \
 	pdfdev.h pdfdoc.h pdfparse.h pdfspecial.h tfm.h type1.h epdf.h \
@@ -39,13 +40,13 @@ install-exec: all
 	for i in $(programs) ; \
 	  do $(INSTALL) $$i $(bindir); \
 	done
-# pdffonts.map.
+# t1fonts.map.
 install-data:
-	if test ! -r $(dvipdfmdir)/pdffonts.map \
-	   || grep 'original pdffonts.map --' $(dvipdfmdir)/pdffonts.map \
+	mkdir $(dvipdfmdir) 2> /dev/null || true;
+	if test ! -r $(dvipdfmdir)/t1fonts.map \
+	   || grep 'original t1fonts.map --' $(dvipdfmdir)/t1fonts.map \
 	   >/dev/null; then  \
-	   mkdir $(dvipdfmdir) 2> /dev/null || true; \
-	   $(INSTALL) ./pdffonts.map $(dvipdfmdir)/pdffonts.map; \
+	   $(INSTALL) ./t1fonts.map $(dvipdfmdir)/t1fonts.map; \
 	else true; fi
 uninstall-exec:
 	rm -f $(bindir)/$(programs)
@@ -53,6 +54,12 @@ uninstall-exec:
 uninstall-data:
 	if grep 'original pdffonts.map --' $(psheaderdir)/dvipdfm/pdffonts.map \
 	   >/dev/null 2>&1; then rm -f $(psheaderdir)/dvipdfm/pdffonts.map; \
+	else true; fi
+	if grep 'original pdffonts.map --' $(dvipdfmdir)/dvipdfm/pdffonts.map \
+	   >/dev/null 2>&1; then rm -f $(dvipdfmdir)/pdffonts.map; \
+	else true; fi
+	if grep 'original t1fonts.map --' $(dvipdfmdir)/dvipdfm/t1fonts.map \
+	   >/dev/null 2>&1; then rm -f $(dvipdfmdir)/t1fonts.map; \
 	else true; fi
 #
 # Developer stuff

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.40 1999/02/21 14:53:58 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.41 1999/03/02 04:08:53 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -99,7 +99,7 @@ static void usage (void)
    fprintf (stdout, "\nUsage: dvipdfm [options] dvifile\n");
    fprintf (stdout, "where [options] is one or more of\n\n");
    fprintf (stdout, "-c      \tIgnore color specials (for printing on B&W printers)\n");
-   fprintf (stdout, "-f filename\tSet font map file name [pdffonts.map]\n");
+   fprintf (stdout, "-f filename\tSet font map file name [t1fonts.map]\n");
    fprintf (stdout, "-o filename\tSet output file name [dvifile.pdf]\n");
    fprintf (stdout, "-l \t\tLandscape mode\n");
    fprintf (stdout, "-m number\tSet additional magnification\n");
