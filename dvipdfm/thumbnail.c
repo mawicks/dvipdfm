@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/thumbnail.c,v 1.11 1999/09/08 16:51:48 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/thumbnail.c,v 1.12 2000/10/13 02:13:00 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -70,9 +70,9 @@ pdf_obj *do_thumbnail (const char *thumb_filename)
   FILE *thumb_file;
   char *guess_filename = NULL;
   guess_filename = guess_name (thumb_filename);
-  if ((thumb_file = FOPEN (thumb_filename, FOPEN_RBIN_MODE))) {
+  if ((thumb_file = MFOPEN (thumb_filename, FOPEN_RBIN_MODE))) {
     found_in_cwd = 1;
-  } else if (!(thumb_file = FOPEN (guess_filename, FOPEN_RBIN_MODE))) {
+  } else if (!(thumb_file = MFOPEN (guess_filename, FOPEN_RBIN_MODE))) {
     fprintf (stderr, "\nNo thumbnail file\n");
     return NULL;
   }
@@ -96,7 +96,7 @@ pdf_obj *do_thumbnail (const char *thumb_filename)
     remove (guess_filename);
   if (guess_filename)
     RELEASE (guess_filename);
-  FCLOSE (thumb_file);
+  MFCLOSE (thumb_file);
   return image_ref;
 }
 

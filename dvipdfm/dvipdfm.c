@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.69 2000/08/04 02:37:51 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.70 2000/10/13 02:13:00 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -34,6 +34,7 @@
 #include "dvi.h"
 #include "pdfdoc.h"
 #include "pdfdev.h"
+#include "encodings.h"
 #include "type1.h"
 #include "colorsp.h"
 #include "pdfspecial.h"
@@ -377,7 +378,7 @@ static void do_args (int argc, char *argv[])
 	landscape_mode = 1;
 	break;
       case 'f':
-	type1_read_mapfile (argv[1]);
+	dev_read_mapfile (argv[1]);
 	pop_arg();
 	break;
       case 'e':
@@ -385,9 +386,10 @@ static void do_args (int argc, char *argv[])
 	break;
       case 'q':
 	really_quiet = 1;
-	type1_set_quiet();
 	break;
       case 'v':
+	encoding_set_verbose();
+	dev_set_verbose();
 	dvi_set_verbose();
 	type1_set_verbose();
 	vf_set_verbose();
@@ -512,7 +514,7 @@ static void read_config_file (void)
 				   true)) == NULL) {
     return;
   }
-  if (!(config_file = FOPEN (full_config_name, FOPEN_R_MODE))) {
+  if (!(config_file = MFOPEN (full_config_name, FOPEN_R_MODE))) {
     fprintf (stderr, "\nError opening configuration file.  Continuing with defaults.\n");
     return;
   }
@@ -618,9 +620,7 @@ int CDECL main (int argc, char *argv[])
 	}
       else
 	for (j=page_ranges[i].first;
-	     j>=page_ranges[i].last &&
-	       j<dvi_npages() &&
-	       j >= 0; j--) {
+	     j>=page_ranges[i].last && j<dvi_npages(); j--) {
 	  fprintf (stderr, "[%d", j+1);
 	  dvi_do_page (j);
 	  at_least_one_page = 1;

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.80 2000/08/04 02:37:51 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.81 2000/10/13 02:13:00 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -311,7 +311,7 @@ static int parse_one_dim_word (char **start, char *end)
 struct {
   char *s;
   double units;
-  int true;
+  int is_true_unit;
 } units[] = {
   {"pt", (72.0/72.27), 0},
   {"in", (72.0), 0},
@@ -340,11 +340,11 @@ double parse_one_unit (char **start, char *end)
 	       "\n%s: Invalid unit of measurement (should be in, cm, pt, etc.)\n", unit_string);
       errors = 1;
     }
-    if (i != sizeof(units)/sizeof(units[0]) && !units[i].true)
+    if (i != sizeof(units)/sizeof(units[0]) && !units[i].is_true_unit)
       result = units[i].units;
     /* If these are "true" units, we must pre-shrink since the entire
        document is magnified */
-    if (i != sizeof(units)/sizeof(units[0]) && units[i].true)
+    if (i != sizeof(units)/sizeof(units[0]) && units[i].is_true_unit)
       result = units[i].units/dvi_tell_mag();
     RELEASE (unit_string);
   }
@@ -978,7 +978,7 @@ pdf_obj *embed_image (char *filename, struct xform_info *p,
   static long next_image = 1;
   sprintf (res_name, "Im%ld", next_image);
   if ((kpse_file_name = kpse_find_pict (filename)) &&
-      (image_file = FOPEN (kpse_file_name, FOPEN_RBIN_MODE))) {
+      (image_file = MFOPEN (kpse_file_name, FOPEN_RBIN_MODE))) {
     fprintf (stderr, "(%s", kpse_file_name);
     if (check_for_jpeg(image_file)) {
       result = jpeg_start_image(image_file);
@@ -1013,7 +1013,7 @@ pdf_obj *embed_image (char *filename, struct xform_info *p,
       result = ps_include (kpse_file_name, p,
 			   res_name, x_user, y_user);
     }
-    FCLOSE (image_file);
+    MFCLOSE (image_file);
     fprintf (stderr, ")");
   } else {
       fprintf (stderr, "\nError locating or opening file (%s)\n", filename);

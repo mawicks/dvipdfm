@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mem.c,v 1.13 1999/09/01 00:55:09 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mem.c,v 1.14 2000/10/13 02:13:00 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -63,20 +63,21 @@ void *new (size_t size, char *function, int line)
 void *renew (void *mem, size_t size, char *function, int line)
 {
   void *result;
+#ifdef MEM_DEBUG
+    mem_debug_init();
+    event += 1;
+  if (mem)
+    fprintf (debugfile, "%p %07ld [fre] %s:%d\n", mem,
+	     event, function, line);
+#endif /* MEM_DEBUG */
   if ((result = realloc (mem, size)) == NULL) {
     fprintf (stderr, "Out of memory!\n");
     exit (1);
   }
-
 #ifdef MEM_DEBUG
-    mem_debug_init();
-    event += 1;
-    if (mem != NULL)
-      fprintf (debugfile, "%p %07ld [fre] %s:%d\n", mem,
-	       event, function, line);
+  if (result)
     fprintf (debugfile, "%p %07ld [new] %s:%d\n", result, event, function, line);
 #endif /* MEM_DEBUG */
-
   return result;
 }
 

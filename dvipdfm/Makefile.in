@@ -1,7 +1,7 @@
 CC=@CC@
 CFLAGS=@CFLAGS@
 LDFLAGS=@LDFLAGS@
-CPPFLAGS=@CPPFLAGS@ -I .
+CPPFLAGS=@CPPFLAGS@ -I.
 INSTALL=@INSTALL@
 LIBS=@LIBS@ -lm 
 srcdir=@srcdir@
@@ -14,19 +14,20 @@ dvipdfmdir=$(texmf)/dvipdfm
 psheaderdir=$(texmf)/dvips
 programs=dvipdfm ebb
 scripts=dvipdft
+mkinstalldirs=$(SHELL) mkinstalldirs
 headers=dvi.h pdflimits.h error.h mfileio.h jpeg.h mem.h numbers.h \
 	pdfdev.h pdfdoc.h pdfparse.h pdfspecial.h tfm.h type1.h epdf.h \
 	vf.h dvicodes.h t1crypt.h pkfont.h tpic.h thumbnail.h htex.h \
 	twiddle.h mpost.h psimage.h psspecial.h colors.h colorsp.h \
-	dvipdfm.h
+	dvipdfm.h encodings.h ttf.h macglyphs.h
 src=pdfdev.c pdfdoc.c dvi.c mfileio.c mem.c jpeg.c numbers.c pdfobj.c \
 	pdfparse.c pdfspecial.c tfm.c type1.c dvipdfm.c epdf.c vf.c \
 	t1crypt.c pkfont.c tpic.c thumbnail.c pngimage.c ebb.c htex.c \
-	mpost.c psimage.c psspecial.c colorsp.c
+	mpost.c psimage.c psspecial.c colorsp.c encodings.c ttf.c
 objects=pdfdev.o pdfdoc.o dvi.o mfileio.o mem.o jpeg.o numbers.o pdfobj.o \
         pdfparse.o pdfspecial.o tfm.o type1.o dvipdfm.o epdf.o vf.o \
 	t1crypt.o pkfont.o tpic.o thumbnail.o pngimage.o htex.o \
-	mpost.o psimage.o psspecial.o colorsp.o
+	mpost.o psimage.o psspecial.o colorsp.o encodings.o ttf.o
 eobjects=ebb.o jpeg.o pdfobj.o mem.o mfileio.o numbers.o pdfparse.o \
 	pngimage.o
 encodings=ot1.enc ot1alt.enc ot1r.enc
@@ -43,18 +44,18 @@ include depend.make
 install: install-exec install-data
 uninstall: uninstall-exec uninstall-data
 install-exec: all
-	/bin/mkdir $(bindir) 2> /dev/null || true;
+	$(mkinstalldirs) $(bindir) 2> /dev/null || true;
 	for i in $(programs) $(scripts) ; \
 	  do $(INSTALL) $$i $(bindir); \
 	done
 # t1fonts.map.
 install-data:
-	/bin/mkdir $(dvipdfmdir) 2> /dev/null || true;
-	/bin/mkdir $(dvipdfmdir)/base 2> /dev/null || true;
+	$(mkinstalldirs) $(dvipdfmdir) 2> /dev/null || true;
+	$(mkinstalldirs) $(dvipdfmdir)/base 2> /dev/null || true;
 	if test -f $(dvipdfmdir)/config; then \
 	  /bin/mv $(dvipdfmdir)/config $(dvipdfmdir)/config.sav; \
 	fi
-	/bin/mkdir $(dvipdfmdir)/config 2> /dev/null || true;
+	$(mkinstalldirs) $(dvipdfmdir)/config 2> /dev/null || true;
 	if test -f $(dvipdfmdir)/t1fonts.map; then \
 	  /bin/mv $(dvipdfmdir)/t1fonts.map $(dvipdfmdir)/config; \
 	fi

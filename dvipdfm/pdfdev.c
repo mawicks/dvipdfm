@@ -1,5 +1,5 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.103 2000/08/04 02:37:51 mwicks Exp $
-
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.104 2000/10/13 02:13:00 mwicks Exp $
+ 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
 
@@ -37,6 +37,7 @@
 #include "pdfdoc.h"
 #include "pdfobj.h"
 #include "type1.h"
+#include "ttf.h"
 #include "pkfont.h"
 #include "pdfspecial.h"
 #include "pdfparse.h"
@@ -47,6 +48,7 @@
 #include "colorsp.h"
 #include "pdflimits.h"
 #include "twiddle.h"
+#include "encodings.h"
 
 /* Internal functions */
 static void dev_clear_color_stack (void);
@@ -91,7 +93,7 @@ static int debug = 0, verbose = 0;
 
 void dev_set_verbose (void)
 {
-  verbose = 1;
+  verbose += 1;
 }
 void dev_set_debug (void)
 {
@@ -134,8 +136,8 @@ static spt_t text_xorigin = 0, text_yorigin = 0,
   text_offset = 0;
 double text_slant = 0.0, text_extend = 1.0;
 
-unsigned  n_dev_fonts = 0;
-unsigned  n_phys_fonts = 0;
+unsigned  num_dev_fonts = 0;
+unsigned  num_phys_fonts = 0;
 int current_font = -1;
 
 #define PHYSICAL 1
@@ -143,14 +145,15 @@ int current_font = -1;
 
 #define TYPE1 1
 #define PK 2
+#define TRUETYPE 3
+
+#define DEFAULT_MAP_FILE "fonts.map"
 
 static struct dev_font {
   char short_name[7];	/* Needs to be big enough to hold name "Fxxx"
 			   where xxx is number of largest font */
   unsigned char used_on_this_page, format;
   char *tex_name;
-  int tfm_font_id;
-  double ptsize;
   spt_t sptsize;
   pdf_obj *font_resource;
   char *used_chars;
@@ -160,12 +163,183 @@ static struct dev_font {
 
 static unsigned max_device_fonts = 0;
 
-void need_more_dev_fonts (unsigned n)
+void dev_fonts_need (unsigned n)
 {
-  if (n_dev_fonts + n > max_device_fonts) {
-    max_device_fonts += MAX_FONTS;
+  if (n > max_device_fonts) {
+    max_device_fonts = MAX(max_device_fonts+MAX_FONTS, n);
     dev_font = RENEW (dev_font, max_device_fonts, struct dev_font);
   }
+}
+
+struct map_record {
+   char *tex_name, *font_name, *enc_name;
+   double slant, extend;
+   int remap;
+}  *font_map = NULL;
+
+unsigned int num_font_map = 0, max_font_map = 0;
+
+static void font_maps_need (int n)
+{
+  if (n > max_font_map) {
+    max_font_map = MAX(max_font_map+MAX_FONTS, n);
+    font_map = RENEW (font_map, max_font_map, struct map_record);
+  }
+  return;
+}
+
+static void init_map_record (struct map_record *r) 
+{
+  r->tex_name = NULL;
+  r->enc_name = NULL;
+  r->font_name = NULL;
+  r->slant = 0.0;
+  r->extend = 1.0;
+  r->remap = 0.0;
+  return;
+}
+
+static void release_map_record (struct map_record *r)
+{
+  if (r && r->tex_name)
+    RELEASE (r->tex_name);
+  if (r && r->enc_name)
+    RELEASE (r->enc_name);
+  if (r && r->font_name)
+    RELEASE (r->font_name);
+}
+
+
+static void fill_in_defaults (struct map_record *this_map_record)
+{
+  if (this_map_record -> enc_name != NULL && 
+      (!strcmp (this_map_record->enc_name, "default") ||
+       !strcmp (this_map_record->enc_name, "none"))) {
+    RELEASE(this_map_record->enc_name);
+    this_map_record -> enc_name = NULL;
+  }
+  if (this_map_record -> font_name != NULL && 
+      (!strcmp (this_map_record->font_name, "default") ||
+       !strcmp (this_map_record->font_name, "none"))) {
+    RELEASE(this_map_record->font_name);
+    this_map_record -> font_name = NULL;
+  }
+  /* We *must* fill in a font_name either explicitly or by default
+     (the tex_name) */
+  if (this_map_record -> font_name == NULL) {
+    this_map_record -> font_name = NEW (strlen(this_map_record->tex_name)+1, char);
+    strcpy (this_map_record->font_name, this_map_record->tex_name);
+  }
+  return;
+}
+
+void dev_read_mapfile (char *filename)
+{
+  FILE *mapfile;
+  char *full_map_filename, *start = NULL, *end, *tex_name;
+  if (verbose > 0)
+    fprintf (stderr, "<%s", filename);
+  full_map_filename = kpse_find_file (filename, kpse_program_text_format,
+				      0);
+  if (full_map_filename == NULL || 
+      (mapfile = MFOPEN (full_map_filename, FOPEN_R_MODE)) == NULL) {
+    fprintf (stderr, "Warning:  Couldn't open font map file %s\n", filename);
+    mapfile = NULL;
+  }
+  if (mapfile) {
+    while ((start = mfgets (work_buffer, WORK_BUFFER_SIZE, mapfile)) !=
+	   NULL) {
+      end = work_buffer + strlen(work_buffer);
+      skip_white (&start, end);
+      if (start >= end)
+	continue;
+      if (*start == '%')
+	continue;
+      if ((tex_name = parse_ident (&start, end)) == NULL)
+	continue;
+      /* Parse record line in map file.  First two fields (after TeX font
+	 name) are position specific.  Arguments start at the first token
+	 beginning with a  '-' */
+      font_maps_need (num_font_map+1);
+      init_map_record(font_map+num_font_map);
+      font_map[num_font_map].tex_name = tex_name;
+      skip_white (&start, end);
+      if (*start != '-') {
+	font_map[num_font_map].enc_name = parse_ident (&start, end); /* May be null */  
+	skip_white (&start, end);
+      }
+      if (*start != '-') {
+	font_map[num_font_map].font_name = parse_ident (&start, end); /* May be null */
+	skip_white (&start, end);
+      }
+      /* Parse any remaining arguments */ 
+      while (start+1 < end && *start == '-') {
+	char *number;
+	switch (*(start+1)) {
+	case 's': /* Slant option */
+	  start += 2;
+	  skip_white (&start, end);
+	  if (start < end && 
+	      (number = parse_number(&start, end))) {
+	    font_map[num_font_map].slant = atof (number);
+	    RELEASE (number);
+	  } else {
+	    fprintf (stderr, "\n\nMissing slant value in map file for %s\n\n",
+		     tex_name);
+	  }
+	  break;
+	case 'e': /* Extend option */
+	  start += 2;
+	  skip_white (&start, end);
+	  if (start < end && 
+	      (number = parse_number(&start, end))) {
+	    font_map[num_font_map].extend = atof (number);
+	    RELEASE (number);
+	  } else {
+	    fprintf (stderr, "\n\nMissing extend value in map file for %s\n\n",
+		     tex_name);
+	  }
+	  break;
+	case 'r': /* Remap option */
+	  start += 2;
+	  skip_white (&start, end);
+	  font_map[num_font_map].remap = 1;
+	  break;
+	default: 
+	  fprintf (stderr, "\n\nWarning: Unrecognized option in map file %s: -->%s<--\n\n",
+		   tex_name, start);
+	  start = end;
+	}
+	skip_white (&start, end);
+      }
+      fill_in_defaults (font_map+num_font_map);
+      num_font_map += 1;
+    }
+    MFCLOSE (mapfile);
+    if (verbose > 0)
+      fprintf (stderr, ">");
+  }
+  return;
+}
+
+struct map_record *get_map_record (const char *tex_name)
+{
+  struct map_record *result = NULL;
+  int tried_default = 0;
+  unsigned int i;
+  if (!font_map && !tried_default) {
+    dev_read_mapfile (DEFAULT_MAP_FILE);
+    tried_default = 1;
+  }
+  if (!font_map)
+    return result;
+  for (i=0; i<num_font_map; i++) {
+    if (!strcmp (font_map[i].tex_name, tex_name)) {
+      result = font_map+i;
+      break;
+    }
+  }
+  return result;
 }
 
 /*
@@ -327,6 +501,7 @@ void dev_set_string (spt_t xpos, spt_t ypos, unsigned char *s, int
 {
   int len = 0;
   long kern;
+  
   if (font_id != current_font)
     dev_set_font(font_id); /* Force a Tf since we are actually trying
 			       to write a character */
@@ -353,7 +528,7 @@ void dev_set_string (spt_t xpos, spt_t ypos, unsigned char *s, int
     /* This routine needs to be fast, so we don't call sprintf() or
        strcpy() */
     format_buffer[len++] = ')';
-    len += itoa (format_buffer+len, kern);
+    len += inttoa (format_buffer+len, kern);
     format_buffer[len++] = '(';
     pdf_doc_add_to_page (format_buffer, len);
     len = 0;
@@ -754,7 +929,7 @@ void dev_reselect_font(void)
 {
   int i;
   current_font = -1;
-  for (i=0; i<n_dev_fonts; i++) {
+  for (i=0; i<num_dev_fonts; i++) {
     dev_font[i].used_on_this_page = 0;
   }
   text_slant = 0.0;
@@ -810,185 +985,178 @@ MEM_END
 #endif
 }
 
-static int locate_type1_font (char *tex_name, spt_t ptsize)
-     /* Here, the ptsize is in device units, currently millipts */
+int dev_locate_font (const char *tex_name, spt_t ptsize)
 {
-  /* Since Postscript fonts are scaleable, this font may have already
-     been asked for in some other point size.  Make sure it doesn't already exist. */
-  int i, thisfont;
-  if (debug) {
-    fprintf (stderr, "locate_type1_font: fontname: (%s) ptsize: %ld, id: %d\n",
-	     tex_name, ptsize, n_dev_fonts);
+  int i;
+  int this_font;
+
+  if (ptsize == 0) {
+    ERROR ("locate_dev_font() called with ptsize = 0");
   }
-  if (ptsize == 0)
-    ERROR ("dev_locate_font called with point size of zero");
-  need_more_dev_fonts(1);
-  thisfont = n_dev_fonts; /* Use a local variable to handle recursion */
-  for (i=0; i<thisfont; i++) {
-    if (dev_font[i].format == TYPE1 &&
-	dev_font[i].tex_name && strcmp (tex_name, dev_font[i].tex_name) == 0) {
+  /* Make sure we have room for a new one, even though we
+     may not actually create one */
+  dev_fonts_need (num_dev_fonts+1);
+  this_font = num_dev_fonts;
+  
+  for (i=0; i<this_font; i++) {
+    /* PK must match in name and size to resolve to the same device
+       font */
+    if (dev_font[i].tex_name &&
+	strcmp (tex_name, dev_font[i].tex_name) == 0 &&
+	dev_font[i].sptsize == ptsize &&
+	dev_font[i].format == PK)
       break;
-    }
-  }
-  if (i == thisfont) {  /* Font *name* not found, so load it and give it a
-			    new short name */
-    int type1_id = -1;
-    dev_font[thisfont].tfm_font_id = tfm_open (tex_name);
-    dev_font[thisfont].short_name[0] = 'F';
-    sprintf (dev_font[thisfont].short_name+1, "%d", n_phys_fonts+1);
-    type1_id = type1_font (tex_name, 
-			   dev_font[thisfont].tfm_font_id,
-			   dev_font[thisfont].short_name);
-    /* type1_font_resource on next line always returns an *indirect* obj */ 
-    if (type1_id >= 0) { /* If we got one, it must be a physical font */
-      dev_font[thisfont].font_resource = type1_font_resource (type1_id);
-      dev_font[thisfont].used_chars = type1_font_used (type1_id);
-      dev_font[thisfont].slant = type1_font_slant (type1_id);
-      dev_font[thisfont].extend = type1_font_extend (type1_id);
-      dev_font[thisfont].remap = type1_font_remap (type1_id);
-      n_phys_fonts +=1 ;
-    } else { /* No physical font corresponding to this name */
-      dev_font[thisfont].short_name[0] = 0;
-      thisfont = -1;
-    }
-  } else {	/* Font name was already in table, presumably (but not
-		   necessarily with a
-		   different point size */
-    /* Copy the parts that do not depend on point size */
-    /* Rebuild everything else */
-    dev_font[thisfont].tfm_font_id = dev_font[i].tfm_font_id;
-    dev_font[thisfont].used_chars = dev_font[i].used_chars;
-    dev_font[thisfont].slant = dev_font[i].slant;
-    dev_font[thisfont].extend = dev_font[i].extend;
-    dev_font[thisfont].remap = dev_font[i].remap;
-    strcpy (dev_font[thisfont].short_name, dev_font[i].short_name);
-    dev_font[thisfont].font_resource = pdf_link_obj
-      (dev_font[i].font_resource);
-  }
-  /* Note that two entries in dev_font may have the same name and
-     pointsize.  This only comes into play with virtual fonts. 
-     For example, if the dvi file asks for cmr10 at 12pt and
-     one or more vf files also ask for cmr10 at 12pt, multiple entries
-     will be generated in the font table.  Names are unique,
-     so any given name will only be embedded once. The code to make
-     name/ptsize combinations also unique isn't worth the
-     effort for the slight increase in storage requirements. */
-
-  if (thisfont >=0) {
-    dev_font[thisfont].format = TYPE1; /* We added one */
-    dev_font[thisfont].sptsize = ptsize;
-    dev_font[thisfont].tex_name = NEW (strlen(tex_name)+1, char);
-    strcpy (dev_font[thisfont].tex_name, tex_name);
-    /* The value in used_on_this_page is incorrect if the font has
-       already been used on the page in a different point size.  It's
-       too hard to do right.  The only side effect is that the
-       font name will be added to the page resource dict twice.
-       Since only one name can exist in the dict, it really makes no
-       difference. */
-    dev_font[thisfont].used_on_this_page = 0;
-    n_dev_fonts +=1;
-  }
-  return (thisfont);
-}
-
-static int locate_pk_font (char *tex_name, spt_t ptsize)
-     /* Here, the ptsize is in device units, currently millipts */
-{
-  /* This routine is different than that for Type 1 fonts.  PK fonts
-     are assumed not to be scaleable and so the same name at a
-     different point size should be treated as a separate font */
-  int i, thisfont;
-  if (debug) {
-    fprintf (stderr, "locate_pk_font: fontname: (%s) ptsize: %ld, id: %d\n",
-	     tex_name, ptsize, n_dev_fonts);
-  }
-  if (ptsize == 0)
-    ERROR ("locate_pk_font called with point size of zero");
-  thisfont = n_dev_fonts;
-  for (i=0; i<thisfont; i++) {
-    /* For pk fonts, both name *and* ptsize must match */
-    if (dev_font[i].format == PK &&
-	dev_font[i].tex_name && strcmp (tex_name,
-					dev_font[i].tex_name) == 0 &&
-	dev_font[i].sptsize == ptsize) {
+    /* Scaleable fonts must match in name; however, this routine
+       must return a different id if the ptsize is different */
+    if (dev_font[i].tex_name &&
+	strcmp (tex_name, dev_font[i].tex_name) == 0 &&
+	dev_font[i].format != PK)
       break;
+  }
+  if (i == this_font) { /* There is no physical font we can use */
+    struct map_record *map_record;
+    int font_id = -1, font_format = -1, tfm_id = -1, encoding_id = -1;
+    int remap = 0;
+    double extend= 1.0, slant = 0.0;
+    const char *font_name;
+    char short_name[7];
+    /* Get appropriate info from map file (yes, PK fonts at two
+       different point sizes would be looked up twice unecessarily) */
+    if ((map_record = get_map_record (tex_name))) {
+      remap = map_record -> remap;
+      slant = map_record -> slant;
+      extend = map_record -> extend;
+      font_name = map_record -> font_name;
+    } else {
+      font_name = tex_name;
     }
-  }
-  if (i == thisfont) {  /* Font *name* not found, so load it and give it a
-			    new short name */
-    int pk_id = -1;
-    need_more_dev_fonts (1);
-    dev_font[thisfont].tfm_font_id = tfm_open (tex_name);
-    dev_font[thisfont].short_name[0] = 'F';
-    itoa (dev_font[thisfont].short_name+1, n_phys_fonts+1);
-    pk_id = pk_font (tex_name, ptsize*dvi2pts,
-		     dev_font[thisfont].tfm_font_id,
-		     dev_font[thisfont].short_name);
-    /* type1_font_resource on next line always returns an *indirect* obj */ 
-    if (pk_id >= 0) { /* If we got one, it must be a physical font */
-      dev_font[thisfont].format = PK;
-      dev_font[thisfont].font_resource = pk_font_resource (pk_id);
-      dev_font[thisfont].used_chars = pk_font_used (pk_id);
-      /* Don't set extend, slant, or remap for PK fonts for now... */
-      dev_font[thisfont].slant = 0.0;
-      dev_font[thisfont].extend = 1.0;
-      dev_font[thisfont].remap = 0;
-      dev_font[thisfont].sptsize = ptsize;
-      dev_font[thisfont].tex_name = NEW (strlen(tex_name)+1, char);
-      dev_font[thisfont].used_on_this_page = 0;
-      strcpy (dev_font[thisfont].tex_name, tex_name);
-      n_dev_fonts +=1; /* For non rescaleable fonts, dev_fonts and
-			  phys_fonts have the same number */
-      n_phys_fonts +=1 ;
-    } else { /* No physical font corresponding to this name */
-      dev_font[thisfont].short_name[0] = 0;
-      thisfont = -1;
+    if (verbose>1){
+      if (map_record) {
+	fprintf (stderr, "\nfontmap: %s -> %s", tex_name,
+		 map_record->font_name);
+	if (map_record->enc_name)
+	  fprintf (stderr, "(%s)", map_record->enc_name);
+	if (map_record->slant)
+	  fprintf (stderr, "[slant=%g]", map_record->slant);
+	if (map_record->extend != 1.0)
+	  fprintf (stderr, "[extend=%g]", map_record->extend);
+	if (map_record->remap)
+	  fprintf (stderr, "[remap]");
+	fprintf (stderr, "\n");
+      } else {
+	fprintf (stderr, "\nfontmap: %s (no map)\n", tex_name);
+      }
     }
-  } else {
-    thisfont = i;
+    /* If this font has an encoding specified on the record, get its id */
+    if (map_record && map_record -> enc_name != NULL) {
+      encoding_id = get_encoding (map_record -> enc_name);
+    } else { /* Otherwise set the encoding_id to -1 */
+      encoding_id = -1;
+    }
+    tfm_id = tfm_open (tex_name);
+    /* We assume, for now that we will find this as a physical font,
+       as opposed to a vf, so we need a device name to tell the
+       lower-level routines what we want this to be called.  We'll
+       blast this name away later if we don't need it. */
+    short_name[0] = 'F';
+    inttoa (short_name+1, num_phys_fonts+1);
+    if ((font_id = type1_font (font_name, tfm_id,
+			       short_name, encoding_id, remap))>=0) {
+      font_format = TYPE1;
+    } else if ((font_id = ttf_font (font_name, tfm_id,
+				    short_name, encoding_id, remap))>=0) {
+      font_format = TRUETYPE;
+    } else if ((font_id = pk_font (font_name, ptsize*dvi2pts,
+				   tfm_id,
+				   short_name))>=0) {
+      font_format = PK;
+    }
+    if (font_format >= 0) { /* This is a new physical font and we found a physical
+			       font we can use */
+      strcpy (dev_font[this_font].short_name, short_name);
+      dev_font[this_font].tex_name = NEW (strlen (tex_name)+1, char);
+      strcpy (dev_font[this_font].tex_name, tex_name);
+      dev_font[this_font].sptsize = ptsize;
+      dev_font[this_font].format = font_format;
+      dev_font[this_font].slant = slant;
+      dev_font[this_font].extend = extend;
+      dev_font[this_font].remap = remap;
+      dev_font[this_font].used_on_this_page = 0;
+      switch (font_format) {
+      case TYPE1:
+	dev_font[this_font].font_resource =
+	  type1_font_resource(font_id);
+	dev_font[this_font].used_chars = type1_font_used(font_id);
+	break;
+      case TRUETYPE:
+	dev_font[this_font].font_resource =
+	  ttf_font_resource(font_id);
+	dev_font[this_font].used_chars = ttf_font_used(font_id);
+	break;
+      case PK:
+	dev_font[this_font].font_resource = pk_font_resource (font_id);
+	dev_font[this_font].used_chars = pk_font_used(font_id);
+	break;
+      default:
+	ERROR ("Impossible font format in dev_locate_font()");
+      }
+      num_phys_fonts += 1;
+    } else { /* No appropriate physical font exists */
+      this_font = -1; /* A flag indicating no physical font */
+    }
+  } else { /* A previously existing physical font can be used;
+	      however, this routine must return a distinct ID if the
+	      ptsizes are different.  Copy the information from the
+	      previous record to the new record */
+    strcpy (dev_font[this_font].short_name, dev_font[i].short_name);
+    dev_font[this_font].tex_name = NEW (strlen (tex_name)+1, char);
+    strcpy (dev_font[this_font].tex_name, tex_name);
+    dev_font[this_font].sptsize = ptsize;
+    dev_font[this_font].format = dev_font[i].format;
+    dev_font[this_font].used_chars = dev_font[i].used_chars;
+    dev_font[this_font].slant = dev_font[i].slant;
+    dev_font[this_font].extend = dev_font[i].extend;
+    dev_font[this_font].remap = dev_font[i].remap;
+    /* The value in useD_on_this_page will be incorrect if the font
+       has already been used on a page in a different point size.
+       It's too hard to do right.  The only negative consequence is
+       that there will be an attempt to add the resource to the page
+       resource dict.  However, the second attempt will do nothing */
+    dev_font[this_font].used_on_this_page = 0;
+    dev_font[this_font].font_resource = pdf_link_obj(dev_font[i].font_resource);
+    /* These two fonts are treated as having the same physical
+       "used_chars" */
+    dev_font[this_font].used_chars = dev_font[i].used_chars;
   }
-  return (thisfont);
+  if (this_font >= 0)
+    num_dev_fonts += 1;
+  return this_font;
 }
-
-int dev_locate_font (char *tex_name, spt_t ptsize)
-{
-  int result;
-  /* If there's a type1 font with this name use it */
-  if (debug)
-    fprintf (stderr, "\ndev_locate_font(%s, %ld)\n", tex_name, ptsize);
-  result = locate_type1_font (tex_name, ptsize);
-  /* If not, try to find a pk font */
-  if (result < 0) {
-    fprintf (stderr, "\nUnable to locate a Type 1 font for (%s)... Hope that's okay.\n",
-	     tex_name);
-    result = locate_pk_font (tex_name, ptsize);
-  }
-  /* Otherwise we are out of luck */
-  return result;
-}
-
-
-int dev_font_tfm (int dev_font_id)
-{
-  return dev_font[dev_font_id].tfm_font_id;
-}
-
-spt_t dev_font_sptsize (int dev_font_id)
-{
-  return dev_font[dev_font_id].sptsize;
-}
-
+  
 void dev_close_all_fonts(void)
 {
   int i;
-  for (i=0; i<n_dev_fonts; i++) {
+  for (i=0; i<num_dev_fonts; i++) {
     pdf_release_obj (dev_font[i].font_resource);
     RELEASE (dev_font[i].tex_name);
   }
   if (dev_font)
     RELEASE (dev_font);
+
+  /* Release all map entries */
+  for (i=0; i<num_font_map; i++) {
+    release_map_record (font_map+i);
+  }
+
+  if (font_map)
+    RELEASE (font_map);
+  /* Close the various font handlers */
   type1_close_all();
   pk_close_all();
+  ttf_close_all();
+
+  /* Now do encodings. */
+  encoding_flush_all();
 }
 
 void dev_rule (spt_t xpos, spt_t ypos, spt_t width, spt_t height)
@@ -1000,22 +1168,21 @@ void dev_rule (spt_t xpos, spt_t ypos, spt_t width, spt_t height)
       the logical meaning of a "rule" as opposed to a filled rectangle.
       I am assume the reader can more intelligently render a rule than a filled rectangle */
   if (width> height) {  /* Horizontal stroke? */
-    spt_t half_height = height/2;
-    w = height / CENTI_PDF_U;
-    p1 = xpos / CENTI_PDF_U;
-    p2 = (ypos+half_height) / CENTI_PDF_U;
-    p3 = (xpos+width) / CENTI_PDF_U;
-    p4 = (ypos+half_height) / CENTI_PDF_U;
+    w = IDIVRND(height, CENTI_PDF_U);
+    p1 = IDIVRND(xpos, CENTI_PDF_U);
+    p2 = IDIVRND (2*ypos+height, 2*CENTI_PDF_U);
+    p3 = IDIVRND(xpos+width,CENTI_PDF_U);
+    p4 = IDIVRND (2*ypos+height, 2*CENTI_PDF_U);
   } else { /* Vertical stroke */
-    spt_t half_width = width/2;
-    w = width / CENTI_PDF_U;
-    p1 = (xpos+half_width) / CENTI_PDF_U;
-    p2 = ypos / CENTI_PDF_U;
-    p3 = (xpos+half_width) / CENTI_PDF_U;
-    p4 = (ypos+height) / CENTI_PDF_U;
+    w = IDIVRND(width,CENTI_PDF_U);
+    p1 = IDIVRND (2*xpos+width, 2*CENTI_PDF_U);
+    p2 = IDIVRND(ypos, CENTI_PDF_U);
+    p3 = IDIVRND (2*xpos+width, 2*CENTI_PDF_U);
+    p4 = IDIVRND(ypos+height,CENTI_PDF_U);
   }
   /* This needs to be quick */
   {
+    len += sprintf (format_buffer+len, " /test gs");
     format_buffer[len++] = ' ';
     len += centi_u_to_a (format_buffer+len, w);
     format_buffer[len++] = ' ';
@@ -1072,6 +1239,7 @@ void dev_do_special (void *buffer, UNSIGNED_QUAD size, spt_t x_user,
 static unsigned dvi_stack_depth = 0;
 static int dvi_tagged_depth = -1;
 static unsigned char link_annot = 1;
+
 void dev_link_annot (unsigned char flag)
 {
   link_annot = flag;

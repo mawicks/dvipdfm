@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/numbers.c,v 1.12 2000/08/04 02:37:51 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/numbers.c,v 1.13 2000/10/13 02:13:00 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -35,6 +35,11 @@ UNSIGNED_BYTE get_unsigned_byte (FILE *file)
   return (UNSIGNED_BYTE) ch;
 }
 
+UNSIGNED_BYTE sget_unsigned_byte (char *s)
+{
+  return *((unsigned char *) s);
+}
+
 SIGNED_BYTE get_signed_byte (FILE *file)
 {
   int byte;
@@ -51,6 +56,18 @@ UNSIGNED_PAIR get_unsigned_pair (FILE *file)
   UNSIGNED_PAIR pair = 0;
   for (i=0; i<2; i++) {
     byte = get_unsigned_byte(file);
+    pair = pair*0x100u + byte;
+  }
+  return pair;
+}
+
+UNSIGNED_PAIR sget_unsigned_pair (unsigned char *s)
+{
+  int i;
+  UNSIGNED_BYTE byte;
+  UNSIGNED_PAIR pair = 0;
+  for (i=0; i<2; i++) {
+    byte = *(s++);
     pair = pair*0x100u + byte;
   }
   return pair;
@@ -232,7 +249,7 @@ static int private_itoa (char *s, long int n, int mindigits)
    return (p-s);
 }
 
-int itoa (char *s, long int i)
+int inttoa (char *s, long int i)
 {
   /* Call the private one */
   return private_itoa (s, i, 0);

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.30 2000/08/04 02:37:51 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.31 2000/10/13 02:13:00 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -66,6 +66,7 @@ struct a_tfm
 
 void a_tfm_init (struct a_tfm *a_tfm) 
 {
+  a_tfm->header = NULL;
   a_tfm->char_info = NULL;
   a_tfm->width_index = NULL;
   a_tfm->height_index = NULL;
@@ -82,10 +83,10 @@ void a_tfm_init (struct a_tfm *a_tfm)
 struct a_tfm *tfm = NULL;
 static unsigned numtfms = 0, max_tfms = 0; /* numtfms should equal
 					      numfonts in dvi.c */
-static void need_more_tfms (unsigned n)
+static void tfms_need (unsigned n)
 {
-  if (numtfms + n > max_tfms) {
-    max_tfms += MAX_FONTS;
+  if (n > max_tfms) {
+    max_tfms = MAX (max_tfms+MAX_FONTS, n);
     tfm = RENEW (tfm, max_tfms, struct a_tfm);
   }
 }
@@ -417,9 +418,9 @@ static void do_ofm_one_char_info (FILE *tfm_file, struct a_tfm *a_tfm)
     i += repeats;
   }
   if (tfm_debug) {
-    fprintf (stderr, "packets read = %ld/%ld\n", char_infos_read,
+    fprintf (stderr, "\npackets read = %ld/%ld\n", char_infos_read,
 	     num_char_infos);
-    fprintf (stderr, "characters defined = %ld/%ld\n", i, num_chars);
+    fprintf (stderr, "\ncharacters defined = %ld/%ld\n", i, num_chars);
   }
 }
 
@@ -497,10 +498,10 @@ int tfm_open (const char *tfm_name)
   }
   if (i == numtfms) { /* Name hasn't already been loaded */
     if ((full_tfm_file_name = kpse_find_tfm (tfm_name))) {
-      need_more_tfms (1);
+      tfms_need (numtfms+1);
       a_tfm_init (tfm+numtfms);
-      if (!(tfm_file = FOPEN (full_tfm_file_name, FOPEN_RBIN_MODE))) {
-	fprintf (stderr, "%s: ", tfm_name);
+      if (!(tfm_file = MFOPEN (full_tfm_file_name, FOPEN_RBIN_MODE))) {
+	fprintf (stderr, "\n%s: ", tfm_name);
 	ERROR ("Specified TFM file cannot be opened");
       }
       if (tfm_verbose == 1)
@@ -513,11 +514,11 @@ int tfm_open (const char *tfm_name)
       get_tfm (tfm_file, tfm_file_size, &tfm[numtfms]);
 #ifdef HAVE_OMEGA_FORMATS       
     } else if ((full_tfm_file_name = kpse_find_ofm (tfm_name))) {
-      need_more_tfms (1);
+      tfms_need (numtfms+1);
       a_tfm_init (tfm+numtfms);
-      if (!(tfm_file = FOPEN (full_tfm_file_name, FOPEN_RBIN_MODE))) {
-	fprintf (stderr, "%s:  ", tfm_name);
-	ERROR ("TFM file cannot be opened");
+      if (!(tfm_file = MFOPEN (full_tfm_file_name, FOPEN_RBIN_MODE))) {
+	fprintf (stderr, "\n%s:  ", tfm_name);
+	ERROR ("OFM file cannot be opened");
       }
       if (tfm_verbose == 1)
 	fprintf (stderr, "(OFM:%s", tfm_name);
@@ -529,12 +530,12 @@ int tfm_open (const char *tfm_name)
       get_ofm (tfm_file, tfm_file_size, &tfm[numtfms]);
 #endif       
     } else {
-      fprintf (stderr, "%s:  ", tfm_name);
+      fprintf (stderr, "\n%s:  ", tfm_name);
       ERROR ("Unable to find a TFM or OFM file");
     }
     tfm[numtfms].tex_name = NEW (strlen(tfm_name)+1, char);
     strcpy (tfm[numtfms].tex_name, tfm_name);
-    FCLOSE (tfm_file);
+    MFCLOSE (tfm_file);
     if (tfm_verbose) 
       fprintf (stderr, ")");
     if (tfm_verbose>3) {

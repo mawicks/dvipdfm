@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.69 2000/08/04 02:37:51 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.70 2000/10/13 02:13:00 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -379,7 +379,7 @@ int dvi_locate_font (char *tex_name, spt_t ptsize)
     loaded_fonts[thisfont].type = PHYSICAL;
     loaded_fonts[thisfont].font_id = dev_locate_font (tex_name, ptsize);
     if (loaded_fonts[thisfont].font_id < 0) {
-      fprintf (stderr, "%s: Can't locate a Type 1 font, PK font or VF file\n", tex_name);
+      fprintf (stderr, "%s: Can't locate a Type 1, TTF, PK, or virtual font file\n", tex_name);
       ERROR ("Not sure how to proceed.  For now this is fatal\n\
 Maybe in the future, I'll substitute some other font.");
     }
@@ -1157,7 +1157,7 @@ void dvi_do_page(unsigned n)  /* Most of the work of actually interpreting
 error_t dvi_init (char *dvi_filename, char *pdf_filename, double mag, double x_offset, double
 		  y_offset)
 {
-  if (!(dvi_file = FOPEN (dvi_filename, FOPEN_RBIN_MODE))) {
+  if (!(dvi_file = MFOPEN (dvi_filename, FOPEN_RBIN_MODE))) {
     ERROR ("dvi_init:  Specified DVI file doesn't exist");
     return (FATAL_ERROR);
   }
@@ -1183,7 +1183,7 @@ void dvi_close (void)
      treated as a write-once record */
 
   /* Do some house cleaning */
-  FCLOSE (dvi_file);
+  MFCLOSE (dvi_file);
   for (i=0; i<num_def_fonts; i++) {
     RELEASE (def_fonts[i].name);
   }

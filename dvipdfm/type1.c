@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.118 2000/07/30 16:40:15 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.119 2000/10/13 02:13:00 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -42,10 +42,9 @@
 #include "pdflimits.h"
 #include "t1crypt.h"
 #include "twiddle.h"
+#include "encodings.h"
 
-#define DEFAULT_MAP_FILE "t1fonts.map"
-
-static unsigned char verbose = 0, really_quiet = 0;
+static unsigned char verbose = 0;
 
 void type1_set_verbose(void)
 {
@@ -54,365 +53,6 @@ void type1_set_verbose(void)
   }
 }
 
-void type1_set_quiet (void)
-{
-  really_quiet = 1;
-}
-
-struct font_record 
-{
-  char *tex_name;
-  char *font_name;
-  char *enc_name;
-  double slant, extend;
-  int remap;
-} *font_map = NULL;
-
-unsigned int num_font_map = 0, max_font_map = 0;
-
-static void need_more_font_maps (int n)
-{
-  if (num_font_map+n > max_font_map) {
-    max_font_map += MAX_FONTS;
-    font_map = RENEW (font_map, max_font_map, struct font_record);
-  }
-  return;
-}
-
-static void init_font_record (struct font_record *r) 
-{
-  r->tex_name = NULL;
-  r->enc_name = NULL;
-  r->font_name = NULL;
-  r->slant = 0.0;
-  r->extend = 1.0;
-  r->remap = 0.0;
-  return;
-}
-static void fill_in_defaults (struct font_record *font_record)
-{
-  if (font_record -> enc_name != NULL && 
-      (!strcmp (font_record->enc_name, "default") ||
-       !strcmp (font_record->enc_name, "none"))) {
-    RELEASE(font_record->enc_name);
-    font_record -> enc_name = NULL;
-  }
-  if (font_record -> font_name != NULL && 
-      (!strcmp (font_record->font_name, "default") ||
-       !strcmp (font_record->font_name, "none"))) {
-    RELEASE(font_record->font_name);
-    font_record -> font_name = NULL;
-  }
-  /* We *must* fill in a font_name either explicitly or by default */
-  if (font_record -> font_name == NULL) {
-    font_record -> font_name = NEW (strlen(font_record->tex_name)+1, char);
-    strcpy (font_record->font_name, font_record->tex_name);
-  }
-  return;
-}
-
-struct encoding {
-  char *enc_name;
-  /* The following array isn't very efficient. It is constructed
-     by peeling the names from the encoding object.  It makes
-     it easier to construct an array in this format when the
-     encoding must be obtained directly from the PFB file */
-  char *glyphs[256];
-  pdf_obj *encoding_ref;
-} *encodings;
-int num_encodings = 0, max_encodings=0;
-
-#include "winansi.h"
-
-pdf_obj *find_encoding_differences (pdf_obj *encoding)
-{
-  char filling = 0;
-  int i;
-  pdf_obj *result = pdf_new_array ();
-  pdf_obj *tmp;
-  for (i=0; i<256; i++) {
-    tmp = pdf_get_array (encoding, i);
-    if (tmp == NULL || tmp -> type != PDF_NAME) {
-      ERROR ("Encoding file may be incorrect\n");
-    }
-    if (!strcmp (winansi_encoding[i],
-		 pdf_name_value(tmp)))
-      filling = 0;
-    else{
-      if (!filling)
-	pdf_add_array (result, pdf_new_number (i));
-      filling = 1;
-      pdf_add_array (result, pdf_link_obj(tmp));
-    }
-  }
-  return result;
-}
-
-pdf_obj *make_differences_encoding (pdf_obj *encoding)
-{
-  int i;
-  int skipping = 1;
-  pdf_obj *tmp, *result = pdf_new_array ();
-  for (i=0; i<256; i++) {
-    tmp = pdf_get_array (encoding, i);
-    if (tmp && tmp -> type == PDF_NAME) {
-      if (strcmp (".notdef", pdf_name_value (tmp))) { /* If not
-							 .notdef */
-	if (skipping) {
-	  pdf_add_array (result, pdf_new_number (i));
-	}
-	pdf_add_array (result, pdf_link_obj(tmp));
-	  skipping = 0;
-      } else {
-	skipping = 1;
-      }
-    } else {
-      ERROR ("Encoding file may be incorrect\n");
-    }
-  }
-  return result;
-}
-
-static void save_glyphs (char **glyph, pdf_obj *encoding)
-{
-  int i;
-  char *glyph_name;
-  for (i=0; i<256; i++) {
-    glyph_name = pdf_string_value (pdf_get_array(encoding, i));
-    glyph[i] = NEW (strlen(glyph_name)+1, char);
-    strcpy (glyph[i], glyph_name);
-  }
-}
-
-int get_encoding (const char *enc_name)
-{
-  FILE *encfile = NULL;
-  char *full_enc_filename, *tmp;
-  pdf_obj *result, *result_ref;
-  long filesize;
-  int i;
-  /* See if we already have this saved */
-  for (i=0; i<num_encodings; i++)
-    if (!strcmp (enc_name, encodings[i].enc_name))
-      return i;
-  /* Guess not.. */
-  /* Try base name before adding .enc.  Someday maybe kpse will do
-     this */
-  strcpy (tmp = NEW (strlen(enc_name)+5, char), enc_name);
-  strcat (tmp, ".enc");
-  if ((full_enc_filename = kpse_find_file (enc_name,
-					   kpse_tex_ps_header_format,
-					   1)) == NULL &&
-      (full_enc_filename = kpse_find_file (enc_name,
-					   kpse_program_text_format,
-					   1)) == NULL &&
-      (full_enc_filename = kpse_find_file (tmp,
-					   kpse_tex_ps_header_format,
-					   1)) == NULL &&
-      (full_enc_filename = kpse_find_file (tmp,
-					   kpse_program_text_format,
-					   1)) == NULL) {
-    sprintf (work_buffer, "Can't find encoding file: %s", enc_name) ;
-    ERROR (work_buffer);
-  }
-  RELEASE (tmp);
-  if ((encfile = FOPEN (full_enc_filename, FOPEN_R_MODE)) == NULL ||
-      (filesize = file_size (encfile)) == 0) {
-    sprintf (work_buffer, "Error opening encoding file: %s", enc_name) ;
-    ERROR (work_buffer);
-  }
-  if (verbose == 1)
-    fprintf (stderr, "(ENC:%s", enc_name);
-  if (verbose > 1)
-    fprintf (stderr, "(ENC:%s", full_enc_filename);
-  {  /* Got one and opened it */
-    char *buffer, *start, *end, *junk_ident;
-    pdf_obj *junk_obj, *encoding, *differences;
-    buffer = NEW (filesize, char); 
-    fread (buffer, sizeof (char), filesize, encfile);
-    FCLOSE (encfile);
-    start = buffer;
-    end = buffer + filesize;
-    start[filesize-1] = 0;
-    skip_white (&start, end);
-    while (start < end && *start != '[') {
-      if ((junk_ident = parse_ident (&start, end)) != NULL)
-	RELEASE (junk_ident);
-      else if ((junk_obj = parse_pdf_object (&start, end)) != NULL)
-	pdf_release_obj (junk_obj);
-      skip_white(&start, end);
-    }
-    if (start >= end ||
-	(encoding = parse_pdf_array (&start, end)) == NULL) {
-      fprintf (stderr, "%s: ", enc_name);
-      ERROR ("Can't find an encoding in this file!\n");
-    }
-    RELEASE (buffer);
-    /* Done reading file */
-    if (verbose) {
-      fprintf (stderr, ")");
-    }
-    /*    differences = find_encoding_differences (encoding); */
-    differences = make_differences_encoding (encoding);
-    /* Put the glyph names into a conventional array */
-    if (num_encodings >= max_encodings) {
-       max_encodings += MAX_ENCODINGS;
-       encodings = RENEW (encodings, max_encodings, struct encoding);
-    }
-    save_glyphs (encodings[num_encodings].glyphs, encoding);
-    pdf_release_obj (encoding);
-    result = pdf_new_dict();
-    pdf_add_dict (result, pdf_new_name ("Type"),
-		  pdf_new_name ("Encoding"));
-    /* Some software doesn't like BaseEncoding key (e.g., FastLane) 
-       so this code is commented out for the moment.  It may reemerge in the
-       future */
-    /*    pdf_add_dict (result, pdf_new_name ("BaseEncoding"),
-	  pdf_new_name ("WinAnsiEncoding")); */
-    pdf_add_dict (result, pdf_new_name ("Differences"),
-		  differences);
-  }
-  {
-    result_ref = pdf_ref_obj (result);
-    pdf_release_obj (result);
-    encodings[num_encodings].encoding_ref = result_ref;
-    encodings[num_encodings].enc_name = NEW (strlen(enc_name)+1, char);
-    strcpy (encodings[num_encodings].enc_name, enc_name);
-    return num_encodings++;
-  }
-}
-
-void encoding_flush_all (void) 
-{
-  int i, j;
-  for (i=0; i<num_encodings; i++) {
-    RELEASE (encodings[i].enc_name);
-    pdf_release_obj (encodings[i].encoding_ref);
-    /* Release glyph names for this encoding */
-    for (j=0; j<256; j++) {
-      RELEASE ((encodings[i].glyphs)[j]);
-    }
-  }
-  if (encodings)
-    RELEASE (encodings);
-}
-
-char *type1_encoding_glyph (int encoding_id, unsigned code) 
-{
-  char *result = NULL;
-  if (encoding_id >= 0 && encoding_id < num_encodings &&
-      code < 256) {
-    result = (encodings[encoding_id].glyphs)[code];
-  }
-  return result;
-}
-
-extern void type1_read_mapfile (char *filename)
-{
-  FILE *mapfile;
-  char *full_map_filename, *start = NULL, *end, *tex_name;
-  if (!really_quiet)
-    fprintf (stderr, "<%s", filename);
-  full_map_filename = kpse_find_file (filename, kpse_program_text_format,
-				      0);
-  if (full_map_filename == NULL || 
-      (mapfile = FOPEN (full_map_filename, FOPEN_R_MODE)) == NULL) {
-    fprintf (stderr, "Warning:  Couldn't open font map file %s\n", filename);
-    mapfile = NULL;
-  }
-  if (mapfile) {
-    while ((start = mfgets (work_buffer, WORK_BUFFER_SIZE, mapfile)) !=
-	   NULL) {
-      end = work_buffer + strlen(work_buffer);
-      skip_white (&start, end);
-      if (start >= end)
-	continue;
-      if (*start == '%')
-	continue;
-      if ((tex_name = parse_ident (&start, end)) == NULL)
-	continue;
-      /* Parse record line in map file.  First two fields (after TeX font
-	 name) are position specific.  Arguments start at the first token
-	 beginning with a  '-' */
-      need_more_font_maps (1);
-      init_font_record(font_map+num_font_map);
-      font_map[num_font_map].tex_name = tex_name;
-      skip_white (&start, end);
-      if (*start != '-') {
-	font_map[num_font_map].enc_name = parse_ident (&start, end); /* May be null */  
-	skip_white (&start, end);
-      }
-      if (*start != '-') {
-	font_map[num_font_map].font_name = parse_ident (&start, end); /* May be null */
-	skip_white (&start, end);
-      }
-      /* Parse any remaining arguments */ 
-      while (start+1 < end && *start == '-') {
-	char *number;
-	switch (*(start+1)) {
-	case 's': /* Slant option */
-	  start += 2;
-	  skip_white (&start, end);
-	  if (start < end && 
-	      (number = parse_number(&start, end))) {
-	    font_map[num_font_map].slant = atof (number);
-	    RELEASE (number);
-	  } else {
-	    fprintf (stderr, "\n\nMissing slant value in map file for %s\n\n",
-		     tex_name);
-	  }
-	  break;
-	case 'e': /* Extend option */
-	  start += 2;
-	  skip_white (&start, end);
-	  if (start < end && 
-	      (number = parse_number(&start, end))) {
-	    font_map[num_font_map].extend = atof (number);
-	    RELEASE (number);
-	  } else {
-	    fprintf (stderr, "\n\nMissing extend value in map file for %s\n\n",
-		     tex_name);
-	  }
-	  break;
-	case 'r': /* Remap option */
-	  start += 2;
-	  skip_white (&start, end);
-	  font_map[num_font_map].remap = 1;
-	  break;
-	default: 
-	  fprintf (stderr, "\n\nWarning: Unrecognized option in map file %s: -->%s<--\n\n",
-		   tex_name, start);
-	  start = end;
-	}
-	skip_white (&start, end);
-      }
-      fill_in_defaults (font_map+num_font_map);
-      num_font_map += 1;
-    }
-    FCLOSE (mapfile);
-    if (!really_quiet)
-      fprintf (stderr, ">");
-  }
-  return;
-}
-
-struct font_record *get_font_record (const char *tex_name)
-{
-  struct font_record *result = NULL;
-  unsigned int i;
-  if (!font_map) {
-    type1_read_mapfile (DEFAULT_MAP_FILE);
-  }
-  if (!font_map)
-    return result;
-  for (i=0; i<num_font_map; i++) {
-    if (!strcmp (font_map[i].tex_name, tex_name)) {
-      result = font_map+i;
-      break;
-    }
-  }
-  return result;
-}
 
 static unsigned long get_low_endian_quad (FILE *file)
 {
@@ -819,8 +459,22 @@ static void dump_used( char *used_chars)
   return;
 }
 
+
 #define ASCII 1
 #define BINARY 2
+
+static int is_a_pfb (FILE *file)
+{
+  int result, ch;
+  if ((ch = fgetc (file)) == 128 &&
+      ((ch = fgetc (file)) == ASCII ||
+       (ch == BINARY))) {
+    result = 1;
+  } else 
+    result = 0;
+  rewind (file);
+  return result;
+}
 
 static unsigned char *get_pfb_segment (unsigned long *length,
 				       FILE *file, int expected_type)
@@ -891,6 +545,7 @@ static char *pfb_find_name (FILE *pfb_file)
 #ifdef MEM_DEBUG
   MEM_START
 #endif
+  rewind (pfb_file);
   buffer = get_pfb_segment (&length, pfb_file, ASCII);
   /* State definitions 
      state 0: Initial state
@@ -1343,37 +998,41 @@ static int pfb_get_id (const char *pfb_name)
       break;
   }
   if (i == num_pfbs) { /* This font not previously called for */
-    FILE *pfb_file;
+    FILE *pfb_file = NULL;
     char *full_pfb_name, *short_fontname;
     if (!(full_pfb_name = kpse_find_file (pfb_name, kpse_type1_format,
 				    1)) || 
-	!(pfb_file = FOPEN (full_pfb_name, FOPEN_RBIN_MODE))) {
-      return -1;
+	!(pfb_file = MFOPEN (full_pfb_name, FOPEN_RBIN_MODE)) ||
+	!(is_a_pfb (pfb_file))) {
+      if (pfb_file)
+	MFCLOSE (pfb_file);
+      i = -1;
+    } else {
+      short_fontname = pfb_find_name (pfb_file);
+      MFCLOSE (pfb_file);
+      if (num_pfbs >= max_pfbs) {
+	max_pfbs += MAX_FONTS;
+	pfbs = RENEW (pfbs, max_pfbs, struct a_pfb);
+      }
+      num_pfbs += 1;
+      init_a_pfb (pfbs+i);
+      pfbs[i].pfb_name = NEW (strlen(pfb_name)+1, char);
+      strcpy (pfbs[i].pfb_name, pfb_name);
+      pfbs[i].direct = pdf_new_stream(STREAM_COMPRESS);
+      pfbs[i].indirect = pdf_ref_obj (pfbs[i].direct);
+      if (partial_enabled) {
+	pfbs[i].fontname = NEW (strlen(short_fontname)+8, char);
+	strcpy (pfbs[i].fontname, short_fontname);
+	mangle_fontname(pfbs[i].fontname);
+      }
+      else {
+	pfbs[i].fontname = NEW (strlen(short_fontname)+1, char);
+	strcpy (pfbs[i].fontname, short_fontname);
+      }
+      type1_start_font_descriptor(i);
+      if (short_fontname)
+	RELEASE (short_fontname);
     }
-    short_fontname = pfb_find_name (pfb_file);
-    FCLOSE (pfb_file);
-    if (num_pfbs >= max_pfbs) {
-      max_pfbs += MAX_FONTS;
-      pfbs = RENEW (pfbs, max_pfbs, struct a_pfb);
-    }
-    num_pfbs += 1;
-    init_a_pfb (pfbs+i);
-    pfbs[i].pfb_name = NEW (strlen(pfb_name)+1, char);
-    strcpy (pfbs[i].pfb_name, pfb_name);
-    pfbs[i].direct = pdf_new_stream(STREAM_COMPRESS);
-    pfbs[i].indirect = pdf_ref_obj (pfbs[i].direct);
-    if (partial_enabled) {
-      pfbs[i].fontname = NEW (strlen(short_fontname)+8, char);
-      strcpy (pfbs[i].fontname, short_fontname);
-      mangle_fontname(pfbs[i].fontname);
-    }
-    else {
-      pfbs[i].fontname = NEW (strlen(short_fontname)+1, char);
-      strcpy (pfbs[i].fontname, short_fontname);
-    }
-    type1_start_font_descriptor(i);
-    if (short_fontname)
-      RELEASE (short_fontname);
   }
   return i;
 }
@@ -1405,7 +1064,6 @@ static void pfb_release (int id)
   }
 }
 
-
 static void release_glyphs (char **glyphs)
 {
   int i;
@@ -1428,7 +1086,7 @@ static void do_pfb (int pfb_id)
   if (verbose > 1)
     fprintf (stderr, "(PFB:%s", full_pfb_name);
   if (full_pfb_name == NULL ||
-      (type1_binary_file = FOPEN (full_pfb_name, FOPEN_RBIN_MODE)) == NULL) {
+      (type1_binary_file = MFOPEN (full_pfb_name, FOPEN_RBIN_MODE)) == NULL) {
     fprintf (stderr, "type1_fontfile:  Unable to find or open binary font file (%s)",
 	     pfbs[pfb_id].pfb_name);
     ERROR ("This existed when I checked it earlier!");
@@ -1469,7 +1127,7 @@ static void do_pfb (int pfb_id)
   if (verbose) {
     fprintf (stderr, ")");
   }
-  FCLOSE (type1_binary_file);
+  MFCLOSE (type1_binary_file);
   stream_dict = pdf_stream_dict (pfbs[pfb_id].direct);
   pdf_add_dict (stream_dict, pdf_new_name("Length1"),
 		pdf_new_number (length1));
@@ -1489,25 +1147,26 @@ void pfb_flush_all (void)
     do_pfb(i);
     pfb_release (i);
   }
-  RELEASE (pfbs);
+  if (pfbs)
+    RELEASE (pfbs);
 }
 
 struct a_type1_font
 {
   pdf_obj *indirect, *encoding;
   long pfb_id;
-  double slant, extend;
-  int remap, encoding_id;
+  int encoding_id;
   char *used_chars;
 } *type1_fonts = NULL;
 int num_type1_fonts = 0, max_type1_fonts = 0;
 
-static void init_a_type1_font (struct a_type1_font *type1_font) 
+
+static void init_a_type1_font (struct a_type1_font *this_type1_font) 
 {
   if (partial_enabled) {
-    type1_font -> used_chars = new_used_chars ();
+    this_type1_font -> used_chars = new_used_chars ();
   } else {
-    type1_fonts->used_chars = NULL;
+    this_type1_font -> used_chars = NULL;
   }
 }
 
@@ -1518,36 +1177,6 @@ pdf_obj *type1_font_resource (int type1_id)
   else {
     ERROR ("Invalid font id in type1_font_resource");
     return NULL;
-  }
-}
-
-double type1_font_slant (int type1_id)
-{
-  if (type1_id>=0 && type1_id<max_type1_fonts)
-    return type1_fonts[type1_id].slant;
-  else {
-    ERROR ("Invalid font id in type1_font_slant");
-    return 0.0;
-  }
-}
-
-double type1_font_extend (int type1_id)
-{
-  if (type1_id>=0 && type1_id<max_type1_fonts)
-    return type1_fonts[type1_id].extend;
-  else {
-    ERROR ("Invalid font id in type1_font_extend");
-    return 1.0;
-  }
-}
-
-int type1_font_remap (int type1_id)
-{
-  if (type1_id>=0 && type1_id<max_type1_fonts)
-    return (partial_enabled && type1_fonts[type1_id].remap);
-  else {
-    ERROR ("Invalid font id in type1_font_remap");
-    return 0;
   }
 }
 
@@ -1564,7 +1193,7 @@ char *type1_font_used (int type1_id)
 }
 
 
-static int is_a_base_font (char *name)
+static int is_a_base_font (const char *name)
 {
   static char *basefonts[] = {
     "Courier",			"Courier-Bold",		"Courier-Oblique",
@@ -1581,60 +1210,32 @@ static int is_a_base_font (char *name)
   return 0;
 }
 
-int type1_font (const char *tex_name, int tfm_font_id, char *resource_name)
+int type1_font (const char *map_name, int tfm_font_id, char
+		*resource_name, int encoding_id, int remap) 
 {
   int i, result = -1;
   int tfm_firstchar, tfm_lastchar;
   int pdf_firstchar, pdf_lastchar;
   int pfb_id = -1;
   pdf_obj *font_resource, *tmp1, *font_encoding_ref;
-  struct font_record *font_record;
-  /* If we are at the limit, Make sure we have storage in case we end
-     up using a new font */
+
   if (num_type1_fonts >= max_type1_fonts) {
-    max_type1_fonts += MAX_FONTS;
-    type1_fonts = RENEW (type1_fonts, max_type1_fonts, struct a_type1_font);
+    max_type1_fonts = MAX (max_type1_fonts+MAX_FONTS, num_type1_fonts+1);
+    type1_fonts = RENEW (type1_fonts, max_type1_fonts, struct
+			 a_type1_font);
   }
-  font_record = get_font_record (tex_name);
-  /* Fill in default value for font_name and enc if not specified in map file */
-  if (verbose>1){
-    if (font_record) {
-      fprintf (stderr, "\nfontmap: %s -> %s", tex_name,
-	       font_record->font_name);
-      if (font_record->enc_name)
-	fprintf (stderr, "(%s)", font_record->enc_name);
-      if (font_record->slant)
-	fprintf (stderr, "[slant=%g]", font_record->slant);
-      if (font_record->extend != 1.0)
-	fprintf (stderr, "[extend=%g]", font_record->extend);
-      if (font_record->remap)
-	fprintf (stderr, "[remap]");
-      fprintf (stderr, "\n");
-    } else {
-      fprintf (stderr, "\nfontmap: %s (no map)\n", tex_name);
-    }
-  }
-  /* If this font has an encoding specified on the record, get its id */
-  if (font_record && font_record -> enc_name != NULL) {
-    type1_fonts[num_type1_fonts].encoding_id = get_encoding (font_record -> enc_name);
-  } else { /* Otherwise set the encoding_id to -1 */
-    type1_fonts[num_type1_fonts].encoding_id = -1;
-  }
-  if ((font_record && is_a_base_font(font_record->font_name)) ||
-      (pfb_id = pfb_get_id(font_record? font_record -> font_name:
-			   tex_name)) >= 0) {
+
+  if ((map_name && is_a_base_font(map_name)) ||
+      (pfb_id = pfb_get_id(map_name)) >= 0) {
     /* Looks like we have a physical font (either a reader font or a
        Type 1 font binary file).  */
     init_a_type1_font (type1_fonts+num_type1_fonts);
     type1_fonts[num_type1_fonts].pfb_id = pfb_id;
-    type1_fonts[num_type1_fonts].extend = font_record? font_record -> extend: 1.0;
-    type1_fonts[num_type1_fonts].slant = font_record? font_record -> slant: 0.0;
-    type1_fonts[num_type1_fonts].remap = font_record? font_record -> remap: 0;
-
-    /* Allocate a dictionary for the physical font */
+    type1_fonts[num_type1_fonts].encoding_id = encoding_id;
+  /* Allocate a dictionary for the physical font */
     font_resource = pdf_new_dict ();
     if (type1_fonts[num_type1_fonts].encoding_id >= 0) {
-      font_encoding_ref = pdf_link_obj(encodings[type1_fonts[num_type1_fonts].encoding_id].encoding_ref);
+      font_encoding_ref = encoding_ref (encoding_id);
       pdf_add_dict (font_resource,
 		    pdf_new_name ("Encoding"),
 		    font_encoding_ref);
@@ -1666,12 +1267,12 @@ int type1_font (const char *tex_name, int tfm_font_id, char *resource_name)
     } else {
       pdf_add_dict (font_resource,
 		    pdf_new_name ("BaseFont"),
-		    pdf_new_name (font_record?font_record->font_name:tex_name));
+		    pdf_new_name (map_name));
     }
-    if (!(font_record && is_a_base_font (font_record->font_name))) {
+    if (!(map_name && is_a_base_font (map_name))) {
       tfm_firstchar = tfm_get_firstchar(tfm_font_id);
       tfm_lastchar = tfm_get_lastchar(tfm_font_id);
-      if (partial_enabled && type1_fonts[num_type1_fonts].remap) {
+      if (remap) {
 	unsigned char t;
 	pdf_firstchar=255; pdf_lastchar=0;
 	for (i=tfm_firstchar; i<=tfm_lastchar; i++) {
@@ -1692,7 +1293,7 @@ int type1_font (const char *tex_name, int tfm_font_id, char *resource_name)
 		    pdf_new_number (pdf_lastchar));
       tmp1 = pdf_new_array ();
       for (i=pdf_firstchar; i<=pdf_lastchar; i++) {
-	if (partial_enabled && type1_fonts[num_type1_fonts].remap) {
+	if (remap) {
 	  int t;
 	  if ((t=untwiddle(i)) <= tfm_lastchar && t>=tfm_firstchar)
 	    pdf_add_array (tmp1,
@@ -1744,7 +1345,7 @@ void type1_close_all (void)
 	if (type1_fonts[i].pfb_id >= 0 &&
 	    type1_fonts[i].encoding_id >= 0 &&
 	    (type1_fonts[i].used_chars)[j]) {
-	  glyph = type1_encoding_glyph (type1_fonts[i].encoding_id,
+	  glyph = encoding_glyph (type1_fonts[i].encoding_id,
 					j);
 	  pfb_add_to_used_glyphs (type1_fonts[i].pfb_id, glyph);
 	}
@@ -1766,28 +1367,5 @@ void type1_close_all (void)
   /* Read any necessary font files and flush them */
   pfb_flush_all();
 
-  /* Now do encodings. */
-  encoding_flush_all();
-
-  for (i=0; i<num_font_map; i++) {
-    if (font_map[i].tex_name)
-      RELEASE (font_map[i].tex_name);
-    if (font_map[i].enc_name)
-      RELEASE (font_map[i].enc_name);
-    if (font_map[i].font_name)
-      RELEASE (font_map[i].font_name);
-  }
-  if (font_map)
-    RELEASE (font_map);
 }
-
-
-
-
-
-
-
-
-
-
 

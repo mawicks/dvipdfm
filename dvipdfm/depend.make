@@ -1,7 +1,7 @@
 pdfdev.o: pdfdev.c system.h mem.h error.h mfileio.h numbers.h dvi.h \
- pdfdev.h pdfobj.h tfm.h pdfdoc.h type1.h pkfont.h pdfspecial.h \
+ pdfdev.h pdfobj.h tfm.h pdfdoc.h type1.h ttf.h pkfont.h pdfspecial.h \
  pdfparse.h tpic.h htex.h mpost.h psspecial.h colorsp.h pdflimits.h \
- twiddle.h colors.h
+ twiddle.h encodings.h colors.h
 pdfdoc.o: pdfdoc.c system.h config.h mem.h error.h mfileio.h numbers.h \
  dvi.h pdfdev.h pdfobj.h pdflimits.h pdfdoc.h pdfspecial.h thumbnail.h
 dvi.o: dvi.c system.h mem.h error.h mfileio.h numbers.h dvi.h pdfdev.h \
@@ -21,11 +21,11 @@ pdfspecial.o: pdfspecial.c system.h mem.h mfileio.h numbers.h dvi.h \
 tfm.o: tfm.c system.h mem.h error.h mfileio.h numbers.h pdflimits.h \
  tfm.h config.h
 type1.o: type1.c system.h mem.h error.h mfileio.h numbers.h pdfobj.h \
- type1.h tfm.h pdfparse.h pdflimits.h t1crypt.h twiddle.h winansi.h \
+ type1.h tfm.h pdfparse.h pdflimits.h t1crypt.h twiddle.h encodings.h \
  standardenc.h
 dvipdfm.o: dvipdfm.c system.h config.h mem.h mfileio.h numbers.h dvi.h \
- error.h pdfdev.h pdfobj.h pdfdoc.h type1.h colorsp.h pdfparse.h \
- pdfspecial.h vf.h pkfont.h thumbnail.h psimage.h tfm.h
+ error.h pdfdev.h pdfobj.h pdfdoc.h encodings.h type1.h colorsp.h \
+ pdfparse.h pdfspecial.h vf.h pkfont.h thumbnail.h psimage.h tfm.h
 epdf.o: epdf.c system.h mem.h mfileio.h numbers.h pdfobj.h pdfdoc.h \
  pdfspecial.h epdf.h
 vf.o: vf.c system.h mfileio.h numbers.h pdflimits.h mem.h error.h \
@@ -52,3 +52,7 @@ psspecial.o: psspecial.c system.h mem.h mfileio.h numbers.h \
  pdfdoc.h
 colorsp.o: colorsp.c system.h mem.h pdfdev.h numbers.h pdfobj.h \
  pdfparse.h pdfspecial.h dvipdfm.h
+encodings.o: encodings.c pdflimits.h pdfobj.h mem.h error.h system.h \
+ mfileio.h numbers.h pdfparse.h encodings.h winansi.h
+ttf.o: ttf.c system.h mem.h error.h mfileio.h numbers.h pdfobj.h tfm.h \
+ pdflimits.h twiddle.h encodings.h macglyphs.h

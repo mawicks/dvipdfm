@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mfileio.h,v 1.6 1999/08/15 04:54:55 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mfileio.h,v 1.7 2000/10/13 02:13:00 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -32,13 +32,13 @@
 FILE *mfopen (const char *name, const char *mode,
 	      const char *function, int line);
 int mfclose (FILE *file, const char *function, int line);
-#define FOPEN(name,mode) \
+#define MFOPEN(name,mode) \
    mfopen((name),(mode),__FUNCTION__,__LINE__)
-#define FCLOSE(file) \
+#define MFCLOSE(file) \
    mfclose((file),__FUNCTION__,__LINE__)
 #else
-#define FOPEN(name,mode) fopen((name),(mode))
-#define FCLOSE(file) fclose(file)
+#define MFOPEN(name,mode) fopen((name),(mode))
+#define MFCLOSE(file) fclose(file)
 #endif
 
 extern UNSIGNED_BYTE read_byte (FILE *);

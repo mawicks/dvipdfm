@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.69 2000/07/12 04:17:40 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.70 2000/10/13 02:13:00 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -139,7 +139,7 @@ void pdf_out_init (const char *filename)
 #ifdef MEM_DEBUG
 MEM_START
 #endif
-  if (!(pdf_output_file = FOPEN (filename, FOPEN_WBIN_MODE))) {
+  if (!(pdf_output_file = MFOPEN (filename, FOPEN_WBIN_MODE))) {
     if (strlen(filename) < 128) {
       sprintf (format_buffer, "Unable to open %s\n", filename);
     } else
@@ -218,7 +218,7 @@ void pdf_out_flush (void)
     }
     fprintf (stderr, "\n%lu bytes written",
 	     pdf_output_file_position);
-    FCLOSE (pdf_output_file);
+    MFCLOSE (pdf_output_file);
   }
 }
 
@@ -227,7 +227,7 @@ void pdf_error_cleanup (void)
   /* This routine is the cleanup required for an abnormal exit.
      For now, simply close the file. */
   if (pdf_output_file)
-    FCLOSE (pdf_output_file);
+    MFCLOSE (pdf_output_file);
 }
 
 

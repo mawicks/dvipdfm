@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.h,v 1.33 2000/08/04 02:37:51 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.h,v 1.34 2000/10/13 02:13:00 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -32,9 +32,11 @@
 typedef signed long spt_t;
 
 extern void dev_init(double scale, double x_offset, double y_offset);
+extern void dev_set_verbose (void);
 extern double pdf_dev_scale (void);
 extern void dev_close (void);
-extern int dev_locate_font (char *name, spt_t ptsize);
+extern void dev_read_mapfile (char *filename);
+extern int dev_locate_font (const char *name, spt_t ptsize);
 extern int dev_font_tfm (int dev_font_id);
 extern spt_t dev_font_sptsize (int dev_font_id);
 extern void dev_close_all_fonts (void);

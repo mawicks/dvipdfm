@@ -37,7 +37,7 @@
  version of kpathsea with type1 and vf formats */
 #undef HAVE_KPSE_FORMATS
 
-/* HAVE_KPSE_FORMATS - Define if you have a
+/* HAVE_OMEGA_FORMATS - Define if you have a
  version of kpathsea that understands Omega (OFM/OVF) formats */
 #undef HAVE_OMEGA_FORMATS
 

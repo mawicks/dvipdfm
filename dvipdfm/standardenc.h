@@ -109,3 +109,4 @@ static char *isoencoding[256] = {
   "uacute", "ucircumflex", "udieresis", "yacute", "thorn",
   "ydieresis"
 };
+

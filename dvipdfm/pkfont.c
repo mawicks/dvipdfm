@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pkfont.c,v 1.18 2000/07/30 16:40:15 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pkfont.c,v 1.19 2000/10/13 02:13:00 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -104,7 +104,7 @@ void init_pk_record (struct a_pk_font *p)
 
 int num_pk_fonts = 0, max_pk_fonts = 0;
 
-int pk_font (char *tex_name, double ptsize, int tfm_font_id, char
+int pk_font (const char *tex_name, double ptsize, int tfm_font_id, char
 	     *res_name)
 {
   int i, j;
@@ -553,7 +553,7 @@ static void embed_pk_font (int pk_id)
 {
   if (verbose)
     fprintf (stderr, "(%s", pk_fonts[pk_id].pk_file_name);
-  if ((pk_file = FOPEN (pk_fonts[pk_id].pk_file_name,
+  if ((pk_file = MFOPEN (pk_fonts[pk_id].pk_file_name,
 			FOPEN_RBIN_MODE))) {
     int pk_command_byte;
     pdf_obj *char_procs;
@@ -586,7 +586,7 @@ static void embed_pk_font (int pk_id)
 	  break;
 	}
     }
-    FCLOSE (pk_file);
+    MFCLOSE (pk_file);
     if (verbose) 
       fprintf (stderr, ")\n");
     pdf_add_dict (pk_fonts[pk_id].direct,

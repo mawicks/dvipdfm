@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.h,v 1.18 1999/09/28 01:44:58 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.h,v 1.19 2000/10/13 02:13:00 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -32,13 +32,8 @@ extern void type1_set_verbose(void);
 extern pdf_obj *type1_font_resource (int type1_id);
 extern char *type1_font_used (int type1_id);
 extern void type1_disable_partial (void);
-extern int type1_font (const char *tex_name, int tfm_font_id, char *resource_name);
+extern int type1_font (const char *tex_name, int tfm_font_id, char
+		       *resource_name, int encoding_id, int remap);
 extern void type1_set_mapfile (const char *name);
 extern void type1_close_all (void);
-extern double type1_font_extend (int type1_id);
-extern double type1_font_slant (int type1_id);
-extern int type1_font_remap (int type1_id);
-extern void type1_read_mapfile (char *filename);
-extern void type1_set_quiet (void);
-
 #endif /* TYPE1_H */

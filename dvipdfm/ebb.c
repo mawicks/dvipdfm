@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.30 2000/01/16 23:05:38 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.31 2000/10/13 02:13:00 mwicks Exp $
 
     This is ebb, a bounding box extraction program.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -111,7 +111,7 @@ static void write_bb (char *filename, int bbllx, int bblly, int bburx,
   if (verbose)
     fprintf (stderr, "okay\n");
   bbfilename = make_bb_filename (filename);
-  if ((bbfile = FOPEN (bbfilename, bb_file_mode)) == NULL) {
+  if ((bbfile = MFOPEN (bbfilename, bb_file_mode)) == NULL) {
     fprintf (stderr, "Unable to open output file: %s\n", bbfilename);
     return;
   }
@@ -126,7 +126,7 @@ static void write_bb (char *filename, int bbllx, int bblly, int bburx,
 	   bbllx, bblly, bburx, bbury);
   do_time(bbfile);
   RELEASE (bbfilename);
-  FCLOSE (bbfile);
+  MFCLOSE (bbfile);
   return;
 }
 
@@ -142,7 +142,7 @@ void do_jpeg (FILE *file, char *filename)
   jpeg -> file = file;
   if (!jpeg_headers (jpeg)) {
         fprintf (stderr, "\n%s: Corrupt JPEG file?\n", filename);
-    FCLOSE (file);
+    MFCLOSE (file);
     RELEASE (jpeg);
     return;
   }
@@ -168,7 +168,7 @@ void do_png (FILE *file, char *filename)
     fprintf (stderr, "\n\n%s: Corrupt PNG file?\n", filename);
     if (png_ptr)
       png_destroy_read_struct(&png_ptr, NULL, NULL);
-    FCLOSE (file);
+    MFCLOSE (file);
     return;
   }
   png_init_io (png_ptr, file);
@@ -282,24 +282,24 @@ int main (int argc, char *argv[])
   for (; argc > 0; argc--, argv++) {
     char *kpse_file_name;
     if (!(kpse_file_name = kpse_find_pict(argv[0])) ||
-        (inputfile = FOPEN (kpse_file_name, FOPEN_RBIN_MODE)) == NULL)  {
+        (inputfile = MFOPEN (kpse_file_name, FOPEN_RBIN_MODE)) == NULL)  {
       fprintf (stderr, "Can't find file (%s)...skipping\n", argv[0]);
       continue;
     }
     if (check_for_jpeg (inputfile)) {
       do_jpeg(inputfile, kpse_file_name);
-      FCLOSE (inputfile);
+      MFCLOSE (inputfile);
       continue;
     }
     if (check_for_pdf (inputfile)) {
       do_pdf(inputfile, kpse_file_name);
-      FCLOSE (inputfile);
+      MFCLOSE (inputfile);
       continue;
     }
 #ifdef HAVE_LIBPNG
     if (check_for_png (inputfile)) {
       do_png(inputfile, kpse_file_name);
-      FCLOSE (inputfile);
+      MFCLOSE (inputfile);
       continue;
     }
 #endif /* HAVE_LIBPNG */

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/numbers.h,v 1.11 2000/08/04 02:37:51 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/numbers.h,v 1.12 2000/10/13 02:13:00 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -38,9 +38,13 @@ typedef unsigned long UNSIGNED_QUAD;
 
 extern UNSIGNED_BYTE get_unsigned_byte (FILE *);
 
+extern UNSIGNED_BYTE sget_unsigned_byte (char *);
+
 extern SIGNED_BYTE get_signed_byte (FILE *);
 
 extern UNSIGNED_PAIR get_unsigned_pair (FILE *);
+
+extern UNSIGNED_PAIR sget_unsigned_pair (unsigned char *);
 
 extern SIGNED_PAIR get_signed_pair (FILE *);
 
@@ -70,7 +74,7 @@ extern SIGNED_QUAD axboverc (SIGNED_QUAD n1, SIGNED_QUAD n2,
 			     SIGNED_QUAD div);
 
 int fixnumtoa (char *s, long int i);
-int itoa (char *s, long int i);
+int inttoa (char *s, long int i);
 int centi_u_to_a (char *s, long int i);
 
 #define IDIVRND(a,b) ((a)>0? ((a)+(b)/2)/(b): -((-(a)+(b)/2)/(b)))
