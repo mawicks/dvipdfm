@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/tfm.c,v 1.2 1998/11/18 02:31:35 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/tfm.c,v 1.2.2.1 1998/11/25 19:46:23 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -121,7 +121,7 @@ static get_sizes (struct a_tfm *a_tfm)
   a_tfm -> nkern = get_unsigned_pair (tfm_file);
   a_tfm -> nextens = get_unsigned_pair (tfm_file);
   a_tfm -> nfonparm = get_unsigned_pair (tfm_file);
-  if (4 * (a_tfm -> wlenfile) != tfm_file_size ||
+  if ( a_tfm -> wlenfile != tfm_file_size/4 ||
       sum_of_tfm_sizes (a_tfm) != a_tfm -> wlenfile)
     invalid_tfm_file();
   if (tfm_debug) {

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfspecial.c,v 1.10.2.4 1998/11/25 07:12:35 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfspecial.c,v 1.10.2.5 1998/11/25 19:46:23 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -520,23 +520,32 @@ static void do_exform(void)
 
 static void do_outline(char **start, char *end)
 {
-  pdf_obj *result;
-  char *level;
+  pdf_obj *level, *result;
+  char *save; 
+  static int lowest_level = 255;
   skip_white(start, end);
-
-  if ((level = parse_ident(start, end)) == NULL ||
-      !is_a_number (level)) {
-    fprintf (stderr, "\nExpecting number for object level\n");
+  save = *start; 
+  if ((level = parse_pdf_object(start, end)) == NULL) {
+    fprintf (stderr, "\nExpecting number for object level.\n");
     dump (*start, end);
     return;
   }
+  if ((level -> type) != PDF_NUMBER) {
+    fprintf (stderr, "\nExpecting number for object level.\n");
+    pdf_release_obj (level);
+    *start = save;
+    return;
+  }
+   /* Make sure we know where the starting level is */
+  if ( (int) pdf_number_value (level) < lowest_level)
+     lowest_level = (int) pdf_number_value (level);
+   
   if ((result = parse_pdf_dict(start, end)) == NULL) {
     fprintf (stderr, "Ignoring invalid dictionary\n");
     return;
   };
   parse_crap(start, end);
-
-  pdf_doc_change_outline_depth (atoi (level));
+  pdf_doc_change_outline_depth ((int)pdf_number_value(level)-lowest_level+1);
   release (level);
   pdf_doc_add_outline (result);
   return;

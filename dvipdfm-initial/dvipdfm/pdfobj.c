@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfobj.c,v 1.9 1998/11/23 02:52:54 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfobj.c,v 1.9.2.1 1998/11/25 19:46:22 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -417,7 +417,7 @@ pdf_obj *pdf_new_string (const char *string, unsigned length)
   if (length != 0) {
     data -> length = length;
     data -> string = NEW (length+1, char);
-    bcopy (string, data -> string, length);
+    memcpy (data -> string, string, length);
     data -> string[length] = 0;
   } else {
     data -> length = 0;

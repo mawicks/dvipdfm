@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfparse.c,v 1.7.2.1 1998/11/24 22:10:05 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfparse.c,v 1.7.2.2 1998/11/25 19:46:23 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -81,6 +81,8 @@ int is_a_number(const char *s)
 {
   int i;
   for (i=0; i<strlen(s); i++) {
+    if (i == 0 && *s == '-')
+      continue;
     if (!isdigit (*s))
       return 0;
   }
@@ -495,7 +497,3 @@ pdf_obj *parse_pdf_object (char **start, char *end)
   }
   return result;
 }
-
-
-
-
