@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.34 1999/01/06 00:43:10 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.35 1999/01/06 00:52:49 mwicks Exp $
  
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -296,14 +296,6 @@ static void start_current_page_resources (void)
   pdf_add_dict (current_page_resources,
 		pdf_new_name ("ProcSet"),
 		tmp1);
-  this_page_fonts = pdf_new_dict ();
-  pdf_add_dict (current_page_resources, 
-		pdf_new_name ("Font"),
-		pdf_ref_obj (this_page_fonts));
-  this_page_xobjects = pdf_new_dict ();
-  pdf_add_dict (current_page_resources,
-		pdf_new_name ("XObject"),
-		pdf_ref_obj (this_page_xobjects));
   return;
 }
 
@@ -311,11 +303,14 @@ void pdf_doc_add_to_page_fonts (const char *name, pdf_obj
 				   *resource)
 {
 #ifdef MEM_DEBUG
-MEM_START
+  MEM_START;
 #endif
+
   if (debug) {
     fprintf (stderr, "(pdf_doc_add_to_page_fonts)");
   }
+  if (this_page_fonts == NULL)
+    this_page_fonts = pdf_new_dict();
   pdf_add_dict (this_page_fonts,
 		pdf_new_name (name), resource);
 #ifdef MEM_DEBUG
@@ -329,6 +324,8 @@ void pdf_doc_add_to_page_xobjects (const char *name, pdf_obj
   if (debug) {
     fprintf (stderr, "(pdf_doc_add_to_page_xojects)");
   }
+  if (this_page_xobjects == NULL)
+    this_page_xobjects = pdf_new_dict ();
   pdf_add_dict (this_page_xobjects,
 		pdf_new_name (name), 
 		resource);
@@ -773,10 +770,6 @@ MEM_START
       pdf_release_obj (this_page_contents);
       this_page_contents = NULL;
     }
-    if (current_page_resources != NULL) {
-      pdf_release_obj (current_page_resources);
-      current_page_resources = NULL;
-    }
     if (this_page_annots != NULL) {
       pdf_add_dict (pages[page_count-1].page_dict,
 		    pdf_link_obj(annots_name),
@@ -792,12 +785,22 @@ MEM_START
       this_page_beads = NULL;
     }
     if (this_page_fonts != NULL) {
+      pdf_add_dict (current_page_resources, 
+		    pdf_new_name ("Font"),
+		    pdf_ref_obj (this_page_fonts));
       pdf_release_obj (this_page_fonts);
       this_page_fonts = NULL;
     }
     if (this_page_xobjects != NULL) {
+      pdf_add_dict (current_page_resources,
+		    pdf_new_name ("XObject"),
+		    pdf_ref_obj (this_page_xobjects));
       pdf_release_obj (this_page_xobjects);
       this_page_xobjects = NULL;
+    }
+    if (current_page_resources != NULL) {
+      pdf_release_obj (current_page_resources);
+      current_page_resources = NULL;
     }
   }
 #ifdef MEM_DEBUG
