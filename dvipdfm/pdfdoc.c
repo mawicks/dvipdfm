@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.20 1998/12/06 21:15:32 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.21 1998/12/07 01:45:36 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -773,8 +773,6 @@ pdf_obj *pdf_doc_this_page (void)
   if (page_count <= 0) {
     ERROR ("Reference to current page, but no pages have been started yet");
   }
-  fprintf (stderr, "pdf_doc_this_page: page_count = %ld, ref=%p\n",
-	   page_count, pages[page_count-1].page_dict);
   return pages[page_count-1].page_dict;
 }
 
@@ -1043,21 +1041,25 @@ pdf_obj *begin_form_xobj (double bbllx, double bblly, double bburx,
 
 void end_form_xobj (void)
 {
-  xobject_pending = 0;
-  dev_close_all_xforms();
-  pdf_release_obj (current_page_resources);
-  pdf_release_obj (this_page_xobjects);
-  pdf_release_obj (this_page_fonts);
-  pdf_release_obj (this_page_contents);
-  current_page_resources = save_page_resources;
-  this_page_xobjects = save_page_xobjects;
-  this_page_fonts = save_page_fonts;
-  this_page_contents = save_page_contents;
-  /* Must reselect the font again in case there was a font change in
-     the object */
-  dev_reselect_font();
-  /* Must reselect color too */
-  dev_do_color();
+  if (xobject_pending) {
+    xobject_pending = 0;
+    dev_close_all_xforms();
+    pdf_release_obj (current_page_resources);
+    pdf_release_obj (this_page_xobjects);
+    pdf_release_obj (this_page_fonts);
+    pdf_release_obj (this_page_contents);
+    current_page_resources = save_page_resources;
+    this_page_xobjects = save_page_xobjects;
+    this_page_fonts = save_page_fonts;
+    this_page_contents = save_page_contents;
+    /* Must reselect the font again in case there was a font change in
+       the object */
+    dev_reselect_font();
+    /* Must reselect color too */
+    dev_do_color();
+  } else{
+    fprintf (stderr, "\nSpecial: exobj: Tried to close a nonexistent xobject\n");
+  }
   return;
 }
 

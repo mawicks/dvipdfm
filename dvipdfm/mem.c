@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mem.c,v 1.5 1998/12/06 21:15:31 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mem.c,v 1.6 1998/12/07 01:45:36 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -43,6 +43,7 @@ void *new (size_t size, char *function, int line)
 #ifdef MEM_DEBUG  
     if (debugfile == NULL) {
       debugfile = fopen ("malloc.log", "w");
+      fprintf (stderr, "*** Memory Debugging Log started ***\n");
     }
     event += 1;
     fprintf (debugfile, "%p %07ld new %s:%d\n", result, event, function, line);
@@ -62,6 +63,7 @@ void *renew (void *mem, size_t size, char *function, int line)
 #ifdef MEM_DEBUG
     if (debugfile == NULL) {
       debugfile = fopen ("malloc.log", "w");
+      fprintf (stderr, "*** Memory Debugging Log started ***\n");
     }
     event += 1;
     if (mem != NULL)

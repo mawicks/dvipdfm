@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.14 1998/12/06 21:15:31 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.15 1998/12/07 01:45:36 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -144,13 +144,6 @@ static void text_mode (void)
   case GRAPHICS_MODE:
     pdf_doc_add_to_page (" BT", 3);
     reset_text_state();
-    /* Following may be necessary after a rule (and also after
-       specials) */
-    /*    if (current_font != -1) {
-      sprintf (format_buffer, " /%s %g Tf", dev_font[current_font].short_name,
-	       ROUND(dev_font[current_font].ptsize*DPI/72,0.01));
-      pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
-      } */
     break;
   case STRING_MODE:
     pdf_doc_add_to_page (")", 1);  /*  Fall through */
@@ -477,7 +470,7 @@ void dev_end_xform (void)
 void dev_close_all_xforms (void)
 {
   if (num_transforms)
-    fprintf (stderr, "\nspecial: Closing pending transformations at end of page\n");
+    fprintf (stderr, "\nspecial: Closing pending transformations at end of page/XObject\n");
   while (num_transforms > 0) {
     num_transforms -= 1;
     pdf_doc_add_to_page (" Q", 2);
@@ -590,12 +583,12 @@ void dev_select_font (long tex_font_id)
       break;
   }
   if (i == n_dev_fonts) {
-    ERROR ("dev_change_to_font:  dvi wants a font that isn't loaded");
+    ERROR ("dev_change_to_font: dvi wants a font that isn't loaded");
   }
   text_mode();
   if (current_font != i) {
     sprintf (format_buffer, " /%s %g Tf", dev_font[i].short_name,
-	     ROUND(dev_font[i].ptsize*DPI/72,0.01));
+	     ROUND(dev_font[i].ptsize*DPI/72, 0.01));
     pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
     current_font = i;
     current_ptsize = dev_font[i].ptsize;
@@ -617,9 +610,9 @@ void dev_reselect_font(void)
 {
   if (current_font >= 0) {
   text_mode();
-  /*  sprintf (format_buffer, " /%s %g Tf ", dev_font[current_font].short_name,
-      ROUND(dev_font[current_font].ptsize*DPI/72,0.01)); 
-      pdf_doc_add_to_page (format_buffer, strlen(format_buffer)); */
+  sprintf (format_buffer, " /%s %g Tf ", dev_font[current_font].short_name,
+	   ROUND(dev_font[current_font].ptsize*DPI/72,0.01)); 
+  pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
   /* Add to Font list in Resource dictionary for the object (which
      acts like a mini page so it uses pdf_doc_add_to_page_fonts()*/
   pdf_doc_add_to_page_fonts (dev_font[current_font].short_name,

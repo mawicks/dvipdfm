@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.21 1998/12/06 21:15:32 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.22 1998/12/07 01:45:37 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -88,24 +88,31 @@ MEM_END
 pdf_obj *get_reference(char **start, char *end)
 {
   char *name, *save = *start;
-  pdf_obj *result;
+  pdf_obj *result = NULL;
+#ifdef MEM_DEBUG
+MEM_START
+#endif
   if ((name = parse_pdf_reference(start, end)) != NULL) {
-    result = lookup_reference (name);
-    if (result == NULL) {
+    if ((result = lookup_reference (name)) == NULL) {
       fprintf (stderr, "\nNamed reference (@%s) doesn't exist.\n", name);
       *start = save;
       dump(*start, end);
     }
     RELEASE (name);
-    return result;
   }
-  return NULL;
+#ifdef MEM_DEBUG
+MEM_END
+#endif
+  return result;
 }
 
 pdf_obj *get_reference_lvalue(char **start, char *end)
 {
   char *name, *save = *start;
-  pdf_obj *result;
+  pdf_obj *result = NULL;
+#ifdef MEM_DEBUG
+MEM_START
+#endif
   if ((name = parse_pdf_reference(start, end)) != NULL) {
     result = lookup_object (name);
     if (result == NULL) {
@@ -114,45 +121,57 @@ pdf_obj *get_reference_lvalue(char **start, char *end)
       dump(*start, end);
     }
     RELEASE (name);
-    return result;
   }
-  return NULL;
+#ifdef MEM_DEBUG
+MEM_END
+#endif
+  return result;
 }
 
 
 static void do_put(char **start, char *end)
 {
-  pdf_obj *result, *data;
+  pdf_obj *result = NULL, *data = NULL;
+  char *save = *start;
   skip_white(start, end);
-  if ((result = get_reference_lvalue(start, end)) == NULL) {
-    fprintf (stderr, "\nSpecial put:  Nonexistent object reference\n");
-    return;
-  }
-  if (result -> type == PDF_DICT) {
+  if ((result = get_reference_lvalue(start, end)) != NULL) {
     skip_white (start, end);
-    if ((data = parse_pdf_dict (start, end)) == NULL) {
-      return;
+    save = *start;
+    switch (result -> type) {
+    case PDF_DICT:
+      if ((data = parse_pdf_dict (start, end)) != NULL &&
+	  data -> type == PDF_DICT) {
+	pdf_merge_dict (result, data);
+	parse_crap(start, end);
+      } else{
+	fprintf (stderr, "\nspecial put:  Expecting a dictionary\n");
+	*start = save;
+	dump(*start, end);
+      }
+      if (data != NULL)
+	pdf_release_obj (data);
+      break;
+    case PDF_ARRAY:
+      while (*start < end && 
+	     (data = parse_pdf_object (start, end)) != NULL) {
+	pdf_add_array (result, data);
+	skip_white(start, end);
+      }
+      if (*start < end) {
+	fprintf (stderr, "\nSpecial: put: invalid object.  Rest of line ignored.\n");
+	*start = save;
+	dump(*start, end);
+      }
+      break;
+    default:
+      fprintf (stderr, "\nSpecial put:  Invalid destination object type\n");
+      break;
     }
-    pdf_merge_dict (result, data);
-    parse_crap(start, end);
-    return;
-  }
-  if (result -> type == PDF_ARRAY) {
-    skip_white(start, end);
-    while (*start < end && 
-	   (data = parse_pdf_object (start, end)) != NULL) {
-      pdf_add_array (result, data);
-      skip_white(start, end);
-    }
-    if (*start < end) {
-      fprintf (stderr, "\nSpecial: put: invalid object.  Rest of command ignored");
-    }
-    return;
   }
   else {
-    fprintf (stderr, "\nSpecial put:  Invalid destination object type\n");
-    return;
+    fprintf (stderr, "\nSpecial put:  Nonexistent object reference\n");
   }
+  return;
 }
 
 /* The following must be consecutive and
@@ -170,7 +189,7 @@ static void do_put(char **start, char *end)
 struct {
   char *s;
   int key;
-  int hasdimension;
+  int hasunits;
 } dimensions[] = {
   {"width", WIDTH, 1},
   {"height", HEIGHT, 1},
@@ -203,22 +222,23 @@ static void release_xform_info (struct xform_info *p)
 
 static int validate_image_xform_info (struct xform_info *p)
 {
+  int result = 1;
   if (p->width != 0.0)
     if (p->scale !=0.0 || p->xscale != 0.0) {
       fprintf (stderr, "\nCan't supply both width and scale\n");
-      return 0;
+      result = 0;
     }
   if (p->height != 0.0) 
     if (p->scale !=0.0 || p->yscale != 0.0) {
       fprintf (stderr, "\nCan't supply both height and scale\n");
-      return 0;
+      result = 0;
     }
   if (p->scale != 0.0)
     if (p->xscale != 0.0 || p->yscale != 0.0) {
       fprintf (stderr, "\nCan't supply overall scale along with axis scales");
-      return 0;
+      result = 0;
     }
-  return 1;
+  return result;
 }
 
 static int parse_one_dim_word (char **start, char *end)
@@ -226,24 +246,27 @@ static int parse_one_dim_word (char **start, char *end)
   int i;
   char *dimension_string;
   char *save = *start;
-  skip_white(start, end);
+  int result = -1;
 
-  if ((dimension_string = parse_ident(start, end)) == NULL) {
-    fprintf (stderr, "\nExpecting a dimension here\n");
+  skip_white(start, end);
+  if ((dimension_string = parse_ident(start, end)) != NULL) {
+    for (i=0; i<sizeof(dimensions)/sizeof(dimensions[0]); i++) {
+      if (!strcmp (dimensions[i].s, dimension_string))
+	break;
+    }
+    if (i != sizeof(dimensions)/sizeof(dimensions[0])) {
+      result =  dimensions[i].key;
+    } else {
+      fprintf (stderr, "\n%s: Invalid keyword\n", dimension_string);
+    }
+    RELEASE (dimension_string);
+  }
+  if (result < 0) {
+    *start = save;
+    fprintf (stderr, "\nExpecting a keyword here, e.g., height, width, etc.\n");
     dump(*start, end);
   }
-  for (i=0; i<sizeof(dimensions)/sizeof(dimensions[0]); i++) {
-    if (!strcmp (dimensions[i].s, dimension_string))
-      break;
-  }
-  if (i == sizeof(dimensions)/sizeof(dimensions[0])) {
-    fprintf (stderr, "\n%s: Invalid dimension\n", dimension_string);
-    RELEASE (dimension_string);
-    *start = save;
-    return -1;
-  }
-  RELEASE (dimension_string);
-  return dimensions[i].key;
+  return result;
 }
 
 struct {
@@ -264,122 +287,141 @@ struct {
 double parse_one_unit (char **start, char *end)
 {
   int i;
-  char *unit_string, *save = *start;
+  char *unit_string = NULL, *save = *start;
+  double result = -1.0;
+  int errors = 0;
+  
   skip_white(start, end);
-  if ((unit_string = parse_ident(start, end)) == NULL) {
+  if ((unit_string = parse_ident(start, end)) != NULL) {
+    for (i=0; i<sizeof(units)/sizeof(units[0]); i++) {
+      if (!strcmp (units[i].s, unit_string))
+	break;
+    }
+    if (i == sizeof(units)/sizeof(units[0])) {
+      fprintf (stderr,
+	       "\n%s: Invalid unit of measurement (should be in, cm, pt, etc.)\n", unit_string);
+      errors = 1;
+    }
+    if (i != sizeof(units)/sizeof(units[0]) && units[i].true)
+      result = units[i].units;
+    if (i != sizeof(units)/sizeof(units[0]) && !units[i].true)
+      result = units[i].units*dvi_tell_mag();
+    RELEASE (unit_string);
+  }
+  if (errors) {
     fprintf (stderr, "\nExpecting a unit here (e.g., in, cm, pt)\n");
+    *start = save; 
     dump(*start, end);
   }
-  for (i=0; i<sizeof(units)/sizeof(units[0]); i++) {
-    if (!strcmp (units[i].s, unit_string))
-      break;
-  }
-  if (i == sizeof(units)/sizeof(units[0])) {
-    fprintf (stderr, "\n%s: Invalid unit of measurement (should be in, cm, pt, etc.)\n", unit_string);
-    *start = save; 
-    dump (*start, end);
-    RELEASE (unit_string);
-    return -1.0;
-  }
-  RELEASE (unit_string);
-  if (units[i].true)
-    return units[i].units;
-  else 
-    return units[i].units*dvi_tell_mag();
+  return result;
 }
 
 static int parse_dimension (char **start, char *end,
 			    struct xform_info *p)
 {
-  char *number_string, *save = *start;
-  double units = 0.0;
-  int key;
-  save = *start; 
+  char *number_string = NULL;
+  double units = -1.0;
+  int key, error = 0;
   skip_white(start, end);
-  if ((key = parse_one_dim_word(start, end)) < 0 ||
-      (number_string = parse_number(start, end)) == NULL) {
-    fprintf (stderr, "\nExpecting a dimension or transformation keyword\nfollowed by a number here:\n");
+  while (*start < end && isalpha (**start)) {
+    if ((key = parse_one_dim_word(start, end)) >= 0) {
+      skip_white(start, end);
+      number_string = parse_number(start, end);
+    } else {
+      fprintf (stderr,
+	       "\nExpecting a dimension or transformation keyword\nfollowed by a number here:\n");
+      error = 1;
+      break;
+    }
+    if (key >= 0 && number_string == NULL) {
+      fprintf (stderr, "Expecting a number and didn't find one\n");
+      error = 1;
+      break;
+    }
+    /* If we got a key and a number, see if we need a dimension also */
+    if (key >= 0 && number_string != NULL && dimensions[key].hasunits) {
+      skip_white(start, end);
+      if ((units = parse_one_unit(start, end)) < 0.0) {
+	fprintf (stderr, "\nExpecting a dimension unit here\n");
+	error = 1;
+      }
+    }
+    if (!error && key >= 0 && number_string != NULL) {
+      switch (key) {
+      case WIDTH:
+	if (p->width != 0.0)
+	  fprintf (stderr, "\nDuplicate width specified: %s\n", number_string);
+	p->width = atof (number_string)*units;
+	break;
+      case HEIGHT:
+	if (p->height != 0.0)
+	  fprintf (stderr, "\nDuplicate height specified: %s\n", number_string);
+	p->height = atof (number_string)*units;
+	break;
+      case DEPTH:
+	if (p->depth != 0.0)
+	  fprintf (stderr, "\nDuplicate depth specified: %s\n", number_string);
+	p->depth = atof (number_string)*units;
+	break;
+      case SCALE:
+	if (p->scale != 0.0)
+	  fprintf (stderr, "\nDuplicate depth specified: %s\n", number_string);
+	p->scale = atof (number_string);
+	break;
+      case XSCALE:
+	if (p->xscale != 0.0)
+	  fprintf (stderr, "\nDuplicate xscale specified: %s\n", number_string);
+	p->xscale = atof (number_string);
+	break;
+      case YSCALE:
+	if (p->yscale != 0.0)
+	  fprintf (stderr, "\nDuplicate yscale specified: %s\n", number_string);
+	p->yscale = atof (number_string);
+	break;
+      case ROTATE:
+	if (p->rotate != 0)
+	  fprintf (stderr, "\nDuplicate rotation specified: %s\n", number_string);
+	p->rotate = atof (number_string) * M_PI / 180.0;
+	break;
+      default:
+	ERROR ("parse_dimension: Invalid key");
+      }
+      if (number_string != NULL) {
+	RELEASE (number_string);
+	number_string = NULL;
+      }
+    }
+    skip_white(start, end);
+  }
+  if (error)
     dump (*start, end);
-    *start = save;
-    return 0;
-  }
-  skip_white(start, end);
-  if (dimensions[key].hasdimension &&
-      (units = parse_one_unit(start, end)) < 0.0) {
-    RELEASE (number_string);
-    fprintf (stderr, "\nExpecting a unit here\n");
-    dump (*start, end);
-    *start = save;
-    return 0;
-  }
-  switch (key) {
-  case WIDTH:
-    if (p->width != 0.0)
-      fprintf (stderr, "\nDuplicate width specified\n");
-    p->width = atof (number_string)*units;
-    break;
-  case HEIGHT:
-    if (p->height != 0.0)
-      fprintf (stderr, "\nDuplicate height specified\n");
-    p->height = atof (number_string)*units;
-    break;
-  case DEPTH:
-    if (p->depth != 0.0)
-      fprintf (stderr, "\nDuplicate depth specified\n");
-    p->depth = atof (number_string)*units;
-    break;
-  case SCALE:
-    if (p->scale != 0.0)
-      fprintf (stderr, "\nDuplicate depth specified\n");
-    p->scale = atof (number_string);
-    break;
-  case XSCALE:
-    if (p->xscale != 0.0)
-      fprintf (stderr, "\nDuplicate xscale specified\n");
-    p->xscale = atof (number_string);
-    break;
-  case YSCALE:
-    if (p->yscale != 0.0)
-      fprintf (stderr, "\nDuplicate yscale specified\n");
-    p->yscale = atof (number_string);
-    break;
-  case ROTATE:
-    if (p->rotate != 0)
-      fprintf (stderr, "\nDuplicate rotation specified\n");
-    p->rotate = atof (number_string) * M_PI / 180.0;
-    break;
-  }
-  RELEASE(number_string);
-  skip_white(start, end);
-  return 1;
+  return !error;
 }
-
 
 static void do_pagesize(char **start, char *end)
 {
   struct xform_info *p;
+  int error = 0;
   p = new_xform_info();
   skip_white(start, end);
-  while ((*start) < end && isalpha (**start)) {
-    skip_white(start, end);
-    if (!parse_dimension(start, end, p)) {
-      fprintf (stderr, "\nFailed to find a valid set of dimensions here\n");
+  if (parse_dimension(start, end, p)) {
+    if (p->scale != 0.0 || p->xscale != 0.0 || p->yscale != 0.0) {
+      fprintf (stderr, "\nScale meaningless for pagesize\n");
       release_xform_info (p);
-      dump (*start, end);
-      return;
+      error = 1;
     }
+    if (p->width == 0.0 || p->depth + p->height == 0.0) {
+      fprintf (stderr, "\nPage cannot have a zero dimension\n");
+      release_xform_info (p);
+      error = 1;
+    }
+  } else {
+    fprintf (stderr, "\nFailed to find a valid set of dimensions here\n");
+    dump (*start, end);
+    error = 1;
   }
-  if (p->scale != 0.0 || p->xscale != 0.0 || p->yscale != 0.0) {
-    fprintf (stderr, "\nScale meaningless for pagesize\n");
-    release_xform_info (p);
-    return;
-  }
-  if (p->width == 0.0 || p->depth + p->height == 0.0) {
-    fprintf (stderr, "\nPage cannot have a zero dimension\n");
-    release_xform_info (p);
-    return;
-  }
-  dev_set_page_size (p->width, p->depth + p->height);
+  if (!error)
+    dev_set_page_size (p->width, p->depth + p->height);
   release_xform_info (p);
   parse_crap(start, end);
   return;
@@ -398,14 +440,11 @@ MEM_START
   skip_white(start, end);
   name = parse_opt_ident(start, end);
   skip_white(start, end);
-  while ((*start) < end && isalpha (**start)) {
-    skip_white(start, end);
-    if (!parse_dimension(start, end, p)) {
+  if (!parse_dimension(start, end, p)) {
       fprintf (stderr, "\nFailed to find a valid dimension here\n");
       release_xform_info (p);
       dump (*start, end);
       return;
-    }
   }
   if (p->scale != 0.0 || p->xscale != 0.0 || p->yscale != 0.0) {
     fprintf (stderr, "\nScale meaningless for annotations\n");
@@ -414,6 +453,7 @@ MEM_START
   }
   if (p->width == 0.0 || p->depth + p->height == 0.0) {
     fprintf (stderr, "Special ann: Rectangle has a zero dimension\n");
+    fprintf (stderr, "Special ann: Annotations require both horizontal and vertical dimensions\n");
     release_xform_info (p);
     return;
   }
@@ -580,18 +620,15 @@ static void do_bxform (char **start, char *end)
   struct xform_info *p;
   p = new_xform_info ();
 #ifdef MEM_DEBUG
-MEM_START
+  MEM_START
 #endif
   skip_white (start, end);
-  while ((*start) < end && isalpha (**start)) {
-    skip_white (start, end);
-    if (!parse_dimension (start, end, p)) {
-      fprintf (stderr, "\nFailed to find transformation parameters\n");
-      *start = save;
-      dump (*start, end);
-      release_xform_info (p);
-      return;
-    }
+  if (!parse_dimension (start, end, p)) {
+    fprintf (stderr, "\nFailed to find transformation parameters\n");
+    *start = save;
+    dump (*start, end);
+    release_xform_info (p);
+    return;
   }
   if (!validate_image_xform_info (p)) {
     fprintf (stderr, "\nSpecified dimensions are inconsistent\n");
@@ -708,13 +745,10 @@ static void do_bead(char **start, char *end)
   }
   skip_white(start, end);
   p = new_xform_info();
-  while ((*start) < end && isalpha (**start)) {
-    skip_white(start, end);
-    if (!parse_dimension(start, end, p)) {
-      fprintf (stderr, "\nFailed to find a dimension for this bead\n");
-      release_xform_info (p);
-      return;
-    }
+  if (!parse_dimension(start, end, p)) {
+    fprintf (stderr, "\nFailed to find a dimension for this bead\n");
+    release_xform_info (p);
+    return;
   }
   if (p->scale != 0.0 || p->xscale != 0.0 || p->yscale != 0.0) {
     fprintf (stderr, "\nScale meaningless for annotations\n");
@@ -770,13 +804,10 @@ MEM_START
   objname = parse_opt_ident(start, end);
   p = new_xform_info ();
   skip_white(start, end);
-  while ((*start) < end && isalpha (**start)) {
-    skip_white(start, end);
-    if (!parse_dimension(start, end, p)) {
-      fprintf (stderr, "\nFailed to find dimensions for encapsulated figure\n");
-      release_xform_info (p);
-      return;
-    }
+  if (!parse_dimension(start, end, p)) {
+    fprintf (stderr, "\nFailed to find dimensions for encapsulated figure\n");
+    release_xform_info (p);
+    return;
   }
   if (!validate_image_xform_info (p)) {
     fprintf (stderr, "\nSpecified dimensions are inconsistent\n");
@@ -863,13 +894,10 @@ MEM_START
   objname = parse_opt_ident(start, end);
   skip_white(start, end);
 
-  while ((*start) < end && isalpha (**start)) {
-    skip_white(start, end);
-    if (!parse_dimension(start, end, p)) {
-      fprintf (stderr, "\nFailed to find dimensions for encapsulated image\n");
-      release_xform_info (p);
-      return;
-    }
+  if (!parse_dimension(start, end, p)) {
+    fprintf (stderr, "\nFailed to find dimensions for encapsulated image\n");
+    release_xform_info (p);
+    return;
   }
   if (!validate_image_xform_info (p)) {
     fprintf (stderr, "\nSpecified dimensions are inconsistent\n");
@@ -1522,43 +1550,48 @@ pdf_obj *jpeg_build_object(struct jpeg *jpeg, double x_user, double
 
 static void do_bxobj (char **start, char *end, double x_user, double y_user)
 {
-  char *objname;
-  pdf_obj *xobject;
-  struct xform_info *p;
+  char *objname = NULL;
+  pdf_obj *xobject = NULL;
+  struct xform_info *p = NULL;
+  int errors = 0;
   skip_white(start, end);
-  if ((objname = parse_opt_ident(start, end)) == NULL) {
-    fprintf (stderr, "\nSpecial: beginxobj:  A form XObject must be named\n");
-    return;
-  }
-  p = new_xform_info ();
-  skip_white(start, end);
-  while ((*start) < end && isalpha (**start)) {
+  /* If there's an object name, check dimensions */
+  if ((objname = parse_opt_ident(start, end)) != NULL) {
+    p = new_xform_info ();
     skip_white(start, end);
     if (!parse_dimension(start, end, p)) {
-      fprintf (stderr, "\nFailed to find a valid dimension here\n");
-      release_xform_info (p);
-      dump (*start, end);
-      return;
+      fprintf (stderr, "\nFailed to find a valid dimension.\n");
+      errors = 1;
     }
+    if (p->scale != 0.0 || p->xscale != 0.0 || p->yscale != 0.0) {
+      fprintf (stderr, "\nScale information is meaningless for form xobjects\n");
+      errors = 1;
+    }
+    if (p->width == 0.0 || p->depth+p->height == 0.0) {
+      fprintf (stderr, "\nSpecial: bxobj: Bounding box has a zero dimension\n");
+      fprintf (stderr, "width:%g, height:%g, depth:%g\n", p->width,
+	       p->height, p->depth);
+      errors = 1;
+    }
+    /* If there's an object name and valid dimension, add it to the
+       tables */
+    if (!errors) {
+      xobject = begin_form_xobj (x_user, y_user-p->depth,
+				 x_user+p->width, y_user+p->height);
+      add_reference (objname, xobject,
+		     pdf_name_value(pdf_lookup_dict(pdf_stream_dict(xobject), "Name")));
+    /* Next line has Same explanation as for do_ann. */
+      release_reference (objname);
+    }
+    release_xform_info (p);
+    RELEASE (objname);
   }
-  if (p->scale != 0.0 || p->xscale != 0.0 || p->yscale != 0.0) {
-    fprintf (stderr, "\nScale information is meaningless for form xobjects\n");
-    return;
+  else {
+    fprintf (stderr, "\nSpecial: beginxobj:  A form XObject must be named\n");
   }
-  if (p->width == 0.0 || p->depth+p->height == 0.0) {
-    fprintf (stderr, "Special: bxobj: Bounding box has a zero dimension\n");
-  }
-  xobject = begin_form_xobj (x_user, y_user-p->depth, x_user+p->width, y_user+p->height);
-  release_xform_info (p);
-  add_reference (objname, xobject,
-		 pdf_name_value(pdf_lookup_dict(pdf_stream_dict(xobject), "Name")));
-  /* Next line has Same explanation as for do_ann.  Clumsy
-     has the desired effect.  This module is done with xobject.
-     It's still linked in the doc module, which will release
-     it when it's finished. */
-  release_reference (objname);
-  RELEASE (objname);
+  return;
 }
+
 
 static void do_exobj (void)
 {
@@ -1567,25 +1600,22 @@ static void do_exobj (void)
 
 static void do_uxobj (char **start, char *end, double x_user, double y_user)
 {
-  char *objname, *res_name;
-  pdf_obj *xobj_res;
+  char *objname, *res_name = NULL;
+  pdf_obj *xobj_res = NULL;
   skip_white (start, end);
-  if ((objname = parse_opt_ident(start, end)) == NULL) {
-    fprintf (stderr, "\nSpecial: usexobj:  A form XObject must be named\n");
-    return;
+  if (((objname = parse_opt_ident(start, end)) != NULL) &&
+      ((res_name = lookup_ref_res_name (objname)) != NULL) &&
+      ((xobj_res = lookup_reference (objname)) != NULL)) {
+    sprintf (work_buffer, " q 1 0 0 1 %g %g cm /%s Do Q",
+	     ROUND(x_user, 0.1), ROUND(y_user, 0.1), res_name);
+    pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
+    pdf_doc_add_to_page_xobjects (res_name, xobj_res);
   }
-  if ((res_name = lookup_ref_res_name (objname)) == NULL) {
-    fprintf (stderr, "\nSpecial: usexobj:  Specified XObject doesn't exist: %s\n", 
-	     objname);
-    return;
+  if (objname != NULL && (res_name == NULL || xobj_res == NULL)) {
+      fprintf (stderr, "\nSpecial: usexobj:  Specified XObject doesn't exist: %s\n", 
+	       objname);
   }
-  if ((xobj_res = lookup_reference (objname)) == NULL) {
-    fprintf (stderr, "\nSpecial: usexobj:  Couldn't find reference to XObject: %s\n",
-	     objname);
-  }
-  RELEASE (objname);
-  sprintf (work_buffer, " q 1 0 0 1 %g %g cm /%s Do Q",
-	   ROUND(x_user, 0.1), ROUND(y_user, 0.1), res_name);
-  pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
-  pdf_doc_add_to_page_xobjects (res_name, xobj_res);
+  if (objname != NULL)
+    RELEASE (objname);
+  return;
 }
