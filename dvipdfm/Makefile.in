@@ -141,7 +141,7 @@ depend.make:
 @MAINT@	touch config.h.in
 @MAINT@configure: configure.in
 @MAINT@	autoconf
-@MAINT@dist: depend configure
+@MAINT@tarball: depend configure
 	/bin/rm -rf ../dvipdfm
 	mkdir ../dvipdfm
 	tar -zcf ../dvipdfm-@VERSION@.tar.gz -T distribution-file-list
@@ -165,3 +165,8 @@ depend.make:
 @MAINT@	cp -a ebb-static dvipdfm-bin/ebb
 @MAINT@	tar -zcf ../dvipdfm-binary-linux-i386-static-@VERSION@.tar.gz dvipdfm-bin
 @MAINT@	/bin/rm -rf dvipdfm-bin
+@MAINT@rpm-dist: tarball VERSION
+@MAINT@	sed -e s/VERSION/@VERSION@/ dvipdfm.spec.in > /usr/src/redhat/SPECS/dvipdfm-@VERSION@.spec
+@MAINT@	cp -a ../dvipdfm-@VERSION@.tar.gz /usr/src/redhat/SOURCES/
+@MAINT@	rpm -ba /usr/src/redhat/SPECS/dvipdfm-@VERSION@.spec
+

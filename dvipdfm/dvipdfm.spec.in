@@ -1,0 +1,52 @@
+Summary: dvipdfm is a DVI (TeX) to PDF translator
+Name: dvipdfm
+Version: VERSION
+Release: 1
+Copyright:  Mark A. Wicks, 1998-1999.
+Group:  Applications/Publishing/TeX
+Source:  dvipdfm-VERSION.tar.gz
+URL:  http://odo.kettering.edu/dvipdfm
+Distribution: None
+Vendor: Mark A. Wicks
+Packager:  Mark A. Wicks <mwicks@kettering.edu>
+Requires: tetex >= 0.9
+
+%description
+dvidpfm is a DVI to PDF translator for use with TeX.
+
+%prep
+%setup -n dvipdfm
+
+%build
+export CFLAGS='-O3 -Wall --pedantic'
+./configure --prefix=/usr --datadir=/usr/share
+make
+strip dvipdfm
+strip ebb
+
+%install
+make install
+
+%files
+/usr/bin/dvipdfm
+/usr/bin/ebb
+/usr/bin/dvipdft
+%doc README
+%doc COPYING
+%doc doc/dvipdfm.tex
+%doc doc/mwicks.jpeg
+%doc doc/transistor.pdf
+%doc latex-support/dvipdfm.def
+%doc latex-support/sample.tex
+%doc latex-support/something.pdf
+%doc latex-support/something.bb
+%doc latex-support/something.eps
+%doc latex-support/mwicks.bb
+%doc latex-support/transistor.bb
+%config /usr/share/texmf/dvipdfm/config/config
+%config /usr/share/texmf/dvipdfm/config/t1fonts.map
+%config /usr/share/texmf/dvipdfm/base/ot1.enc
+%config /usr/share/texmf/dvipdfm/base/ot1alt.enc
+
+%post
+mktexlsr &
