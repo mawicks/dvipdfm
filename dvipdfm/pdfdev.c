@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.55 1999/01/01 02:27:49 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.56 1999/01/01 18:06:00 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -116,6 +116,7 @@ static char format_buffer[FORMAT_BUF_SIZE];
 
 static mpt_t text_xorigin = 0, text_yorigin = 0,
   text_offset = 0, text_leading = 0;
+double text_xerror = 0.0, text_yerror = 0.0;
 
 int n_dev_fonts = 0;
 int n_phys_fonts = 0;
@@ -144,6 +145,8 @@ static void reset_text_state(void)
   text_yorigin = 0;
   text_leading = 0;
   text_offset = 0;
+  text_xerror = 0.0;
+  text_yerror = 0.0;
 }
 
 
@@ -201,16 +204,20 @@ static void string_mode (mpt_t xpos, mpt_t ypos)
       text_yorigin += text_leading;
     }
     else {
-      double rounded_delx;
-      double rounded_dely;
-      rounded_delx = ROUND(delx*dvi2pts,0.01);
+      double rounded_delx, desired_delx;
+      double rounded_dely, desired_dely;
+      desired_delx = delx*dvi2pts+text_xerror;
+      rounded_delx = ROUND(desired_delx,0.01);
+      text_xerror = desired_delx - rounded_delx;
       dely = ypos - text_yorigin;
-      rounded_dely = ROUND(dely*dvi2pts,0.01);
+      desired_dely = dely*dvi2pts+text_yerror;
+      rounded_dely = ROUND(desired_dely,0.01);
+      text_yerror = desired_dely - rounded_dely;
       len += sprintf (format_buffer+len, " %.7g %.7g TD[(",
 		      rounded_delx, rounded_dely);
       text_leading = dely;
-      text_xorigin += (mpt_t) (rounded_delx/dvi2pts);
-      text_yorigin += (mpt_t) (rounded_dely/dvi2pts);
+      text_xorigin = xpos;
+      text_yorigin = ypos;
     }
     text_offset = 0;
     pdf_doc_add_to_page (format_buffer, len);
