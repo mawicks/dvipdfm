@@ -28,9 +28,7 @@ objects=pdfdev.o pdfdoc.o dvi.o mfileio.o mem.o jpeg.o numbers.o pdfobj.o \
 	t1crypt.o pkfont.o tpic.o thumbnail.o pngimage.o htex.o \
 	mpost.o psimage.o psspecial.o colorsp.o
 eobjects=ebb.o jpeg.o pdfobj.o mem.o mfileio.o numbers.o pdfparse.o \
-	pngimage.o mpost.o pdfdev.o pdfdoc.o type1.o thumbnail.o \
-	pkfont.o dvi.o vf.o htex.o tfm.o tpic.o pdfspecial.o \
-	t1crypt.o epdf.o psimage.o psspecial.o colorsp.o
+	pngimage.o
 encodings=ot1.enc ot1alt.enc
 check default all: $(programs)
 ebb: $(eobjects) Makefile

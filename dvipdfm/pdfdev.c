@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.88 1999/09/05 15:36:22 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.89 1999/09/06 01:48:41 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -39,6 +39,7 @@
 #include "pdfparse.h"
 #include "tpic.h"
 #include "htex.h"
+#include "mpost.h"
 #include "psspecial.h"
 #include "colorsp.h"
 #include "pdflimits.h"
@@ -742,6 +743,8 @@ MEM_START
   graphics_mode();
   dev_close_all_xforms();
   pdf_doc_finish_page ();
+  /* Finish any pending PS specials */
+  mp_eop_cleanup();
 #ifdef MEM_DEBUG
 MEM_END
 #endif
@@ -957,7 +960,6 @@ double dev_phys_y (void)
 {
   return dev_page_height() + dvi_tell_mag()*dvi_dev_ypos() -voffset;
 }
-
 
 void dev_do_special (void *buffer, UNSIGNED_QUAD size, double x_user,
 		     double y_user)

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/psspecial.c,v 1.3 1999/09/05 18:02:45 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/psspecial.c,v 1.4 1999/09/06 01:48:41 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -69,44 +69,9 @@ struct keys
   {"rhi", RHI}
 };
 
-static unsigned long next_image = 1;
-
-static void insert_ps_image (char *filename, struct xform_info *p,
-			     double x_user, double y_user) 
-{
-  static char res_name[16];
-  char *kpse_file_name;
-  FILE *image_file;
-  pdf_obj *result = NULL;
-  sprintf (res_name, "Ps%ld", next_image);
-  if ((kpse_file_name = kpse_find_pict (filename)) &&
-      (image_file = FOPEN (kpse_file_name, FOPEN_RBIN_MODE)) &&
-      check_for_ps (image_file)) {
-    fprintf (stderr, "(%s", kpse_file_name);
-    result = ps_include (kpse_file_name, p, res_name, x_user, 
-			 y_user);
-    FCLOSE (image_file);
-    fprintf (stderr, ")");
-  } else {
-    fprintf (stderr, "\nUnable to include \"%s\"\n", filename);
-  }
-  if (result) {
-    int len;
-    next_image += 1;
-    pdf_doc_add_to_page_xobjects (res_name, pdf_ref_obj (result));
-    pdf_release_obj (result);
-    pdf_doc_add_to_page (" q", 2);
-    add_xform_matrix (x_user, y_user, p->xscale, p->yscale,
-		      p->rotate);
-    len = sprintf (work_buffer, " /%s Do Q", res_name);
-    pdf_doc_add_to_page (work_buffer, len);
-  }
-  return;
-}
-
 static int parse_psfile (char **start, char *end, double x_user, double y_user) 
 {
-  char *key, *val, *filename;
+  char *key, *val, *filename = NULL;
   double hoffset = 0.0, voffset = 0.0;
   double hsize = 0.0, vsize = 0.0;
   int error = 0;
@@ -182,13 +147,18 @@ static int parse_psfile (char **start, char *end, double x_user, double y_user)
 	RELEASE (key);
     } /* If here and *start == end we got something */
     if (*start == end && validate_image_xform_info (p)) {
-      insert_ps_image (filename, p, x_user, y_user);
+      pdf_obj *result;
+      result = embed_image (filename, p, x_user, y_user, NULL);
+      if (result)
+	pdf_release_obj (result);
     }
   } else {
     fprintf (stderr, "\nError parsing PSfile special\n");
     error = 1;
   }
-  RELEASE (p);
+  if (filename)
+    RELEASE (filename);
+  release_xform_info (p);
   return !error;
 }
 
@@ -200,9 +170,12 @@ static void do_texfig (char **start, char *end, double x_user, double y_user)
 
     p = texfig_info ();
     if (validate_image_xform_info (p)) {
-      insert_ps_image (filename, p, x_user, y_user-p->height);
+      pdf_obj *result;
+      result = embed_image (filename, p, x_user, y_user-p->height, NULL);
+      if (result)
+	pdf_release_obj (result);
     }
-    RELEASE (p);
+    release_xform_info (p);
     RELEASE (filename);
   } else {
     fprintf (stderr, "Expecting filename here:\n");
@@ -244,7 +217,7 @@ int ps_parse_special (char *buffer, UNSIGNED_QUAD size, double x_user,
 	     !strncmp (start, "PS:", strlen("PS:"))) {
     start += 3;
     result = 1; /* Likewise */
-    do_raw_ps_special (&start, end, cleanup);
+    do_raw_ps_special (&start, end, 0);
   }
   return result;
 }

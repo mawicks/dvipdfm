@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.23 1999/09/05 21:01:21 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.24 1999/09/06 01:48:41 mwicks Exp $
 
     This is ebb, a bounding box extraction program.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -306,10 +306,11 @@ int main (int argc, char *argv[])
 }
 
 /* The following is here to prevent a link error.  Other routines
-   that get linked with ebb need set_landscape_mode () */
-void set_landscape_mode (void) 
+   that get linked with ebb call this, but it isn't actually needed
+   for ebb  */
+
+pdf_obj *get_reference (char **start, char *end)
 {
-  return;
+  fprintf (stderr, "get_reference():  This should never have been called\n");
+  return NULL;
 }
-
-

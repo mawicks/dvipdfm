@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.17 1999/09/05 21:01:21 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.18 1999/09/06 01:48:41 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -133,9 +133,13 @@ int mp_fontid (char *tex_name, double pt_size)
 
 static int mp_parse_headers (FILE *image_file, struct xform_info *p)
 {
+  int error = 0;
   char *start, *end, *token, *name;
   char *llx = NULL, *lly = NULL, *urx = NULL, *ury = NULL;
   unsigned long save_position;
+#ifdef MEM_DEBUG
+  MEM_START
+#endif
   mfgets (work_buffer, WORK_BUFFER_SIZE, image_file);
   /* Presumably already checked file, so press on */
   mfgets (work_buffer, WORK_BUFFER_SIZE, image_file);
@@ -154,16 +158,16 @@ static int mp_parse_headers (FILE *image_file, struct xform_info *p)
     p->urx = atof (urx);
     p->ury = atof (ury);
   } else{
-    if (llx) RELEASE(llx);
-    if (lly) RELEASE(lly);
-    if (urx) RELEASE(urx);
-    if (ury) RELEASE(ury);
-    return 0;
+    error = 1;
   }
+  if (llx) RELEASE(llx);
+  if (lly) RELEASE(lly);
+  if (urx) RELEASE(urx);
+  if (ury) RELEASE(ury);
   /* Got four numbers */
   /* Read all headers--act on *Font records */
   save_position = tell_position(image_file);
-  while (!feof(image_file) && mfgets (work_buffer, WORK_BUFFER_SIZE,
+  while (!error && !feof(image_file) && mfgets (work_buffer, WORK_BUFFER_SIZE,
 				      image_file)) {
     if (*work_buffer != '%') {
       seek_absolute (image_file, save_position);
@@ -178,18 +182,25 @@ static int mp_parse_headers (FILE *image_file, struct xform_info *p)
       skip_white (&start, end);
       if ((name = parse_ident (&start, end))) {
 	skip_white (&start, end);
-      } else
-	return 0;
+      } else {
+	error = 1;
+	break;
+      }
       if ((token = parse_number (&start, end))) {
 	ps_ptsize = atof (token);
 	RELEASE (token);
-      } else
-	return 0;
+      } else {
+	error = 1;
+	break;
+      }
       mp_locate_font (name, ps_ptsize);
       RELEASE (name);
     }
   }
-  return 1;
+#ifdef MEM_DEBUG
+  MEM_END
+#endif
+    return !error;
 }
 
 struct point {
@@ -387,6 +398,7 @@ static top_stack;
 
 double x_state, y_state;
 static int state = 0;
+static int num_saves = 0;
 double fig_width, fig_height, fig_llx, fig_lly, fig_urx, fig_ury;
 
 #define PUSH(o) { \
@@ -704,6 +716,7 @@ static int do_operator(char *token)
     switch (state) {
     case 0:
       pdf_doc_add_to_page (" q", 2);
+      num_saves += 1;
       break;
     case 1:
       state = 2;
@@ -719,7 +732,13 @@ static int do_operator(char *token)
   case GRESTORE:
     switch (state) {
     case 0:
-      pdf_doc_add_to_page (" Q", 2);
+      if (num_saves > 0) {
+	num_saves -= 1;
+	pdf_doc_add_to_page (" Q", 2);
+      }
+      else {
+	fprintf (stderr, "PS special: \"grestore\" ignored.  More restores than saves on a page.\n");
+      }
       break;
     case 2:
       state = 1;
@@ -1025,7 +1044,7 @@ static int do_operator(char *token)
 		     cos(theta), -sin(theta),
 		     sin(theta), cos(theta));
       pdf_doc_add_to_page (work_buffer, len);
-      RELEASE (tmp1);
+      pdf_release_obj (tmp1);
     }
     break;
   case TEXFIG:
@@ -1200,6 +1219,13 @@ void mp_cleanup (int sloppy_ok)
     max_path_pts = 0;
   }
 }
+
+void mp_eop_cleanup(void)
+{
+  mp_cleanup(1);
+  num_saves = 0;
+}
+
 
 /* mp inclusion is a bit of a hack.  The routine
  * starts a form at the lower left corner of
