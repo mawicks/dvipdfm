@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.59 1999/09/10 00:33:57 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.60 1999/09/15 22:13:10 mwicks Exp $
  
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -586,9 +586,6 @@ struct dests
 typedef struct dests dest_entry;
 static dest_entry *dests = NULL;
 unsigned long max_dests = 0;
-
-
-#define MIN(a,b) ((a)<(b)? (a): (b))
 
 static int CDECL cmp_dest (const void *d1, const void *d2)
 {

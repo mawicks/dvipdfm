@@ -42,7 +42,7 @@ include depend.make
 install: install-exec install-data
 uninstall: uninstall-exec uninstall-data
 install-exec: all
-	$(INSTALL) -d $(bindir)
+	/bin/mkdir $(bindir) && \
 	for i in $(programs) $(scripts) ; \
 	  do $(INSTALL) $$i $(bindir); \
 	done

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pkfont.c,v 1.14 1999/09/08 16:51:48 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pkfont.c,v 1.15 1999/09/15 22:13:11 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -231,8 +231,6 @@ static void do_skip(unsigned long length)
     fgetc (pk_file);
   return;
 }
-
-#define MIN(a,b) ((a)<(b)?(a):(b))
 
 static void add_raster_data (pdf_obj *glyph, long w, long h,
 			     int dyn_f, int run_color,

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.89 1999/09/08 16:51:49 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.90 1999/09/15 22:13:12 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1116,8 +1116,7 @@ static pdf_obj *type1_font_descriptor (int encoding_id, int pfb_id, int tfm_font
 		  pdf_new_name ("Descent"),
 		  pdf_new_number (ROUND(-max_depth,0.01)));
     tmp1 = pdf_new_array ();
-#define MAX(a,b) ((a)>(b)? (a): (b))
-#define MIN(a,b) ((a)>(b)? (b): (a))
+
     pdf_add_array (tmp1, pdf_new_number(ROUND(-0.10*max_width,1.0)));
     pdf_add_array (tmp1,
 		   pdf_new_number(ROUND(-max_depth-0.10*(max_height+max_depth),1.0)));

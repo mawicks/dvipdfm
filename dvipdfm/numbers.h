@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/numbers.h,v 1.9 1999/02/21 14:30:21 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/numbers.h,v 1.10 1999/09/15 22:13:10 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -53,6 +53,12 @@ extern SIGNED_QUAD get_signed_quad (FILE *);
 extern UNSIGNED_QUAD get_unsigned_quad (FILE *);
 
 #define ROUND(n,acc) (floor(((double)n)/(acc)+0.5)*(acc)) 
+#ifndef MAX
+  #define MAX(a,b) ((a)>(b)?(a):(b))
+#endif
+#ifndef MIN
+  #define MIN(a,b) ((a)<(b)?(a):(b))
+#endif
 
 typedef signed long fixword;
 

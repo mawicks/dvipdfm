@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.67 1999/09/10 00:33:57 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.68 1999/09/15 22:13:11 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1151,7 +1151,7 @@ static int is_pdf_special (char **start, char *end)
 #define BGCOLOR 22
 #define BXFORM 23
 #define EXFORM 24
-#define PAGESIZE 25
+#define PAGE_SIZE 25
 #define BXOBJ 26
 #define EXOBJ 27
 #define UXOBJ 28
@@ -1204,7 +1204,7 @@ struct pdfmark
   {"bgc", BGCOLOR},
   {"bbc", BGCOLOR},
   {"bbg", BGCOLOR},
-  {"pagesize", PAGESIZE},
+  {"pagesize", PAGE_SIZE},
   {"begintransform", BXFORM},
   {"begintrans", BXFORM},
   {"btrans", BXFORM},
@@ -1518,7 +1518,7 @@ MEM_START
     case EXFORM:
       do_exform ();
       break;
-    case PAGESIZE:
+    case PAGE_SIZE:
       do_pagesize(&start, end);
       break;
     case BXOBJ:
