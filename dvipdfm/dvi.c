@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.68.2.1 2000/08/02 03:27:59 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.68.2.2 2000/08/03 03:35:48 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -389,7 +389,6 @@ Maybe in the future, I'll substitute some other font.");
     fprintf (stderr, ">");
   return (thisfont);
 }
-
 
 double dvi_dev_xpos(void) {
   return dvi_state.h*dvi2pts;
@@ -875,7 +874,7 @@ static void do_xxx(UNSIGNED_QUAD size)
   }
   if (debug)
     fprintf (stderr, "Special: %s\n", buffer);
-  dev_do_special (buffer, size, dvi_dev_xpos(), dvi_dev_ypos());
+  dev_do_special (buffer, size, dvi_state.h, dvi_state.v);
   RELEASE (buffer);
 }
 

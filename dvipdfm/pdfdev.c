@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.102.4.5 2000/08/03 03:03:08 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.102.4.6 2000/08/03 03:35:48 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1038,9 +1038,9 @@ void dev_rule (spt_t xpos, spt_t ypos, spt_t width, spt_t height)
   pdf_doc_add_to_page (format_buffer, len);
 }
 
-/* The following routines tell the coordinates in physical PDF style
-   coordinate with origin at bottom left of page.  All other
-   coordinates in this routine are in TeX style coordinates */
+/* The following routines tell the coordinates in true Adobe points
+   with the coordinate system having its origin at the bottom
+   left of the page. */
 
 double dev_phys_x (void)
 {
@@ -1052,15 +1052,18 @@ double dev_phys_y (void)
   return dev_page_height() + dvi_tell_mag()*dvi_dev_ypos() -voffset;
 }
 
-void dev_do_special (void *buffer, UNSIGNED_QUAD size, double x_user,
-		     double y_user)
+void dev_do_special (void *buffer, UNSIGNED_QUAD size, spt_t x_user, 
+		     spt_t y_user)
 {
+  double dev_xuser, dev_yuser;
+  dev_xuser = ((double) x_user) / ((double) PDF_U);
+  dev_yuser = ((double) -y_user) / ((double) PDF_U);
   graphics_mode();
-  if (!pdf_parse_special (buffer, size, x_user, y_user) &&
-      !tpic_parse_special (buffer, size, x_user, y_user) &&
+  if (!pdf_parse_special (buffer, size, dev_xuser, dev_yuser) &&
+      !tpic_parse_special (buffer, size, dev_xuser, dev_yuser) &&
       !htex_parse_special (buffer, size) &&
       !color_special (buffer, size) &&
-      !ps_parse_special (buffer, size, x_user, y_user)) {
+      !ps_parse_special (buffer, size, dev_xuser, dev_yuser)) {
     fprintf (stderr, "\nUnrecognized special ignored\n");
     dump (buffer, ((char *)buffer)+size);
   }

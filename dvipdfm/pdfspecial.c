@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.79 2000/07/13 00:27:51 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.79.4.1 2000/08/03 03:35:48 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1022,7 +1022,8 @@ pdf_obj *embed_image (char *filename, struct xform_info *p,
     next_image += 1;
     pdf_doc_add_to_page_xobjects (res_name, pdf_ref_obj(result));
     pdf_doc_add_to_page (" q", 2);
-    add_xform_matrix (x_user, y_user, p->xscale, p->yscale, p->rotate);
+    add_xform_matrix (x_user, y_user,
+		      p->xscale/pdf_dev_scale(), p->yscale/pdf_dev_scale(), p->rotate);
     if (p->depth != 0.0)
       add_xform_matrix (0.0, -p->depth, 1.0, 1.0, 0.0);
     sprintf (work_buffer, " /%s Do Q", res_name);

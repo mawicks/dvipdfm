@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.h,v 1.32.8.2 2000/08/02 15:44:08 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.h,v 1.32.8.3 2000/08/03 03:35:48 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -68,8 +68,8 @@ extern int  dev_xform_depth (void);
 extern void dev_close_all_xforms (int depth);
 
 extern void dev_add_comment (char *comment);
-extern void dev_do_special (void *buffer, UNSIGNED_QUAD size, double
-			    x_user, double y_user);
+extern void dev_do_special (void *buffer, UNSIGNED_QUAD size,
+			    spt_t x_user, spt_t y_user);
 extern double dev_page_height(void);
 extern double dev_page_width(void);
 /* graphics_mode() would normally be local, but it is needed by the
