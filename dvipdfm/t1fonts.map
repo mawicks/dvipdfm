@@ -17,6 +17,8 @@
 % is used to remap the character positions that Adobe normally does
 % not use to higher positions.  This seems to fix a variety of problems
 %
+eurmo10 default eurm10 -s 0.167
+eurbo10 default eurb10 -s 0.167
 cmr10 ot1 -r
 cmr12 ot1 -r
 cmr17 ot1 -r
@@ -50,7 +52,7 @@ lasy6 -r
 lasy5 -r
 cmbsy7 -r
 cmbsy5 -r
-eux10 -r
+euex10 -r
 eufm10 -r
 eufm7 -r
 eufm5 -r

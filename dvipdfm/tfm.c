@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.24 1999/09/08 16:51:48 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.25 1999/09/16 21:31:09 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -32,8 +32,8 @@
 
 #define FWBASE ((double) (1<<20))
 
-static char tfm_verbose = 0;
-static char tfm_debug = 0;
+static char tfm_verbose = 1;
+static char tfm_debug = 1;
 
 /* TFM Record structure
      Multiple TFM's may be read in at once */
@@ -363,37 +363,51 @@ void tfm_close_all(void)
    as a (double) fraction of the design size */
 double tfm_get_width (int font_id, UNSIGNED_BYTE ch)
 {
-  return (double) (tfm[font_id].unpacked_widths)[ch] / FWBASE;
+  if (tfm[font_id].unpacked_widths)
+    return (double) (tfm[font_id].unpacked_widths)[ch] / FWBASE;
+  else return 0.0;
 }
 
 fixword tfm_get_fw_width (int font_id, UNSIGNED_BYTE ch)
 {
-  return (tfm[font_id].unpacked_widths)[ch];
+  if (tfm[font_id].unpacked_widths)
+    return (tfm[font_id].unpacked_widths)[ch];
+  return 0;
 }
 
 double tfm_get_height (int font_id, UNSIGNED_BYTE ch)
 {
-  return (tfm[font_id].unpacked_heights)[ch]/FWBASE;
+  if (tfm[font_id].unpacked_heights)
+    return (tfm[font_id].unpacked_heights)[ch]/FWBASE;
+  else return 0.0;
 }
 
 double tfm_get_depth (int font_id, UNSIGNED_BYTE ch)
 {
-  return (tfm[font_id].unpacked_depths)[ch]/FWBASE;
+  if (tfm[font_id].unpacked_depths)
+    return (tfm[font_id].unpacked_depths)[ch]/FWBASE;
+  else return 0.0;
 }
 
 double tfm_get_it_slant (int font_id)
 {
-  return (double) (tfm[font_id].param[0] / FWBASE);
+  if (tfm[font_id].param)
+    return (double) (tfm[font_id].param[0] / FWBASE);
+  else return 0.0;
 }
 
 double tfm_get_space (int font_id)
 {
-  return (double) (tfm[font_id].param)[1] / FWBASE;
+  if (tfm[font_id].param)
+    return (double) (tfm[font_id].param)[1] / FWBASE;
+  else return 0.0;
 }
 
 double tfm_get_x_height (int font_id)
 {
-  return (double) (tfm[font_id].param)[4] / FWBASE;
+  if (tfm[font_id].param)
+    return (double) (tfm[font_id].param)[4] / FWBASE;
+  else return 0.0;
 }
 
 UNSIGNED_PAIR tfm_get_firstchar (int font_id)
