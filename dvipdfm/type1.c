@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.111 2000/07/12 01:17:58 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.112 2000/07/12 01:32:15 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -148,6 +148,22 @@ pdf_obj *find_encoding_differences (pdf_obj *encoding)
   return result;
 }
 
+pdf_obj *make_absolute_encoding (pdf_obj *encoding)
+{
+  int i;
+  pdf_obj *tmp, *result = pdf_new_array ();
+  pdf_add_array (result, pdf_new_number (0));
+  for (i=0; i<256; i++) {
+    tmp = pdf_get_array (encoding, i);
+    if (tmp && tmp -> type == PDF_NAME) {
+      pdf_add_array (result, pdf_link_obj(tmp));
+    } else {
+      ERROR ("Encoding file may be incorrect\n");
+    }
+  }
+  return result;
+}
+
 static void save_glyphs (char **glyph, pdf_obj *encoding)
 {
   int i;
@@ -226,7 +242,8 @@ int get_encoding (const char *enc_name)
     if (verbose) {
       fprintf (stderr, ")");
     }
-    differences = find_encoding_differences (encoding);
+    /*    differences = find_encoding_differences (encoding); */
+    differences = make_absolute_encoding (encoding);
     /* Put the glyph names into a conventional array */
     if (num_encodings >= max_encodings) {
        max_encodings += MAX_ENCODINGS;
@@ -237,8 +254,11 @@ int get_encoding (const char *enc_name)
     result = pdf_new_dict();
     pdf_add_dict (result, pdf_new_name ("Type"),
 		  pdf_new_name ("Encoding"));
-    pdf_add_dict (result, pdf_new_name ("BaseEncoding"),
-		  pdf_new_name ("WinAnsiEncoding"));
+    /* Some software doesn't like BaseEncoding key (e.g., FastLane) 
+       so this code is commented out for the moment.  It may reemerge in the
+       future */
+    /*    pdf_add_dict (result, pdf_new_name ("BaseEncoding"),
+	  pdf_new_name ("WinAnsiEncoding")); */
     pdf_add_dict (result, pdf_new_name ("Differences"),
 		  differences);
   }
