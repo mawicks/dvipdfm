@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pkfont.c,v 1.3 1999/01/24 18:19:41 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pkfont.c,v 1.4 1999/01/24 21:43:09 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -227,16 +227,75 @@ static void do_skip(unsigned long length)
   return;
 }
 
-static void add_raster_data (pdf_obj *glyph, long w, long h, int
-			     dyn_f, unsigned char *pk_data)
+#define MIN(a,b) ((a)<(b)?(a):(b))
+
+static void add_raster_data (pdf_obj *glyph, long w, long h,
+			     int dyn_f, int run_color,
+			     unsigned char *pk_data,
+			     unsigned char *eod)
+
+     /* First define some macros to be used as "in-line" functions */
+#define next_nybble() (partial_byte? (partial_byte=0,*(pk_data++)%16): \
+		       (partial_byte=1,*pk_data/16))
+#define set_bits(n) {\
+  int i; \
+  for (i=0; i<(n); i++) { \
+    row[next_col] |= (128u>>next_bit++); \
+    if (next_bit > 7) { \
+      next_bit = 0; \
+      next_col += 1; \
+    } \
+  } \
+}
+
+#define skip_bits(n) {\
+  next_col += (n)/8; \
+  next_bit += (n)%8; \
+  if (next_bit > 7) { \
+    next_bit -= 8; \
+    next_col += 1; \
+  } \
+}
+
 {
   long i, w_bytes;
-  int len;
+  int partial_byte = 0, run_count = 0;
+  int next_col = 0, next_bit = 0, repeat_count;
+  unsigned char *row;
   w_bytes = (w%8 == 0)? w/8: (w/8+1);
-  for (i=0; i<h*w_bytes; i++) {
-    len = sprintf (work_buffer, "%c", 255);
-    pdf_add_stream (glyph, (char *) work_buffer, len);
+  row = NEW (w_bytes, unsigned char);
+  /* Make sure we output "h" rows of data */
+  for (i=0; i<h; i++) {
+    int j, row_bits_left = w;
+    /* Initialize row to all zeros */
+    for (j=0; j<w_bytes; j++) row[j] = 0;
+    repeat_count = 0;
+    /* Fill any run left over from previous rows */
+    if (run_count != 0) {
+      int nbits;
+      nbits = MIN (w, run_count);
+      run_count -= nbits;
+      switch (run_color) {
+      case 0:
+	set_bits(nbits); /* In PDF, white is 1 */
+      case 1:
+	skip_bits(nbits);
+      }
+      row_bits_left -= nbits;
+    }
+    /* Read nybbles until we have a full row */
+    while (row_bits_left>0) {
+      int nyb;
+      nyb = next_nybble();
+    }
+    pdf_add_stream (glyph, (char *) row, w_bytes);
+    /* Duplicate the row "repeat_count" times */
+    for (j=0; j<repeat_count; j++)
+      pdf_add_stream (glyph, (char *) row, w_bytes);
+    /* Skip repeat_count interations */
+    i += repeat_count;
   }
+  RELEASE (row);
 }
 
 static void do_preamble(void)
@@ -349,7 +408,7 @@ static void do_character (unsigned char flag, int pk_id, pdf_obj *char_procs)
 	pdf_add_stream (glyph, work_buffer, len);
 	pk_data = NEW (packet_length, unsigned char);
 	fread (pk_data, 1, packet_length, pk_file);
-	add_raster_data (glyph, w, h, dyn_f, pk_data);
+	add_raster_data (glyph, w, h, dyn_f, (flag&8)>>3, pk_data, pk_data+packet_length);
 	RELEASE (pk_data);
       }
       len = sprintf (work_buffer, "\nEI\nQ");
