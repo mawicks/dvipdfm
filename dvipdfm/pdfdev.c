@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.76 1999/08/21 19:30:02 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.77 1999/08/22 04:21:55 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -216,10 +216,10 @@ static void string_mode (mpt_t xpos, mpt_t ypos, double slant, double extend)
       desired_dely = (dely+text_yerror);
       rounded_dely = ROUND(desired_dely,0.01);
       /* Next round delx, precompensating for line transformation matrix */
-      desired_delx = (delx+text_xerror-desired_dely*slant)/extend;
+      desired_delx = ((delx+text_xerror)-desired_dely*slant)/extend;
       rounded_delx = ROUND(desired_delx,0.01);
-      text_yerror = desired_dely - rounded_dely;
-      text_xerror = extend*(desired_delx - rounded_delx)+slant*text_yerror;
+      text_yerror = (desired_dely - rounded_dely);
+      text_xerror = (extend*(desired_delx - rounded_delx)+slant*text_yerror);
       len += sprintf (format_buffer+len, " %.7g %.7g TD[(",
 		      rounded_delx*dvi2pts, rounded_dely*dvi2pts);
       text_leading = dely;

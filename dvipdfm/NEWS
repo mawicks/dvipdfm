@@ -1,3 +1,23 @@
+August 21, 1999.
+
+   WARNING:  VERSION 0.11 CHANGES THE FORMAT OF THE t1fonts.map FILE.
+
+   The font code has been reworked in several ways.  Version 0.11 does not
+require AFM files.  This is a significant improvement since AFM files are
+disappearing from major distributions and repositories.  Unfortunately, this
+required a change in the format of the t1fonts.map file.
+
+   A bit of the font code has been rewritten to provide work-alikes for the
+"slantfont" and "extendfont" provided by dvips.  There are several
+workarounds for various bugs in Acrobat Reader involving searching for and
+selecting ligatures and there's also an attempt to address the disappearing
+Gamma problem.
+
+   Version 0.11 also adds PNG and thumbnail support.
+   
+   Version 0.11 add support for the HyperTeX (HTML) specials for improved
+DVI file portability.
+   
 April 8, 1999.
 
    Version 0.10.5 changes the rule code to use a PDF stroke instead

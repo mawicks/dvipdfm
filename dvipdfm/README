@@ -16,12 +16,14 @@ or if you prefer FTP:
 	Acrobat Distiller.  Links, outlines, articles, and named
 	destinations are supported, for example.
 	
-      - Ability to include PDF files and JPEG files
+      - Ability to include PDF, JPEG, and PNG files
         as embedded images.  For PDF files, only the first
         page is included.  Resources will be embedded from
 	the original file as necessary.  File inclusion
 	does not work for PDF files that store the page
 	contents in several segments in an array.
+
+      - Support for thumbnails (with a little help from GhostScript).
 	
       - Re-encoding support for PostScript fonts.  dvipdfm
         uses the same .enc files as dvips.  The mapfile is different.
@@ -38,7 +40,7 @@ or if you prefer FTP:
 	graphics on every page.
 	
       - Partial font embedding and Flate compression
-        for reduce file size.
+        for reduced file size.
 	
       - Balanced page tree and dest tree to improve reader
         speed on very large documents.
