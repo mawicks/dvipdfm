@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.64 1999/04/08 04:07:36 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.65 1999/04/08 04:13:16 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -960,19 +960,9 @@ static int get_afm_token (void)
   return (-1);
 }
 
-static double descent, ascent;
-static double bbllx, bblly, bburx, bbury;
-static double capheight, italic_angle;
-static int isfixed;
 static char fontname[256];  /* Make as long as buffer */
-
 static void reset_afm_variables (void)
 {
-  descent = 0.0; ascent = 0.0;
-  bbllx = 0.0; bblly = 0.0;
-  bburx = 0.0; bbury = 0.0;
-  capheight = 0.0; italic_angle = 0.0;
-  isfixed = 0;
   return;
 }
 
@@ -1032,6 +1022,7 @@ static pdf_obj *type1_font_descriptor (const char *pfb_name, int encoding_id,
 {
   pdf_obj *font_descriptor, *font_descriptor_ref, *tmp1;
   int flags;
+  double italic_angle;
   font_descriptor = pdf_new_dict ();
   pdf_add_dict (font_descriptor,
 		pdf_new_name ("Type"),
@@ -1086,19 +1077,17 @@ static pdf_obj *type1_font_descriptor (const char *pfb_name, int encoding_id,
   font_descriptor_ref = pdf_ref_obj (font_descriptor);
 
   /* Take care of flags */
-  flags = 0;
-  if (italic_angle != 0.0)
-    flags += ITALIC;
-  if (tfm_is_fixed_width(tfm_font_id)) {
-    fprintf (stderr, "Is fixed\n");
-    flags += FIXED_WIDTH;
-  } else
-    fprintf (stderr, "Is not fixed\n");
-
-  flags += SYMBOLIC;
-  pdf_add_dict (font_descriptor,
-		pdf_new_name ("Flags"),
-		pdf_new_number (flags));
+  {
+    flags = 0;
+    if (italic_angle != 0.0)
+      flags += ITALIC;
+    if (tfm_is_fixed_width(tfm_font_id))
+      flags += FIXED_WIDTH;
+    flags += SYMBOLIC;
+    pdf_add_dict (font_descriptor,
+		  pdf_new_name ("Flags"),
+		  pdf_new_number (flags));
+  }
   pdf_release_obj (font_descriptor);
   return font_descriptor_ref;
 }
