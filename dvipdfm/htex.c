@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/htex.c,v 1.7 1999/09/19 04:56:40 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/htex.c,v 1.8 1999/09/19 20:19:39 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -157,21 +157,22 @@ void html_make_dest (char *name)
 void html_start_anchor (char *key, char *value) 
 {
   if (pending_type <= 0 && !link_dict) {
-
-  if (!strcmp (key, "href") || !strcmp(key, "name")) {
+    downcase (key);
     if (!strcmp (key, "href")) {
       html_make_link_dict (value);
       pending_type = HREF;
     } else if (!strcmp (key, "name")) {
       html_make_dest (value);
       pending_type = NAME;
+    } else {
+      fprintf (stderr, "\nUnrecognized keyword in anchor tag: %s\n",
+	       key);
     }
   } else {
     fprintf (stderr, "\nWarning: Nested html anchors\n");
   }
   if (key)
     RELEASE (key);
-  }
   if (value) {
     RELEASE (value);
   }
