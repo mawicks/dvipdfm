@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.36 1999/01/06 02:26:01 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.37 1999/01/06 02:40:29 mwicks Exp $
  
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -169,6 +169,8 @@ void pdf_doc_bop (char *string, unsigned length)
 
 void pdf_doc_this_bop (char *string, unsigned length)
 {
+  if (this_page_bop == NULL)
+    this_page_bop = pdf_new_stream (STREAM_COMPRESS);
   if (length > 0)
     pdf_add_stream (this_page_bop, string, length);
 }
@@ -782,6 +784,18 @@ MEM_START
   /* Flush this page */
   /* Page_count is the index of the current page, starting at 1 */
   if (page_count > 0) {
+    {
+      tmp1 = pdf_new_array ();
+      pdf_add_array (tmp1, pdf_ref_obj (glob_page_bop));
+      if (this_page_bop) {
+	pdf_add_array (tmp1, pdf_ref_obj (this_page_bop));
+      }
+      pdf_add_array (tmp1, pdf_link_obj (coord_xform_ref));
+      pdf_add_array (tmp1, pdf_ref_obj (this_page_contents));
+      pdf_add_array (tmp1, pdf_ref_obj (glob_page_eop));
+      pdf_add_dict (pages[page_count-1].page_dict,
+		    pdf_link_obj(contents_name), tmp1);
+    }
     /* We keep .page_dict open because we don't know the parent yet */
     if (this_page_bop != NULL) {
       pdf_add_stream (this_page_bop, "\n", 1);
@@ -921,7 +935,6 @@ MEM_START
   if (this_page_contents != NULL) {
     finish_last_page();
   }
-  this_page_bop = pdf_new_stream(STREAM_COMPRESS);
   /* Was this page already instantiated by a forward reference to it? */
   if (pages[page_count].page_ref == NULL) {
     /* If not, create it. */
@@ -931,16 +944,8 @@ MEM_START
   }
   pdf_add_dict (pages[page_count].page_dict,
 		pdf_link_obj(type_name), pdf_link_obj(page_name));
-  tmp1 = pdf_new_array ();
-  pdf_add_array (tmp1, pdf_ref_obj (glob_page_bop));
-  pdf_add_array (tmp1, pdf_ref_obj (this_page_bop));
-  pdf_add_array (tmp1, pdf_link_obj (coord_xform_ref));
   /* start the contents stream for the new page */
   this_page_contents = pdf_new_stream(STREAM_COMPRESS);
-  pdf_add_array (tmp1, pdf_ref_obj (this_page_contents));
-  pdf_add_array (tmp1, pdf_ref_obj (glob_page_eop));
-  pdf_add_dict (pages[page_count].page_dict,
-		pdf_link_obj(contents_name), tmp1);
   start_current_page_resources();
   pdf_add_dict (pages[page_count].page_dict,
 		pdf_link_obj (resources_name),
