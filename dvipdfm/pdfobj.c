@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.29 1998/12/23 16:46:55 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.30 1998/12/23 18:45:30 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -33,6 +33,7 @@
 #include "mfileio.h"
 #include "pdfspecial.h"
 #include "pdfparse.h"
+#include "c-auto.h"
 
 #define MIN(a,b) ((a)<(b)?(a):(b))
 
@@ -846,7 +847,7 @@ char *pdf_get_dict (const pdf_obj *dict, int index)
 
 pdf_obj *pdf_new_stream (int flags)
 {
-  pdf_obj *result;
+  pdf_obj *result, *filters = NULL;
   pdf_stream *data;
   result = pdf_new_obj (PDF_STREAM);
   data = NEW (1, pdf_stream);
@@ -862,6 +863,17 @@ pdf_obj *pdf_new_stream (int flags)
   pdf_add_dict (data->dict,
 		pdf_new_name ("Length"),
 		pdf_ref_obj (data -> length));
+
+#ifdef HAVE_ZLIB
+  if ((flags & STREAM_COMPRESS)) {
+    if (!filters) {
+      filters = pdf_new_array();
+      pdf_add_dict (data -> dict, pdf_new_name ("Filter"), filters);
+    }
+    pdf_add_array (filters, pdf_new_name ("FlateDecode"));
+  }
+#endif /* HAVE_ZLIB */  
+
   data -> stream_length = 0;
   data -> max_length = 0;
   data -> stream = NULL;
@@ -870,17 +882,52 @@ pdf_obj *pdf_new_stream (int flags)
 
 static void write_stream (FILE *file, pdf_stream *stream)
 {
+#define COMPRESS_LEVEL 9
+#define THRESHOLD 100
+  unsigned char *buffer, *filtered;
+  unsigned long filtered_length, buffer_length;
+  /* Always work from a copy of the stream */
+  /* All filters read from "filtered" and leave their result in
+     "filtered" */
+  filtered = NEW (stream->stream_length, unsigned char);
+  memcpy (filtered, stream->stream, stream->stream_length);
+  filtered_length = stream->stream_length;
+
+#ifdef HAVE_ZLIB
+  /* Apply compression filter if requested */
+  if ((stream -> _flags & STREAM_COMPRESS)) {
+    int z_error;
+    buffer_length = filtered_length + filtered_length/1000 + 13;
+    buffer = NEW (buffer_length, unsigned char);
+    if ((z_error = compress2 (buffer, &buffer_length, filtered,
+			      filtered_length, COMPRESS_LEVEL)) != 0) {
+      ERROR ("Zlib error");
+    }
+    RELEASE (filtered);
+    filtered = buffer;
+    filtered_length = buffer_length;
+  }
+#endif /* HAVE_ZLIB */
+
   pdf_write_obj (file, stream -> dict);
   pdf_out (file, "\nstream\n", 8);
-  if (stream -> stream_length > 0) {
-    pdf_out (file, stream -> stream, stream -> stream_length);
+  
+  if (filtered_length > 0) {
+    pdf_out (file, filtered, filtered_length);
     /* If stream doesn't have an eol, put one there */
-    if ((stream->stream)[stream->stream_length] != '\n') {
+    if (filtered[filtered_length-1] != '\n') {
       pdf_out (file, "\n", 1);
-      stream->stream_length +=1;
+      filtered_length +=1;
     }
   }
-  pdf_set_number (stream -> length, stream->stream_length);
+
+  RELEASE (filtered);
+
+  /* This stream length "object" gets reset every time write_stream is
+     called for the stream object */
+  /* If this stream gets written more than once with different
+     filters, this could be a problem */
+  pdf_set_number (stream -> length, filtered_length);
   pdf_out (file, "endstream", 9);
   return;
 }

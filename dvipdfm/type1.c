@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.37 1998/12/23 16:46:56 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.38 1998/12/23 18:45:30 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -543,7 +543,6 @@ static unsigned long do_partial (unsigned char *filtered, unsigned char
       tail = start;
       start += 1;
       glyph = parse_ident (&start, end);
-      fprintf (stderr, "(%s...", glyph);
       this_glyph = bsearch (glyph, used_glyphs, nused, sizeof (char *), glyph_match);
       /* Get the number that should follow the glyph name */
       ident = parse_ident (&start, end);
@@ -564,22 +563,17 @@ static unsigned long do_partial (unsigned char *filtered, unsigned char
       RELEASE (ident);
       skip_white (&start, end);
       if (this_glyph) {
-	fprintf (stderr, "embedded)");
 	memcpy (filtered_pointer, tail, start-tail);
 	filtered_pointer += start-tail;
 	nleft--;
-      } else {
-	fprintf (stderr, "skipped)");
       }
       RELEASE (glyph);
     }
     if (start >= end) {
       ERROR ("Premature end of glyph definitions in font file");
     }
-    if (nleft == 0)
-      fprintf (stderr, "\nNo Missing Glyphs\n");
-    else
-      ERROR ("Didn't find all the required glyphs");
+    if (nleft != 0)
+      ERROR ("Didn't find all the required glyphs in a font");
     /* Include the rest of the file verbatim */
     memcpy (filtered_pointer, start, end-start);
     filtered_pointer += end-start;
