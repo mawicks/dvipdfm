@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfdoc.c,v 1.2.2.1 1998/11/25 07:12:35 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfdoc.c,v 1.2.2.2 1998/11/25 20:50:15 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -337,7 +337,6 @@ void pdf_doc_change_outline_depth(int new_depth)
     pdf_add_dict (outline[i].entry,
 		  pdf_new_name ("Last"),
 		  pdf_ref_obj (outline[i+1].entry));
-    outline[i].kid_count += outline[i+1].kid_count;
     if (i > 0) 
       tmp1 = pdf_new_number (-outline[i].kid_count);
     else
@@ -395,8 +394,6 @@ void pdf_doc_add_outline (pdf_obj *dict)
     pdf_add_dict (new_entry,
 		  pdf_new_name ("Previous"),
 		  pdf_ref_obj (outline[outline_depth].entry));
-    /* Tell parents about grandchildren before killing sis */
-    outline[outline_depth-1].kid_count += outline[outline_depth].kid_count;
     /* Bye-Bye sis */
     pdf_release_obj (outline[outline_depth].entry);
   }
