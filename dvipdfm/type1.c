@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.47 1998/12/31 18:41:57 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.48 1998/12/31 19:30:12 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -784,6 +784,36 @@ static pdf_obj *type1_fontfile (int pfb_id)
     return NULL;
 }
 
+static char *type1_fontname (int pfb_id)
+{
+  if (pfb_id >= 0 && pfb_id < num_pfbs)
+    return pfbs[pfb_id].fontname;
+  else
+    return NULL;
+}
+
+/* Mangle_fontname mangles the name in place.  fontname
+   must be big enough to add seven characters */
+
+static void mangle_fontname(char *fontname)
+{
+  int i;
+  char ch;
+  static first = 1;
+  memmove (fontname+7, fontname, strlen(fontname)+1);
+  /* The following procedure isn't very random, but it
+     doesn't need to be for this application. */
+  if (first) {
+    srand (time(NULL));
+    first = 0;
+  }
+  for (i=0; i<6; i++) {
+    ch = rand() % 26;
+    fontname[i] = ch+'A';
+  }
+  fontname[6] = '+';
+}
+
 static int type1_pfb_id (const char *pfb_name, int encoding_id, char *fontname)
 {
   int i;
@@ -810,8 +840,15 @@ static int type1_pfb_id (const char *pfb_name, int encoding_id, char *fontname)
     pfbs[i].direct = pdf_new_stream(STREAM_COMPRESS);
     pfbs[i].indirect = pdf_ref_obj (pfbs[i].direct);
     pfbs[i].encoding_id = encoding_id;
-    pfbs[i].fontname = NEW (strlen(fontname)+1, char);
-    strcpy (pfbs[i].fontname, fontname);
+    if (partial_enabled) {
+      pfbs[i].fontname = NEW (strlen(fontname)+8, char);
+      strcpy (pfbs[i].fontname, fontname);
+      mangle_fontname(pfbs[i].fontname);
+    }
+    else {
+      pfbs[i].fontname = NEW (strlen(fontname)+1, char);
+      strcpy (pfbs[i].fontname, fontname);
+    }
   }
   return i;
 }
@@ -1162,25 +1199,6 @@ char *type1_font_used (int type1_id)
   return result;
 }
 
-static void mangle_fontname()
-{
-  int i;
-  char ch;
-  static first = 1;
-  memmove (fontname+7, fontname, strlen(fontname)+1);
-  /* The following procedure isn't very random, but it
-     doesn't need to be for this application. */
-  if (first) {
-    srand (time(NULL));
-    first = 0;
-  }
-  for (i=0; i<6; i++) {
-    ch = rand() % 26;
-    fontname[i] = ch+'A';
-  }
-  fontname[6] = '+';
-}
-
 
 static int is_a_base_font (char *name)
 {
@@ -1253,9 +1271,6 @@ int type1_font (const char *tex_name, int tfm_font_id, const char *resource_name
       type1_fonts[num_type1_fonts].pfb_id = -1;
       if (font_record -> pfb_name != NULL) {
 	if (!is_a_base_font (fontname)) {
-	  if (partial_enabled) {
-	    mangle_fontname();
-	  }
 	  type1_fonts[num_type1_fonts].pfb_id =
 	    type1_pfb_id (font_record -> pfb_name, encoding_id, fontname);
 	  pdf_add_dict (font_resource, 
@@ -1265,10 +1280,21 @@ int type1_font (const char *tex_name, int tfm_font_id, const char *resource_name
 					      type1_fonts[num_type1_fonts].pfb_id));
 	}
       }
-      pdf_add_dict (font_resource,
-		    pdf_new_name ("BaseFont"),
-		    pdf_new_name (fontname));  /* fontname is global and set
-						  by scan_afm_file() */
+      /* If we are embedding this font, it may have been used by another virtual
+	 font and we need to use the same mangled name.  Mangled
+	 named are known only to the pfb module */
+      if (type1_fonts[num_type1_fonts].pfb_id >= 0) {
+	pdf_add_dict (font_resource, 
+		      pdf_new_name ("BaseFont"),
+		      pdf_new_name
+		      (type1_fontname(type1_fonts[num_type1_fonts].pfb_id)));
+	/* Otherwise we use the base name */
+      } else {
+	pdf_add_dict (font_resource,
+		      pdf_new_name ("BaseFont"),
+		      pdf_new_name (fontname));  /* fontname is global and set
+						    by scan_afm_file() */
+      }
       firstchar = tfm_get_firstchar(tfm_font_id);
       pdf_add_dict (font_resource,
 		    pdf_new_name ("FirstChar"),
