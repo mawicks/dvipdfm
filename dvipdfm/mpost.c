@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.29 2000/06/26 04:13:04 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.30 2000/06/29 02:23:21 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1078,8 +1078,9 @@ static int do_operator(char *token)
 		     cos(theta), -sin(theta),
 		     sin(theta), cos(theta));
       pdf_doc_add_to_page (work_buffer, len);
-      pdf_release_obj (tmp1);
     }
+    if (tmp1)
+      pdf_release_obj (tmp1);
     break;
   case TEXFIG:
     if ((tmp6 = POP_STACK()) && (tmp6 -> type == PDF_NUMBER) &&
