@@ -187,7 +187,7 @@ int main (int argc, char *argv[])
   if (argc <= 1) {
     fprintf (stderr, "Usage: %s ttf_file_name\n", argv[0]);
   }
-  if ((ttf_file = fopen (argv[1], "rb")) == NULL) {
+  if ((ttf_file = FOPEN (argv[1], "rb")) == NULL) {
     fprintf (stderr, "Unable to open %s\n", argv[1]);
   }
   read_directory();

@@ -26,13 +26,15 @@ dvipdfm.o: dvipdfm.c config.h dvi.h error.h numbers.h pdfdev.h mem.h \
  system.h
 epdf.o: epdf.c system.h pdfobj.h pdfdoc.h pdfspecial.h numbers.h \
  mfileio.h epdf.h mem.h
-vf.o: vf.c pdflimits.h numbers.h system.h mem.h error.h tfm.h pdfdev.h \
- dvi.h vf.h dvicodes.h
+vf.o: vf.c mfileio.h numbers.h pdflimits.h system.h mem.h error.h \
+ tfm.h pdfdev.h dvi.h vf.h dvicodes.h
 t1crypt.o: t1crypt.c
 pkfont.o: pkfont.c pkfont.h pdfobj.h mfileio.h numbers.h pdflimits.h \
  mem.h tfm.h error.h system.h
 tpic.o: tpic.c tpic.h numbers.h pdfparse.h pdfobj.h mem.h mfileio.h \
  pdfdoc.h dvi.h error.h pdfdev.h
-thumbnail.o: thumbnail.c config.h system.h mem.h pdfobj.h thumbnail.h \
- pngimage.h
+thumbnail.o: thumbnail.c config.h system.h mfileio.h numbers.h mem.h \
+ pdfobj.h thumbnail.h pngimage.h
 pngimage.o: pngimage.c config.h system.h mem.h pdfobj.h
+ebb.o: ebb.c system.h mfileio.h numbers.h pdfobj.h jpeg.h pdfspecial.h \
+ mem.h pdfparse.h config.h pngimage.h

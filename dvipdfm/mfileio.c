@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mfileio.c,v 1.5 1999/02/21 14:30:20 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mfileio.c,v 1.6 1999/08/15 04:54:55 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -26,6 +26,42 @@
 #include "error.h"
 #include <stdio.h>
 #include <stdlib.h>
+
+#ifdef IODEBUG 
+static FILE *iodebug_file = NULL;
+static long event = 0;
+static void io_debug_init(void)
+{
+  if (!iodebug_file) {
+    iodebug_file = fopen ("fopen.log", "wb");
+    fprintf (stderr, "\n*** File IO debugging started ***\n");
+  }
+  if (!iodebug_file) {
+    fprintf (stderr, "\nError opening io log\n");
+  }
+}
+#endif
+
+#ifdef IODEBUG
+FILE *mfopen(const char *name, const char *mode, const char *function, int line)
+{
+  FILE *tmp;
+  io_debug_init();
+  tmp = fopen (name, mode);
+  event += 1;
+  fprintf(iodebug_file, "%p %07ld [fopen] %s:%d\n", tmp, event,
+	  function, line);
+  return tmp;
+}
+int mfclose(FILE *file, const char *function, int line) 
+{
+  io_debug_init();
+  event += 1;
+  fprintf(iodebug_file, "%p %07ld [fclose] %s:%d\n", file, event,
+	  function, line);
+  return fclose(file);
+}
+#endif
 
 static void os_error()
 {
@@ -86,8 +122,6 @@ char *mfgets (char *buffer, unsigned long length, FILE *file)
     ungetc (ch, file);
   return buffer;
 }
-
-
 
 char work_buffer[WORK_BUFFER_SIZE];
 

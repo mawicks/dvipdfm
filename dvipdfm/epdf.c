@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/epdf.c,v 1.14 1999/08/15 02:27:01 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/epdf.c,v 1.15 1999/08/15 04:54:55 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -76,7 +76,6 @@ pdf_obj *pdf_include_page(FILE *image_file, struct xform_info *p, char *res_name
 #ifdef MEM_DEBUG
 MEM_START
 #endif
-  fprintf (stderr, "image_file=%p\n", image_file);
   if (!(trailer = pdf_open (image_file))) {
     fprintf (stderr, "\nCorrupt PDF file?\n");
   }

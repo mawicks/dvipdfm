@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.76 1999/08/14 03:50:17 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.77 1999/08/15 04:54:56 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -158,7 +158,7 @@ int get_encoding (const char *enc_name)
     ERROR (work_buffer);
   }
   RELEASE (tmp);
-  if ((encfile = fopen (full_enc_filename, FOPEN_R_MODE)) == NULL ||
+  if ((encfile = FOPEN (full_enc_filename, FOPEN_R_MODE)) == NULL ||
       (filesize = file_size (encfile)) == 0) {
     sprintf (work_buffer, "Error opening encoding file: %s", enc_name) ;
     ERROR (work_buffer);
@@ -171,7 +171,7 @@ int get_encoding (const char *enc_name)
     pdf_obj *junk_obj, *encoding, *differences;
     buffer = NEW (filesize, char); 
     fread (buffer, sizeof (char), filesize, encfile);
-    fclose (encfile);
+    FCLOSE (encfile);
     start = buffer;
     end = buffer + filesize;
     start[filesize-1] = 0;
@@ -219,11 +219,11 @@ int get_encoding (const char *enc_name)
   }
 }
 
+static FILE *mapfile = NULL;
 struct font_record *get_font_record (const char *tex_name)
 {
   struct font_record *result;
   static first = 1;
-  static FILE *mapfile;
   char *full_map_filename, *start, *end = NULL, *record_name;
   result = new_font_record ();
   if (first) {
@@ -231,7 +231,7 @@ struct font_record *get_font_record (const char *tex_name)
     full_map_filename = kpse_find_file (map_filename, kpse_program_text_format,
 					0);
     if (full_map_filename == NULL || 
-	(mapfile = fopen (full_map_filename, FOPEN_R_MODE)) == NULL) {
+	(mapfile = FOPEN (full_map_filename, FOPEN_R_MODE)) == NULL) {
       fprintf (stderr, "Warning:  No font map file\n");
       mapfile = NULL;
     }
@@ -965,12 +965,12 @@ static int type1_pfb_id (const char *pfb_name, int encoding_id)
     char *full_pfb_name, *short_fontname;
     if (!(full_pfb_name = kpse_find_file (pfb_name, kpse_type1_format,
 				    1)) || 
-	!(pfb_file = fopen (full_pfb_name, FOPEN_RBIN_MODE))) {
+	!(pfb_file = FOPEN (full_pfb_name, FOPEN_RBIN_MODE))) {
       fprintf (stderr, "type1_fontfile:  Unable to find Type 1 font file for (%s)...Hope that's okay.", pfb_name);
       return -1;
     }
     short_fontname = pfb_find_name (pfb_file);
-    fclose (pfb_file);
+    FCLOSE (pfb_file);
     if (num_pfbs >= max_pfbs) {
       max_pfbs += MAX_FONTS;
       pfbs = RENEW (pfbs, max_pfbs, struct a_pfb);
@@ -1017,7 +1017,7 @@ static void do_pfb (int pfb_id)
     fprintf (stderr, "(%s)", full_pfb_name);
   }
   if (full_pfb_name == NULL ||
-      (type1_binary_file = fopen (full_pfb_name, FOPEN_RBIN_MODE)) == NULL) {
+      (type1_binary_file = FOPEN (full_pfb_name, FOPEN_RBIN_MODE)) == NULL) {
     fprintf (stderr, "type1_fontfile:  Unable to find or open binary font file (%s)",
 	     pfbs[pfb_id].pfb_name);
     ERROR ("This existed when I checked it earlier!");
@@ -1048,7 +1048,7 @@ static void do_pfb (int pfb_id)
       (ch = fgetc (type1_binary_file)) != 3)
     ERROR ("type1_fontfile:  Are you sure this is a pfb?");
   /* Got entire file! */
-  fclose (type1_binary_file);
+  FCLOSE (type1_binary_file);
   stream_dict = pdf_stream_dict (pfbs[pfb_id].direct);
   pdf_add_dict (stream_dict, pdf_new_name("Length1"),
 		pdf_new_number (length1));
@@ -1360,4 +1360,13 @@ void type1_close_all (void)
   }
   if (encodings)
      RELEASE (encodings);
+
+  if (mapfile)
+    FCLOSE (mapfile);
 }
+
+
+
+
+
+

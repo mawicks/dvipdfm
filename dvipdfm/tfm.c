@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.21 1999/04/08 04:07:36 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.22 1999/08/15 04:54:56 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -308,7 +308,7 @@ int tfm_open (const char *tfm_name)
     if (numtfms >= MAX_FONTS) {
       ERROR ("tfm_open:  Tried to open too many TFM files!");
     }
-    if (!(tfm_file = fopen (full_tfm_file_name, FOPEN_RBIN_MODE))) {
+    if (!(tfm_file = FOPEN (full_tfm_file_name, FOPEN_RBIN_MODE))) {
       fprintf (stderr, "tfm_open: %s\n", tfm_name);
     ERROR ("tfm_open:  Specified TFM file cannot be opened");
     }
@@ -318,7 +318,7 @@ int tfm_open (const char *tfm_name)
     tfm[numtfms].tex_name = NEW (strlen(tfm_name)+1, char);
     strcpy (tfm[numtfms].tex_name, tfm_name);
     get_tfm (&tfm[numtfms]);
-    fclose (tfm_file);
+    FCLOSE (tfm_file);
     if (tfm_verbose) {
       dump_sizes (&tfm[numtfms]);
     }

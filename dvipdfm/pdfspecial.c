@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.47 1999/08/15 02:27:02 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.48 1999/08/15 04:54:56 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -854,7 +854,7 @@ MEM_START
     FILE *image_file;
     sprintf (res_name, "Im%ld", next_image);
     if ((kpse_file_name = kpse_find_pict (filename)) &&
-	(image_file = fopen (kpse_file_name, FOPEN_RBIN_MODE))) {
+	(image_file = FOPEN (kpse_file_name, FOPEN_RBIN_MODE))) {
       fprintf (stderr, "(%s", kpse_file_name);
       if (check_for_jpeg(image_file)) {
 	result = jpeg_start_image(image_file);
@@ -874,28 +874,28 @@ MEM_START
       else{
 	fprintf (stderr, "\nNot a supported image type.\n");
       }
-      fclose (image_file);
+      FCLOSE (image_file);
       fprintf (stderr, ")");
     } else {
       fprintf (stderr, "\nError locating or opening file (%s)\n", filename);
       error = 1;
     }
-  }
-  { /* Put reference to object on page */
-    next_image += 1;
-    pdf_doc_add_to_page_xobjects (res_name, pdf_ref_obj(result));
-    pdf_doc_add_to_page (" q", 2);
-    add_xform_matrix (x_user, y_user, p->xscale, p->yscale, p->rotate);
-    if (p->depth != 0.0)
-      add_xform_matrix (0.0, -p->depth, 1.0, 1.0, 0.0);
-    release_xform_info(p);
-    sprintf (work_buffer, " /%s Do Q", res_name);
-    pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
-  }
-  if (objname != NULL && result != NULL) {
-    add_reference (objname, pdf_link_obj (result), res_name);
-    /* Read the explanation for the next line in do_ann() */
-    release_reference (objname);
+    { /* Put reference to object on page */
+      next_image += 1;
+      pdf_doc_add_to_page_xobjects (res_name, pdf_ref_obj(result));
+      pdf_doc_add_to_page (" q", 2);
+      add_xform_matrix (x_user, y_user, p->xscale, p->yscale, p->rotate);
+      if (p->depth != 0.0)
+	add_xform_matrix (0.0, -p->depth, 1.0, 1.0, 0.0);
+      release_xform_info(p);
+      sprintf (work_buffer, " /%s Do Q", res_name);
+      pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
+    }
+    if (objname != NULL && result != NULL) {
+      add_reference (objname, pdf_link_obj (result), res_name);
+      /* Read the explanation for the next line in do_ann() */
+      release_reference (objname);
+    }
   }
   if (objname)
     RELEASE (objname);
@@ -1484,7 +1484,7 @@ static void finish_image (pdf_obj *image_res, struct xform_info *p,
 			  char *res_name)
 {
   pdf_obj *image_dict;
-  double xscale, yscale;
+  double xscale = 1.0, yscale = 1.0;
   image_dict = pdf_stream_dict (image_res);
   pdf_add_dict (image_dict, pdf_new_name ("Name"),
 		pdf_new_name (res_name));
@@ -1498,33 +1498,31 @@ static void finish_image (pdf_obj *image_res, struct xform_info *p,
     int width, height;
     width = pdf_number_value(pdf_lookup_dict (image_dict, "Width"));
     height = pdf_number_value(pdf_lookup_dict (image_dict, "Height"));
-    xscale = width * dvi_tell_mag() * (72.0 / 100.0);
-    yscale = height * dvi_tell_mag() * (72.0 / 100.0);
     if (p->scale != 0) {
-      xscale *= p->scale;
-      yscale *= p->scale;
+      xscale = p->scale;
+      yscale = p->scale;
     }
     if (p->xscale != 0) {
-      xscale *= p->xscale;
+      xscale = p->xscale;
     }
     if (p->yscale != 0) {
-      yscale *= p->yscale;
+      yscale = p->yscale;
     }
     if (p->width != 0.0) {
-      xscale = p->width;
+      xscale = p->width/width;
       if (p->height == 0.0)
 	yscale = xscale;
     }
     if (p->height != 0.0) {
-      yscale = p->height;
+      yscale = p->height/height;
       if (p->width == 0.0)
 	xscale = p->yscale;
     }
+    /* We overwrite p->xscale and p->yscale to pass values back to
+       caller to user */
+    p->xscale = xscale * width * dvi_tell_mag() * (72.0 / 100.0);
+    p->yscale = yscale * height * dvi_tell_mag() * (72.0 / 100.0);
   }
-  /* We overwrite p->xscale and p->yscale to pass values back to
-     caller to user */
-  p->xscale = xscale;
-  p->yscale = yscale;
   return;
 }
 

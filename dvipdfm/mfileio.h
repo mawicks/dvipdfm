@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mfileio.h,v 1.5 1999/02/21 14:30:21 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mfileio.h,v 1.6 1999/08/15 04:54:55 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -25,6 +25,21 @@
 	
 #include <stdio.h>
 #include "numbers.h"
+#define IODEBUG
+#undef IODEBUG
+
+#ifdef IODEBUG
+FILE *mfopen (const char *name, const char *mode,
+	      const char *function, int line);
+int mfclose (FILE *file, const char *function, int line);
+#define FOPEN(name,mode) \
+   mfopen((name),(mode),__FUNCTION__,__LINE__)
+#define FCLOSE(file) \
+   mfclose((file),__FUNCTION__,__LINE__)
+#else
+#define FOPEN(name,mode) fopen((name),(mode))
+#define FCLOSE(file) fclose(file)
+#endif
 
 extern UNSIGNED_BYTE read_byte (FILE *);
 

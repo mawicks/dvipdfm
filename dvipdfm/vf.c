@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/vf.c,v 1.17 1999/03/23 02:54:42 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/vf.c,v 1.18 1999/08/15 04:54:56 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -24,6 +24,7 @@
 
 #include <stdio.h>
 #include <ctype.h>
+#include "mfileio.h"
 #include "pdflimits.h"
 #include "numbers.h"
 #include "system.h"
@@ -260,7 +261,7 @@ int vf_locate_font (char *tex_name, mpt_t ptsize)
 				      kpse_vf_format,
 				      1);
   if (full_vf_file_name &&
-      (vf_file = fopen (full_vf_file_name, FOPEN_RBIN_MODE)) != NULL) {
+      (vf_file = FOPEN (full_vf_file_name, FOPEN_RBIN_MODE)) != NULL) {
     if (verbose) {
       fprintf (stderr, "(%s)", full_vf_file_name);
     }
@@ -272,7 +273,7 @@ int vf_locate_font (char *tex_name, mpt_t ptsize)
     read_header(vf_file, thisfont);
     clear_vf_characters(thisfont);
     process_vf_file (vf_file, thisfont);
-    fclose (vf_file);
+    FCLOSE (vf_file);
   }
   return thisfont;
 }

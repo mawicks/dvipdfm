@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.18 1999/08/14 04:22:37 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.19 1999/08/15 04:54:55 mwicks Exp $
 
     This is ebb, a bounding box extraction program.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -25,6 +25,7 @@
 #include <time.h>
 #include <string.h>
 #include "system.h"
+#include "mfileio.h"
 #include "pdfobj.h"
 #include "jpeg.h"
 #include "mem.h"
@@ -106,7 +107,7 @@ static void write_bb (char *filename, int bbllx, int bblly, int bburx,
   if (verbose)
     fprintf (stderr, "okay\n");
   bbfilename = make_bb_filename (filename);
-  if ((bbfile = fopen (bbfilename, bb_file_mode)) == NULL) {
+  if ((bbfile = FOPEN (bbfilename, bb_file_mode)) == NULL) {
     fprintf (stderr, "Unable to open output file: %s\n", bbfilename);
     return;
   }
@@ -121,7 +122,7 @@ static void write_bb (char *filename, int bbllx, int bblly, int bburx,
 	   bbllx, bblly, bburx, bbury);
   do_time(bbfile);
   RELEASE (bbfilename);
-  fclose (bbfile);
+  FCLOSE (bbfile);
   return;
 }
 
@@ -137,7 +138,7 @@ void do_jpeg (FILE *file, char *filename)
   jpeg -> file = file;
   if (!jpeg_headers (jpeg)) {
         fprintf (stderr, "\n%s: Corrupt JPEG file?\n", filename);
-    fclose (file);
+    FCLOSE (file);
     RELEASE (jpeg);
     return;
   }
@@ -160,10 +161,10 @@ void do_png (FILE *file, char *filename)
   if (!(png_ptr = png_create_read_struct (PNG_LIBPNG_VER_STRING,    
 					  NULL, NULL, NULL)) ||
       !(info_ptr = png_create_info_struct (png_ptr))) {
-    fprintf (stderr, "\n\nLibpng failed to initialize.  Corrupt PNG file?\n");
+    fprintf (stderr, "\n\n%s: Corrupt PNG file?\n", filename);
     if (png_ptr)
       png_destroy_read_struct(&png_ptr, NULL, NULL);
-    fclose (file);
+    FCLOSE (file);
     return;
   }
   png_init_io (png_ptr, file);
@@ -185,12 +186,12 @@ void do_png (FILE *file, char *filename)
 void do_pdf (FILE *file, char *filename)
 {
   pdf_obj *trailer, *catalog, *page_tree, *media_box, *crop_box;
-  pdf_obj *kids_ref, *kids, *tmp1;;
+  pdf_obj *kids_ref, *kids, *tmp1;
   if (verbose) {
     fprintf (stderr, "%s looks like a PDF file...", filename);
   }
-  if ((trailer = pdf_open (filename)) == NULL) {
-    fprintf (stderr, "Corrupt PDF file?\n");
+  if ((trailer = pdf_open (file)) == NULL) {
+    fprintf (stderr, "%s: Corrupt PDF file?\n", filename);
     return;
   };
   if ((catalog = pdf_deref_obj(pdf_lookup_dict (trailer,"Root"))) ==
@@ -277,23 +278,23 @@ int main (int argc, char *argv[])
   for (; argc > 0; argc--, argv++) {
     char *kpse_file_name;
     if (!(kpse_file_name = kpse_find_pict(argv[0])) ||
-        (inputfile = fopen (kpse_file_name, FOPEN_RBIN_MODE)) == NULL)  {
+        (inputfile = FOPEN (kpse_file_name, FOPEN_RBIN_MODE)) == NULL)  {
       fprintf (stderr, "Can't find file (%s)...skipping\n", argv[0]);
       continue;
     }
     if (check_for_jpeg (inputfile)) {
       do_jpeg(inputfile, kpse_file_name);
-      fclose (inputfile);
+      FCLOSE (inputfile);
       continue;
     }
     if (check_for_pdf (inputfile)) {
       do_pdf(inputfile, kpse_file_name);
-      fclose (inputfile);
+      FCLOSE (inputfile);
       continue;
     }
     if (check_for_png (inputfile)) {
       do_png(inputfile, kpse_file_name);
-      fclose (inputfile);
+      FCLOSE (inputfile);
       continue;
     }
     fprintf (stderr, "Can't handle file type for file named %s\n",

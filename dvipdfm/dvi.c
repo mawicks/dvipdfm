@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.54 1999/03/23 15:26:20 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.55 1999/08/15 04:54:55 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1092,7 +1092,7 @@ void dvi_do_page(unsigned n)  /* Most of the work of actually interpreting
 error_t dvi_init (char *dvi_filename, char *pdf_filename, double mag, double x_offset, double
 		  y_offset)
 {
-  if (!(dvi_file = fopen (dvi_filename, FOPEN_RBIN_MODE))) {
+  if (!(dvi_file = FOPEN (dvi_filename, FOPEN_RBIN_MODE))) {
     ERROR ("dvi_init:  Specified DVI file doesn't exist");
     return (FATAL_ERROR);
   }
@@ -1118,7 +1118,7 @@ void dvi_close (void)
      treated as a write-once record */
 
   /* Do some house cleaning */
-  fclose (dvi_file);
+  FCLOSE (dvi_file);
   for (i=0; i<num_def_fonts; i++) {
     RELEASE (def_fonts[i].name);
   }

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.51 1999/08/15 02:27:02 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.52 1999/08/15 04:54:55 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -131,7 +131,7 @@ void pdf_out_init (const char *filename)
 #ifdef MEM_DEBUG
 MEM_START
 #endif
-  if (!(pdf_output_file = fopen (filename, FOPEN_WBIN_MODE))) {
+  if (!(pdf_output_file = FOPEN (filename, FOPEN_WBIN_MODE))) {
     if (strlen(filename) < 128) {
       sprintf (format_buffer, "Unable to open %s\n", filename);
     } else
@@ -207,7 +207,7 @@ void pdf_out_flush (void)
     }
     fprintf (stderr, "\n%lu bytes written",
 	     pdf_output_file_position);
-    fclose (pdf_output_file);
+    FCLOSE (pdf_output_file);
   }
 }
 
@@ -1014,7 +1014,7 @@ static void write_stream (FILE *file, pdf_stream *stream)
 static void release_stream (pdf_stream *stream)
 {
   pdf_release_obj (stream -> dict);
-/*  fclose (stream -> tmpfile); */
+/*  FCLOSE (stream -> tmpfile); */
   if (stream -> stream_length > 0)
     RELEASE (stream -> stream);
   RELEASE (stream);
@@ -1162,7 +1162,7 @@ void pdf_release_obj (pdf_obj *object)
 static int backup_line (void)
 {
   int ch;
-  ch = 0;
+  ch = -1;
   if (debug) {
     fprintf (stderr, "\nbackup_line:\n");
   }
@@ -1171,20 +1171,20 @@ static int backup_line (void)
      there is a \r in the stream---Highly unlikely
      in the last few bytes where this is likely to be used.
   */
-  do {
-    seek_relative (pdf_input_file, -2);
-    if (debug)
-      fprintf (stderr, "%c", ch);
-  } while (tell_position (pdf_input_file) > 0 &&
-	   (ch = fgetc (pdf_input_file)) >= 0 &&
-	   (ch != '\n' && ch != '\r' ));
+  if (tell_position (pdf_input_file) > 1)
+    do {
+      seek_relative (pdf_input_file, -2);
+      if (debug)
+	fprintf (stderr, "%c", ch);
+    } while (tell_position (pdf_input_file) > 0 &&
+	     (ch = fgetc (pdf_input_file)) >= 0 &&
+	     (ch != '\n' && ch != '\r' ));
   if (debug)
     fprintf (stderr, "<-\n");
   if (ch < 0) {
-    fprintf (stderr, "Invalid PDF file\n");
-    return 1;
+    return 0;
   }
-  return 0;
+  return 1;
 }
 
 static pdf_file_size = 0;
@@ -1192,15 +1192,17 @@ static pdf_file_size = 0;
 static long find_xref(void)
 {
   long currentpos, xref_pos;
-  int tries = 0;
+  int tries = 10;
   char *start, *end, *number;
   if (debug)
     fprintf (stderr, "(find_xref");
   seek_end (pdf_input_file);
   pdf_file_size = tell_position (pdf_input_file);
   do {
-    tries ++;
-    backup_line();
+    if (!backup_line()) {
+      tries = 0;
+      break;
+    }
     currentpos = tell_position(pdf_input_file);
     fread (work_buffer, sizeof(char), strlen("startxref"),
 	   pdf_input_file);
@@ -1209,8 +1211,9 @@ static long find_xref(void)
       fprintf (stderr, "[%s]\n", work_buffer);
     }
     seek_absolute(pdf_input_file, currentpos);
-  } while (tries < 10 && strncmp (work_buffer, "startxref", strlen ("startxref")));
-  if (tries >= 10)
+    tries--;
+  } while (tries > 0 && strncmp (work_buffer, "startxref", strlen ("startxref")));
+  if (tries <= 0)
     return 0;
   /* Skip rest of this line */
   mfgets (work_buffer, WORK_BUFFER_SIZE, pdf_input_file);
@@ -1531,7 +1534,6 @@ static int parse_xref (void)
   return 1;
 }
 
-
 pdf_obj *read_xref (void)
 {
   pdf_obj *main_trailer, *prev_trailer, *prev_xref, *xref_size;
@@ -1540,7 +1542,7 @@ pdf_obj *read_xref (void)
 MEM_START
 #endif  
   if ((xref_pos = find_xref()) == 0) {
-    fprintf (stderr, "No xref loc.  Is this a correct PDF file?\n");
+    fprintf (stderr, "Can't find xref table.\n");
     return NULL;
   }
   if (debug) {
@@ -1614,7 +1616,7 @@ MEM_START
     return NULL;
   }
   if ((trailer = read_xref()) == NULL) {
-    fprintf (stderr, "\nProbably not a PDF file\n");
+    fprintf (stderr, "No trailer.\n");
     pdf_close ();
     return NULL;
   }

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ttf.c,v 1.3 1999/04/06 01:37:52 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ttf.c,v 1.4 1999/08/15 04:54:56 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -79,7 +79,7 @@ struct font_record *ttf_get_font_record (const char *tex_name)
     full_map_filename = kpse_find_file (map_filename, kpse_program_text_format,
 					0);
     if (full_map_filename == NULL || 
-	(mapfile = fopen (full_map_filename, FOPEN_R_MODE)) == NULL) {
+	(mapfile = FOPEN (full_map_filename, FOPEN_R_MODE)) == NULL) {
       fprintf (stderr, "Warning:  No ttf font map file\n");
       mapfile = NULL;
     }
@@ -226,7 +226,7 @@ static void do_ttf (int ttf_id)
     fprintf (stderr, "(%s)", full_ttf_name);
   }
   if (full_ttf_name == NULL ||
-      (ttf_file = fopen (full_ttf_name, FOPEN_RBIN_MODE)) == NULL) {
+      (ttf_file = FOPEN (full_ttf_name, FOPEN_RBIN_MODE)) == NULL) {
     fprintf (stderr, "ttf_do_ttf:  Unable to find or open binary font file (%s)",
 	     ttfs[ttf_id].ttf_name);
     ERROR ("This existed when I checked it earlier!");
@@ -237,7 +237,7 @@ static void do_ttf (int ttf_id)
   fread (buffer, sizeof (char), length, ttf_file);
   pdf_add_stream (ttfs[ttf_id].direct, buffer, length);
   RELEASE (buffer);
-  fclose (ttf_file);
+  FCLOSE (ttf_file);
   stream_dict = pdf_stream_dict (pfbs[pfb_id].direct);
   pdf_add_dict (stream_dict, pdf_new_name("Length"),
 		pdf_new_number (length));
