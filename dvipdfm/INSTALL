@@ -7,10 +7,10 @@ your linker search path (-L).  The kpathsea library is included in source
 form with the "texk" bundle or the "web2c" bundle, available on CTAN.
 Similar remarks hold for "libz" and its headers; however, dvipdfm will
 configure and compile without libz--you just won't have any compression.  It
-*requires* kpath, however.  Similar remarks hold for libpng.  You
-*should* have libpng installed before trying to compile dvipdfm.
-It should compile without libpng, but you will lose the ability
-to include thumbnails and png images.
+*requires* kpath, however.  The same comments hold for libpng.  You *should*
+have a recent version of libpng installed before trying to compile dvipdfm.
+It should compile without libpng, but you will lose the ability to include
+thumbnails and png images.
 
    1.  Unbundle the gzip'ed tar file.
    

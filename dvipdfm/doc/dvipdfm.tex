@@ -1,4 +1,4 @@
-% $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/doc/dvipdfm.tex,v 1.22 1999/09/05 01:48:35 mwicks Exp $
+% $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/doc/dvipdfm.tex,v 1.23 1999/09/06 04:38:43 mwicks Exp $
 % \special{ pdf: pagesize width 8.5truein height 11.0truein}
 \special{  pdf:  docview <</PageMode /UseOutlines>>}%
 \catcode`\ =11\def\space{ }\catcode`\ =10
@@ -148,8 +148,8 @@
 %
 \title{Dvipdfm User's Manual}
 \author{Mark A. Wicks}
-\version{Version 0.11}
-\date{August 22, 1999}
+\version{Version 0.12}
+\date{September 6, 1999}
 \maketitle
 \section{Introduction}
 This package is a DVI (\TeX) to PDF conversion utility,
@@ -161,7 +161,11 @@ and \link{annotations}{Annotate} (including hyperlinks, forms and widgets).}  Ne
 every Acrobat Distiller pdfmark is approximated.
 
 \item{$\bullet$} {\it Support for ``standard'' DVI specials such
-as Hyper\TeX\ (HTML) and TPIC.}
+as Hyper\TeX\ (HTML), TPIC, color specials, |PSfile|, and other PostScript specials.}
+
+\item{$\bullet$} {\it Native support for inclusion of
+\link{MetaPost}{postscript} output and
+inclusion of arbitrary \link{PostScript}{postscript} files with help from an external program.}
 
 \item{$\bullet$} {\it Support for thumbnails with a little help from GhostScript to
 generate the thumbnails.}
@@ -172,11 +176,12 @@ of typeset material.}  Any material on the page, including
 
 \item{$\bullet$} {\it Ability to include the first page of a \link{PDF file}{pdfimage} as
 an encapsulated object along with its embedded resources such as fonts.}
+Included PDF images may be cropped by supplying a bounding box.
 Note:  Currently, this doesn't work if the contents stream
 has multiple segments. 
 
 \item{$\bullet$} {\it Ability to include \link{JPEG}{jpegimage} and
-PNG images as encapsulated objects.}
+PNG bitmapped images as encapsulated objects.}
 
 \item{$\bullet$} {\it An internal color stack.} A color stack allows you to change the current color, pushing the
 current color onto a stack.  At any time, the original color
@@ -187,6 +192,9 @@ what it is.
 
 \item{$\bullet$} {\it Support for partial font embedding and Flate compression
 to reduce file size}
+
+\item{$\bullet$} {\it Support for font reencoding to work around encodings
+that aren't fully supported by the Acrobat suite of products.}
 
 \item{$\bullet$} {\it Balanced page and destination trees.} Balancing
 these trees improves reader access speed 
@@ -429,7 +437,14 @@ A transformation consists of one of the keywords |scale|, |xscale|,
 |yscale|, or |rotate| followed by a numerical value.  In the
 case of |rotate| the value is the rotation angle in degrees.
 The notation
-{\it transformation} means a transformation is expected. 
+{\it transformation} means a transformation is expected.
+In the case of included images originating from
+PDF/PostScript files, a clipping or bounding box may be specified
+as part of the ``transformation.''  The bounding
+box specification consists of the keyword |bbox|
+followed by four numerical values, which are 
+the standard PostScript |llx|, |lly|, |urx|, and |ury|
+coordinates of the bounding box.
 
 \section{Document Construction Commands}
 All commands are executed via \TeX\ |\special| primitives
@@ -637,7 +652,6 @@ indefinitely.  If the object is never closed, it will
 be closed when |dvipdfm| finishes processing the document.
 
 \section{Form XObjects}
-
 The PDF specification allows an object to be stored once
 and displayed at multiple locations throughout the document.
 The following commands give access to this facility.
@@ -740,6 +754,23 @@ to prevent any break.
 \section{Color Commands}
 The commands in this section deal with manipulation of the color
 stack.
+
+\subsection{Setcolor}
+\syntax
+{\tt setcolor} {\it PDF\_Number$\vert$\it PDF\_Array}
+\description
+The |setcolor| (|scolor| or |sc|) command uses its
+argument to set the default color for future marking operators.
+The current color is replaced and may be retrieved
+only by a subsequent |setcolor| command.  The argument
+may be a single number, which is interpreted as a grayscale
+value; a three element array, which is interpreted as an RGB
+color space coordinate; or a four element array, which
+is interpreted as a CMYK color space coordinate.
+\example
+\begintt
+\special{ pdf: sc [ 1 0 0 ] }
+\endtt
 
 \subsection{Begincolor}
 \syntax
@@ -1087,16 +1118,122 @@ This option is useful for building a slanted fonts from a font
 for which there is no slanted font.\cr}}}
 \endinsert
 
+\section{Configuration file}
+{\dest{configuration}}Dvipdfm reads default command line options, such
+as paper size, from a configuration
+file contained in the |dvipdfm| directory of the TeX tree.
+The format of this file is similar to the |dvips| file configuration
+file format.  Each line consists of a single command line switch
+followed by any arguments.  See the configuration file supplied
+with the |dvipdfm| distribution for examples.
+
+\section{Including PostScript graphics images}
+{\dest{postscript}}Dvipdfm provides support for illustrations
+contained in external PostScript files. 
+It recognizes two distinct kinds of PostScript files---those
+created by MetaPost and everything else.
+
+MetaPost
+files output only a subset of PostScript and
+are interpreted {\it natively} by |dvipdfm|
+with its own internal minimal PostScript interpreter.
+Also, MetaPost output files contain \TeX\ font information in their header
+comments, so that they can be easily integrated with \TeX\ by DVI
+drivers. Dvipdfm recognizes this font information and uses the \TeX\
+fonts defined in the MetaPost header.
+
+
+All other PostScript files require an external
+program to convert the image to PDF format before
+|dvipdfm| can include the image.
+The freely available GhostScript is capabable of performing this conversion
+for most images.
+
+The user must specify the command line required
+to invoke an external program to perform this conversion.
+The command line required to invoke the conversion
+program is specified using the |-D| command
+line (or configuration file) option.  The string passed to the |-D| command
+line option is a C-style string that is parsed by |dvipdfm|.  Within the string,
+expansions are performed as described in \link{Table~5}{expansion}.
+For example, to use GhostScript, one might use the
+command line
+
+\bigskip
+
+{\tt -D "cat \%i \vrule\ gs -q -sDEVICE=pdfwrite -sOutputFile=\%o - -c quit" }
+
+
+\topinsert
+{\dest{expansion}}
+\centerline{\colored{\blue}{\subheadingfont Table~5---Expansions
+performed in the -D string.}}
+\bigskip\nobreak
+\centerline{\vbox{\halign{{\hfil\tt #\hfil}\hskip
+1em\strut&\vtop{\leftskip0pt\rightskip0pt\hsize=3.5in\noindent #}\cr
+\omit\hfil\it Variable\hfil&\omit\hfil \it Description \hfil\cr
+\noalign{\smallskip\begincolor\red\hrule\endcolor\smallskip}
+\%i&{\it Expanded to the full path of the EPS file to be included}\cr
+\noalign{\smallskip}
+\%o&{\it Expanded to the full path name of the PDF file to be
+generated}.  The command line must be able to create a file
+with the name supplied by dvipdfm.\cr
+\noalign{\smallskip}
+\%b&{\it Expanded to the  ``basename'' of the EPS file that is being included.}
+The ``basename'' is the full path of the EPS file with the 
+last ``.'' and any trailing name extension removed.\cr
+}}}
+\endinsert
+
+\section{Compatibility with other DVI drivers}
+Compatibility with other DVI drivers is achieved
+by support for the following ``standard'' special calls.
+Many legacy DVI files can be processed by |dvipdfm|,
+so long as they use fairly standard special commands.
+For example, |dvipdfm| can process DVI files generated
+that use the
+|\color|, |\rotatebox|, and |\includegraphics| macros
+from the standard La\TeX\ Graphics bundle even if |dvips| was the target DVI driver,
+e.g.,
+
+\begintt
+\usepackage[dvips]{graphics}
+\usepackage[dvips]{color}
+\endtt
+
+Specifically, |dvipdfm| understands the following standard special commands:
+
+\beginlist
+\item{$\bullet$} The TPIC specials.
+
+\item{$\bullet$} The HyperTeX (HTML) hyperlink specials.
+
+\item{$\bullet$} The ``color'' specials supported by |dvips| and
+other drivers.
+
+\item{$\bullet$} The ``PSfile'' and ``plotfile'' specials for PS/EPS file inclusion
+supported by |dvips| and other drivers.  Dvipdfm uses a user-specified
+external program to convert the PostScript file to PDF format
+before including it.
+
+\item{$\bullet$} The raw PostScript ``ps:'' special supported by |dvips| and
+other drivers.  Only a few PostScript operators are supported;
+|dvipdfm| does not include a complete PostScript interpreter.
+Complex PostScript code, such as that embedded by the PSTricks
+package, is not supported.
+\endlist
+
 \section{LaTeX Support and Ebb}
-Preliminary support for the La\TeX\ graphics bundle and |hyperref|
-are available.  Until drivers for |dvipdfm| are included
-in the standard distributions of these packages,
-I will include them in distributions of |dvipdfm|.
-The file required for the La\TeX\ graphics is
-called |dvipdfm.def| and the file required for |hyperref|
+Support for the La\TeX\ graphics bundle and |hyperref|
+are available.  A driver file named |dvipdfm.def|
+is distributed with the standard La\TeX
+graphics bundle.  The latest version
+of the |dvipdfm.def| file is supplied
+with the |dvipdfm| distribution.
+The file required for |hyperref|
 support is called |hdvipdfm.def|.  
 
-To facilitate La\TeX\ support, I am including a companion program
+To facilitate La\TeX\ support, I distribute a companion program
 called |ebb|, which extracts bounding boxes from graphics files.  If
 you want to include JPEG, PNG, or PDF files in your document, you can run
 |ebb| on the JPEG, PNG, or PDF file to create the |.bb| files.
