@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tpic.c,v 1.2 1999/01/22 00:46:51 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tpic.c,v 1.3 1999/01/25 06:01:36 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -335,9 +335,51 @@ int tpic_parse_special(char *buffer, UNSIGNED_QUAD size, double
       fill_shape = 1;
       fill_color = 0.0;
       break;
-    case TPIC_TX:
+    case TPIC_TX: 
       fill_shape = 1;
-      fill_color = 0.5;
+      {
+	long num = 0, den = 0;
+	while (buffer++ < end) {
+	  switch (*buffer) {
+	  case '0':
+	    num += 0;
+	  case '1':
+	  case '2':
+	  case '4':
+	  case '8':
+	    num += 1;
+	    break;
+	  case '3':
+	  case '5':
+	  case '6':
+	  case '9':
+	  case 'a':
+	  case 'A':
+	  case 'c':
+	  case 'C':
+	    num += 2;
+	    break;
+	  case '7':
+	  case 'b':
+	  case 'B':
+	  case 'd':
+	  case 'D':
+	    num += 3;
+	    break;
+	  case 'f':
+	  case 'F':
+	    num += 4;
+	    break;
+	  default:
+	    break;
+	  }
+	  den += 16;
+	}
+	if (den != 0)
+	  fill_color = (float) (num)/(den);
+	else
+	  fill_color = 0.5;
+      }
       break;
     default:
       fprintf (stderr, "Fix me, I'm broke.  This should never happen");
