@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.15 1999/09/05 15:00:14 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.16 1999/09/05 18:02:44 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -386,7 +386,8 @@ static pdf_obj *stack[PS_STACK_SIZE];
 static top_stack;
 
 double x_state, y_state;
-int move_pending = 0;
+static int state = 0;
+double fig_width, fig_height, fig_llx, fig_lly, fig_urx, fig_ury;
 
 #define PUSH(o) { \
   if (top_stack<PS_STACK_SIZE) { \
@@ -446,6 +447,8 @@ void dump_stack()
 #define CURRENTPOINT    35
 #define NEG    	        36
 #define ROTATE          37
+#define TEXFIG          38
+#define ETEXFIG         39
 #define FONTNAME	99
 
 struct operators 
@@ -487,12 +490,13 @@ struct operators
   {"setrgbcolor", SETRGBCOLOR},
   {"show", SHOW},
   {"showpage", SHOWPAGE},
+  {"startTexFig", TEXFIG},
+  {"endTexFig", ETEXFIG},
   {"stroke", STROKE},  
   {"sub", SUB},  
   {"translate", TRANSLATE},
   {"truncate", TRUNCATE}
 };
-
 
 static int lookup_operator(char *token)
 {
@@ -511,7 +515,6 @@ static int lookup_operator(char *token)
   return operator;
 }
 
-static int state = 0;
 
 static int do_operator(char *token)
 {
@@ -1025,6 +1028,33 @@ static int do_operator(char *token)
       RELEASE (tmp1);
     }
     break;
+  case TEXFIG:
+    if ((tmp6 = POP_STACK()) && (tmp6 -> type == PDF_NUMBER) &&
+	(tmp5 = POP_STACK()) && (tmp5 -> type == PDF_NUMBER) &&
+	(tmp4 = POP_STACK()) && (tmp4 -> type == PDF_NUMBER) &&
+	(tmp3 = POP_STACK()) && (tmp3 -> type == PDF_NUMBER) &&
+	(tmp2 = POP_STACK()) && (tmp2 -> type == PDF_NUMBER) &&
+	(tmp1 = POP_STACK()) && (tmp1 -> type == PDF_NUMBER)) {
+      double dvi2pts = dev_dvi2pts();
+      fig_width = pdf_number_value(tmp1)*dvi2pts;
+      fig_height = pdf_number_value(tmp2)*dvi2pts;
+      fig_llx = pdf_number_value(tmp3)*dvi2pts;
+      fig_lly = pdf_number_value(tmp4)*dvi2pts;
+      fig_urx = pdf_number_value(tmp5)*dvi2pts;
+      fig_ury = pdf_number_value(tmp6)*dvi2pts;
+    }
+    if (tmp1) pdf_release_obj(tmp1);
+    if (tmp2) pdf_release_obj(tmp2);
+    if (tmp3) pdf_release_obj(tmp3);
+    if (tmp4) pdf_release_obj(tmp4);
+    if (tmp5) pdf_release_obj(tmp5);
+    if (tmp6) pdf_release_obj(tmp6);
+    break;
+  case ETEXFIG: /* Don't do much for now */
+    fig_width = 0.0; fig_height = 0.0;
+    fig_llx = 0.0; fig_lly = 0.0;
+    fig_urx = 0.0; fig_ury = 0.0;
+    break;
   case TRANSLATE:
     if ((tmp2 = POP_STACK()) &&  tmp2->type == PDF_NUMBER &&
 	(tmp1 = POP_STACK()) && tmp1->type == PDF_NUMBER) {
@@ -1053,7 +1083,8 @@ static int do_operator(char *token)
     PUSH (pdf_new_string (token, strlen(token)));
     break;
   default: 
-    fprintf (stderr, "\nUnknown PS operator: %s\n", token);
+    fprintf (stderr, "\nUnknown PS operator: \"%s\"\n", token);
+    fprintf (stderr, "\nUnknown PS operator: %d\n", operator);
     error = 1;
     break;
   }
@@ -1098,7 +1129,7 @@ int parse_contents (FILE *image_file)
   return !error;
 }
 
-int do_raw_ps_special (char **start, char* end)
+int do_raw_ps_special (char **start, char* end, int cleanup)
 {
   char *token;
   int error = 0;
@@ -1125,15 +1156,22 @@ int do_raw_ps_special (char **start, char* end)
     }
     skip_white (start, end);
   }
+  if (cleanup)
+    mp_cleanup(1);
   return !error;
 }
 
-static void mp_cleanup (void)
+void mp_cleanup (int sloppy_ok)
 {
   release_fonts();
-  state = 0;
+  if (state != 0) {
+    if (!sloppy_ok)
+      fprintf (stderr, "mp_cleanup(): State not zero\n");
+    state = 0;
+  }
   if (top_stack != 0) {
-    fprintf (stderr, "\nMetaPost: PS stack not empty at end of figure!\n");
+    if (!sloppy_ok)
+      fprintf (stderr, "\nPS/MetaPost: PS stack not empty at end of figure!\n");
   }
   /* Cleanup paths */
   while (top_stack > 0) {
@@ -1142,8 +1180,10 @@ static void mp_cleanup (void)
       pdf_release_obj (p);
   }
   if (n_path_pts > 0) {
-    fprintf (stderr, "\nMetaPost: Pending path at end of figure!\n");
-    dump_path ();
+    if (!sloppy_ok) {
+      fprintf (stderr, "\nPS/MetaPost: Pending path at end of figure!\n");
+      dump_path (); 
+    }
     void_path ();
   }
   if (max_path_pts > 0) {
@@ -1182,9 +1222,20 @@ pdf_obj *mp_include (FILE *image_file,  struct xform_info *p,
      /* Finish off the form */
      end_form_xobj();
    }
-   mp_cleanup();
+   mp_cleanup(0);
    return xobj;
 }
 
-
-
+struct xform_info *texfig_info (void)
+{
+  struct xform_info *p;
+  p = new_xform_info ();
+  p -> user_bbox = 1;
+  p -> width = fig_width;
+  p -> height = fig_height;
+  p -> llx = fig_llx;
+  p -> lly = fig_lly;
+  p -> urx = fig_urx;
+  p -> ury = fig_ury;
+  return p;
+}

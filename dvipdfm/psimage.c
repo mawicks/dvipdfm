@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/psimage.c,v 1.4 1999/09/05 02:56:36 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/psimage.c,v 1.5 1999/09/05 18:02:45 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -132,7 +132,7 @@ int check_for_ps (FILE *image_file)
 {
   rewind (image_file);
   mfgets (work_buffer, WORK_BUFFER_SIZE, image_file);
-  if (!strncmp (work_buffer, "%!PS", 4))
+  if (!strncmp (work_buffer, "%!", 2))
     return 1;
   return 0;
 }
