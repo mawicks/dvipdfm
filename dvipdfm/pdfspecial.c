@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.20 1998/12/05 17:25:40 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.21 1998/12/06 21:15:32 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -504,7 +504,7 @@ static void do_bcolor(char **start, char *end)
   pdf_obj *color_array;
 #ifdef MEM_DEBUG
   MEM_START
-#endif MEM_DEBUG
+#endif /* MEM_DEBUG */
   skip_white(start, end);
   if ((color_array = parse_pdf_object(start, end)) == NULL ||
       (color_array -> type != PDF_ARRAY && 
@@ -544,7 +544,7 @@ static void do_bcolor(char **start, char *end)
   pdf_release_obj (color_array);
 #ifdef MEM_DEBUG
   MEM_END
-#endif MEM_DEBUG
+#endif /* MEM_DEBUG */
   return;
 }
 
@@ -565,7 +565,7 @@ static void do_ecolor(void)
 {
 #ifdef MEM_DEBUG
   fprintf (debugfile, "(do_ecolor)\n");
-#endif MEM_DEBUG
+#endif /* MEM_DEBUG */
   dev_end_color();
 }
 
@@ -1312,6 +1312,10 @@ void pdf_finish_specials (void)
     if (named_references[i].object != NULL) {
       pdf_release_obj (named_references[i].object);
       named_references[i].object = NULL;
+    }
+    if (named_references[i].res_name != NULL) {
+      RELEASE (named_references[i].res_name);
+      named_references[i].res_name = NULL;
     }
     RELEASE (named_references[i].name);
   }

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mem.h,v 1.3 1998/12/05 11:47:24 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mem.h,v 1.4 1998/12/06 21:15:31 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -45,5 +45,5 @@ extern FILE *debugfile;
 #define NEW(n,type) (type *)(new (((size_t) (n))*sizeof(type),NULL,0))
 #define RENEW(p,n,type) (type *)(renew ((p),(n)*sizeof(type),NULL,0))
 #define RELEASE(p) release ((p),NULL,0)
-#endif MEM_DEBUG
+#endif /* MEM_DEBUG */
 #endif /* MEM_H */

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.8 1998/12/05 11:47:24 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.9 1998/12/06 21:15:31 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -527,16 +527,16 @@ static void do_moveto (SIGNED_QUAD x, SIGNED_QUAD y)
   dev_moveto (x*dvi2dev_x, y*dvi2dev_y);
 }
 
-static void do_right (SIGNED_QUAD ch)
+static void do_right (SIGNED_QUAD x)
 {
-  dvi_state.h += ch;
-  dev_moveright (ch*dvi2dev_x);
+  dvi_state.h += x;
+  dev_moveright (x*dvi2dev_x);
   /*  do_moveto (dvi_state.h, dvi_state.v); */
 }
 
-static void do_down (SIGNED_QUAD ch)
+static void do_down (SIGNED_QUAD y)
 {
-  dvi_state.v += ch;
+  dvi_state.v += y;
   do_moveto (dvi_state.h, dvi_state.v);
 }
 

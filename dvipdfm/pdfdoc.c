@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.19 1998/12/05 17:25:40 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.20 1998/12/06 21:15:32 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -491,6 +491,8 @@ static void finish_dests_tree (void)
     return;
   }
   kid = pdf_new_dict ();
+  /* Sort before writing any /Dests entries */
+  qsort(dests, number_dests, sizeof(dests[0]), cmp_dest);
   /* Make /Limits key for kid */
   tmp1 = pdf_new_array();
   pdf_add_array (tmp1, pdf_new_string (dests[0].name,
@@ -502,7 +504,6 @@ static void finish_dests_tree (void)
 		tmp1);
   /* Build /Names array for kid */
   name_array = pdf_new_array ();
-  qsort(dests, number_dests, sizeof(dests[0]), cmp_dest);
   for (i=0; i<number_dests; i++) {
     pdf_add_array (name_array, pdf_new_string (dests[i].name,
 					       dests[i].length));

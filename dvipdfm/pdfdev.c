@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.13 1998/12/05 15:23:07 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.14 1998/12/06 21:15:31 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -111,7 +111,8 @@ static char format_buffer[256];
     Unfortunately, positive is up, which doesn't agree with TeX's convention.  */
 
 static double dev_xpos, dev_ypos; 
-
+static double text_xorigin = 0.0, text_yorigin = 0.0,
+  text_leading =0.0;
 
 int n_dev_fonts = 0;
 int current_font = -1;
@@ -128,19 +129,28 @@ struct dev_font {
   pdf_obj *font_resource;
 } dev_font[MAX_DEVICE_FONTS];
 
+static void reset_text_state(void)
+{
+  text_xorigin = 0.0;
+  text_yorigin = 0.0;
+  text_leading = 0.0;
+}
+
+
 static void text_mode (void)
 {
   switch (motion_state) {
   case NO_MODE:
   case GRAPHICS_MODE:
     pdf_doc_add_to_page (" BT", 3);
+    reset_text_state();
     /* Following may be necessary after a rule (and also after
        specials) */
-    if (current_font != -1) {
+    /*    if (current_font != -1) {
       sprintf (format_buffer, " /%s %g Tf", dev_font[current_font].short_name,
 	       ROUND(dev_font[current_font].ptsize*DPI/72,0.01));
       pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
-    }
+      } */
     break;
   case STRING_MODE:
     pdf_doc_add_to_page (")", 1);  /*  Fall through */
@@ -171,6 +181,7 @@ static void string_mode (void)
  case NO_MODE:
  case GRAPHICS_MODE:
    pdf_doc_add_to_page (" BT", 3); /* Fall through */
+   reset_text_state();
     /* Following may be necessary after a rule (and also after
        specials) */
    if (current_font != -1) {
@@ -179,8 +190,18 @@ static void string_mode (void)
      pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
    }
  case TEXT_MODE:
-   sprintf (format_buffer, " 1 0 0 1 %g %g Tm [",
-	    ROUND(dev_xpos,0.01), ROUND(dev_ypos,0.01));
+   if (ROUND(dev_xpos-text_xorigin,0.01) == 0.0 &&
+       (ROUND(dev_ypos-text_yorigin-text_leading,0.01) == 0.0)) {
+     sprintf (format_buffer, " T*[");
+   }
+   else {
+     sprintf (format_buffer, " %g %g TD[",
+	      ROUND(dev_xpos-text_xorigin,0.01),
+	      ROUND(dev_ypos-text_yorigin,0.01));
+     text_leading = ROUND(dev_ypos-text_yorigin,0.01);
+   }
+   text_xorigin = dev_xpos;
+   text_yorigin = dev_ypos;
    pdf_doc_add_to_page (format_buffer, strlen(format_buffer)); /* Fall
 								  through */
  case LINE_MODE:
@@ -196,6 +217,7 @@ static void line_mode (void)
  case NO_MODE:
  case GRAPHICS_MODE:
    pdf_doc_add_to_page (" BT", 3); /* Fall through */
+   reset_text_state();
     /* Following may be necessary after a rule (and also after
        specials) */
    if (current_font != -1) {
@@ -571,14 +593,16 @@ void dev_select_font (long tex_font_id)
     ERROR ("dev_change_to_font:  dvi wants a font that isn't loaded");
   }
   text_mode();
-  sprintf (format_buffer, " /%s %g Tf", dev_font[i].short_name,
-	   ROUND(dev_font[i].ptsize*DPI/72,0.01));
-  pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
-  current_font = i;
-  current_ptsize = dev_font[i].ptsize;
-  /* Add to Font list in Resource dictionary for this page */
-  pdf_doc_add_to_page_fonts (dev_font[i].short_name,
-			     pdf_link_obj(dev_font[i].font_resource));
+  if (current_font != i) {
+    sprintf (format_buffer, " /%s %g Tf", dev_font[i].short_name,
+	     ROUND(dev_font[i].ptsize*DPI/72,0.01));
+    pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
+    current_font = i;
+    current_ptsize = dev_font[i].ptsize;
+    /* Add to Font list in Resource dictionary for this page */
+    pdf_doc_add_to_page_fonts (dev_font[i].short_name,
+			       pdf_link_obj(dev_font[i].font_resource));
+  }
 #ifdef MEM_DEBUG
   fprintf (debugfile, "(dev_select_font left)\n");
 #endif
@@ -644,7 +668,7 @@ void dev_moveright (double x)
   /* This moveright is only for text (not rules) 
      No sense doing this unless in some kind of text mode already.
      In other words, don't go enter LINE or STRING mode just
-     to do this. The reason is a moveright in graphics mode isn't
+     to do this. A moveright in graphics mode isn't
      easy to implement in PDF.  The driver should always
      do an absolute dev_moveto before a rule */
 
