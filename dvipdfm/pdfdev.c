@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.110 2001/05/29 17:43:00 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.111 2001/07/26 15:09:00 mwicks Exp $
  
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1078,7 +1078,7 @@ int dev_locate_font (const char *tex_name, spt_t ptsize)
     short_name[0] = 'F';
     inttoa (short_name+1, num_phys_fonts+1);
     if ((font_id = type1_font (font_name, tfm_id,
-			       short_name, encoding_id, remap))>=0) {
+			       short_name, encoding_id, remap, map_record ->extend))>=0) {
       font_format = TYPE1;
 #ifdef HAVE_TTF_FORMATS
     } else if ((font_id = ttf_font (font_name, tfm_id,
