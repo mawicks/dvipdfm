@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.13 1998/12/05 17:25:40 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.14 1998/12/05 18:04:34 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -315,6 +315,9 @@ static void release_indirect (pdf_indirect *data)
 static void write_indirect (FILE *file, const pdf_indirect *indirect)
 {
   int length;
+#ifdef MEM_DEBUG
+MEM_START
+#endif
   if (indirect -> dirty) {
     if (file == stderr) {
       pdf_out (file, "{d}", 3);
@@ -328,8 +331,17 @@ static void write_indirect (FILE *file, const pdf_indirect *indirect)
 	fprintf (stderr, "\nwrite_indirect, label=%d, from_file=%p, current_file=%p\n", indirect -> label, indirect->dirty_file, pdf_input_file);
 	ERROR ("write_indirect:  input PDF file doesn't match object");
       }
+#ifdef MEM_DEBUG
+      fprintf (debugfile, "Doing some laundry..\n");
+#endif
       clean = pdf_ref_file_obj (indirect -> label);
+#ifdef MEM_DEBUG
+      fprintf (debugfile, "Done with laundry. Here it is...\n");
+#endif
       pdf_write_obj (file, clean);
+#ifdef MEM_DEBUG
+      fprintf (debugfile, "Releasing clean part of laundry..\n");
+#endif
       pdf_release_obj (clean);
     }
   } else {
@@ -337,6 +349,9 @@ static void write_indirect (FILE *file, const pdf_indirect *indirect)
 		      indirect -> generation);
     pdf_out (file, format_buffer, length);
   }
+#ifdef MEM_DEBUG
+MEM_END
+#endif
 }
 
 pdf_obj *pdf_new_null (void)
@@ -1126,7 +1141,8 @@ struct object
 {
   unsigned long position;
   unsigned generation;
-  /* Object numbers in original file and new file must be different
+  /* Object numbers in original file and new file must have different
+     object numbers.
      new_ref provides a reference for the object in the new file
      object space.  When it is first set, an object in the old file
      is copied to the new file with a new number.  new_ref remains set
@@ -1169,22 +1185,33 @@ long next_object (unsigned long obj)
 pdf_obj *pdf_ref_file_obj (unsigned long obj_no)
 {
   pdf_obj *direct, *indirect;
+#ifdef MEM_DEBUG
+MEM_START
+#endif
   if (obj_no < 0 || obj_no >= num_input_objects) {
     fprintf (stderr, "\n\npdf_ref_file_obj: nonexistent object\n");
     return NULL;
   }
   if (xref_table[obj_no].indirect != NULL) {
-    fprintf (stderr, "\npdf_ref_file_obj: obj=%ld is already referenced\n",obj_no);
     return pdf_link_obj(xref_table[obj_no].indirect);
   }
+#ifdef MEM_DEBUG
+  fprintf (debugfile, "New object...reading object from file\n");
+#endif
   if ((direct = pdf_read_object (obj_no)) == NULL) {
     fprintf (stderr, "\npdf_ref_file_obj: Could not read object\n");
     return NULL;
   }
+#ifdef MEM_DEBUG
+  fprintf (debugfile, "Building indirect reference\n");
+#endif
   indirect = pdf_ref_obj (direct);
   xref_table[obj_no].indirect = indirect;
   xref_table[obj_no].direct = direct;
   /* Make sure the caller can't doesn't free this object */
+#ifdef MEM_DEBUG
+MEM_END
+#endif
   return pdf_link_obj(indirect);
 }
 
@@ -1212,6 +1239,9 @@ pdf_obj *pdf_read_object (unsigned long obj_no)
   long start_pos, end_pos;
   char *buffer, *number, *parse_pointer, *end;
   pdf_obj *result;
+#ifdef MEM_DEBUG
+MEM_START
+#endif
   if (debug) {
     fprintf (stderr, "\nread_object: obj=%ld\n", obj_no);
   }
@@ -1270,6 +1300,9 @@ pdf_obj *pdf_read_object (unsigned long obj_no)
   }
   RELEASE (buffer);
   return (result);
+#ifdef MEM_DEBUG
+MEM_END
+#endif
 }
 /* pdf_deref_obj always returns a link instead of the original */ 
 pdf_obj *pdf_deref_obj (pdf_obj *obj)
@@ -1401,11 +1434,6 @@ MEM_START
     return NULL;
   }
 #ifdef MEM_DEBUG
-  fprintf (debugfile, "Where am I\n");
-  fprintf (stderr, "\nmain trailer:\n");
-  pdf_write_obj (stderr, main_trailer);
-#endif
-#ifdef MEM_DEBUG
   fprintf (debugfile, "Looking up catalog\n");
 #endif
   if (pdf_lookup_dict (main_trailer, "Root") == NULL ||
@@ -1442,9 +1470,6 @@ MEM_START
     }
   }
 #ifdef MEM_DEBUG
-  fprintf (stderr, "Main trailer is\n");
-  pdf_write_obj(stderr, main_trailer);
-  pdf_write_obj(stderr, prev_trailer);
 MEM_END
 #endif  
   pdf_release_obj (prev_trailer);
@@ -1474,8 +1499,6 @@ MEM_START
     fprintf (stderr, "\nDone with xref:\n");
   }
 #ifdef MEM_DEBUG
-  fprintf (stderr, "in pdf_open, trailer is\n");
-  pdf_write_obj (stderr, trailer);
   MEM_END
 #endif
   return trailer;
@@ -1505,6 +1528,14 @@ void pdf_close (void)
       }
     }
   } while (!done);
+  /* Now take care of the indirect objects
+     They had to be left around until all the direct
+     objects were flushed */
+  for (i=0; i<num_input_objects; i++) {
+    if (xref_table[i].indirect != NULL) {
+      pdf_release_obj (xref_table[i].indirect);
+    }
+  }
 #ifdef MEM_DEBUG
   fprintf (debugfile, "Releasing XREF Table\n");
 #endif
