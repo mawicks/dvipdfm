@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.26 1998/12/23 16:46:55 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.27 1998/12/24 05:12:46 mwicks Exp $
  
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -40,7 +40,7 @@
 
 static pdf_obj *catalog = NULL;
 static pdf_obj *docinfo = NULL;
-static pdf_obj *page_tree = NULL, *page_tree_label = NULL, *pages_kids = NULL;
+static pdf_obj *page_tree = NULL, *page_tree_ref = NULL, *pages_kids = NULL;
 
 int outline_depth=0;
 static struct 
@@ -109,16 +109,16 @@ static void start_page_tree (void)
   }
   /* Create empty page tree */
   page_tree = pdf_new_dict();
-  page_tree_label = pdf_ref_obj (page_tree);
-  /* page_tree goes away fairly soon.  Use page_tree_label
-     to refer to this object.  page_tree_label is kept
-     until document is closed */
+  page_tree_ref = pdf_ref_obj (page_tree);
+  /* Both page_tree and page_tree_ref are kept open until the
+     document is closed.  This allows the user to write to page_tree
+     is he choses. */
   /* Link it into the catalog */
   /* Point /Pages attribute to indirect reference since we
      haven't built the tree yet */
   pdf_add_dict (catalog,
 		pdf_new_name ("Pages"),
-		pdf_link_obj (page_tree_label));
+		pdf_link_obj (page_tree_ref));
   glob_page_bop = pdf_new_stream(0);
   glob_page_eop = pdf_new_stream(0);
   return;
@@ -452,7 +452,6 @@ unsigned long max_dests = 0;
 
 static number_dests = 0;
 
-
 static pdf_obj *dests_dict;
 
 static void start_dests_tree (void)
@@ -483,47 +482,80 @@ static int CDECL cmp_dest (const void *d1, const void *d2)
   return (((dest_entry *) d1) -> length < ((dest_entry *) d2) -> length ? -1 : 1 );
 }
 
+static pdf_obj *name_subtree (dest_entry *dests, unsigned long ndests)
+{
+#define CLUSTER 4
+  int i;
+  pdf_obj *result, *name_array, *limit_array, *kid_array;
+  fprintf (stderr, "\n\n*****name_subtree*****\n\n");
+  for (i=0; i<ndests; i++) {
+    fprintf (stderr, "%s\n", dests[i].name);
+  }
+  fprintf (stderr, "ndests=%d\n", ndests);
+  result = pdf_new_dict();
+  limit_array = pdf_new_array();
+  pdf_add_dict (result, pdf_new_name ("Limits"), limit_array);
+  pdf_add_array (limit_array, pdf_new_string(dests[0].name,
+					     dests[0].length)); 
+  pdf_add_array (limit_array, pdf_new_string(dests[ndests-1].name,
+					     dests[ndests-1].length));
+  if (ndests > 0 && ndests <= CLUSTER) {
+    int i;
+    name_array = pdf_new_array();
+    pdf_add_dict (result, pdf_new_name ("Names"),
+		  name_array);
+    for (i=0; i<ndests; i++) {
+      pdf_add_array (name_array, pdf_new_string (dests[i].name,
+						 dests[i].length));
+      RELEASE (dests[i].name);
+      pdf_add_array (name_array, dests[i].array);
+    }
+  } else if (ndests > 0) {
+    int i;
+    kid_array = pdf_new_array();
+    pdf_add_dict (result, pdf_new_name ("Kids"), kid_array);
+    for (i=0; i<CLUSTER; i++) {
+      pdf_obj *subtree;
+      unsigned long start, end;
+      start = (i*ndests)/CLUSTER;
+      end = ((i+1)*ndests)/CLUSTER;
+      subtree = name_subtree (dests+start, end-start);
+      pdf_add_array (kid_array, pdf_ref_obj (subtree));
+      pdf_release_obj (subtree);
+      fprintf (stderr, "kid array is\n");
+      pdf_write_obj (stderr, kid_array);
+      fprintf (stderr, "\n");
+    }
+  }
+  pdf_write_obj (stderr, result);
+  fprintf(stderr, "\n\n");
+  return result;
+}
+
 static void finish_dests_tree (void)
 {
   pdf_obj *kid, *name_array;
   int i;
+  fprintf (stderr, "\n\n*****finish_dests_Treee*****\n\n");
+  fprintf (stderr, "ndests=%d\n", number_dests);
   if (number_dests <= 0){
     pdf_release_obj (dests_dict);
     return;
   }
-  kid = pdf_new_dict ();
   /* Sort before writing any /Dests entries */
   qsort(dests, number_dests, sizeof(dests[0]), cmp_dest);
-  /* Make /Limits key for kid */
-  tmp1 = pdf_new_array();
-  pdf_add_array (tmp1, pdf_new_string (dests[0].name,
- 				       dests[0].length));
-  pdf_add_array (tmp1, pdf_new_string (dests[number_dests-1].name,
-				       dests[number_dests-1].length));
-  pdf_add_dict (kid,
-		pdf_new_name ("Limits"),
-		tmp1);
-  /* Build /Names array for kid */
-  name_array = pdf_new_array ();
-  for (i=0; i<number_dests; i++) {
-    pdf_add_array (name_array, pdf_new_string (dests[i].name,
-					       dests[i].length));
-    RELEASE (dests[i].name);
-    /* Don't need link_obj on the following name since we
-       are doing away with dests */
-    pdf_add_array (name_array, dests[i].array);
-  }
+  kid = name_subtree (dests, number_dests);
+  /* Each entry in dests has been assigned to another object, so
+     we can free the entire array without freeing the entries. */
   RELEASE (dests);
-  number_dests = 0;
-  pdf_add_dict (kid,
-		pdf_new_name ("Names"),
-		name_array);
-  /* Point /Dests dictionary to the kid */
-  tmp1 = pdf_new_array();
+  pdf_merge_dict (dests_dict, kid);
+
+  /* Point /Dests dictionary to the kid */  
+  /*  tmp1 = pdf_new_array();
   pdf_add_array (tmp1, pdf_ref_obj (kid));
   pdf_add_dict (dests_dict,
 		pdf_new_name ("Kids"),
-		tmp1);
+		tmp1); */
   /* Done with kid.  We only need the reference */
   pdf_release_obj (kid);
   /* Done with dests */
@@ -837,7 +869,7 @@ MEM_START
 		pdf_new_name ("Page"));
   pdf_add_dict (pages[page_count].page_dict,
 		pdf_new_name ("Parent"),
-		pdf_link_obj (page_tree_label));
+		pdf_link_obj (page_tree_ref));
   tmp1 = pdf_new_array ();
   pdf_add_array (tmp1, pdf_ref_obj (glob_page_bop));
   pdf_add_array (tmp1, pdf_ref_obj (this_page_bop));
@@ -899,7 +931,7 @@ void pdf_doc_close ()
   if (this_page_contents != NULL) {
     finish_last_page();
   }
-  pdf_release_obj (page_tree_label);
+  pdf_release_obj (page_tree_ref);
   pdf_release_obj (pages_kids);
   pdf_set_number (page_count_obj, page_count);
   pdf_release_obj (page_count_obj);

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.31 1998/12/23 20:58:44 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.32 1998/12/24 05:12:46 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -986,7 +986,7 @@ void pdf_write_obj (FILE *file, const pdf_obj *object)
     ERROR ("pdf_write_obj:  Called with invalid object");
   }
   if (file == stderr)
-    fprintf (stderr, "{%p:%d[%p]}", object, object -> refcount, object ->data);
+    fprintf (stderr, "{%d}", object -> refcount);
   switch (object -> type) {
   case PDF_BOOLEAN:
     write_boolean (file, object -> data);
