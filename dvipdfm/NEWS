@@ -1,5 +1,11 @@
 December 14, 1998.
 
+   Version 0.8.3 fixes a memory leak in the vf code found by
+Akiro Kakuto and hopefully makes running ./configure a bit easier.
+
+   Version 0.8.1 and 0.8.2 fix an overflow in the kerning code
+which occurs for large horizontal motions.
+
    Version 0.8 supports virtual fonts.  Much of the code has been
 reorganized and rewritten.  It is nearly an order of magnitude faster than
 earlier versions.  Version 0.8 no longer requires the kpath source

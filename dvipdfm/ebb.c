@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.10 1998/12/14 21:10:01 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.11 1998/12/18 19:42:35 mwicks Exp $
 
     This is ebb, a bounding box extraction program.
     Copyright (C) 1998  by Mark A. Wicks
@@ -144,8 +144,7 @@ void do_pdf (FILE *file, char *filename)
   if (verbose) {
     fprintf (stderr, "%s looks like a PDF file...", filename);
   }
-  /*  if ((trailer = pdf_open (filename)) == NULL) { */
-  if ((trailer = pdf_open ("transistor.pdf")) == NULL) {
+  if ((trailer = pdf_open (filename)) == NULL) {
     fprintf (stderr, "Corrupt PDF file?\n");
     return;
   };

@@ -522,7 +522,7 @@ fi
 
 
 cat >> confdefs.h <<\EOF
-#define VERSION "0.8.3"
+#define VERSION "0.8.4"
 EOF
 
 cat >> confdefs.h <<\EOF
