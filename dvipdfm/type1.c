@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.112 2000/07/12 01:32:15 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.113 2000/07/13 02:55:34 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -148,15 +148,23 @@ pdf_obj *find_encoding_differences (pdf_obj *encoding)
   return result;
 }
 
-pdf_obj *make_absolute_encoding (pdf_obj *encoding)
+pdf_obj *make_differences_encoding (pdf_obj *encoding)
 {
   int i;
+  int skipping = 0;
   pdf_obj *tmp, *result = pdf_new_array ();
-  pdf_add_array (result, pdf_new_number (0));
   for (i=0; i<256; i++) {
     tmp = pdf_get_array (encoding, i);
     if (tmp && tmp -> type == PDF_NAME) {
-      pdf_add_array (result, pdf_link_obj(tmp));
+      if (strcmp (".notdef", pdf_name_value (tmp))) {
+	if (skipping) {
+	  pdf_add_array (result, pdf_new_number (i));
+	}
+	pdf_add_array (result, pdf_link_obj(tmp));
+	  skipping = 0;
+      } else {
+	skipping = 1;
+      }
     } else {
       ERROR ("Encoding file may be incorrect\n");
     }
@@ -243,7 +251,7 @@ int get_encoding (const char *enc_name)
       fprintf (stderr, ")");
     }
     /*    differences = find_encoding_differences (encoding); */
-    differences = make_absolute_encoding (encoding);
+    differences = make_differences_encoding (encoding);
     /* Put the glyph names into a conventional array */
     if (num_encodings >= max_encodings) {
        max_encodings += MAX_ENCODINGS;
@@ -518,6 +526,7 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
   if (filtered && lead != start) {
     memcpy (filtered_pointer, lead, start-lead);
     filtered_pointer += start-lead;
+    lead = start;
   }
   while (start < end) {
     char *ident;
