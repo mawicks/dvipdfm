@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.24 1998/12/09 04:04:30 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.25 1998/12/09 04:41:23 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -558,6 +558,8 @@ Maybe in the future, I'll substitute some other font.");
       dev_font[i].type = VIRTUAL;
     }
   } else {	/* Font name was found */
+    /* Copy the parts that do not depend on point size */
+    /* Rebuild everything else */
     dev_font[thisfont].type = dev_font[i].type;
     dev_font[thisfont].tfm_font_id = dev_font[i].tfm_font_id;
     switch (dev_font[i].type) {
@@ -567,7 +569,11 @@ Maybe in the future, I'll substitute some other font.");
 	(dev_font[i].font_resource);
       break;
     case VIRTUAL:
-      dev_font[thisfont].vf_font_id = dev_font[i].vf_font_id;
+      /* Someday this should be done right so we don't have
+         to call vf_font_locate and reload the vf file for every
+         point size ! We won't check the return code since
+         we've located it once before we assume its still there  */
+      dev_font[thisfont].vf_font_id = vf_font_locate (tex_name, ptsize);
       break;
     }
   }
