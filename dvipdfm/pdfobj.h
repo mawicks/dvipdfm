@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.h,v 1.7 1998/12/04 20:26:07 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.h,v 1.8 1998/12/10 22:29:33 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -147,7 +147,6 @@ void *pdf_string_value (pdf_obj *object);
 #define pdf_obj_string_length(s) (((pdf_string *)((s)->data)) -> length)
 
 pdf_obj *pdf_new_name (const char *name);  /* Name does not include the / */
-int pdf_match_name (const pdf_obj *name_obj, const char *name);  /* Name does not include the / */
 int pdf_check_name (const char *name);  /* Tell whether name is a
 					   valid PDF name */
 

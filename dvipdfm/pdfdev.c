@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.31 1998/12/10 17:52:17 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.32 1998/12/10 22:29:32 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -113,24 +113,28 @@ static char format_buffer[256];
     Unfortunately, positive is up, which doesn't agree with TeX's convention.  */
 
 static double text_xorigin = 0.0, text_yorigin = 0.0,
-  text_offset = 0.0, text_leading =0.0;
+  text_offset = 0.0, text_leading = 0.0;
 
 int n_dev_fonts = 0;
 int n_phys_fonts = 0;
 int current_font = -1;
 int current_phys_font = -1;
 double current_ptsize = 1.0;
+mpt_unit current_mptsize = 1.0;
 
 #define MAX_DEVICE_FONTS 256
 
 #define PHYSICAL 1
 #define VIRTUAL 2
+
 static struct dev_font {
   char short_name[7];	/* Needs to be big enough to hold name "Fxxx"
 			   where xxx is number of largest font */
+  int used_on_this_page;
   char *tex_name;
   int tfm_font_id;
   double ptsize;
+  mpt_unit mptsize;
   pdf_obj *font_resource;
   int type;
   int vf_font_id; /* Only used for type = VIRTUAL */
@@ -138,10 +142,10 @@ static struct dev_font {
 
 static void reset_text_state(void)
 {
-  text_xorigin = 0.0;
-  text_yorigin = 0.0;
-  text_leading = 0.0;
-  text_offset = 0.0;
+  text_xorigin = 0;
+  text_yorigin = 0;
+  text_leading = 0;
+  text_offset = 0;
 }
 
 
@@ -189,15 +193,15 @@ static void string_mode (double xpos, double ypos)
     /* Following may be necessary after a rule (and also after
        specials) */
   case TEXT_MODE:
-    delx = ROUND(xpos-text_xorigin, 0.01);
-    if (delx == 0.0 &&
-	(ROUND(ypos-text_yorigin-text_leading,0.01) == 0.0)) {
+    delx = xpos - text_xorigin;
+    if (delx == 0 &&
+	(fabs (ypos-text_yorigin-text_leading) < 0.01)) {
       sprintf (format_buffer, " T*[");
       text_yorigin += text_leading;
     }
     else {
-      dely = ROUND (ypos-text_yorigin, 0.01);
-      sprintf (format_buffer, " %g %g TD[", delx, dely);
+      dely = ypos - text_yorigin;
+      sprintf (format_buffer, " %g %g TD[", ROUND(delx,0.01), ROUND(dely,0.01));
       text_leading = dely;
       text_xorigin = xpos;
       text_yorigin = ypos;
@@ -234,15 +238,18 @@ void dev_close (void)
   pdf_doc_finish ();
 }
 
-
 /*  BOP, EOP, and FONT section.
    BOP and EOP manipulate some of the same data structures
    as the font stuff */ 
 
 static void bop_font_reset(void)
 {
+  int i;
   current_font = -1;
   current_phys_font = -1;
+  for (i=0; i<n_dev_fonts; i++) {
+    dev_font[i].used_on_this_page = 0;
+  }
 }
 
 #define GRAY 1
@@ -570,6 +577,7 @@ Maybe in the future, I'll substitute some other font.");
      effort for the slight increase in storage requirements. */
 
   dev_font[thisfont].ptsize = ptsize;
+  dev_font[thisfont].mptsize = (mpt_unit) (ptsize*1000);
   dev_font[thisfont].tex_name = NEW (strlen(tex_name)+1, char);
   strcpy (dev_font[thisfont].tex_name, tex_name);
   return (thisfont);
@@ -583,6 +591,11 @@ int dev_font_tfm (int dev_font_id)
 double dev_font_size (int dev_font_id)
 {
   return dev_font[dev_font_id].ptsize;
+}
+
+mpt_unit dev_font_mptsize (int dev_font_id)
+{
+  return dev_font[dev_font_id].mptsize;
 }
 
 void dev_close_all_fonts(void)
@@ -609,8 +622,10 @@ void dev_select_font (int dev_font_id)
     ERROR ("dev_change_to_font: dvi wants a font that isn't loaded");
   }
   current_font = dev_font_id;
-  if (dev_font_id >= 0)
+  if (dev_font_id >= 0) {
     current_ptsize = dev_font[dev_font_id].ptsize;
+    current_mptsize = dev_font[dev_font_id].mptsize;
+  }
   else
     current_ptsize = 0.0;
 }
@@ -631,11 +646,14 @@ static void dev_need_phys_font (void)
       dev_font[current_font].type == PHYSICAL) {
     text_mode();
     sprintf (format_buffer, " /%s %g Tf", dev_font[current_font].short_name,
-	     ROUND(dev_font[current_font].ptsize*DPI/72, 0.01));
+	     dev_font[current_font].mptsize/1000.0);
     pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
     /* Add to Font list in Resource dictionary for this page */
-    pdf_doc_add_to_page_fonts (dev_font[current_font].short_name,
-			       pdf_link_obj(dev_font[current_font].font_resource));
+    if (!dev_font[current_font].used_on_this_page) { 
+      pdf_doc_add_to_page_fonts (dev_font[current_font].short_name,
+				 pdf_link_obj(dev_font[current_font].font_resource));
+      dev_font[current_font].used_on_this_page = 1;
+    }
     current_phys_font = current_font;
   }
   if (current_font < 0) {
@@ -657,8 +675,10 @@ void dev_reselect_font(void)
 void dev_set_char (double xpos, double ypos, unsigned ch, double width)
 {
   int len;
-  if (debug) {
-    fprintf (stderr, "(dev_set_char (width=%g)", width);
+  if (0) {
+    fprintf (stderr, "(dev_set_char x=%g, y=%g,width=%g)\n", xpos, ypos,width);
+    fprintf (stderr, "(dev_set_char xorg=%g, x_off=%g, ptsize=%g\n",
+	     text_xorigin, text_offset, current_ptsize);
     if (isprint (ch))
       fprintf (stderr, "(%c)", ch);
     fprintf (stderr, ")");
@@ -667,13 +687,13 @@ void dev_set_char (double xpos, double ypos, unsigned ch, double width)
   case PHYSICAL:
     dev_need_phys_font(); /* Force a Tf since we are actually trying
 			     to write a character */
-    if (ROUND(ypos-text_yorigin,0.01) != 0.0 ||
+    if (ypos != text_yorigin ||
 	fabs(xpos-text_xorigin-text_offset) > current_ptsize)
       text_mode();
     string_mode(xpos, ypos);
-    if (ROUND(xpos-text_xorigin-text_offset,0.01) != 0.0) {
+    if (fabs (xpos-text_xorigin-text_offset) > 0.01) {
       sprintf (format_buffer, ")%g(",
-	       ROUND(1000.0/current_ptsize*(text_xorigin+text_offset-xpos),1.0));
+	       ROUND(1000.0*(text_xorigin+text_offset-xpos)/current_ptsize,1.0));
       pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
       text_offset = xpos-text_xorigin;
     }
@@ -694,7 +714,7 @@ void dev_rule (double xpos, double ypos, double width, double height)
   graphics_mode();
   sprintf (format_buffer, " %g %g m %g %g l %g %g l %g %g l b",
 	   ROUND(xpos,0.01), ROUND(ypos,0.01),
-	   ROUND(xpos,0.01), ROUND(ypos,0.01),
+	   ROUND(xpos+width,0.01), ROUND(ypos,0.01),
 	   ROUND(xpos+width,0.01), ROUND(ypos+height,0.01),
 	   ROUND(xpos,0.01), ROUND(ypos+height,0.01));
   pdf_doc_add_to_page (format_buffer, strlen(format_buffer));

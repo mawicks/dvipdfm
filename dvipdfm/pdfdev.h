@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.h,v 1.9 1998/12/10 02:25:33 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.h,v 1.10 1998/12/10 22:29:32 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -28,6 +28,8 @@
 
 #include "numbers.h"
 
+typedef signed long mpt_unit;
+
 void dev_init (char *outputfile);
 
 void dev_close (void);
@@ -39,6 +41,7 @@ unsigned long dev_tell_ydpi(void);
 int dev_locate_font (char *name, double ptsize);
 int dev_font_tfm (int dev_font_id);
 double dev_font_size (int dev_font_id);
+mpt_unit dev_font_mptsize (int dev_font_id);
 void dev_close_all_fonts (void);
 
 void dev_bop (void);
@@ -48,8 +51,7 @@ void dev_eop (void);
 void dev_select_font (int tex_font_id);
 void dev_reselect_font (void);
 
-void dev_set_char (double xpos, double ypos, unsigned ch, double
-		   width);
+void dev_set_char (double xpos, double ypos, unsigned ch, double width);
 
 void dev_set_page_size (double width, double height);
 

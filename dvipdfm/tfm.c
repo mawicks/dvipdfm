@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.8 1998/12/09 04:04:30 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.c,v 1.9 1998/12/10 22:29:33 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -291,6 +291,17 @@ double tfm_get_width (int font_id, UNSIGNED_PAIR ch)
   charinfo = (tfm[font_id].char_info)[ch-tfm[font_id].bc];
   width_index = (charinfo / 16777216ul);
   return (double) (tfm[font_id].width)[width_index] / 1048576.0;
+}
+
+fixword tfm_get_fw_width (int font_id, UNSIGNED_PAIR ch)
+{
+  UNSIGNED_QUAD charinfo;
+  UNSIGNED_PAIR width_index;
+  if (ch < tfm[font_id].bc || ch > tfm[font_id].ec)
+    ERROR ("tfm_get_width: Character not in tfm file");
+  charinfo = (tfm[font_id].char_info)[ch-tfm[font_id].bc];
+  width_index = (charinfo / 16777216ul);
+  return (tfm[font_id].width)[width_index];
 }
 
 double tfm_get_space (int font_id)

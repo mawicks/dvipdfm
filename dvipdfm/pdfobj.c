@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.16 1998/12/10 17:52:17 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.17 1998/12/10 22:29:32 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -89,6 +89,7 @@ static void release_dict (pdf_dict *data);
 
 static void write_stream (FILE *file, const pdf_stream *stream);
 static void release_stream (pdf_stream *stream);
+static int pdf_match_name (const pdf_obj *name_obj, const char *name);  /* Name does not include the / */
 
 static int debug = 0, verbose = 0;
 
@@ -467,30 +468,24 @@ int pdfobj_escape_c (char *buffer, unsigned char ch)
 {
   int result;
   /* Exit this routine as fast as possible for printable characters */
-  if (isprint (ch) && ch != '(' && ch != ')') {
+  if (isprint (ch) && ch != '(' && ch != ')' && ch != '\\') {
     buffer[0] = ch;
     result = 1;
   }
   else {
+    buffer[0] = '\\';
     switch (ch) {
     case '(':
-      result = sprintf (buffer, "\\(");
+      buffer[1] = '(';
+      result = 2;
     case ')':
-      result = sprintf (buffer, "\\)");
+      buffer[1] = ')';
+      result = 2;
     case '\\':
-      result = sprintf (buffer, "\\\\");
-    case '\n':
-      result = sprintf (buffer, "\\n");
-    case '\r':
-      result = sprintf (buffer, "\\r");
-    case '\t':
-      result = sprintf (buffer, "\\t");
-    case '\b':
-      result = sprintf (buffer, "\\b");
-    case '\f':
-      result = sprintf (buffer, "\\f");
+      buffer[1] = '\\';
+      result = 2;
     default:
-      result = sprintf (buffer, "\\%03o", ch);
+      result = sprintf (buffer+1, "%03o", ch)+1;
     }
   }
   return result;
@@ -567,14 +562,6 @@ pdf_obj *pdf_new_name (const char *name)  /* name does *not* include the / */
     data -> name = NULL;
   return result;
 }
-
-int pdf_match_name (const pdf_obj *name_obj, const char *name_string)
-{
-  pdf_name *data;
-  data = name_obj -> data;
-  return (!strcmp (data -> name, name_string));
-}
-
 
 static void write_name (FILE *file, const pdf_name *name)
 {
@@ -815,6 +802,13 @@ void pdf_merge_dict (pdf_obj *dict1, pdf_obj *dict2)
   }
 }
 
+static int pdf_match_name (const pdf_obj *name_obj, const char *name_string)
+{
+  pdf_name *data;
+  data = name_obj -> data;
+  return (!strcmp (data -> name, name_string));
+}
+
 pdf_obj *pdf_lookup_dict (const pdf_obj *dict, const char *name)
 {
   pdf_dict *data;
@@ -916,7 +910,6 @@ pdf_obj *pdf_stream_dict (pdf_obj *stream)
 void pdf_add_stream (pdf_obj *stream, char *stream_data, unsigned length)
 {
   pdf_stream *data;
-
   if (stream == NULL || stream -> type != PDF_STREAM) {
      ERROR ("pdf_add_stream:  Passed non-stream object");
   }

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.17 1998/12/10 17:52:16 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.18 1998/12/10 22:29:32 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -445,6 +445,7 @@ static int processing_page = 0;
 /* Following are computed "constants" used for unit conversion */
 
 static double dvi2pts = 0.0;
+static fixword mpts2dvi = 0;
 
 static void clear_state (void)
 {
@@ -459,6 +460,8 @@ static void do_scales (void)
   dvi2pts = (double) dvi_unit_num / (double) dvi_unit_den;
   dvi2pts *= (72.0)/(254000.0);
   dvi2pts *= (double) dvi_mag / 1000.0;
+  mpts2dvi = ((double) dvi_unit_den / (double) (dvi_unit_num))*
+    (254000.0/72.0)/dvi_mag*(1<<20);
 }
 
 double dvi_unit_size(void)
@@ -517,6 +520,16 @@ double dvi_dev_ypos (void)
   return -(dvi_state.v*dvi2pts+VOFFSET);
 }
 
+static mpt_unit dvi_dev_mptxpos (void)
+{
+  return (mpt_unit) ((dvi_state.h*dvi2pts+HOFFSET)*1000.0);
+}
+
+static mpt_unit dvi_dev_mptypos (void)
+{
+  return (mpt_unit) (-(dvi_state.v*dvi2pts+VOFFSET)*1000.0);
+}
+
 static void do_moveto (SIGNED_QUAD x, SIGNED_QUAD y)
 {
   dvi_state.h = x;
@@ -546,15 +559,23 @@ void dvi_set (SIGNED_QUAD ch)
      The problem comes from fonts defined in VF files where we don't know the DVI
      size.  It's keeping me sane to keep *point sizes* of *all* fonts in
      the dev.c file and convert them back if necessary */ 
-
-  width = tfm_get_width (dev_font_tfm(current_font), ch) *
-    dev_font_size(current_font);
+  width =
+    dev_font_size(current_font)*tfm_get_width(dev_font_tfm(current_font), ch);
   dev_set_char (dvi_dev_xpos(), dvi_dev_ypos(), ch, width);
   dvi_state.h += width/dvi2pts;
-  if (dvi_debug) {
-    fprintf (stderr, "Done\n");
-  }
 }
+
+void dvi_put (SIGNED_QUAD ch)
+{
+  signed long width;
+  if (current_font < 0) {
+    ERROR ("dvi_put:  No font selected");
+  }
+  width = dev_font_size(current_font)*tfm_get_width(dev_font_tfm(current_font), ch)*1000.0;
+  dev_set_char (dvi_dev_mptxpos(), dvi_dev_mptypos(), ch, width);
+  return;
+}
+
 
 void dvi_rule (SIGNED_QUAD width, SIGNED_QUAD height)
 {
@@ -584,22 +605,8 @@ static void do_putrule(void)
   height = get_signed_quad (dvi_file);
   width = get_signed_quad (dvi_file);
   if (width > 0 && height > 0) {
-    do_moveto (dvi_state.h, dvi_state.v);
     dvi_rule (width, height);
-    do_moveto (dvi_state.h, dvi_state.v); 
   }
-}
-
-void dvi_put (SIGNED_QUAD ch)
-{
-  double width;
-  if (current_font < 0) {
-    ERROR ("dvi_put:  No font selected");
-  }
-  width = tfm_get_width (dev_font_tfm(current_font), ch) *
-    dev_font_size(current_font);
-  dev_set_char (dvi_dev_xpos(), dvi_dev_ypos(), ch, width);
-  return;
 }
 
 static void do_put1(void)
@@ -949,20 +956,15 @@ static void do_eop(void)
 void dvi_do_page(int n)  /* Most of the work of actually interpreting
 			    the dvi file is here. */
 {
-  UNSIGNED_BYTE opcode;
+  unsigned char opcode;
   /* Position to beginning of page */
   if (dvi_debug) fprintf (stderr, "Seeking to page %d @ %ld\n", n,
 			  page_loc[n]);
   seek_absolute (dvi_file, page_loc[n]);
   dvi_stack_depth = 0;
   while (1) {
-    opcode = read_byte (dvi_file);
-    if (dvi_debug) {
-      fprintf (stderr, "Opcode: %d", opcode);
-      if (isprint (opcode)) fprintf (stderr, " (%c)\n", opcode);
-      else  fprintf (stderr, "\n");
-    }
-    if (opcode >= SET_CHAR_0 && opcode <= SET_CHAR_127) {
+    opcode = fgetc (dvi_file);
+    if (opcode <= SET_CHAR_127) {
       dvi_set (opcode);
       continue;
     }
@@ -1133,9 +1135,10 @@ void dvi_do_page(int n)  /* Most of the work of actually interpreting
       case POST_POST:
 	ERROR("Unexpected preamble or postamble in dvi file");
 	break;
+      default:
+	ERROR("Unexpected opcode or DVI file ended prematurely");
       }
   }
-}
 
 /* The following are need to implement virtual fonts
    According to documentation, the vf "subroutine"

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mfileio.c,v 1.2 1998/12/02 16:28:56 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mfileio.c,v 1.3 1998/12/10 22:29:32 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -22,8 +22,6 @@
 	mwicks@kettering.edu
 */
 
-	
-
 #include "mfileio.h"
 #include "error.h"
 #include <stdio.h>
@@ -32,18 +30,6 @@
 static void os_error()
 {
   ERROR ("io:  An OS command failed that should not have.\n");
-}
-
-UNSIGNED_BYTE read_byte (FILE *file) 
-{
-  int byte;
-  if (feof(file)) {
-    ERROR ("File ended prematurely");
-  }
-  if ((byte = fgetc (file)) < 0) {
-    ERROR ("read_byte:  OS error");
-  }
-  return (UNSIGNED_BYTE) byte;
 }
 
 void seek_absolute (FILE *file, long pos) 
