@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.4 1999/08/25 21:54:53 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.5 1999/08/25 22:08:46 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -178,11 +178,14 @@ pdf_obj *mp_include (FILE *image_file,  struct xform_info *p,
       xobj = begin_form_xobj (0.0, 0.0, bbllx, bblly, bburx, bbury, res_name);
       if (!xobj)
 	return NULL;
-      res_name = pdf_name_value (pdf_lookup_dict (pdf_stream_dict(xobj), "Name"));
+      /* Finish off the form */
+      end_form_xobj();
+      /* Add it to the resource list */
+      pdf_doc_add_to_page_xobjects (res_name, pdf_ref_obj(xobj));
+      /* And release it */
+      pdf_release_obj (xobj);
       sprintf (work_buffer, " q 1 0 0 1 %.2f %.2f cm /%s Do Q", x_user, y_user, res_name);
       pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
-      pdf_doc_add_to_page_xobjects (res_name, xobj);
-      end_form_xobj();
    }
    return NULL;
 }
