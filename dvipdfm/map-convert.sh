@@ -25,7 +25,7 @@ do
     then
        AFM_FILE=`kpsewhich $AFM_NAME.afm`
     fi
-# If we got one, process it    
+# If we got one, process it
     if [ -z "$AFM_FILE" ];
     then
       echo "****** NO AFM FILE for $TEX_NAME/$3 *****" 1>&2
@@ -34,8 +34,12 @@ do
     else
       set -- `grep FontName $AFM_FILE`
       FONTNAME=$2
-    fi  
-    echo $TEX_NAME $FONTNAME $ENCODING $PFB
+    fi
+    if [ -n "$PFB" ];
+    then
+      FONTNAME="-";
+    fi
+    echo $TEX_NAME $ENCODING $FONTNAME $PFB
   fi
 done  
 }
