@@ -1,6 +1,6 @@
 pdfdev.o: pdfdev.c pdfdev.h numbers.h pdfdoc.h pdfobj.h error.h \
  type1.h pkfont.h mem.h mfileio.h pdfspecial.h pdfparse.h tpic.h \
- pdflimits.h tfm.h dvi.h
+ htex.h pdflimits.h tfm.h dvi.h
 pdfdoc.o: pdfdoc.c config.h system.h pdflimits.h pdfobj.h error.h \
  mem.h pdfdoc.h pdfspecial.h numbers.h pdfdev.h mfileio.h thumbnail.h
 dvi.o: dvi.c error.h numbers.h mfileio.h pdflimits.h pdfdev.h pdfdoc.h \
@@ -38,3 +38,5 @@ thumbnail.o: thumbnail.c config.h system.h mfileio.h numbers.h mem.h \
 pngimage.o: pngimage.c config.h system.h mem.h pdfobj.h
 ebb.o: ebb.c system.h mfileio.h numbers.h pdfobj.h jpeg.h pdfspecial.h \
  mem.h pdfparse.h config.h pngimage.h
+htex.o: htex.c htex.h numbers.h pdfparse.h pdfobj.h mem.h mfileio.h \
+ pdfdoc.h dvi.h error.h pdfdev.h /usr/include/ctype.h
