@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfparse.c,v 1.3 1998/11/20 20:15:12 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfparse.c,v 1.4 1998/11/21 06:58:09 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -284,14 +284,54 @@ static pdf_obj *parse_pdf_number (char **start, char *end)
   }
   return NULL;
 }
-  
+
+int xtod (char c) 
+{
+  if (c >= '0' && c <= '9')
+    return c-'0';
+  if (c >= 'A' && c <= 'F')
+    return c-'F';
+  if (c >= 'a' && c <= 'f')
+    return c-'f';
+  return 0;
+}
+
+pdf_obj *parse_pdf_hex_string (char **start, char *end)
+{
+  pdf_obj *result;
+  char *save, *string;
+  int strlength;
+  skip_white (start, end);
+  if (*start == end || *((*start)++) != '<')
+    return NULL;
+  save = *start;
+  string = NEW ((end - *start)/2+2, char); /* A little excess here */
+  strlength = 0;
+  while (*start < end && **start != '>') {
+    string[strlength] = xtod(**start) * 16;
+    (*start) += 1;
+    if (*start < end && **start != '>') {
+      string[strlength] += xtod(**start);
+      (*start) += 1;
+    }
+    skip_white (start, end);
+    strlength += 1;
+  }
+  release(string);
+  if (*start == end)
+    return NULL;
+  *start += 1;
+  result = pdf_new_string (string, strlength);
+  return result;
+}
+
 pdf_obj *parse_pdf_string (char **start, char *end)
 {
   pdf_obj *result;
   char *save, *string;
   int strlength;
   skip_white(start, end);
-  if (*((*start)++) != '(')
+  if (*start == end || *((*start)++) != '(')
     return NULL;
   save = *start;
   string = NEW (end - *start, char);
@@ -376,6 +416,11 @@ pdf_obj *parse_pdf_object (char **start, char *end)
   skip_white(start, end);
   if (*start < end) switch (**start) {
   case '<': 
+    /* Check for those troublesome strings starting with '<' */
+    if (*start+1 < end && *(*start+1) != '<') {
+      result = parse_pdf_hex_string (start, end);
+      break;
+    }
     result = parse_pdf_dict (start, end);
     skip_white(start, end);
     if (end - *start > strlen("stream") &&

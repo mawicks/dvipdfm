@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfspecial.c,v 1.6 1998/11/20 23:44:16 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfspecial.c,v 1.7 1998/11/21 06:58:09 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -568,7 +568,7 @@ static void do_epdf (char **start, char *end, double x_user, double y_user)
     if (debug) fprintf (stderr, "Opening %s\n", filename);
     if ((trailer = pdf_open (filename)) == NULL) {
       fprintf (stderr, "\nSpecial ignored\n");
-      return;
+      return;;
     };
     pdf_release_obj (filestring);
     result = pdf_include_page(trailer, x_user, y_user, p);
@@ -582,7 +582,7 @@ static void do_epdf (char **start, char *end, double x_user, double y_user)
       return;
     }
   if (result == NULL) {
-    fprintf (stderr, "\nSpecial ignoed\n");
+    fprintf (stderr, "\nEPDF special ignored\n");
     return;
   }
   if (objname != NULL) {
@@ -1090,7 +1090,11 @@ pdf_obj *pdf_include_page(pdf_obj *trailer, double x_user, double y_user,
   char *key;
   /* Now just lookup catalog location */
   /* Deref catalog */
-  catalog = pdf_deref_obj (pdf_lookup_dict (trailer, "Root"));
+  if ((catalog = pdf_deref_obj(pdf_lookup_dict (trailer,"Root"))) ==
+      NULL) {
+    fprintf (stderr, "\nCatalog isn't where I expect it. If this is linearized PDF, I can't handle it.\n");
+    return NULL;
+  }
   if (debug) {
     fprintf (stderr, "Catalog:\n");
     pdf_write_obj (stderr, catalog);

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfobj.c,v 1.4 1998/11/19 15:28:35 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfobj.c,v 1.5 1998/11/21 06:58:09 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -986,10 +986,18 @@ static int backup_line ()
 {
   int ch;
   ch = 0;
-  
+  if (debug) {
+    fprintf (stderr, "\nbackup_line:\n");
+  }
   do {
     seek_relative (pdf_input_file, -2);
-  } while (tell_position (pdf_input_file) > 0 && (ch = fgetc (pdf_input_file)) >= 0 && ch != '\n');
+    if (debug)
+      fprintf (stderr, "%c", ch);
+  } while (tell_position (pdf_input_file) > 0 &&
+	   (ch = fgetc (pdf_input_file)) >= 0 &&
+	   (ch != '\n' && ch != '\r' ));
+  if (debug)
+    fprintf (stderr, "<-\n");
   if (ch < 0) {
     fprintf (stderr, "Invalid PDF file\n");
     return 1;
@@ -1002,39 +1010,63 @@ static long pdf_input_file_xref_pos;
 static long find_xref(void)
 {
   long currentpos, pdf_input_file_xref_pos;
-  int length;
+  int length, ch;
   int tries = 0;
   char *start, *end, *number;
   if (debug)
-    fprintf (stderr, "(find_xref)");
+    fprintf (stderr, "(find_xref");
   seek_end (pdf_input_file);
   do {
     tries ++;
     backup_line();
     currentpos = tell_position(pdf_input_file);
-    fread (work_buffer, sizeof(char), strlen("startxref"), pdf_input_file);
+    fread (work_buffer, sizeof(char), strlen("startxref"),
+	   pdf_input_file);
+    if (debug) {
+      work_buffer[strlen("startxref")] = 0;
+      fprintf (stderr, "[%s]\n", work_buffer);
+    }
     seek_absolute(pdf_input_file, currentpos);
-  } while (tries < 5 && strncmp (work_buffer, "startxref", strlen ("startxref")));
-  if (tries >= 5)
+  } while (tries < 10 && strncmp (work_buffer, "startxref", strlen ("startxref")));
+  if (tries >= 10)
     return 0;
-  while (fgetc (pdf_input_file) != '\n');
+  while ((ch = fgetc (pdf_input_file)) != '\n' && ch != '\r' ) {
+    /*  if (debug)
+	fprintf (stderr, "skip: c=%c (%x)\n", ch); */
+  };
   fgets (work_buffer, WORK_BUFFER_SIZE, pdf_input_file);
+  if (debug) {
+    fprintf (stderr, "\n->[%s]<-\n", work_buffer);
+  }
+  
   start = work_buffer;
   end = start+strlen(work_buffer);
   skip_white(&start, end);
   pdf_input_file_xref_pos = (long) atof (number = parse_number (&start, end));
   release (number);
+  if (debug)
+    fprintf (stderr, ")\n");
   return pdf_input_file_xref_pos;
 }
 
 static long find_trailer(void)
 {
   long currentpos;
+  if (debug) {
+    fprintf (stderr, "\nfind_trailer:\n");
+  }
   seek_end (pdf_input_file);
   do {
     backup_line();
     currentpos = tell_position(pdf_input_file);
-    fread (work_buffer, sizeof(char), strlen("trailer"), pdf_input_file);
+    if (debug)
+      fprintf (stderr, "currentpos = %ld\n", currentpos);
+    fread (work_buffer, sizeof(char), strlen("trailer"),
+	   pdf_input_file);
+    if (debug) {
+      work_buffer[strlen("trailer")] = 0;
+      fprintf (stderr, "find_trailer: [%s]\n", work_buffer);
+    }
     seek_absolute(pdf_input_file, currentpos);
   } while (strncmp (work_buffer, "trailer", strlen ("trailer")));
   return currentpos;
@@ -1219,9 +1251,13 @@ int parse_xref (void)
   int i, length;
   char *start, *end;
   if ((pdf_input_file_xref_pos = find_xref()) == 0) {
-    fprintf (stderr, "No xref.  Are you sure this is a PDF file?\n");
+    fprintf (stderr, "No xref loc.  Are you sure this is a PDF file?\n");
     return 0;
   }
+  if (debug) {
+    fprintf(stderr, "xref@%ld\n", pdf_input_file_xref_pos);
+  }
+  
   seek_absolute (pdf_input_file, pdf_input_file_xref_pos);
   /* Now at beginning of actual xref table */
   fgets (work_buffer, WORK_BUFFER_SIZE, pdf_input_file);

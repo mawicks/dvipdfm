@@ -1,4 +1,4 @@
-% $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/doc/dvipdfm.tex,v 1.11 1998/11/20 23:44:15 mwicks Exp $
+% $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/doc/dvipdfm.tex,v 1.12 1998/11/21 06:58:09 mwicks Exp $
 \special{  pdf:  docview <</PageMode /UseOutlines>>}%
 \catcode`\ =11\def\space{ }\catcode`\ =10
 % Page layout
@@ -92,13 +92,13 @@
 \def\link#1#2{\setbox0\hbox{\setlink{#1}}%
    \special{pdf: ann width \the\wd0\space height \the\ht0\space depth \the\dp0
      << /Type /Annot /Subtype /Link /Border [ 0 0 0 ] /A << /S /GoTo
-     /D (#2) >> >>}\box0}%
+     /D (#2) >> >>}\box0\relax}%
 %
 \def\dest#1{\hbox{\raise14pt\hbox{\special{pdf:dest (#1) [ @thispage /FitH
 @ypos ]}}}}%
 %
 \def\maketitle{\noindent\settitle\hfill\setauthor\par
-          \begincolor{\red}\hrule height 1.0pt\endcolor\medskip
+          \hrule height 1.0pt\medskip
           \noindent\setversion\hfill\setdate\vskip0.3in}%
 %
 \def\section#1{\advance\sectioncount by 1\ssectioncount0
@@ -126,19 +126,26 @@
 \date{November, 1998}
 \maketitle
 \section{Introduction}
+\special{pdf:epdf (xp56ref.pdf)}
 This package is a DVI (\TeX) to PDF conversion utility,
 having the following features:
 
 \beginlist
 \item{$\bullet$} Support for outline (bookmark) entries, named destinations,
-and annotations (including hyperlinks, forms and widgets).  Nearly
+and \link{annotations}{annotate} (including hyperlinks, forms and widgets).  Nearly
 every Acrobat Distiller pdfmark is approximated.
 
-\item{$\bullet$} Ability to include arbitrary PDF files as encapsulated
-objects along their any embedded resources such as fonts.
+\item{$\bullet$} Support for arbitrary, nested linear transformations
+of typeset material.  Any material on the page, including
+\TeX\ text, may be \link{scaled}{textxform} \link{and}{textxform} \link{rotated}{textxform}.
 
-\item{$\bullet$} Ability to include JPEG images as encapsulated
-objects.
+\item{$\bullet$} Ability to include a \link{PDF file}{pdfimage} as
+an encapsulated object along with its embedded resources such as fonts.
+Note:  Currently, this doesn't work for linearized PDF files or
+second generation PDF files.
+
+\item{$\bullet$} Ability to include a \link{JPEG image}{jpegimage} as an encapsulated
+object.
 
 \item{$\bullet$} A color stack.
 \endlist
@@ -148,7 +155,7 @@ some of the hypertext features and serves as
 a sample input file for |dvipdfm|.
 It assumes the reader has some familiarity with the basic features
 of the Portable Document Format.  The PDF specification
-is distributed by Adobe Systems \link{[1]}{pdfmanual}.
+is distributed by Adobe Systems\link{[1]}{pdfmanual}.
 An excellent source for information about PDF documents
 in general is \link{[2]}{pdfprimer}.  Information about
 using \TeX\ to construct PDF documents (mainly using Distiller) is the
@@ -303,6 +310,7 @@ prefixed with the characters ``|pdf:|''.
                         /Dest [ 1 0 R /FitH 234 ] >>
 \endtt
 
+\dest{annotate}
 \subsection{Annotate}
 \hbox to 0pt{\hskip-1.0in\special{pdf: ann width 3.0in height 36pt << /Type /Annot /Subtype /Text
 /Contents (This is a /Text Annotation.  Aren't these things ugly?.  It's a
@@ -492,8 +500,12 @@ indefinitely.  If the object is never closed, it will
 be closed when |dvipdfm| finishes processing the document.
 
 \section{Text Transformation Commands}
-The commands in this section deal with arbitrary transformation
-of the text (and rules) typeset by \TeX.  
+The commands in this section deal with transformation
+of arbitrary material, which may include
+material typeset by \TeX.  These
+may also be used on included graphics images
+if the commands in Section~8 won't do the job.
+
 
 \subsection{BeginTransform}
 \syntax
@@ -660,27 +672,36 @@ and image inclusion capabilities of \dvipdfm.
 
 \dest{textxform}
 \subsection{Text Transformation}
-Tables with slanted entries are also possible as shown
-in Table~2.  This table was achieved using
+Tables with slanted entries are possible as shown
+in \link{Table~2}{rotatedtable}.  This table was achieved using
 various ``|bt rotate 35|'' commands.  It
 is difficult to do without macro support.
 
-\vskip 0.5in
+The following line of text was done with nested
+combinations of ``|bt rotate 10|'' and ``|bt rotate -10|''.
+
 \def\up#1{\special{pdf:bt rotate 10}\hbox{#1}}
 \def\down#1{\special{pdf:bt rotate -10}\hbox{#1}}
-You \up{can} \up{nest} \down{the} \down{text} {transformation}
-\down{capabilities} \down{to} \up{achieve} \up{effects} {like}
+You \down{can} \down{nest} \down{the} \up{text}
+\up{trans}\up{form}\up{ation} \up{capa}\down{bili}\down{ties} \down{to}
+\down{achieve} \down{effects} \down{like}
 {this}.
 \special{pdf:et}\special{pdf:et}\special{pdf:et}\special{pdf:et}
 \special{pdf:et}\special{pdf:et}\special{pdf:et}\special{pdf:et}
+\special{pdf:et}\special{pdf:et}\special{pdf:et}
+\special{pdf:et}
+\special{pdf:et}
+\special{pdf:et}
+\vskip 0.5in
 
 
 \def\rvr{\colored{\red}{\vrule}}\def\entry#1{\special{pdf:bt rotate 35}%
 {\vbox to 0pt{\vss\hbox{\quad\colored{\blue}{#1}\quad}\vskip 1pt\colored{\red}{\hrule}}\special{pdf:et}}}
 \topinsert
+\dest{rotatedtable}
 \bigskip
-\centerline{\colored{\blue}{\subheadingfont Table 2---Example of Rotated
-Computer Modern text}}
+\centerline{\colored{\blue}{\subheadingfont Table 2---Example of rotated
+text set in Computer Modern Roman}}
 \bigskip
 \centerline{\vbox to 0.45in{\vss\offinterlineskip\halign{#&#&#&#&#&#\cr
 \entry{1994}&
@@ -696,11 +717,13 @@ Computer Modern text}}
 
 \dest{imageinclude}
 \subsection{Image Inclusion}
-Figure~1 is a photograph of the author that was included from a JPEG file:
-The image shown in Figure~2 image comes from the same file,
+ 
+The image in \link{Figure~1}{jpegimage} was included from a JPEG file.
+The image shown in \link{Figure~2}{rotatedimage} comes from the same file,
 but is loaded at a 50\% scale and a 45$^\circ$ rotation.
 
 \topinsert
+\dest{jpegimage}
 \bigskip
 \centerline{\reserve{1.50in}{2.05in}{pdf: image (mwicks.jpeg)}}
 \medskip
@@ -711,6 +734,7 @@ but is loaded at a 50\% scale and a 45$^\circ$ rotation.
 
 
 \topinsert
+\dest{rotatedimage}
 \bigskip
 \centerline{\reserve{0.75in}{1.25in}{pdf: image rotate 45 scale 0.50 (mwicks.jpeg)}}
 \medskip
@@ -755,10 +779,11 @@ you can |grep| on |/MediaBox| to get an indication
 of the image size.  The |/MediaBox| dimensions are
 in PDF points.
 
-Figure~3 was produced by embedding a PDF file
+\link{Figure~3}{pdfimage} was produced by embedding a PDF file
 using |epdf|.
 
 \topinsert
+\dest{pdfimage}
 \centerline{\reserve{2.41in}{2.6in}{pdf: epdf (transistor.pdf)}}
 \medskip\centerline{\subheadingfont
 \begincolor{\blue}Figure~3---An embedded PDF object.
