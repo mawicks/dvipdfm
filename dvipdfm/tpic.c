@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tpic.c,v 1.8 1999/02/09 03:24:09 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tpic.c,v 1.9 1999/02/14 18:32:29 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -147,7 +147,8 @@ MEM_START
     int i;
     len = sprintf (work_buffer, " q");
     pdf_doc_add_to_page (work_buffer, len);
-    len = sprintf (work_buffer, " %.2f w", pen_size);
+    if (pen_size != 0.0)
+      len = sprintf (work_buffer, " %.2f w", pen_size);
     pdf_doc_add_to_page (work_buffer, len);
     len = sprintf (work_buffer, " 1 J 1 j");
     pdf_doc_add_to_page (work_buffer, len);
@@ -273,6 +274,8 @@ MEM_START
     pdf_doc_add_to_page (work_buffer, len);
     if (pen_size != 0.0)
       len = sprintf (work_buffer, " %.2f w", pen_size);
+    pdf_doc_add_to_page (work_buffer, len);
+    len = sprintf (work_buffer, " 1 J");
     pdf_doc_add_to_page (work_buffer, len);
     len = sprintf (work_buffer, " %.2f %.2f m", x_user+xr*cur_x+xc, y_user-yr*cur_y-yc);
     pdf_doc_add_to_page (work_buffer, len);
