@@ -43,6 +43,11 @@ install-exec: all
 # t1fonts.map.
 install-data:
 	mkdir $(dvipdfmdir) 2> /dev/null || true;
+	if test -r $(psheaderdir)/dvipdfm/pdffonts.map \
+	   && test ! -r $(dvipdfmdir)/t1fonts.map; \
+	then \
+	   cp $(psheaderdir)/dvipdfm/pdffonts.map $(dvipdfmdir)/t1fonts.map; \
+	fi   
 	if test ! -r $(dvipdfmdir)/t1fonts.map \
 	   || grep 'original t1fonts.map --' $(dvipdfmdir)/t1fonts.map \
 	   >/dev/null; then  \
