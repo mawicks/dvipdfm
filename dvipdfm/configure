@@ -526,10 +526,10 @@ fi
 
 
 
-VERSION="0.12.7_pre_c"
+VERSION="0.12.8"
 
 cat >> confdefs.h <<\EOF
-#define VERSION "0.12.7_pre_c"
+#define VERSION "0.12.8"
 EOF
 
 cat >> confdefs.h <<\EOF
@@ -931,7 +931,7 @@ else
 This version of dvipdfm requires that kpathsea and its headers be installed.
 If you are sure they are installed and in a standard place, maybe you need a
 newer version of kpathsea?  You also might try setting the environment
-variable CPPFLAGS or CLFAGS with -I pointing to the directory containing
+variable CPPFLAGS or CFLAGS with -I pointing to the directory containing
 the file "tex-file.h"
 
 " 1>&2; exit 1; }

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.103 2000/05/14 15:58:00 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.104 2000/07/06 05:10:04 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -125,7 +125,7 @@ int num_encodings = 0, max_encodings=0;
 
 pdf_obj *find_encoding_differences (pdf_obj *encoding)
 {
-  static char filling = 0;
+  char filling = 0;
   int i;
   pdf_obj *result = pdf_new_array ();
   pdf_obj *tmp;
@@ -1160,7 +1160,7 @@ static void do_pfb (int pfb_id)
 			cmr, should be set to be symbolic */
 #define STEMV 80
 
-static pdf_obj *type1_font_descriptor (int encoding_id, int pfb_id, int tfm_font_id)
+static pdf_obj *type1_font_descriptor (int pfb_id, int tfm_font_id)
 {
   pdf_obj *font_descriptor, *font_descriptor_ref, *tmp1;
   int flags;
@@ -1169,12 +1169,14 @@ static pdf_obj *type1_font_descriptor (int encoding_id, int pfb_id, int tfm_font
   pdf_add_dict (font_descriptor,
 		pdf_new_name ("Type"),
 		pdf_new_name ("FontDescriptor"));
+  /* Make an educated guess at CapHeight */
   pdf_add_dict (font_descriptor,
 		pdf_new_name ("CapHeight"),
 		pdf_new_number (ROUND(1000.0*tfm_get_height(tfm_font_id,
 						     'M'), 0.01)));
   {
     double max_height, max_depth, max_width;
+    /* Make an educated guess at Ascent and Descent */
     max_height = tfm_get_max_height (tfm_font_id)*1000.0;
     max_depth = tfm_get_max_depth (tfm_font_id)*1000.0;
     max_width = tfm_get_max_width (tfm_font_id)*1000.0;
@@ -1387,8 +1389,7 @@ int type1_font (const char *tex_name, int tfm_font_id, char *resource_name)
     if (type1_fonts[num_type1_fonts].pfb_id >= 0) {
       pdf_add_dict (font_resource, 
 		    pdf_new_name ("FontDescriptor"),
-		    type1_font_descriptor(encoding_id,
-					  type1_fonts[num_type1_fonts].pfb_id,
+		    type1_font_descriptor(type1_fonts[num_type1_fonts].pfb_id,
 					  tfm_font_id));
     }
       /* If we are embedding this font, it may have been used by another virtual
