@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.23 1999/09/22 02:26:16 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.24 1999/11/24 03:00:27 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -89,7 +89,7 @@ int mp_locate_font (char *tex_name, double pt_size)
   need_more_mp_fonts (1);
   if (i == n_mp_fonts) {
     n_mp_fonts += 1;
-    mp_fonts[i].tex_name = NEW (strlen(tex_name), char);
+    mp_fonts[i].tex_name = NEW (strlen(tex_name)+1, char);
     strcpy (mp_fonts[i].tex_name, tex_name);
     mp_fonts[i].pt_size = pt_size;
     /* The following line is a bit of a kludge.  MetaPost inclusion
@@ -108,9 +108,11 @@ static void release_fonts (void)
   for (i=0; i<n_mp_fonts; i++) {
     RELEASE (mp_fonts[i].tex_name);
   }
-  n_mp_fonts = 0;
-  if (mp_fonts)
+  if (mp_fonts) {
     RELEASE (mp_fonts);
+    mp_fonts = NULL;
+  }
+  n_mp_fonts = 0;
 }
 
 int mp_is_font_name (char *tex_name)
@@ -137,8 +139,9 @@ int mp_fontid (char *tex_name, double pt_size)
   if (i < n_mp_fonts) {
     return i;
   }
-  else
+  else {
     return -1;
+  }
 }
 
 static int mp_parse_headers (FILE *image_file, struct xform_info *p)
