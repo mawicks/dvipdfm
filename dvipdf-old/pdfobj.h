@@ -117,6 +117,7 @@ void pdf_add_dict (pdf_obj *dict, pdf_obj *key, pdf_obj *value);  /* Array is en
 pdf_obj *pdf_new_stream (void);
 void pdf_add_stream (pdf_obj *stream, char *stream_data, unsigned
 		     length);
+#define pdf_stream_dict(s) (((struct pdf_stream *)((s)->data))->dict) 
 void pdf_release_obj (pdf_obj *object);
 pdf_obj *pdf_ref_obj (pdf_obj *object);
 

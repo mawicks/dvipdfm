@@ -63,12 +63,13 @@ MAKEINFO = @MAKEINFO@
 PACKAGE = @PACKAGE@
 VERSION = @VERSION@
 
-include_HEADERS = dvi.h error.h io.h tfm.h numbers.h pdfobj.h pdfdoc.h
-bin_PROGRAMS = dvitest tfmtest pdftest doctest
+include_HEADERS = dvi.h error.h io.h tfm.h numbers.h pdfobj.h pdfdoc.h type1.h
+bin_PROGRAMS = dvitest tfmtest pdftest doctest type1test
 dvitest_SOURCES = dvitest.c numbers.c dvi.c io.c mem.c
 tfmtest_SOURCES = tfmtest.c numbers.c tfm.c io.c mem.c
 pdftest_SOURCES = pdftest.c pdfobj.c mem.c 
-doctest_SOURCES = doctest.c pdfdoc.c pdfobj.c mem.c
+doctest_SOURCES = doctest.c pdfdoc.c pdfobj.c mem.c type1.c
+type1test_SOURCES = type1test.c type1.c pdfobj.c mem.c 
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = config.h
@@ -92,10 +93,14 @@ pdftest_OBJECTS =  pdftest.o pdfobj.o mem.o
 pdftest_LDADD = $(LDADD)
 pdftest_DEPENDENCIES = 
 pdftest_LDFLAGS = 
-doctest_OBJECTS =  doctest.o pdfdoc.o pdfobj.o mem.o
+doctest_OBJECTS =  doctest.o pdfdoc.o pdfobj.o mem.o type1.o
 doctest_LDADD = $(LDADD)
 doctest_DEPENDENCIES = 
 doctest_LDFLAGS = 
+type1test_OBJECTS =  type1test.o type1.o pdfobj.o mem.o
+type1test_LDADD = $(LDADD)
+type1test_DEPENDENCIES = 
+type1test_LDFLAGS = 
 COMPILE = $(CC) $(DEFS) $(INCLUDES) $(CPPFLAGS) $(CFLAGS)
 LINK = $(CC) $(CFLAGS) $(LDFLAGS) -o $@
 HEADERS =  $(include_HEADERS)
@@ -111,9 +116,10 @@ TAR = tar
 GZIP = --best
 DEP_FILES =  .deps/doctest.P .deps/dvi.P .deps/dvitest.P .deps/io.P \
 .deps/mem.P .deps/numbers.P .deps/pdfdoc.P .deps/pdfobj.P \
-.deps/pdftest.P .deps/tfm.P .deps/tfmtest.P
-SOURCES = $(dvitest_SOURCES) $(tfmtest_SOURCES) $(pdftest_SOURCES) $(doctest_SOURCES)
-OBJECTS = $(dvitest_OBJECTS) $(tfmtest_OBJECTS) $(pdftest_OBJECTS) $(doctest_OBJECTS)
+.deps/pdftest.P .deps/tfm.P .deps/tfmtest.P .deps/type1.P \
+.deps/type1test.P
+SOURCES = $(dvitest_SOURCES) $(tfmtest_SOURCES) $(pdftest_SOURCES) $(doctest_SOURCES) $(type1test_SOURCES)
+OBJECTS = $(dvitest_OBJECTS) $(tfmtest_OBJECTS) $(pdftest_OBJECTS) $(doctest_OBJECTS) $(type1test_OBJECTS)
 
 all: Makefile $(PROGRAMS) $(HEADERS) config.h
 
@@ -213,6 +219,10 @@ pdftest: $(pdftest_OBJECTS) $(pdftest_DEPENDENCIES)
 doctest: $(doctest_OBJECTS) $(doctest_DEPENDENCIES)
 	@rm -f doctest
 	$(LINK) $(doctest_LDFLAGS) $(doctest_OBJECTS) $(doctest_LDADD) $(LIBS)
+
+type1test: $(type1test_OBJECTS) $(type1test_DEPENDENCIES)
+	@rm -f type1test
+	$(LINK) $(type1test_LDFLAGS) $(type1test_OBJECTS) $(type1test_LDADD) $(LIBS)
 
 install-includeHEADERS: $(include_HEADERS)
 	@$(NORMAL_INSTALL)
