@@ -1,5 +1,5 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.c,v 1.1 1998/11/27 21:16:37 mwicks Exp $
-
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.c,v 1.2 1998/11/28 18:16:52 mwicks Exp $
+ 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
 
@@ -52,19 +52,25 @@ void dump(char *start, char *end)
 
 void skip_white (char **start, char *end)
 {
-  while (*start < end && isspace (**start))
-    (*start)++;
+  while (*start < end && (isspace (**start) || **start == '%')) {
+    if (**start == '%') 
+      skip_line (start, end);
+    else /* Skip the white char  */
+      (*start)++;
+  }
   return;
 }
 
 void skip_line (char **start, char *end)
 {
-  /* Skip_line is used only after word 'stream'. 
-     PDF spec says that all platforms must end line with '\n' here */
-  while (*start < end && **start != '\n') 
+  /* Note: PDF spec says that all platforms must end line with '\n'
+     after a "stream" keyword */
+  while (*start < end && **start != '\n' && **start != '\r')
     (*start)++;
-  if (*start < end)
-    (*start)++;
+  if (*start < end && **start == '\r')
+    (*start) += 1;
+  if (*start < end && **start == '\n')
+    (*start) += 1;
   return;
 }
 
