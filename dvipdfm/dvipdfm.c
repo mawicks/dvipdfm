@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.29 1999/01/19 03:42:41 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.30 1999/01/25 03:52:31 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -122,6 +122,7 @@ static int paper_specified = 0;
 static landscape_mode = 0;
 static ignore_colors = 0;
 static double mag = 1.0, x_offset=72.0, y_offset=72.0;
+static int font_dpi = 600;
 
 #define pop_arg() {argv += 1; argc -= 1;}
 
@@ -131,6 +132,28 @@ static void do_args (int argc, char *argv[])
   while (argc > 0 && *argv[0] == '-') {
     for (flag=argv[0]+1; *flag != 0; flag++) {
       switch (*flag) {
+      case 'r':
+	if (argc < 2) {
+	  fprintf (stderr, "\nResolution specification missing a number\n\n");
+	  usage();
+	}
+	{
+	  char *result, *end, *start = argv[1];
+	  end = start + strlen(argv[1]);
+	  result = parse_number (&start, end);
+	  if (result != NULL && start == end) {
+	    font_dpi = (int) atof (result);
+	  }
+	  else {
+	    fprintf (stderr, "\nError in number following resolution specification\n\n");
+	    usage();
+	  }
+	  if (result != NULL) {
+	    RELEASE (result);
+	  }
+	}
+	pop_arg();
+	break;
       case 'm':
 	if (argc < 2) {
 	  fprintf (stderr, "\nMagnification specification missing a number\n\n");
@@ -331,12 +354,16 @@ int CDECL main (int argc, char *argv[])
   }
 #ifdef KPATHSEA
   kpse_set_program_name (argv[0], NULL);
-  kpse_init_prog ("", 600, NULL, "cmr10");
-  kpse_set_program_enabled (kpse_pk_format, 1, kpse_src_texmf_cnf);
 #endif
   argv+=1;
   argc-=1;
   do_args (argc, argv);
+
+#ifdef KPATHSEA
+  kpse_init_prog ("", font_dpi, NULL, "cmr10");
+  pk_set_dpi (font_dpi);
+  kpse_set_program_enabled (kpse_pk_format, 1, kpse_src_texmf_cnf);
+#endif
 
   /* Check for ".dvi" at end of argument name */
   if (pdf_filename == NULL)

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pkfont.c,v 1.5 1999/01/25 02:41:01 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pkfont.c,v 1.6 1999/01/25 03:52:31 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -34,10 +34,9 @@
 #include "numbers.h"
 #include "ctype.h"
 
-#define DPI 600
-
 pdf_obj *pk_encoding_ref = NULL;
 static verbose = 0;
+static font_dpi = 600;
 
 void pk_set_verbose(void)
 {
@@ -45,6 +44,12 @@ void pk_set_verbose(void)
     verbose += 1;
   }
 }
+
+void pk_set_dpi (int dpi)
+{
+  font_dpi = dpi;
+}
+
 
 static void make_pk_encoding_ref (void)
 {
@@ -113,7 +118,7 @@ int pk_font (char *tex_name, double ptsize, int tfm_font_id, char
     char *pk_file_name;
     kpse_glyph_file_type kpse_file_info;
     if ((pk_file_name = kpse_find_glyph(tex_name,
-					DPI*ptsize/tfm_get_design_size(tfm_font_id),
+					font_dpi*ptsize/tfm_get_design_size(tfm_font_id)+0.5,
 					kpse_pk_format,
 					&kpse_file_info))) {
       /* Make sure there is enough room in pk_fonts for this entry */
@@ -265,6 +270,8 @@ static void add_raster_data (pdf_obj *glyph, long w, long h,
   } \
 }
 
+#define get_bit(p,n) (p[(n)/8] & (128u>>((n)%8)))
+
 {
   long i, w_bytes, repeat_count, run_count = 0;
   int partial_byte = 0;
@@ -272,99 +279,115 @@ static void add_raster_data (pdf_obj *glyph, long w, long h,
   w_bytes = (w%8 == 0)? w/8: (w/8+1);
   row = NEW (w_bytes, unsigned char);
   /* Make sure we output "h" rows of data */
-  for (i=0; i<h; i++) {
-    int next_col = 0, next_bit = 0;
-    int j, row_bits_left = w;
-    /* Initialize row to all zeros */
-    for (j=0; j<w_bytes; j++) row[j] = 0;
-    repeat_count = 0;
-    /* Fill any run left over from previous rows */
-    if (run_count != 0) {
-      int nbits;
-      nbits = MIN (w, run_count);
-      run_count -= nbits;
-      switch (run_color) {
-      case 1:  /* This is actually white ! */
-	set_bits(nbits);
-	break;
-      case 0:
-	skip_bits(nbits);
-	break;
+  if (dyn_f == 14) {
+    for (i=0; i<h; i++) {
+      int next_col = 0, next_bit = 0;
+      int j;
+      for (j=0; j<w_bytes; j++) row[j] = 0;
+      for (j=0; j<w; j++) {
+	if (get_bit(pk_data,i*w+j)) {
+	  skip_bits(1);
+	}
+	else {
+	  set_bits(1);
+	}
       }
-      row_bits_left -= nbits;
+      pdf_add_stream (glyph, (char *) row, w_bytes);
     }
-    /* Read nybbles until we have a full row */
-    while (pk_data < eod && row_bits_left>0) {
-      int com_nyb;
-      long packed = 0;
-      com_nyb = current_nybble();
-      if (com_nyb == 15) {
-	repeat_count = 1;
-	advance_nybble();
-	continue;
-      }
-      if (com_nyb == 14) {
-	advance_nybble();
-      }
-      /* Get a packed number */
-      {
-	int nyb;
-	nyb = current_nybble();
-	/* Test for single nybble case */
-	if (nyb > 0 && nyb <= dyn_f) {
-	  packed = nyb;
-	  advance_nybble();
-	}
-	if (nyb > dyn_f) {
-	  advance_nybble();
-	  packed = (nyb-dyn_f-1)*16+current_nybble()+dyn_f+1; 
-	  advance_nybble();
-	}
-	if (nyb == 0) {
-	  int nnybs = 1;
-	  while (current_nybble() == 0) {
-	    advance_nybble();
-	    nnybs += 1;
-	  }
-	  packed = 0;
-	  while (nnybs) {
-	    packed = packed*16 + current_nybble();
-	    advance_nybble();
-	    nnybs -= 1;
-	  }
-	  packed += (13-dyn_f)*16-15+dyn_f;
-	}
-      }
-      if (com_nyb == 14) {
-	repeat_count = packed;
-	continue;
-      }
-      {
+  } else
+    for (i=0; i<h; i++) {
+      int next_col = 0, next_bit = 0;
+      int j, row_bits_left = w;
+      /* Initialize row to all zeros */
+      for (j=0; j<w_bytes; j++) row[j] = 0;
+      repeat_count = 0;
+      /* Fill any run left over from previous rows */
+      if (run_count != 0) {
 	int nbits;
-	run_count = packed;    
-	run_color = !run_color;
-	nbits = MIN (row_bits_left, run_count);
+	nbits = MIN (w, run_count);
 	run_count -= nbits;
-	row_bits_left -= nbits;
 	switch (run_color) {
-	case 1: 
+	case 1:  /* This is actually white ! */
 	  set_bits(nbits);
 	  break;
 	case 0:
 	  skip_bits(nbits);
 	  break;
 	}
+	row_bits_left -= nbits;
       }
-      continue;
-    }
-    pdf_add_stream (glyph, (char *) row, w_bytes);
-    /* Duplicate the row "repeat_count" times */
-    for (j=0; j<repeat_count; j++) {
+      /* Read nybbles until we have a full row */
+      while (pk_data < eod && row_bits_left>0) {
+	int com_nyb;
+	long packed = 0;
+	com_nyb = current_nybble();
+	if (com_nyb == 15) {
+	  repeat_count = 1;
+	  advance_nybble();
+	  continue;
+	}
+	if (com_nyb == 14) {
+	  advance_nybble();
+	}
+	/* Get a packed number */
+	{
+	  int nyb;
+	  nyb = current_nybble();
+	  /* Test for single nybble case */
+	  if (nyb > 0 && nyb <= dyn_f) {
+	    packed = nyb;
+	    advance_nybble();
+	  }
+	  if (nyb > dyn_f) {
+	    advance_nybble();
+	    packed = (nyb-dyn_f-1)*16+current_nybble()+dyn_f+1; 
+	    advance_nybble();
+	  }
+	  if (nyb == 0) {
+	    int nnybs = 1;
+	    while (current_nybble() == 0) {
+	      advance_nybble();
+	      nnybs += 1;
+	    }
+	    packed = 0;
+	    while (nnybs) {
+	      packed = packed*16 + current_nybble();
+	      advance_nybble();
+	      nnybs -= 1;
+	    }
+	    packed += (13-dyn_f)*16-15+dyn_f;
+	  }
+	}
+	if (com_nyb == 14) {
+	  repeat_count = packed;
+	  continue;
+	}
+	{
+	  int nbits;
+	  run_count = packed;    
+	  run_color = !run_color;
+	  nbits = MIN (row_bits_left, run_count);
+	  run_count -= nbits;
+	  row_bits_left -= nbits;
+	  switch (run_color) {
+	  case 1: 
+	    set_bits(nbits);
+	    break;
+	  case 0:
+	    skip_bits(nbits);
+	    break;
+	  }
+	}
+	continue;
+      }
       pdf_add_stream (glyph, (char *) row, w_bytes);
+      /* Duplicate the row "repeat_count" times */
+      for (j=0; j<repeat_count; j++) {
+	pdf_add_stream (glyph, (char *) row, w_bytes);
+      }
+      /* Skip repeat_count interations */
+      i += repeat_count;
     }
-    /* Skip repeat_count interations */
-    i += repeat_count;
-  }
   RELEASE (row);
 }
 
@@ -444,7 +467,7 @@ static void do_character (unsigned char flag, int pk_id, pdf_obj *char_procs)
       double char_width, llx, lly, urx, ury;
       double pix2charu;
       int len;
-      pix2charu = 72000.0/((double) DPI)/pk_fonts[pk_id].ptsize;
+      pix2charu = 72000.0/((double) font_dpi)/pk_fonts[pk_id].ptsize;
       char_width = tfm_width / (double) (1<<20) * 1000.0;
       char_width = ROUND (char_width, 0.01);
       llx = -hoff*pix2charu;

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pkfont.h,v 1.2 1999/01/19 02:53:13 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pkfont.h,v 1.3 1999/01/25 03:52:31 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -33,5 +33,6 @@ int pk_font (char *tex_name, double ptsize, int tfm_id, char
 pdf_obj *pk_font_resource (int pk_id);
 char *pk_font_used (int pk_id);
 void pk_close_all (void);
+void pk_set_dpi (int dpi);
 
 #endif /* _PK_FONT_H */
