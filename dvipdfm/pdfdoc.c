@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.46 1999/02/21 14:30:22 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdoc.c,v 1.46.2.1 1999/05/18 23:14:52 mwicks Exp $
  
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -1083,13 +1083,12 @@ pdf_obj *begin_form_xobj (double xpos, double ypos,
   /* Translate coordinate system so reference point of object 
      is at 0 */
   bbox = pdf_new_array ();
-  pdf_add_array (bbox, pdf_new_number (ROUND(bbllx-xpos,0.1)));
-  pdf_add_array (bbox, pdf_new_number (ROUND(bblly-ypos,0.1)));
-  pdf_add_array (bbox, pdf_new_number (ROUND(bburx-xpos,0.1)));
-  pdf_add_array (bbox, pdf_new_number (ROUND(bbury-ypos,0.1)));
+  pdf_add_array (bbox, pdf_new_number (ROUND(bbllx-xpos,0.01)));
+  pdf_add_array (bbox, pdf_new_number (ROUND(bblly-ypos,0.01)));
+  pdf_add_array (bbox, pdf_new_number (ROUND(bburx-xpos,0.01)));
+  pdf_add_array (bbox, pdf_new_number (ROUND(bbury-ypos,0.01)));
   /* Resource is already made, so call doc_make_form_xobj() */
-  sprintf (work_buffer, "1 0 0 1 %g %g cm",
-	   ROUND(-xpos,0.1), ROUND(-ypos,0.1));
+  sprintf (work_buffer, "1 0 0 1 %.2f %.2f cm", -xpos, -ypos);
   pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
   doc_make_form_xobj (this_page_contents, bbox,
 		      pdf_ref_obj(current_page_resources));

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.42.2.1 1999/05/18 21:43:32 mwicks Exp $
+/*  $greHeader: /home/mwicks/Repository/dvipdfm/pdfspecial.c,v 1.42.2.1 1999/05/18 21:43:32 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -463,10 +463,10 @@ MEM_START
   }
   if (!error && (result = parse_pdf_dict(start, end)) != NULL) {
     rectangle = pdf_new_array();
-    pdf_add_array (rectangle, pdf_new_number(ROUND(dev_phys_x(),0.1)));
-    pdf_add_array (rectangle, pdf_new_number(ROUND(dev_phys_y()-p->depth,0.1)));
-    pdf_add_array (rectangle, pdf_new_number(ROUND(dev_phys_x()+p->width,0.1)));
-    pdf_add_array (rectangle, pdf_new_number(ROUND(dev_phys_y()+p->height,0.1)));
+    pdf_add_array (rectangle, pdf_new_number(ROUND(dev_phys_x(),0.01)));
+    pdf_add_array (rectangle, pdf_new_number(ROUND(dev_phys_y()-p->depth,0.01)));
+    pdf_add_array (rectangle, pdf_new_number(ROUND(dev_phys_x()+p->width,0.01)));
+    pdf_add_array (rectangle, pdf_new_number(ROUND(dev_phys_y()+p->height,0.01)));
     pdf_add_dict (result, pdf_new_name ("Rect"),
 		  rectangle);
     pdf_doc_add_to_page_annots (pdf_ref_obj (result));
@@ -789,10 +789,10 @@ static void do_bead(char **start, char *end)
     }
     bead_dict = pdf_new_dict ();
     rectangle = pdf_new_array();
-    pdf_add_array (rectangle, pdf_new_number(ROUND(dev_phys_x(),0.1)));
-    pdf_add_array (rectangle, pdf_new_number(ROUND(dev_phys_y()-p->depth,0.1)));
-    pdf_add_array (rectangle, pdf_new_number(ROUND(dev_phys_x()+p->width,0.1)));
-    pdf_add_array (rectangle, pdf_new_number(ROUND(dev_phys_y()+p->height,0.1)));
+    pdf_add_array (rectangle, pdf_new_number(ROUND(dev_phys_x(),0.01)));
+    pdf_add_array (rectangle, pdf_new_number(ROUND(dev_phys_y()-p->depth,0.01)));
+    pdf_add_array (rectangle, pdf_new_number(ROUND(dev_phys_x()+p->width,0.01)));
+    pdf_add_array (rectangle, pdf_new_number(ROUND(dev_phys_y()+p->height,0.01)));
     pdf_add_dict (bead_dict, pdf_new_name ("R"),
 		  rectangle);
     pdf_add_dict (bead_dict, pdf_new_name ("P"),
@@ -1035,8 +1035,7 @@ static void do_content(char **start, char *end, double x_user, double y_user)
 {
   int len;
   if (*start < end) {
-    len = sprintf (work_buffer, " q 1 0 0 1 %.2f %.2f cm ", x_user,
-		   y_user);
+    len = sprintf (work_buffer, " q 1 0 0 1 %.2f %.2f cm ", x_user, y_user);
     pdf_doc_add_to_page (work_buffer, len);
     pdf_doc_add_to_page (*start, end-*start);
     pdf_doc_add_to_page (" Q", 2);
@@ -1224,10 +1223,10 @@ static pdf_obj *lookup_reference(char *name)
   int i;
   /* First check for builtins first */
   if (!strcmp (name, "ypos")) {
-    return pdf_new_number(ROUND(dev_phys_y(),0.1));
+    return pdf_new_number(ROUND(dev_phys_y(),0.01));
   }
   if (!strcmp (name, "xpos")) {
-    return pdf_new_number(ROUND(dev_phys_x(),0.1));
+    return pdf_new_number(ROUND(dev_phys_x(),0.01));
   }
   if (!strcmp (name, "thispage")) {
     return pdf_doc_this_page_ref();
@@ -1479,7 +1478,7 @@ void add_xform_matrix (double xoff, double yoff,
   double c, s;
   c = ROUND(cos(rotate),1e-5);
   s = ROUND(sin(rotate),1e-5);
-  sprintf (work_buffer, " %f %f %f %f %.2f %.2f cm", 
+  sprintf (work_buffer, " %g %g %g %g %.2f %.2f cm",
 	   c*xscale, s*xscale, -s*yscale, c*yscale, xoff, yoff);
   pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
 }
@@ -1616,8 +1615,7 @@ static void do_uxobj (char **start, char *end, double x_user, double y_user)
   if (((objname = parse_opt_ident(start, end)) != NULL) &&
       ((res_name = lookup_ref_res_name (objname)) != NULL) &&
       ((xobj_res = lookup_reference (objname)) != NULL)) {
-    sprintf (work_buffer, " q 1 0 0 1 %g %g cm /%s Do Q",
-	     ROUND(x_user, 0.1), ROUND(y_user, 0.1), res_name);
+    sprintf (work_buffer, " q 1 0 0 1 %.2f %.2f cm /%s Do Q", x_user, y_user, res_name);
     pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
     pdf_doc_add_to_page_xobjects (res_name, xobj_res);
   }
