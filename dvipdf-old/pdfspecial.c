@@ -939,6 +939,46 @@ static pdf_obj *parse_pdf_string (char **start, char *end)
   return result;
 }
 
+static pdf_obj *parse_pdf_stream (char **start, char *end, pdf_obj
+				  *dict)
+{
+  pdf_obj *result, *new_dict, *tmp1, *tmp2;
+  int length;
+  if (pdf_lookup_dict(dict, "Filter") ||
+      pdf_lookup_dict(dict, "F")) {
+    fprintf (stderr, "Cannot handle filtered streams or file streams yet");
+    return NULL;
+  }
+  if ((tmp1 = pdf_lookup_dict(dict, "Length")) == NULL) {
+    fprintf (stderr, "No length specified");
+    return NULL;
+  }
+  pdf_write_obj (stderr, tmp1);
+  tmp2 = pdf_deref_obj (tmp1);
+  pdf_release_obj (tmp1);
+  length = pdf_number_value (tmp2);
+  pdf_release_obj (tmp2);
+  fprintf (stderr, "stream length is %d\n", length);
+  skip_white(start, end);
+  skip_line(start, end);
+  result = pdf_new_stream();
+  new_dict = pdf_stream_dict(result);
+  pdf_merge_dict (new_dict, dict);
+  pdf_release_obj (new_dict);
+  pdf_add_stream (result, *start, length);
+  *start += length;
+  skip_white(start, end);
+  fprintf (stderr, "End of stream?[%s]\n", *start);
+  if (*start+strlen("endstream") > end ||
+      strncmp(*start, "endstream", strlen("endstream"))) {
+    fprintf (stderr, "\nendstream not found\n");
+    return NULL;
+  }
+  *start += strlen("endstream");
+  return result;
+}
+
+
 
 static pdf_obj *parse_pdf_object (char **start, char *end)
 {
@@ -952,7 +992,7 @@ static pdf_obj *parse_pdf_object (char **start, char *end)
     skip_white(start, end);
     if (end - *start > strlen("stream") &&
 	!strncmp(*start, "stream", strlen("stream"))) {
-      skip_line(start, end);
+      result = parse_pdf_stream (start, end, result);
     }
     /* Check for stream */
     break;
@@ -1141,42 +1181,103 @@ long next_object (int obj)
   long this_position, result = trailer_pos;  /* Worst case */
   this_position = xref_table[obj].position;
   /* Check all other objects to find next one */
-  for (i=0; i<=num_input_objects; i++) {
+  fprintf (stderr, "num_objects  = %d\n", num_input_objects);
+  for (i=0; i<num_input_objects; i++) {
     if (xref_table[i].position > this_position &&
 	xref_table[i].position < result)
       result = xref_table[i].position;
+    fprintf (stderr, "i = %d, result = %ld\n", i, result);
   }
   /* xref is also an object, but not in the table so
      check it separately */
   if (xref_pos > this_position &&
       xref_pos < result)
     result = xref_pos;
+  fprintf (stderr, "result = %ld\n", result);
   return result;
 }
 
-pdf_obj *read_object (unsigned obj_no) 
+pdf_obj *pdf_read_object (unsigned obj_no) 
 {
   long start_pos, end_pos, length;
-  char *buffer;
-  if (obj_no > num_input_objects) {
-    fprintf (stderr, "Trying to read nonexistent object\n");
+  char *buffer, *number, *parse_pointer, *end;
+  pdf_obj *result;
+  fprintf (stderr, "\nEntered pdf_read: obj = %d\n", obj_no);
+  if (obj_no >= num_input_objects) {
+    fprintf (stderr, "\nTrying to read nonexistent object\n");
     return NULL;
   }
   if (!xref_table[obj_no].used) {
-    fprintf (stderr, "Trying to read deleted object\n");
+    fprintf (stderr, "\nTrying to read deleted object\n");
     return NULL;
   }
   seek_absolute (pdf_input_file, start_pos =
 		 xref_table[obj_no].position);
   end_pos = next_object (obj_no);
-  fprintf (stderr, "start: %d end %d\n", start_pos, end_pos);
+  fprintf (stderr, "\nstart: %d end %d\n", start_pos, end_pos);
   
   buffer = NEW (end_pos - start_pos+1, char);
   fread (buffer, sizeof(char), end_pos-start_pos, pdf_input_file);
   buffer[end_pos-start_pos] = 0;
+  fprintf (stderr, "Parsing object from:\n");
   fprintf (stderr, "%s\n", buffer);
+  parse_pointer = buffer;
+  end = buffer+(end_pos-start_pos);
+  skip_white (&parse_pointer, end);
+  number = parse_number (&parse_pointer, end);
+  fprintf (stderr, "Read # %s\n", number);
+  if ((int) atof(number) != obj_no) {
+    fprintf (stderr, "Object number doesn't match\n");
+    release (buffer);
+    return NULL;
+  }
+  if (number != NULL)
+    release(number);
+  skip_white (&parse_pointer, end);
+  number = parse_number (&parse_pointer, end);
+  fprintf (stderr, "Read generation # %s\n", number);
+  if (number != NULL)
+    release(number);
+  skip_white(&parse_pointer, end);
+  if (strncmp(parse_pointer, "obj", strlen("obj"))) {
+    fprintf (stderr, "Didn't find \"obj\"\n");
+    release (buffer);
+    return (NULL);
+  }
+  parse_pointer += strlen("obj");
+  result = parse_pdf_object (&parse_pointer, end);
+  skip_white (&parse_pointer, end);
+  if (strncmp(parse_pointer, "endobj", strlen("endobj"))) {
+    fprintf (stderr, "Didn't find \"endobj\"\n");
+    if (result != NULL)
+      pdf_release_obj (result);
+    result = NULL;
+  }
+  release (buffer);
+  return (result);
 }
 
+pdf_obj *pdf_deref_obj (pdf_obj *obj)
+{
+  pdf_obj *result, *tmp;
+  fprintf (stderr, "\nEntered pdf_deref\n");
+  pdf_write_obj (stderr, obj);
+  if (obj -> type != PDF_INDIRECT) {
+    fprintf(stderr, "\nreturning same obj\n");
+    return pdf_link_obj (obj);
+  }
+  result = pdf_read_object (((struct pdf_indirect *)(obj-> data)) -> label);
+  fprintf (stderr, "\nread object");
+  pdf_write_obj (stderr, result);
+  while (result -> type == PDF_INDIRECT) {
+    fprintf(stderr, "\nderefing again\n");
+    tmp = pdf_read_object (result -> label);
+    pdf_write_obj (stderr, tmp);
+    pdf_release_obj (result);
+    result = tmp;
+  }
+  return result;
+}
 
 void parse_xref (char **start, char *end)
 {
@@ -1229,16 +1330,21 @@ void parse_xref (char **start, char *end)
   }
 }
 
-static void check_pdf(void)
-{
-}
 
+static int num_xobjects = 0;
 
 void pdf_open (char *file)
 {
   long eof_pos;
+  int i;
+  pdf_obj *tmp1, *tmp2;
   pdf_obj *trailer;
-  char *parse_pointer;
+  pdf_obj *catalog_ref, *catalog, *page_tree_ref, *page_tree,
+    *kids_ref, *kids;
+  pdf_obj *media_box, *resources, *contents, *contents_ref;
+  pdf_obj *new_resources;
+  pdf_obj *xobj_dict;
+  char *parse_pointer, *key;
   if ((pdf_input_file = fopen (file, "r")) == NULL) {
     fprintf (stderr, "Unable to open file name %s\n", file);
     return;
@@ -1263,9 +1369,130 @@ void pdf_open (char *file)
 			   work_buffer+(eof_pos-trailer_pos));
   pdf_write_obj (stderr, trailer);
   parse_xref(&parse_pointer, work_buffer+(eof_pos-trailer_pos));
-  fprintf (stderr, "\n\n\n");
+  /* Now just lookup catalog location */
+  catalog_ref = pdf_lookup_dict (trailer, "Root");
+  fprintf (stderr, "Catalog:\n");
+  pdf_write_obj (stderr, catalog_ref);
+  /* Deref catalog */
+  catalog = pdf_deref_obj (catalog_ref);
+
+  /* Lookup page tree in catalog */
+  page_tree_ref = pdf_lookup_dict (catalog, "Pages");
+  pdf_write_obj (stderr, page_tree_ref);
+  page_tree = pdf_deref_obj (page_tree_ref);
+  pdf_write_obj (stderr, page_tree);
+
+  /* Media box and resources can be inherited so start looking for
+     them here */
+  media_box = pdf_lookup_dict (page_tree, "MediaBox");
+  resources = pdf_new_dict();
+  tmp1 = pdf_lookup_dict (page_tree, "Resources");
+  if (tmp1) {
+    pdf_merge_dict (tmp1, resources);
+    pdf_release_obj (resources);
+    resources = tmp1;
+  }
+  while ((kids_ref = pdf_lookup_dict (page_tree, "Kids")) != NULL) {
+    pdf_release_obj (page_tree);
+    pdf_release_obj (page_tree_ref);
+
+    fprintf (stderr, "kids");
+    pdf_write_obj (stderr, kids_ref);
+    kids = pdf_deref_obj (kids_ref);
+    pdf_release_obj (kids_ref);
+
+    page_tree_ref = pdf_get_array (kids, 1);
+    page_tree = pdf_deref_obj (page_tree_ref);
+    pdf_release_obj (kids);
+
+    fprintf (stderr, "new page tree ");
+    pdf_write_obj (stderr, page_tree_ref);
+    pdf_write_obj (stderr, page_tree);
+    /* Replace MediaBox if it's here */
+    tmp1 = pdf_lookup_dict (page_tree, "MediaBox");
+    if (tmp1 && media_box)
+      pdf_release_obj (media_box);
+    if (tmp1) 
+      media_box = tmp1;
+    /* Add resources if they're here */
+    tmp1 = pdf_lookup_dict (page_tree, "Resources");
+    if (tmp1) {
+      pdf_merge_dict (tmp1, resources);
+      pdf_release_obj (resources);
+      resources = tmp1;
+    }
+  }
+  /* At this point, page_tree contains the first page.  media_box and
+     resources should also be set. */
+  contents_ref = pdf_lookup_dict (page_tree, "Contents");
+  pdf_release_obj (page_tree);
+  contents = pdf_deref_obj (contents_ref);
+  pdf_release_obj(contents_ref);  /* Remove "old" reference */
+  contents_ref = pdf_ref_obj (contents);  /* Give it a "new" reference */
+
+  fprintf (stderr, "\n\nmediabox:"); pdf_write_obj (stderr, media_box);
+  fprintf (stderr, "\n\nresources:"); pdf_write_obj (stderr,
+						     resources);
+  xobj_dict = pdf_stream_dict (contents);
+  num_xobjects += 1;
+  sprintf (work_buffer, "Fm%d", num_xobjects);
+  pdf_doc_add_to_page_xobjects (work_buffer, contents_ref);
+  pdf_add_dict (xobj_dict, tmp1 = pdf_new_name ("Name"),
+		tmp2 = pdf_new_name (work_buffer));
+  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+
+  pdf_add_dict (xobj_dict, tmp1 = pdf_new_name ("Type"), tmp2 =
+		pdf_new_name ("XObject"));
+  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+
+  fprintf (stderr, "\n\ncontents1:"); pdf_write_obj (stderr, contents);
+  fprintf (stderr, "\nendcontents\n\n");
+
+  pdf_add_dict (xobj_dict, tmp1 = pdf_new_name ("Subtype"), tmp2 =
+		pdf_new_name ("Form"));
+  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+  pdf_add_dict (xobj_dict, tmp1 = pdf_new_name ("BBox"), media_box);
+  pdf_release_obj (tmp1); pdf_release_obj (media_box);
+  pdf_add_dict (xobj_dict, tmp1 = pdf_new_name ("FormType"), 
+		tmp2 = pdf_new_number(1.0));
+  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+  tmp1 = pdf_new_array();
+  pdf_add_array (tmp1, tmp2 = pdf_new_number (1));  pdf_release_obj (tmp2);
+  pdf_add_array (tmp1, tmp2 = pdf_new_number (0));  pdf_release_obj (tmp2);
+  pdf_add_array (tmp1, tmp2 = pdf_new_number (0));  pdf_release_obj (tmp2);
+  pdf_add_array (tmp1, tmp2 = pdf_new_number (1));  pdf_release_obj (tmp2);
+  pdf_add_array (tmp1, tmp2 = pdf_new_number (0));  pdf_release_obj (tmp2);
+  pdf_add_array (tmp1, tmp2 = pdf_new_number (0));  pdf_release_obj (tmp2);
+  pdf_add_dict (xobj_dict, tmp2 = pdf_new_name ("Matrix"), tmp1);
+  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
   
-  read_object (8);
+  new_resources = pdf_new_dict();
+  pdf_add_dict (xobj_dict, tmp1 = pdf_new_name ("Resources"),
+		tmp2 = pdf_ref_obj (new_resources));
+  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+  for (i=1; (key = pdf_get_dict(resources, i)) != NULL; i++) 
+    {
+      fprintf (stderr, "\nkey=%s\n", key);
+      tmp1 = pdf_lookup_dict (resources, key);
+      tmp2 = pdf_deref_obj (tmp1);
+      fprintf (stderr, "\ndereffed obj");
+      pdf_write_obj(stderr, tmp2);
+      pdf_release_obj (tmp1);
+      tmp1 = pdf_ref_obj (tmp2);
+      pdf_release_obj (tmp2);
+      pdf_add_dict (new_resources, tmp2 = pdf_new_name (key), tmp1);
+      pdf_release_obj (tmp1);
+      pdf_release_obj (tmp2);
+      release (key);
+      fprintf (stderr, "end");
+      
+    }
+  pdf_release_obj (new_resources);
+  pdf_release_obj (resources);
+  fprintf (stderr, "\n\ncontents:"); pdf_write_obj (stderr, contents);
+  sprintf (work_buffer, " /Fm%d Do ", num_xobjects);
+  pdf_doc_add_to_page (work_buffer, strlen(work_buffer));
+  pdf_release_obj(contents);
 }
 
 

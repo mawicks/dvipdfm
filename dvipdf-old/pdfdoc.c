@@ -26,6 +26,7 @@ static pdf_obj *page_count_obj = NULL, *this_page_contents = NULL;
 static pdf_obj *page_bop, *page_eop;
 static pdf_obj *this_page_beads = NULL;
 static pdf_obj *this_page_annots = NULL;
+static pdf_obj *this_page_xobjects = NULL;
 static pdf_obj *tmp1, *tmp2, *tmp3;
 
 #define MAX_PAGES 4096
@@ -228,9 +229,26 @@ static start_current_page_resources (void)
   pdf_add_dict (current_page_resources,
 		tmp2 = pdf_new_name ("ProcSet"),
 		tmp1);
-  pdf_release_obj (tmp1);
-  pdf_release_obj (tmp2);
+  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
+  this_page_xobjects = pdf_new_dict ();
+  pdf_add_dict (current_page_resources,
+		tmp1 = pdf_new_name ("XObject"),
+		tmp2 = pdf_ref_obj (this_page_xobjects));
+  pdf_release_obj (tmp1); pdf_release_obj (tmp2);
 }
+
+void pdf_doc_add_to_page_xobjects (const char *name, pdf_obj
+				   *resource)
+{
+  if (debug) {
+    fprintf (stderr, "(pdf_doc_add_to_page_xojects)");
+  }
+  pdf_add_dict (this_page_xobjects,
+		tmp1 = pdf_new_name (name), 
+		resource);
+  pdf_release_obj(tmp1); 
+}
+
 
 void pdf_doc_add_to_page_resources (const char *name, pdf_obj *resource)
 {
@@ -626,6 +644,10 @@ static void finish_last_page ()
   if (this_page_beads != NULL) {
     pdf_release_obj (this_page_beads);
     this_page_beads = NULL;
+  }
+  if (this_page_xobjects != NULL) {
+    pdf_release_obj (this_page_xobjects);
+    this_page_xobjects = NULL;
   }
 }
 

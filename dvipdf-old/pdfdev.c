@@ -407,5 +407,9 @@ void dev_do_special (char *buffer, UNSIGNED_QUAD size)
 {
   int i;
   graphics_mode();
+  sprintf (format_buffer, " q 1 0 0 1 %g %g cm ",
+	   ROUND(dev_xpos,0.01), ROUND(dev_ypos,0.01));
+  pdf_doc_add_to_page (format_buffer, strlen(format_buffer));
   pdf_parse_special (buffer, size);
+  pdf_doc_add_to_page (" Q ", 3);
 }

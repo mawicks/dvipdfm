@@ -227,6 +227,8 @@ pdf_obj *pdf_new_ref (int label, int generation)
   result -> data = indirect;
   indirect -> label = label;
   indirect -> generation = generation;
+  indirect -> dirty = 1;  /* Any caller that directly sets his own label
+			     is dirty */
   return result;
 }
 
@@ -250,12 +252,14 @@ pdf_obj *pdf_ref_obj(pdf_obj *object)
 					   one */
     indirect -> label = ((struct pdf_indirect *) (object -> data)) -> label;
     indirect -> generation = ((struct pdf_indirect *) (object -> data)) -> generation;
+    indirect -> dirty = ((struct pdf_indirect *) (object -> data)) -> dirty;
   } else {
     if (object -> label == 0) {
       pdf_label_obj (object);
     }
     indirect -> label = object -> label;
     indirect -> generation = object -> generation;
+    indirect -> dirty = 0;
   }
   return result;
 }
@@ -268,9 +272,17 @@ static void release_indirect (struct pdf_indirect *data)
 static void write_indirect (FILE *file, const struct pdf_indirect *indirect)
 {
   int length;
-  length = sprintf (format_buffer, "%d %d R", indirect -> label,
-		    indirect -> generation);
-  pdf_out (file, format_buffer, length);
+  if (indirect -> dirty) {
+    if (file == stderr) 
+      pdf_out (file, "{d}", 3);
+    else
+      fprintf (stderr, "\nTried to write a dirty object\n");
+    pdf_out (file, "        0       0    R", 22);
+  } else {
+    length = sprintf (format_buffer, "%d %d R", indirect -> label,
+		      indirect -> generation);
+    pdf_out (file, format_buffer, length);
+  }
 }
 
 pdf_obj *pdf_new_null (void)
@@ -541,6 +553,22 @@ void pdf_set_name (pdf_obj *object, char *name)
   }
 }
 
+char *pdf_name_value (pdf_obj *object)
+{
+  struct pdf_name *data;
+  char *result;
+  if (object == NULL || object -> type != PDF_NAME) {
+     ERROR ("pdf_name_value:  Passed non-name object");
+  }
+  data = object -> data;
+  if (data -> name == NULL)
+    return NULL;
+  result = NEW (strlen (data -> name)+1, char);
+  strcpy (result, data -> name);
+  return result;
+}
+
+
 pdf_obj *pdf_new_array (void)
 {
   pdf_obj *result;
@@ -564,6 +592,25 @@ static void write_array (FILE *file, const struct pdf_array *array)
   }
   pdf_out_char (file, ']');
 }
+
+pdf_obj *pdf_get_array (pdf_obj *array, int index)
+{
+  struct pdf_array *data;
+  if (array == NULL) {
+    ERROR ("pdf_get_array: passed NULL object");
+  }
+  if (array -> type != PDF_ARRAY) {
+    ERROR ("pdf_get_array: passed non array object");
+  }
+  data = array -> data;
+  while (--index > 0 && data -> next != NULL)
+    data = data -> next;
+  if (data -> next == NULL) {
+    return NULL;
+  }
+  return pdf_link_obj (data -> this);
+}
+
 
 
 static void release_array (struct pdf_array *data)
@@ -690,10 +737,29 @@ pdf_obj *pdf_lookup_dict (const pdf_obj *dict, const char *name)
   data = dict -> data;
   while (data -> key != NULL) {
     if (pdf_match_name (data -> key, name))
-      return (data -> value);
+      return (pdf_link_obj (data -> value));
     data = data -> next;
   }
   return NULL;
+}
+
+char *pdf_get_dict (const pdf_obj *dict, int index)
+{
+  struct pdf_dict *data;
+  char *result;
+  if (dict == NULL) {
+    ERROR ("pdf_get_dict: passed NULL object");
+  }
+  if (dict -> type != PDF_DICT) {
+    ERROR ("pdf_get_dict: passed non array object");
+  }
+  data = dict -> data;
+  while (--index > 0 && data -> next != NULL)
+    data = data -> next;
+  if (data -> next == NULL)
+    return NULL;
+  result = pdf_name_value (data -> key);
+  return result;
 }
 
 
@@ -751,7 +817,7 @@ pdf_obj *pdf_stream_dict (pdf_obj *stream)
 {
   struct pdf_stream *data;
   if (stream == NULL || stream -> type != PDF_STREAM) {
-     ERROR ("pdf_add_stream:  Passed non-stream object");
+     ERROR ("pdf_stream_dict:  Passed non-stream object");
   }
   data = stream -> data;
   return pdf_link_obj (data -> dict);
@@ -779,6 +845,8 @@ void pdf_write_obj (FILE *file, const pdf_obj *object)
   if (object -> type > PDF_INDIRECT) {
     ERROR ("pdf_write_obj:  Called with invalid object");
   }
+  if (file == stderr)
+    fprintf (stderr, "{%d}", object -> refcount);
   switch (object -> type) {
   case PDF_BOOLEAN:
     write_boolean (file, object -> data);
