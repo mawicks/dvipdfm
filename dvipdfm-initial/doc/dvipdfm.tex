@@ -1,4 +1,4 @@
-% $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/doc/dvipdfm.tex,v 1.6 1998/11/19 15:28:35 mwicks Exp $
+% $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/doc/dvipdfm.tex,v 1.7 1998/11/19 20:36:00 mwicks Exp $
 \special{  pdf:  docview <</PageMode /UseOutlines>>}%
 \catcode`\ =11\def\space{ }\catcode`\ =10
 % Page layout
@@ -27,16 +27,25 @@
 \def\begincolor#1{\special{pdf:bc #1}}%
 \def\endcolor{\special{pdf:ec}}%
 %
+% Small help for images
+\def\reserve#1#2#3{\setbox0\hbox{}\wd0=#1
+                   \ht0=#2\special{#3}\box0}
+%
 % Some font definitions
 %
 \font\maintitlefont=cmti12 at 20.74pt
 \font\headingfont=cmss12 at 14.4pt
 \font\subheadingfont=cmss12 at 12pt
 %
+%
 % Miscellaneous token lists
 %
 \newtoks\title\newtoks\author\newtoks\version
 \newtoks\date
+%
+% Bibliography counters
+\newcount\biblioitems\biblioitems=0
+\def\bibitem{\medskip\advance\biblioitems by 1\item{[\the\biblioitems]}}
 %
 % Counters for section levels
 %
@@ -44,6 +53,7 @@
 \sectioncount0\ssectioncount0\sssectioncount0
 %
 \newskip\indentlevel\indentlevel=\parindent
+\newskip\secskip\secskip=20pt plus 1pt minus 2pt
 \def\beginlist{\par\advance\leftskip by \indentlevel\advance\rightskip by
 \indentlevel\medskip}
 \def\endlist{\par\advance\leftskip by -\indentlevel\advance\rightskip by
@@ -79,21 +89,23 @@
      << /Type /Annot /Subtype /Link /Border [ 0 0 0 ] /A << /S /GoTo
      /D (#2) >> >>}\box0}%
 %
-\def\dest#1{\special{pdf:dest (#1) [ @thispage /FitH @ypos ]}}%
+\def\dest#1{\hbox{\raise14pt\hbox{\special{pdf:dest (#1) [ @thispage /FitH
+@ypos ]}}}}%
 %
 \def\maketitle{\noindent\settitle\hfill\setauthor\par
           \begincolor{\red}\hrule height 1.0pt\endcolor\medskip
           \noindent\setversion\hfill\setdate\vskip0.3in}%
 %
 \def\section#1{\advance\sectioncount by 1\ssectioncount0
-\goodbreak\vskip1.5\baselineskip\noindent\setheading{\the\sectioncount. #1}\par\nobreak\medskip}%
+\goodbreak\vskip\secskip\goodbreak
+\noindent\setheading{\the\sectioncount. #1}\nobreak\par\medskip\nobreak}%
 \def\subsection#1{\advance\ssectioncount by 1%
-\bigskip\noindent\setsubheading{\the\sectioncount.\the\ssectioncount\
+\vskip\secskip\noindent\setsubheading{\the\sectioncount.\the\ssectioncount\
           #1}\par\nobreak\medskip}%
 %
 \def\display#1{\medskip\line{\quad #1\hfil}\medskip}
-\def\example{\medskip\noindent{\it Example:\nobreak}}
-\def\note{\medskip\noindent{\it Note:\par\nobreak}}
+\def\example{\medskip\noindent{\it Example:\quad\nobreak}}
+\def\note{\medskip\noindent{\it Note:\quad\par\nobreak}}
 \def\syntax{\medskip\noindent{\it Syntax:\quad}}
 \def\description{\medskip\noindent{\it Description:\quad}}
 %
@@ -117,7 +129,7 @@ This package has the following features:
 annotations (including forms and widgets).
 
 \item{$\bullet$} Ability to include arbitrary PDF files as encapsulated
-objects.
+objects along with any embedded resources such as fonts.
 
 \item{$\bullet$} Ability to include JPEG images as encapsulated
 objects.
@@ -173,8 +185,12 @@ The electronic version of the document exercises
 some of the hypertext features and serves as
 a sample input file for |dvipdfm|.
 It assumes the reader has some familiarity with the basic features
-of the \link{Portable
-Document Format}{pdfmanual}.
+of the Portable Document Format.  The PDF specification
+is distributed by Adobe Systems \link{[1]}{pdfmanual}.
+An excellent source for information about PDF documents
+in general is \link{[2]}{pdfprimer}.  Information about
+using \TeX\ (mainly using Distiller) to construct PDF documents is the
+AcroTeX home page\link{[3]}{acrotex}.
 
 Each \TeX\ |special|
 represents a separate command to the \dvipdfm\ 
@@ -193,7 +209,7 @@ In the syntax specifications that follow, {\it PDF\_Object}
 means that an arbitary PDF object is expected.  Similarly
 {\it PDF\_Array} indicates that a PDF array is expected, {\it PDF\_Dict}
 inciates that a PDF dictionary is expected, etc.
-See the \link{reference manual}{pdfmanual}\ 
+See the \link{reference manual}{pdfmanual}\
 for a complete list of PDF object types.
 
 The single extension implemented in this driver allows a symbol name of the
@@ -208,9 +224,12 @@ names defined by the driver.
 The driver defined variables are for
 referencing things like the current page, future pages,
 or the current location on the current page.
-
-The driver defined variables are
-\par\medskip
+The driver defined variables appear in \link{Table~1}{drivervariables}.
+\topinsert
+{\dest{drivervariables}}
+\centerline{\begincolor{\blue}\subheadingfont Table~1---List of driver
+defined variables\endcolor}
+\bigskip\nobreak
 \centerline{\vbox{\halign{{\tt #}\hskip
 1em&\vtop{\leftskip0pt\rightskip0pt\hsize=3.0in\noindent #}\cr
 \omit\hfil\it Variable\hfil&\omit\hfil \it Description \hfil\cr
@@ -222,7 +241,7 @@ The driver defined variables are
 @ypos&A {\it number} representing the current vertical position in units of PDF points.\cr
 @xpos&A {\it number} representing the current horizontal position in units of PDF points.\cr
 }}}
-\medskip
+\endinsert
 
 In the syntax specificatins that follow, several
 standard conventions are followed.  Terminal
@@ -252,8 +271,7 @@ A scaling consists of one of the keywords |scale|, |xscale|, or
 |yscale| followed by a numerical value.  The notation
 {\it scaling} means a scaling is expected. 
 
-
-\section{Dvipdfm Commands}
+\section{Document Construction Commands}
 All commands are executed via \TeX\ |\special| primitives
 prefixed with the characters ``|pdf:|''.
 \example
@@ -262,13 +280,16 @@ prefixed with the characters ``|pdf:|''.
                         /Dest [ 1 0 R /FitH 234 ] >>
 \endtt
 
+\hbox to 0pt{\hskip-1.0in\special{pdf: ann width 3.0in height 36pt << /Type /Annot /Subtype /Text
+/Contents (This is a /Text Annotation.  Aren't these things ugly?.  It's a
+good thing they don't print by default.) >>}\hss}
 \subsection{Annotate}
 \syntax
 {\tt annotate} [{\tt @}{\it name}] {\it dimension}+ {\it PDF\_dictionary}
-
 \description
-The |annotate| (|annot| or |ann|) command defines an annotation.  Annotations are typically
-notes, hyperlinks, PDF forms, or PDF widgets.
+The |annotate| (|annot| or |ann|) command defines an annotation.
+Annotations are typically used for
+notes, hyperlinks, forms, or widgets.
 The parameter {\it name} is an optional alphanumeric identifier
 and {\it PDF\_dictionary} is a valid PDF dictionary after variable expansion.
 If {\tt @}{\it name} is specified, it may be used in
@@ -280,11 +301,15 @@ by an appropriate length, specified as per \TeX.  Each
 length is a number followed by a unit, such as {\tt pt},
 {\tt in}, or {\tt cm}.  A {\tt pt} is a \TeX\ pt, not a PDF pt.
 
-\example
+\example The annotation in this subsection
+was typeset with
 \begintt
-\special{pdf: ann width 144pt height 10pt depth 2pt 
-           << /Type /Annot /Subtype /Link /Border [1 0 0] 
-              /A << /S /GoTo [ @nextpage /Fit ] >> }
+\special{pdf: ann width 3.0in height 36pt
+     << /Type /Annot /Subtype /Text
+        /Contents (This is a /Text Annotation.
+                   Aren't these things ugly?.
+                   It's a good thing they don't
+                   print by default.) >>}
 \endtt
 
 
@@ -504,7 +529,7 @@ Otherwise, this command functions just like |epdf|.
 
 \subsection{Content}
 \syntax
-{\tt content} {\tt stream}
+{\tt content} {\it stream}
 \description
 The |content| command specifies a marking
 stream to be added to the current page at
@@ -516,7 +541,7 @@ commands to change colors.
 
 \subsection{Bop}
 \syntax
-{\tt bop} {\tt stream}
+{\tt bop} {\it stream}
 \description
 The |bop| command specifies a marking
 stream to be generated at the top of each page.
@@ -532,42 +557,86 @@ of where it appears in the document.
 \special {pdf: bop  q 0 w 0.8 0.5 0 RG
                            54 740 m 504 740 l 504 740.25 l 54 740.25 l b  
                            36 760 m 504 760 l 504 760.25 l 36 760.25 l b Q }
+%\special {pdf: bop  q 0 w 0.8 0.5 0 RG
+%                           108 740 m 558 740 l 558 740.25 l 108 740.25 l b  
+%                           108 760 m 576 760 l 576 760.25 l 108 760.25 l b Q }
 
 
 \subsection{Eop}
+\syntax
 \beginlist
-{\tt eop} {\tt stream}
+{\tt eop} {\it stream}
 \endlist
+\description
 The {\tt eop} specifies a marking stream to be generated at the end
 of each page. The parameter {\it stream} is any sequence
 of marking operators and is added to the page's content stream.  
 The stream is applied {\it to all pages} regardless
 of where it appears in the document.
 
-\section{Examples}
-The following image was included from a JPEG file:
+\section{Image Examples}
+The following photograph of the author was included from a JPEG file:
 
-\centerline{\vbox to 1.42in{\hrule\vfil\hbox to 4.37in{\special{pdf: image
-(gnome.jpg)}\hfil}}}
+\centerline{\reserve{1.50in}{2.05in}{pdf: image (mwicks.jpeg)}}
 
-The following image is identical, but loaded 
-with |scale 0.25|.
+The following image comes from the same file, but loaded at 50\% scale.
 
-\centerline{\vbox to 0.36in{\vfil\hbox to 1.10in{\special{pdf:
-image scale 0.25
-(gnome.jpg)}\hfil}}}
+\centerline{\reserve{0.75in}{1.025in}{pdf: image scale 0.50 (mwicks.jpeg)}}
 
-Graphics work, but you need to put the graphic image
+Macro support for images is coming.  For now,
+you need to put the graphic image
 in your own box of the correct size so \TeX\ knows
 about it.  No space is reserved for a |special|
-unless you reserve it.
+unless you reserve it.  I used the following simple
+macro for the previous images:
+\begintt
+\def\reserve#1#2#3{\setbox0\hbox{}\wd0=#1
+                   \ht0=#2\special{#3}\box0}
+\endtt
+The arguments to the |\reserve| macro are the width, height,
+and |\special| contents, respectively.
+The first image in this section was included with
+\begintt
+\centerline{\reserve{1.50in}{2.05in}{pdf: image (mwicks.jpeg)}}
+\endtt
 
+The following image is an embedded PDF file:
 
+\centerline{\reserve{2.41in}{2.6in}{pdf: epdf (transistor.pdf)}}
+
+Notice that the embedding loaded the resource required
+for the object, which in this case is the times roman font.
+
+Until macro support is more developed, you will need to know
+the dimensions of the image.  By default, JPEG files are included
+at a resolution of 100dpi, so if you know the pixel size
+of the image, you know how much space to reserve.
+Several command line utilities are available to read
+the pixel dimensions of a JPEG file.  For PDF files,
+you can |grep| on |/MediaBox| to get an indication
+of the image size.  The |/MediaBox| dimensions are
+in PDF points.
+
+JPEG images are placed at a resolution of 100 dots-per-\TeX-inches,
+so any \TeX magnification is applied to the image
+in addition to any scaling defined in the |\special|.
+For example, this document sets |\magnification=\magstephalf|,
+so the images are actually scaled by 1.095; the first
+image in this section has a printed width of 1.643in.
 
 \newpage
 \section{References}
-\item{[1]}\dest{pdfmanual}Portable Document Format Reference Manual, Version
-1.2, Adobe Systems Incorporated, 1996.  Available from {\tt
-  http://www.adobe.com}. 
+\tolerance=1000\hbadness=1000
+\bibitem\dest{pdfmanual}{\it Portable Document
+Format Reference Manual}, Version 1.2, Adobe Systems Incorporated, 1996.
+Available at the following URL:  {\tt http://www.adobe.com}. 
+
+\bibitem\dest{pdfprimer}Thomas Merz,
+{\it Web Publishing with Acrobat/PDF},
+Springer-Verlag, 1997, ISBN 3-540-63762-1.  Chapter~6 of this book is available
+at the URL:  |http://http://www.ifconnection.de/~tm|.
+
+\bibitem\dest{acrotex}D. P. Story, {\it AcroTeX},  The AcroTeX home page
+is located at the URL:  |http://www.math.uakron.edu/~dpstory/acrotex.html|.
 
 \bye
