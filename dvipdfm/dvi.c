@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.63 1999/09/22 02:26:16 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.64 1999/10/08 00:15:57 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -932,7 +932,7 @@ void dvi_do_page(unsigned n)  /* Most of the work of actually interpreting
   seek_absolute (dvi_file, page_loc[n]);
   dvi_stack_depth = 0;
   while (1) {
-    /* The most like opcodes are individual setchars.  These are
+    /* The most likely opcodes are individual setchars.  These are
        buffered for speed */
     s_len = 0;
     while (s_len < S_BUFFER_SIZE && (opcode = fgetc (dvi_file)) <=
@@ -958,7 +958,7 @@ void dvi_do_page(unsigned n)  /* Most of the work of actually interpreting
       case SET2:
       case SET3:
       case SET4:
-	ERROR ("dvi_do_page: Multibyte byte character in DVI file.  I can't handle this!");
+	ERROR ("dvi_do_page: Multibyte character in DVI file.  I can't handle this!");
 	break;
       case SET_RULE:
 	do_setrule();
@@ -969,7 +969,7 @@ void dvi_do_page(unsigned n)  /* Most of the work of actually interpreting
       case PUT2:
       case PUT3:
       case PUT4:
-	ERROR ("dvi_do_page: Multibyte byte character in DVI file.  I can't handle this!");
+	ERROR ("dvi_do_page: Multibyte character in DVI file.  I can't handle this!");
 	break;
       case PUT_RULE:
 	do_putrule();

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.59 1999/09/19 04:56:41 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.60 1999/10/08 00:15:57 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -533,6 +533,11 @@ int pdfobj_escape_str (char *buffer, int bufsize, unsigned char *s,
     /* Exit as fast as possible for printable characters */
     if (result+4 > bufsize)
       ERROR ("pdfobj_escape_str: Buffer overflow");
+    if (ch < 32 || ch > 126) {
+      buffer[result++] = '\\';
+      result += sprintf (buffer+result, "%03o", ch);
+      continue;
+    }
     switch (ch) {
     case '(':
       buffer[result++] = '\\';
@@ -547,12 +552,7 @@ int pdfobj_escape_str (char *buffer, int bufsize, unsigned char *s,
       buffer[result++] = '\\';
       break;
     default:
-      if (isprint (ch))
-	buffer[result++] = ch;
-      else {
-	buffer[result++] = '\\';
-	result += sprintf (buffer+result, "%03o", ch);
-      }
+      buffer[result++] = ch;
       break;
     }
   }
