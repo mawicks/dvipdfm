@@ -1,8 +1,4 @@
-ac_include ../make/paths.make
-ac_include ../make/common.make
-ac_include ../make/programs.make
-ac_include ../make/texi.make
-prog_cflags = -DKPATHSEA 
+
 programs=dvipdfm ebb
 headers = acdefines.h dvi.h pdflimits.h error.h mfileio.h jpeg.h mem.h numbers.h \
 	pdfdev.h pdfdoc.h pdfparse.h pdfspecial.h tfm.h type1.h epdf.h \
@@ -15,28 +11,24 @@ eobjects=ebb.o jpeg.o pdfobj.o mem.o mfileio.o numbers.o pdfparse.o
 
 check default all: $(programs) 
 
-ebb:$(kpathsea) $(eobjects)
-	$(kpathsea_link) $(eobjects) $(LOADLIBES)
+ebb: $(eobjects)
+	$(CC) -o ebb $(eobjects)
 
-dvipdfm:$(kpathsea) $(objects)
-	$(kpathsea_link) $(objects) $(LOADLIBES)
-
-ac_include ../make/tkpathsea.make
-
+dvipdfm:  $(objects)
+	$(CC) -o dvipdfm $(objects)
 
 install: install-exec install-data
 uninstall: uninstall-exec uninstall-data
 
 install-exec: all
-	$(SHELL) $(top_srcdir)/../mkinstalldirs $(bindir) 
-	$(INSTALL_LIBTOOL_PROG) $(bindir) $(programs)
+	$(INSTALL) $(bindir) $(programs)
 install-data:
-# psfonts.map.
+# pdffonts.map.
 	$(SHELL) $(top_srcdir)/../mkinstalldirs $(psheaderdir)/dvipdfm
 	if test ! -r $(psheaderdir)/dvipdfm/pdffonts.map \
 	   || grep 'original pdffonts.map --' $(psheaderdir)/dvipdfm/pdffonts.map \
 	   >/dev/null; then  \
-	   $(INSTALL_DATA) $(srcdir)/pdffonts.map $(psheaderdir)/dvipdfm/pdffonts.map; \
+	   $(INSTALL) ./pdffonts.map $(psheaderdir)/dvipdfm/pdffonts.map; \
 	else true; fi
 
 uninstall-exec:
@@ -46,12 +38,6 @@ uninstall-data:
 	if grep 'original pdffonts.map --' $(psheaderdir)/dvipdfm/pdffonts.map \
 	   >/dev/null 2>&1; then rm -f $(psheaderdir)/dvipdfm/pdffonts.map; \
 	else true; fi
- 
-ac_include ../make/dist.make
-# ac_include ../make/config.make
-ac_include ../make/clean.make
-ac_include ../make/rdepend.make
-ac_include depend.make
 
 
 

@@ -1495,9 +1495,8 @@ EOF
 fi
 
 
-
 echo $ac_n "checking for 8-bit clean memcmp""... $ac_c" 1>&6
-echo "configure:1501: checking for 8-bit clean memcmp" >&5
+echo "configure:1500: checking for 8-bit clean memcmp" >&5
 if eval "test \"`echo '$''{'ac_cv_func_memcmp_clean'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -1505,7 +1504,7 @@ else
   ac_cv_func_memcmp_clean=no
 else
   cat > conftest.$ac_ext <<EOF
-#line 1509 "configure"
+#line 1508 "configure"
 #include "confdefs.h"
 
 main()
@@ -1515,7 +1514,7 @@ main()
 }
 
 EOF
-if { (eval echo configure:1519: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest && (./conftest; exit) 2>/dev/null
+if { (eval echo configure:1518: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest && (./conftest; exit) 2>/dev/null
 then
   ac_cv_func_memcmp_clean=yes
 else
@@ -1535,12 +1534,12 @@ test $ac_cv_func_memcmp_clean = no && LIBOBJS="$LIBOBJS memcmp.o"
 for ac_func in strspn
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
-echo "configure:1539: checking for $ac_func" >&5
+echo "configure:1538: checking for $ac_func" >&5
 if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1544 "configure"
+#line 1543 "configure"
 #include "confdefs.h"
 /* System header to define __stub macros and hopefully few prototypes,
     which can conflict with char $ac_func(); below.  */
@@ -1563,7 +1562,7 @@ $ac_func();
 
 ; return 0; }
 EOF
-if { (eval echo configure:1567: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest; then
+if { (eval echo configure:1566: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest; then
   rm -rf conftest*
   eval "ac_cv_func_$ac_func=yes"
 else
