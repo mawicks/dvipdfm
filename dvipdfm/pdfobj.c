@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.36 1998/12/30 20:54:16 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.37 1999/01/05 20:27:35 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -907,12 +907,7 @@ pdf_obj *pdf_new_stream (int flags)
 				      indirect reference.  This will
 				      be checked by the output routine 
 				   */
-  data -> length = pdf_new_number (0);
   data -> _flags = flags;
-  pdf_add_dict (data->dict,
-		pdf_new_name ("Length"),
-		pdf_ref_obj (data -> length));
-
 #ifdef HAVE_ZLIB
   if ((flags & STREAM_COMPRESS) && compression_level > 0) {
     if (!filters) {
@@ -963,26 +958,21 @@ static void write_stream (FILE *file, pdf_stream *stream)
     filtered_length = buffer_length;
   }
 #endif /* HAVE_ZLIB */
-
+  pdf_add_dict (stream->dict,
+		pdf_new_name ("Length"),
+		pdf_new_number(filtered_length));
   pdf_write_obj (file, stream -> dict);
   pdf_out (file, "\nstream\n", 8);
   
   if (filtered_length > 0) {
     pdf_out (file, filtered, filtered_length);
-    /* If stream doesn't have an eol, put one there */
-    if (filtered[filtered_length-1] != '\n') {
-      pdf_out (file, "\n", 1);
-      filtered_length +=1;
-    }
   }
 
   RELEASE (filtered);
-
   /* This stream length "object" gets reset every time write_stream is
      called for the stream object */
   /* If this stream gets written more than once with different
      filters, this could be a problem */
-  pdf_set_number (stream -> length, filtered_length);
   pdf_out (file, "endstream", 9);
   return;
 }
@@ -990,7 +980,6 @@ static void write_stream (FILE *file, pdf_stream *stream)
 static void release_stream (pdf_stream *stream)
 {
   pdf_release_obj (stream -> dict);
-  pdf_release_obj (stream -> length);
 /*  fclose (stream -> tmpfile); */
   if (stream -> stream_length > 0)
     RELEASE (stream -> stream);
