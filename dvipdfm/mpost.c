@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.34 2000/10/13 02:13:00 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mpost.c,v 1.35 2000/10/27 01:50:01 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -589,9 +589,12 @@ static int do_operator(char *token,
   case ADD:
     tmp1 = POP_STACK();
     tmp2 = POP_STACK();
-    if (tmp1 && tmp2)
+    if (tmp1 && tmp2) {
       pdf_set_number (tmp1,
 		      pdf_number_value(tmp1)+pdf_number_value(tmp2));
+    } else {
+       fprintf (stderr, "\nExpecting two numbers before \"add\"");
+    }
     if (tmp2)
       pdf_release_obj (tmp2);
     if (tmp1)
@@ -664,11 +667,13 @@ static int do_operator(char *token,
     if (tmp6) pdf_release_obj (tmp6);
     break;
   case DIV:
-    tmp2 = POP_STACK();
-    tmp1 = POP_STACK();
-    if (tmp1 && tmp2)
+    if ((tmp2 = POP_STACK()) && tmp2 -> type == PDF_NUMBER &&
+	(tmp1 = POP_STACK()) && tmp1 -> type == PDF_NUMBER) {
       pdf_set_number (tmp1,
 		      pdf_number_value(tmp1)/pdf_number_value(tmp2));
+    } else {
+       fprintf (stderr, "\nExpecting two numbers before \"div\"");
+    }
     if (tmp1)
       PUSH(tmp1);
     if (tmp2)
@@ -682,12 +687,12 @@ static int do_operator(char *token,
       PUSH(tmp1);
       PUSH(tmp2);
     } else {
-      if (tmp1)
-	pdf_release_obj (tmp1);
-      if (tmp2)
-	pdf_release_obj (tmp2);
       fprintf (stderr, "\nExpecting two numbers before \"dtransform\"");
     }
+    if (tmp1)
+      pdf_release_obj (tmp1);
+    if (tmp2)
+      pdf_release_obj (tmp2);
     break;
   case EXCH:
     if ((tmp1 = POP_STACK()) &&
@@ -695,9 +700,10 @@ static int do_operator(char *token,
       PUSH (tmp1);
       PUSH (tmp2);
     } else {
-      if (tmp1)
-	pdf_release_obj (tmp1);
+      fprintf (stderr, "\nExpecting two parameters before \"exch\"");
     }
+    if (tmp1)
+      pdf_release_obj (tmp1);
     break;
   case FILL:
     switch (state) {
@@ -737,6 +743,8 @@ static int do_operator(char *token,
 			pdf_string_value(tmp1),
 			pdf_string_length(tmp1), 0, mp_fonts[fontid].font_id);
 	graphics_mode();
+      } else {
+        fprintf (stderr, "\nInvalid parameters to \"fshow\"");
       }
       /* Treat fshow as a path terminator of sorts */
       state = 0;
@@ -821,6 +829,8 @@ static int do_operator(char *token,
 	x_state = pdf_number_value (tmp1);
 	y_state = pdf_number_value (tmp2);
 	add_point_to_path (x_state, y_state, 'l');
+      } else {
+	 fprintf (stderr, "\nExpecting two numbers before \"lineto\"\n");
       }
       if (tmp1)
 	pdf_release_obj (tmp1);
@@ -843,6 +853,8 @@ static int do_operator(char *token,
       x_state = pdf_number_value (tmp1);
       y_state = pdf_number_value (tmp2);
       add_point_to_path (x_state, y_state, 'm');
+    } else {
+      fprintf (stderr, "\nExpecting two numbers before \"moveto\"\n");
     }
     if (tmp1)
       pdf_release_obj (tmp1);
@@ -850,11 +862,13 @@ static int do_operator(char *token,
       pdf_release_obj (tmp2);
     break;
   case MUL:
-    tmp2 = POP_STACK();
-    tmp1 = POP_STACK();
-    if (tmp1 && tmp2)
+    if ((tmp2 = POP_STACK()) && tmp2-> type == PDF_NUMBER &&
+	(tmp1 = POP_STACK()) && tmp1-> type == PDF_NUMBER) {
       pdf_set_number (tmp1,
 		      pdf_number_value(tmp1)*pdf_number_value(tmp2));
+    } else {
+      fprintf (stderr, "\nExpecting two numbers before \"mul\"\n");
+    }
     if (tmp1)
       PUSH(tmp1);
     if (tmp2)
@@ -865,6 +879,8 @@ static int do_operator(char *token,
     if (tmp1 && tmp1 -> type == PDF_NUMBER) {
       pdf_set_number (tmp1, -pdf_number_value(tmp1));
       PUSH (tmp1);
+    } else {
+      fprintf (stderr, "\nExpecting number before \"mul\"\n");
     }
     break;
   case NEWPATH:
@@ -887,6 +903,8 @@ static int do_operator(char *token,
       x_state += pdf_number_value (tmp1);
       y_state += pdf_number_value (tmp2);
       add_point_to_path (x_state, y_state, 'l');
+    } else {
+      fprintf (stderr, "\nExpecting two numbers before \"rlineto\"\n");
     }
     if (tmp1)
       pdf_release_obj (tmp1);
@@ -902,6 +920,8 @@ static int do_operator(char *token,
       transform_path (pdf_number_value(tmp1), 0.0,
 		      0.0, pdf_number_value(tmp2), 0.0, 0.0);
       pdf_doc_add_to_page (work_buffer, len);
+    } else {
+      fprintf (stderr, "\nExpecting two numbers before \"scale\"\n");
     }
     if (tmp1)
       pdf_release_obj (tmp1);
@@ -1070,11 +1090,13 @@ static int do_operator(char *token,
     }
     break;
   case SUB:
-    tmp2 = POP_STACK();
-    tmp1 = POP_STACK();
-    if (tmp1 && tmp2)
+    if ((tmp2 = POP_STACK()) && tmp2-> type == PDF_NUMBER &&
+	(tmp1 = POP_STACK()) && tmp1-> type == PDF_NUMBER) {
       pdf_set_number (tmp1,
 		      pdf_number_value(tmp1)-pdf_number_value(tmp2));
+    } else {
+      fprintf (stderr, "\nExpecting two numbers before \"sub\"\n");
+    }
     if (tmp1)
       PUSH(tmp1);
     if (tmp2)
@@ -1087,6 +1109,8 @@ static int do_operator(char *token,
 		     cos(theta), -sin(theta),
 		     sin(theta), cos(theta));
       pdf_doc_add_to_page (work_buffer, len);
+    } else {
+      fprintf (stderr, "\nExpecting number before \"rotate\"\n");
     }
     if (tmp1)
       pdf_release_obj (tmp1);
@@ -1147,6 +1171,8 @@ static int do_operator(char *token,
       transform_path (1.0, 0.0, 0.0, 1.0,
 		      pdf_number_value (tmp1),
 		      pdf_number_value (tmp2));
+    } else {
+      fprintf (stderr, "\nExpecting two numbers before \"translate\"\n");
     }
     if (tmp1)
       pdf_release_obj (tmp1);
@@ -1158,7 +1184,10 @@ static int do_operator(char *token,
       double val=pdf_number_value(tmp1);
       pdf_set_number (tmp1, val>0? floor(val): ceil(val));
       PUSH (tmp1);
-    } else if (tmp1)
+    } else {
+      fprintf (stderr, "\nExpecting number before \"truncate\"\n");
+    }
+    if (tmp1)
       pdf_release_obj (tmp1);
     break;
   case FONTNAME:
