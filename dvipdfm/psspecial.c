@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/psspecial.c,v 1.14 2001/04/14 03:25:00 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/psspecial.c,v 1.15 2001/05/11 01:25:00 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -116,7 +116,7 @@ static int parse_psfile (char **start, char *end, double x_user, double y_user)
 	      p -> yscale = atof(val)/100.0;
 	      break;
 	    case ANGLE:
-	      p -> rotate = atof(val)/100.0;
+	      p -> rotate = atof(val)*M_PI/180.0;
 	      break;
 	    case LLX:
 	      p -> user_bbox = 1;
