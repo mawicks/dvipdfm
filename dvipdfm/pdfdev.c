@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.41 1998/12/14 04:42:58 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.42 1998/12/14 04:50:59 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -696,10 +696,6 @@ void dev_rule (mpt_t xpos, mpt_t ypos, mpt_t width, mpt_t height)
     fprintf (stderr, "(dev_rule)");
   }
   graphics_mode();
-  fprintf (stderr, "dev_rule: xpos=%ld,ypos=%ld,width=%ld,ht=%ld\n",
-	   xpos, ypos, width, height);
-  fprintf (stderr, "dev_rule: xpos=%g,ypos=%g,width=%g,ht=%g\n",
-	   xpos*dvi2pts, ypos*dvi2pts, width*dvi2pts, height*dvi2pts);
   len = sprintf (format_buffer, " %.2f %.2f m %.2f %.2f l %.2f %.2f l %.2f %.2f l b",
 		 xpos*dvi2pts, ypos*dvi2pts,
 		 (xpos+width)*dvi2pts, ypos*dvi2pts,
