@@ -1,0 +1,4 @@
+
+#define MAX_PAGES 4096
+#define MAX_FONTS 256
+#define DVI_STACK_DEPTH 256

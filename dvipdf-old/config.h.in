@@ -1,0 +1,7 @@
+/* config.h.in.  Generated automatically from configure.in by autoheader.  */
+
+#define VERSION "0.0"
+#define PACKAGE "dvipdf"
+
+/* Define if you have the <unistd.h> header file.  */
+#undef HAVE_UNISTD_H
