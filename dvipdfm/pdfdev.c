@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.87 1999/09/05 15:00:14 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.88 1999/09/05 15:36:22 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -374,7 +374,7 @@ struct color color_by_name (char *s)
     }
   }
   if (i == sizeof(colors_by_name)/sizeof(colors_by_name[0])) {
-    fprintf (stderr, "Color \"%s\" no known.  Using default color.\n", s);
+    fprintf (stderr, "Color \"%s\" no known.  Using \"Black\" instead.\n", s);
     result = default_color;
   } else {
     result = colors_by_name[i].color;
@@ -438,6 +438,23 @@ void dev_bg_gray (double value)
   background.colortype = GRAY;
   background.c1 = value;
   fill_page();
+  return;
+}
+
+void dev_bg_named_color (char *s)
+{
+  struct color color = color_by_name (s);
+  switch (color.colortype) {
+  case GRAY:
+    dev_bg_gray (color.c1);
+    break;
+  case RGB:
+    dev_bg_rgb_color (color.c1, color.c2, color.c3);
+    break;
+  case CMYK:
+    dev_bg_cmyk_color (color.c1, color.c2, color.c3, color.c4);
+    break;
+  }
   return;
 }
 
@@ -654,14 +671,15 @@ void dev_end_xform (void)
 
 void dev_close_all_xforms (void)
 {
-  if (num_transforms)
+  if (num_transforms) {
     fprintf (stderr, "\nspecial: Closing pending transformations at end of page/XObject\n");
-  while (num_transforms > 0) {
-    num_transforms -= 1;
-    pdf_doc_add_to_page (" Q", 2);
+    while (num_transforms > 0) {
+      num_transforms -= 1;
+      pdf_doc_add_to_page (" Q", 2);
+    }
+    dev_reselect_font();
+    dev_do_color();
   }
-  dev_reselect_font();
-  dev_do_color();
   return;
 }
 
@@ -706,11 +724,8 @@ MEM_START
   /* This shouldn't be necessary because line widths are now
      explicitly set for each rule */
   /*  pdf_doc_add_to_page ("0 w", 3); */
-  if (num_colors > 0)
-    dev_do_color();  /* This needn't be called unless there has
-			been a color change.  The  default color at the
-			top of a page is zero. */
-
+  dev_do_color(); /* Set text color in case it was changed on last
+		     page */
 #ifdef MEM_DEBUG
 MEM_END
 #endif

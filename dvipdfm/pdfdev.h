@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.h,v 1.26 1999/09/05 15:00:15 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.h,v 1.27 1999/09/05 15:36:22 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -80,6 +80,7 @@ extern void dev_do_color(void);
 extern void dev_bg_rgb_color (double r, double g, double b);
 extern void dev_bg_cmyk_color (double c, double m, double y, double k);
 extern void dev_bg_gray (double value);
+extern void dev_bg__named_color (char *s);
 
 extern void dev_begin_xform (double xscale, double yscale, double
 			     rotate, double x_user, double y_user);

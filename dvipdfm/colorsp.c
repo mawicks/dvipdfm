@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/colorsp.c,v 1.1 1999/09/05 15:00:14 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/colorsp.c,v 1.2 1999/09/05 15:36:21 mwicks Exp $
     
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -102,6 +102,43 @@ static void do_color_special (char **start, char *end)
   RELEASE (command);
 }
 
+static void do_background_special (char **start, char *end)
+{
+  char *token;
+  char *c1=NULL, *c2=NULL, *c3=NULL, *c4=NULL;
+  skip_white (start, end);
+  if ((token = parse_ident (start, end))) {
+    if (!strcmp (token, "rgb")) { /* Handle rgb color */
+      if ((c1=parse_number(start, end)) &&
+	  (c2=parse_number(start, end)) &&
+	  (c3=parse_number(start, end))) {
+	dev_bg_rgb_color (atof(c1), atof(c2), atof(c3));
+      }
+    }
+    else if (!strcmp (token, "cmyk")) { /* Handle rgb color */
+      if ((c1=parse_number(start, end)) &&
+	  (c2=parse_number(start, end)) &&
+	  (c3=parse_number(start, end)) &&
+	  (c4=parse_number(start, end))) {
+	dev_bg_cmyk_color (atof(c1), atof(c2), atof(c3), atof(c4));
+      }
+    } else if (!strcmp (token, "gray")) { /* Handle gray */
+      if ((c1=parse_number(start, end))) {
+	dev_bg_gray (atof(c1));
+      }
+    } else if (!strcmp (token, "hsb")) {
+      fprintf (stderr, "\ncolor special: hsb not implemented\n");
+    } else { /* Must be a "named" color */
+      dev_bg_named_color (token);
+    }
+    if (c1) RELEASE(c1);
+    if (c2) RELEASE(c2);
+    if (c3) RELEASE(c3);
+    if (c4) RELEASE(c4);
+    RELEASE (token);
+  }
+}
+
 int color_special (char *buffer, UNSIGNED_QUAD size)
 {
   char *start = buffer, *end;
@@ -112,6 +149,10 @@ int color_special (char *buffer, UNSIGNED_QUAD size)
     start += strlen("color");
     result = 1; /* This is a color special */
     do_color_special (&start, end);
+  } else if (!strncmp (start, "background", strlen("background"))) {
+    start += strlen("background");
+    result = 1; /* This is a color special */
+    do_background_special (&start, end);
   }
   return result;
 }
