@@ -10,21 +10,21 @@ or if you prefer FTP:
 
     ftp://ftp.kettering.edu/pub/outgoing/mwicks/dvipdfm
     
+
    Features:
       - TeX \special's that approximate the functionality 
         of the PostScript pdfmarks used by Adobe's
 	Acrobat Distiller.  Links, outlines, articles, and named
 	destinations are supported, for example.
-	
-      - Ability to include PDF, JPEG, PNG, MetaPost, and
-        PostScript (with help from an external program)
-        files as embedded images.  For PDF files, only the first
-        page is included.  Resources will be embedded from
-	the original file as necessary.  File inclusion
-	does not work for PDF files that store the page
+
+      - Ability to include PDF, JPEG, PNG, MetaPost, and self-contained
+	(e.g., eps) PostScript (with help from an external program) files as
+	embedded images.  For PDF files, only the first page is included.
+	Resources will be embedded from the original file as necessary.
+	File inclusion does not work for PDF files that store the page
 	contents in several segments in an array.
-	
-      - Support for several \special standards for improved
+
+      - Support for several \special standards for
         DVI file portability.
 
       - Support for thumbnails (with a little help from GhostScript).
@@ -52,7 +52,16 @@ or if you prefer FTP:
    Limitations (at present):
 
       - Contents streams consisting of multiple parts cannot be embedded.
-	
+      - All instances of the same Type1 font must have the same encoding.
+     
+   Additional Information:
+   
+   There is a dvipdfm e-mail list.  To join, send
+e-mail to majordomo@gaspra.kettering.edu containing
+the line:
+
+   subscribe dvipdfm
+    
    Mark A. Wicks
    Kettering University
    mwicks@kettering.edu
