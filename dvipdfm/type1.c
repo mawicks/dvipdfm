@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.15 1998/12/12 01:37:19 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.16 1998/12/13 22:04:21 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -70,8 +70,7 @@ pdf_obj *find_encoding_differences (pdf_obj *encoding)
   pdf_obj *tmp;
   filling = 0;
   for (i=0; i<256; i++) {
-    /* Boy do I regret starting arrays at 1 */
-    tmp = pdf_get_array (encoding, i+1);
+    tmp = pdf_get_array (encoding, i);
     if (tmp == NULL || tmp -> type != PDF_NAME) {
       ERROR ("Encoding file may be incorrect\n");
     }

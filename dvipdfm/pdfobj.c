@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.25 1998/12/13 22:00:12 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.26 1998/12/13 22:04:21 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -678,7 +678,6 @@ pdf_obj *pdf_get_array (pdf_obj *array, unsigned long index)
 
 static void release_array (pdf_array *data)
 {
-  pdf_array *next;
   unsigned long i;
   for (i=0; i<data->size; i++) {
     pdf_release_obj ((data ->values)[i]);
@@ -693,7 +692,6 @@ void pdf_add_array (pdf_obj *array, pdf_obj *object) /* Array is ended
 							this pointer */
 {
   pdf_array *data;
-  pdf_array *new_node;
   if (array == NULL || array -> type != PDF_ARRAY) {
      ERROR ("pdf_add_array:  Passed non-array object");
   }
