@@ -1,7 +1,7 @@
 \documentclass[dvipdfm]{article}
 \usepackage[dvips]{graphicx}
 \usepackage[usenames,dvipsnames]{color}
-\usepackage[dvipdfm]{hyperref}
+\usepackage[dvipdfm,breaklinks=true]{hyperref}
 \title{\color{blue}Latex Support Test File}
 \author{\color{green}Mark A. Wicks}
 \begin{document}
@@ -15,7 +15,10 @@ It is quick-and-dirty.
 It is not intended to be pretty, and
 does not demonstrate good ways to use these packages
 (In fact, it demonstrates some bad ways to use these packages).
-This is a test file.
+\href{http://odo.kettering.edu/dvipdfm/}{This link is a test too see how
+well dvipdfm handles links that need to be broken over several lines.  This
+will only work if you have installed {\tt hdvpdfm.def} from the latest
+distribution.}
 
 \section{LaTeX Support Information}
 Dvipdfm support for the hyperref \LaTeX\space package is 
@@ -28,7 +31,7 @@ If you have an older LaTeX\space and don't want to upgrade,
 this distribution of {\tt dvipdfm} includes
 the {\tt .def} files required to support
 the
-\textcolor{green}{c}%
+{\textcolor{green}{c}%
 \textcolor{red}{o}%
 \textcolor{blue}{l}%
 \textcolor{green}{o}%
@@ -38,7 +41,7 @@ and
   \scalebox{1.3}[1]{\rotatebox{15}{ap%
     \scalebox{1.3}[1]{\rotatebox{15}{hi%
        \scalebox{1.3}[1]{\rotatebox{15}{cs}}}}}}}}
-packages.
+packages.}
 You may also need to modify {\tt color.sty}, {\tt graphics.sty},
 and {\tt hyperref.sty} so that they
 recognize {\tt dvipdfm} as a driver.
