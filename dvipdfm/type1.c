@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.19 1998/12/21 03:05:11 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.20 1998/12/21 04:06:47 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -107,7 +107,7 @@ static void save_glyphs (struct glyph *glyph, pdf_obj *encoding)
   return;
 }
 
-pdf_obj *get_encoding (const char *enc_name)
+int get_encoding (const char *enc_name)
 {
   FILE *encfile = NULL;
   char *full_enc_filename, *tmp;
@@ -117,7 +117,7 @@ pdf_obj *get_encoding (const char *enc_name)
   /* See if we already have this saved */
   for (i=0; i<num_encodings; i++)
     if (!strcmp (enc_name, encodings[i].enc_name))
-      return pdf_link_obj (encodings[i].encoding_ref);
+      return i;
   /* Guess not.. */
   /* Try base name before adding .enc.  Someday maybe kpse will do
      this */
@@ -181,9 +181,7 @@ pdf_obj *get_encoding (const char *enc_name)
   encodings[num_encodings].encoding_ref = result_ref;
   encodings[num_encodings].enc_name = NEW (strlen(enc_name)+1, char);
   strcpy (encodings[num_encodings].enc_name, enc_name);
-  num_encodings += 1;
-
-  return pdf_link_obj(result_ref);
+  return num_encodings++;
 }
 
 
@@ -319,9 +317,19 @@ struct a_pfb
 {
   char *pfb_name;
   pdf_obj *direct, *indirect;
+  char chars_used[256];
+  int encoding_id;
 } *pfbs = NULL;
 
-pdf_obj *type1_fontfile (const char *pfb_name)
+static void clear_a_pfb (struct a_pfb *pfb)
+{
+  int i;
+  for (i=0; i<256; i++) {
+    (pfb->chars_used)[i] = 0;
+  }
+}
+
+pdf_obj *type1_fontfile (const char *pfb_name, int encoding_id)
 {
   int i;
   if (num_pfbs >= max_pfbs) {
@@ -334,10 +342,12 @@ pdf_obj *type1_fontfile (const char *pfb_name)
   }
   if (i == num_pfbs) {
     num_pfbs += 1;
+    clear_a_pfb (pfbs+i);
     pfbs[i].pfb_name = NEW (strlen(pfb_name)+1, char);
     strcpy (pfbs[i].pfb_name, pfb_name);
     pfbs[i].direct = pdf_new_stream();
     pfbs[i].indirect = pdf_ref_obj (pfbs[i].direct);
+    pfbs[i].encoding_id = encoding_id;
   }
   return pdf_link_obj(pfbs[i].indirect);
 }
@@ -548,7 +558,7 @@ static void scan_afm_file (void)
 			cmr, should be set to be symbolic */
 #define NOCLUE 20
 
-pdf_obj *type1_font_descriptor (const char *pfb_name)
+pdf_obj *type1_font_descriptor (const char *pfb_name, int encoding_id)
 {
   pdf_obj *font_descriptor, *font_descriptor_ref, *fontfile, *tmp1;
   int flags;
@@ -595,7 +605,7 @@ pdf_obj *type1_font_descriptor (const char *pfb_name)
 		pdf_new_name ("StemV"),  /* This is required */
 		pdf_new_number (NOCLUE));
   /* You don't need a fontfile for the standard fonts */
-  if ((fontfile = type1_fontfile (pfb_name)) != NULL) 
+  if ((fontfile = type1_fontfile (pfb_name, encoding_id)) != NULL) 
     pdf_add_dict (font_descriptor,
 		  pdf_new_name ("FontFile"),
 		  fontfile);
@@ -642,6 +652,7 @@ pdf_obj *type1_font_resource (const char *tex_name, int tfm_font_id, const char 
 {
   int i;
   int firstchar, lastchar;
+  int encoding_id = -1;
   pdf_obj *font_resource, *tmp1, *font_encoding_ref;
   pdf_obj *result;
   struct font_record *font_record;
@@ -668,11 +679,19 @@ pdf_obj *type1_font_resource (const char *tex_name, int tfm_font_id, const char 
       pdf_add_dict (font_resource,
 		    pdf_new_name ("Name"),
 		    pdf_new_name (resource_name));
+      if (font_record -> enc_name != NULL) {
+	encoding_id = get_encoding (font_record -> enc_name);
+	font_encoding_ref = pdf_link_obj(encodings[encoding_id].encoding_ref);
+	pdf_add_dict (font_resource,
+		      pdf_new_name ("Encoding"),
+		      font_encoding_ref);
+      }
       if (font_record -> pfb_name != NULL) {
 	if (!is_a_base_font (fontname))
 	  pdf_add_dict (font_resource, 
 			pdf_new_name ("FontDescriptor"),
-			type1_font_descriptor(font_record -> pfb_name));
+			type1_font_descriptor(font_record -> pfb_name,
+					      encoding_id));
       }
       pdf_add_dict (font_resource,
 		    pdf_new_name ("BaseFont"),
@@ -694,12 +713,6 @@ pdf_obj *type1_font_resource (const char *tex_name, int tfm_font_id, const char 
       pdf_add_dict (font_resource,
 		    pdf_new_name ("Widths"),
 		    tmp1);
-      if (font_record -> enc_name != NULL) {
-	font_encoding_ref = get_encoding (font_record -> enc_name);
-	pdf_add_dict (font_resource,
-		      pdf_new_name ("Encoding"),
-		      font_encoding_ref);
-      }
       result = pdf_ref_obj (font_resource);
       pdf_release_obj (font_resource);
     }
