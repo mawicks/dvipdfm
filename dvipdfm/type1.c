@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.66 1999/07/15 11:54:34 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.67 1999/07/15 23:17:52 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -149,14 +149,13 @@ int get_encoding (const char *enc_name)
       (filesize = file_size (encfile)) == 0) {
     if (encfile)
       fclose (encfile);
-    sprintf (work_buffer, "Can't find or open encoding file: %s", enc_name) ;
+    sprintf (work_buffer, "Can't locate and/or open encoding file: %s", enc_name) ;
     ERROR (work_buffer);
   }
   if (verbose) {
     fprintf (stderr, "(%s)", full_enc_filename);
   }
-  /* Got one and opened it */
-  {
+  {  /* Got one and opened it */
     char *buffer, *start, *end, *junk_ident;
     pdf_obj *junk_obj, *encoding, *differences;
     buffer = NEW (filesize, char); 
@@ -203,7 +202,6 @@ int get_encoding (const char *enc_name)
     strcpy (encodings[num_encodings].enc_name, enc_name);
     return num_encodings++;
   }
-  
 }
 
 struct font_record *get_font_record (const char *tex_name)

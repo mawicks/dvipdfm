@@ -8,7 +8,69 @@
 % The word "default" may be used in any field to
 % specify the default behavior.  You can
 % also say "none", in the PFB field, for example
-% to say that no PFB should be loaded 
+% to say that no PFB should be loaded
+%
+% The following entries are used to force an encoding to work around a bug
+% in Acrobat reader
+% 
+cmr10 ot1
+cmr12 ot1
+cmr17 ot1
+cmr5 ot1
+cmr6 ot1
+cmr7 ot1
+cmr8 ot1
+cmr9 ot1
+% Bold
+cmbx10 ot1
+cmbx12 ot1
+cmbx17 ot1
+cmbx5 ot1
+cmbx6 ot1
+cmbx7 ot1
+cmbx8 ot1
+cmbx9 ot1
+% Misc
+cmb10 ot1
+cmbxsl10 ot1
+cmbxti10 ot1
+cmdunh10 ot1
+cmff10 ot1
+cmfi10 ot1
+cmfib8 ot1
+cmssbx10 ot1
+cmssdc10 ot1
+cmssq8 ot1
+cmssqi8 ot1
+cmu10 ot1
+cmvtt10 ot1
+lcmss8 ot1
+lcmssb8 ot1
+lcmssi8 ot1
+% Italic
+cmti10 ot1
+cmti12 ot1
+cmti7 ot1
+cmti8 ot1
+cmti9 ot1
+% Slanted
+cmsl10 ot1
+cmsl12 ot1
+cmsl8 ot1
+cmsl9 ot1
+% Roman sanserif
+cmss10 ot1
+cmss12 ot1
+cmss17 ot1
+cmss8 ot1
+cmss9 ot1
+% Sans Serif
+cmssi10 ot1
+cmssi12 ot1
+cmssi17 ot1
+cmssi8 ot1
+cmssi9 ot1
+%
 % CharterBT-Bold
 bchb8r 8r bchb8a
 % CharterBT-BoldItalic
