@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfdoc.c,v 1.2.2.3 1998/11/26 02:05:54 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfdoc.c,v 1.2.2.4 1998/11/26 04:11:34 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -389,7 +389,7 @@ void pdf_doc_add_outline (pdf_obj *dict)
   else {
     /* Point us back to sister */
     pdf_add_dict (new_entry,
-		  pdf_new_name ("Previous"),
+		  pdf_new_name ("Prev"),
 		  pdf_ref_obj (outline[outline_depth].entry));
     /* Point our elder sister toward us */
     pdf_add_dict (outline[outline_depth].entry,

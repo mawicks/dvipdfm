@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfobj.c,v 1.9.2.2 1998/11/26 02:05:54 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm-initial/dvipdfm/pdfobj.c,v 1.9.2.3 1998/11/26 04:11:35 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -65,7 +65,7 @@ static void write_indirect (FILE *file, const struct pdf_indirect *indirect);
 static void release_boolean (struct pdf_obj *data);
 static void write_boolean (FILE *file, const struct pdf_boolean *data);
 
-static void write_null (FILE *file, void *data);
+static void write_null (FILE *file);
 static void release_null (void *data);
 
 static void release_number (struct pdf_number *data);
@@ -342,7 +342,7 @@ static void release_null (void *data)
   return;
 }
 
-static void write_null (FILE *file, void *data)
+static void write_null (FILE *file)
 {
   pdf_out (file, "null", 4);
 }
@@ -636,6 +636,10 @@ pdf_obj *pdf_new_array (void)
 
 static void write_array (FILE *file, const struct pdf_array *array)
 {
+  if (array -> next == NULL) {
+    write_null(file);
+    return;
+  }
   pdf_out_char (file, '[');
   while (array -> next != NULL) {
     pdf_write_obj (file, array -> this);
@@ -700,6 +704,10 @@ void pdf_add_array (pdf_obj *array, pdf_obj *object) /* Array is ended
 
 static void write_dict (FILE *file, const struct pdf_dict *dict)
 {
+  if (dict -> key == NULL) {
+    write_null(file);
+    return;
+  }
   pdf_out (file, "<<\n", 3);
   while (dict -> key != NULL) {
     pdf_write_obj (file, dict -> key);
@@ -929,7 +937,7 @@ void pdf_write_obj (FILE *file, const pdf_obj *object)
     write_stream (file, object -> data);
     break;
   case PDF_NULL:
-    write_null (file, object -> data);
+    write_null (file);
     break;
   case PDF_INDIRECT:
     write_indirect (file, object -> data);

@@ -2,7 +2,7 @@
 # Generated automatically by configure.
 # Run this file to recreate the current configuration.
 # This directory was configured as follows,
-# on host odo.kettering.edu:
+# on host betelgeuse:
 #
 # ./configure  --cache-file=.././config.cache --srcdir=.
 #
@@ -68,7 +68,7 @@ s%@host_alias@%i586-pc-linux-gnu%g
 s%@host_cpu@%i586%g
 s%@host_vendor@%pc%g
 s%@host_os@%linux-gnu%g
-s%@texmfmain@%/usr/share/texmf%g
+s%@texmfmain@%/usr/lib/texmf%g
 s%@socketlibs@%%g
 s%@BINPWD@%pwd%g
 s%@ESUBDIRS@% dtl dvidvi dviljk dvipsk gsftopk lacheck makeindexk musixflx odvipsk oxdvik ps2pkm seetexk tetex tex4htk xdvik%g
