@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.15 1998/12/23 20:58:44 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.16 1998/12/23 21:10:21 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -111,8 +111,8 @@ static void usage (void)
    fprintf (stderr, "\t-p papersize\tpapersize is [letter], legal, ledger, tabloid, a4, or a3\n");
    fprintf (stderr, "\t-x dimension\tHorizontal offset [1.0in]\n");
    fprintf (stderr, "\t-y dimension\tVertical offset [1.0in]\n");
-   fprintf (stderr, "\t-e          \tDisable partial font embedding [default is partial embedding])\n");
-   fprintf (stderr, "\t-z          \tDisable stream compression [default is to compress])\n");
+   fprintf (stderr, "\t-e          \tDisable partial font embedding [default is enabled])\n");
+   fprintf (stderr, "\t-z          \tDisable stream compression [default is enabled])\n");
    fprintf (stderr, "\nAll dimensions are \"true\" when specified on the command line\n");
    exit(1);
 }
