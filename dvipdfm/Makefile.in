@@ -47,7 +47,7 @@ uninstall-data:
 	else true; fi
  
 ac_include ../make/dist.make
-ac_include ../make/config.make
+# ac_include ../make/config.make
 ac_include ../make/clean.make
 ac_include ../make/rdepend.make
 ac_include depend.make
