@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.67 2000/01/16 23:05:38 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.68 2000/07/30 16:40:15 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -42,6 +42,7 @@
 #include "pkfont.h"
 #include "thumbnail.h"
 #include "psimage.h"
+#include "tfm.h"
 
 struct rect 
 {
@@ -393,6 +394,7 @@ static void do_args (int argc, char *argv[])
 	pk_set_verbose();
 	pdf_obj_set_verbose();
 	pdf_doc_set_verbose();
+	tfm_set_verbose();
 	break;
       case 'V':
 	{

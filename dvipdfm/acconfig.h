@@ -24,8 +24,12 @@
 #undef HAVE_ZLIB_COMPRESS2
 
 /* HAVE_KPSE_FORMATS - Define if you have a
- version of kpathsea with afm, type1, and vf formats */
+ version of kpathsea with type1 and vf formats */
 #undef HAVE_KPSE_FORMATS
+
+/* HAVE_KPSE_FORMATS - Define if you have a
+ version of kpathsea that understands Omega (OFM/OVF) formats */
+#undef HAVE_OMEGA_FORMATS
 
 /* HAVE_LIBPNG - Define if you have libpng */
 #undef HAVE_LIBPNG

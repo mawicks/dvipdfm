@@ -48,6 +48,7 @@ make install
 %config /usr/share/texmf/dvipdfm/config/psbase14.map
 %config /usr/share/texmf/dvipdfm/config/lw35urw.map
 %config /usr/share/texmf/dvipdfm/config/lw35urwa.map
+%config /usr/share/texmf/dvipdfm/base/ot1r.enc
 %config /usr/share/texmf/dvipdfm/base/ot1.enc
 %config /usr/share/texmf/dvipdfm/base/ot1alt.enc
 

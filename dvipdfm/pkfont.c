@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pkfont.c,v 1.17 2000/01/11 02:30:40 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pkfont.c,v 1.18 2000/07/30 16:40:15 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -420,6 +420,9 @@ static void do_character (unsigned char flag, int pk_id, pdf_obj *char_procs)
   } else {
     format = MED_FORM;
   }
+  if (debug) {
+    fprintf (stderr, "packet format: %d\n", format);
+  }
   switch (format) {
   case SHORT_FORM:
     packet_length = (flag & 3) * 256u + get_unsigned_byte (pk_file);
@@ -443,7 +446,7 @@ static void do_character (unsigned char flag, int pk_id, pdf_obj *char_procs)
   if ((pk_fonts[pk_id].used_chars)[code%256]) {
     int dyn_f;
     unsigned long tfm_width = 0;
-    long dm=0, w=0, h=0;
+    long dm=0, dx=0, dy=0, w=0, h=0;
     int hoff=0, voff=0;
     dyn_f = flag/16;
     switch (format) {
@@ -464,6 +467,16 @@ static void do_character (unsigned char flag, int pk_id, pdf_obj *char_procs)
       hoff = get_signed_pair (pk_file);
       voff = get_signed_pair (pk_file);
       packet_length -= 13;
+      break;
+    case LONG_FORM:
+      tfm_width = get_signed_quad (pk_file);
+      dx = get_signed_quad (pk_file);
+      dy = get_signed_quad (pk_file);
+      w = get_signed_quad (pk_file);
+      h = get_signed_quad (pk_file);
+      hoff = get_signed_quad (pk_file);
+      voff = get_signed_quad (pk_file);
+      packet_length -= 28;
       break;
     }
     {
@@ -494,15 +507,19 @@ static void do_character (unsigned char flag, int pk_id, pdf_obj *char_procs)
       pdf_add_stream (glyph, work_buffer, len);
       if (w != 0 && h != 0 && packet_length != 0) {
 	unsigned char *pk_data;
+	long read_len;
 	len = sprintf (work_buffer, "\nBI\n/W %ld\n/H %ld\n/IM true\n/BPC 1\n/I true\n",
 		       w, h);
 	pdf_add_stream (glyph, work_buffer, len);
 	len = sprintf (work_buffer, "ID ");
 	pdf_add_stream (glyph, work_buffer, len);
 	pk_data = NEW (packet_length, unsigned char);
-	if (fread (pk_data, 1, packet_length, pk_file)!=
-	    packet_length) 
-	  ERROR ("pk_do_character:  Error reading character packet from PK file");;
+	if ((read_len=fread (pk_data, 1, packet_length, pk_file))!=
+	    packet_length) {
+	  fprintf (stderr, "packet length should be %ld, but only %ld bytes were read\n",
+		   packet_length, read_len);
+	  ERROR ("Error reading character packet from PK file\n");
+	}
 	add_raster_data (glyph, w, h, dyn_f, (flag&8)>>3, pk_data, pk_data+packet_length);
 	RELEASE (pk_data);
 	len = sprintf (work_buffer, "\nEI");

@@ -1,3 +1,19 @@
+2000-07-25  Mark A. Wicks  <mwicks@betelgeuse.localdomain>
+
+        * Changed version to 0.13
+	* Cleaned up DVI and VF code so it all works on 16 bit chars
+	* Added support for 16 bit virtual fonts (OTF file)
+	
+2000-07-23  Mark A. Wicks  <mwicks@betelgeuse.localdomain>
+
+	* Cleanly separated encodings from fonts so that multiple
+	  encodings can be used for the same font in the same document.
+	  That way, all glyphs (>256) are available from a font:-).
+	* Made Type 1 font parsing and font subsetting more robust
+	* Changed version to 0.12.9beta
+      	* Changed encoding method to help Acrobat Exchange 3.0
+	  merge files created by dvipdfm.
+	
 2000-07-06  Mark A. Wicks  <mwicks@betelgeuse.localdomain>
 
 	* Changed version to 0.12.8

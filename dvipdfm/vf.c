@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/vf.c,v 1.21 2000/01/13 00:58:53 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/vf.c,v 1.22 2000/07/30 16:40:15 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -34,6 +34,7 @@
 #include "pdfdev.h"
 #include "dvi.h"
 #include "vf.h"
+#include "config.h"
 
 #include "dvicodes.h"
 
@@ -70,22 +71,13 @@ struct vf
   unsigned long design_size; /* A fixword-pts quantity */
   int num_dev_fonts, max_dev_fonts;
   dev_font *dev_fonts;
-  unsigned char *ch_pkt[256];
-  unsigned long pkt_len[256];
+  unsigned char **ch_pkt;
+  unsigned long *pkt_len;
+  unsigned num_chars;
 };
 
 struct vf *vf_fonts = NULL;
 int num_vf_fonts = 0, max_vf_fonts = 0;
-
-static void clear_vf_characters(int thisfont)
-{
-  int i;
-  for (i=0; i<256; i++){
-    (vf_fonts[thisfont].pkt_len)[i] = 0;
-    (vf_fonts[thisfont].ch_pkt)[i] = NULL;
-  }
-  return;
-}
 
 static int read_header(FILE *vf_file, int thisfont) 
 {
@@ -130,16 +122,31 @@ static void resize_vf_fonts(int size)
   return;
 }
 
+static void resize_one_vf_font (struct vf *a_vf, unsigned size) 
+{
+  unsigned i;
+  if (size > (a_vf->num_chars)) {
+    size = MAX (size, a_vf->num_chars+256);
+    a_vf->ch_pkt = RENEW (a_vf->ch_pkt, size, unsigned char *);
+    a_vf->pkt_len = RENEW (a_vf->pkt_len, size, unsigned long);
+    for (i=a_vf->num_chars; i<size; i++) {
+      (a_vf->ch_pkt)[i] = NULL;
+      (a_vf->pkt_len)[i] = 0;
+    }
+    a_vf->num_chars = size;
+  }
+}
+
 static void read_a_char_def(FILE *vf_file, int thisfont, unsigned long pkt_len,
-			    unsigned long ch)
+			    unsigned ch)
 {
   unsigned char *pkt;
   if (debug)
-    fprintf (stderr, "read_a_char_def: len=%ld, ch=%ld\n", pkt_len,
-	     ch);
-  /* Skip over the TFM width and ignore it--we already have it somewhere else */
-  get_unsigned_triple (vf_file);
-   
+    fprintf (stderr, "read_a_char_def: len=%ld, ch=%d\n", pkt_len, ch);
+  /* Resize and initialize character arrays if necessary */
+  if (ch >= vf_fonts[thisfont].num_chars) {
+    resize_one_vf_font (vf_fonts+thisfont, ch+1);
+  }
   if (pkt_len > 0) {
     pkt = NEW (pkt_len, unsigned char);
     if (fread (pkt, 1, pkt_len, vf_file) != pkt_len)
@@ -220,17 +227,23 @@ void process_vf_file (FILE *vf_file, int thisfont)
 	long ch;
 	/* For a short packet, code is the pkt_len */
 	ch = get_unsigned_byte (vf_file);
+	/* Skip over TFM width since we already know it */
+	get_unsigned_triple (vf_file);
 	read_a_char_def (vf_file, thisfont, code, ch);
 	break;
       }
-      if (code == 243) {
+      if (code == 242) {
 	unsigned long pkt_len, ch;
 	pkt_len = get_unsigned_quad(vf_file);
 	ch = get_unsigned_quad (vf_file);
-	if (ch < 256) 
+	/* Skip over TFM width since we already know it */
+	get_unsigned_quad (vf_file);
+	if (ch < 65536L) 
 	  read_a_char_def (vf_file, thisfont, pkt_len, ch);
-	else
-	  ERROR ("Long character in VF file.  I can't handle long characters!\n");
+	else {
+	  fprintf (stderr, "char=%ld\n", ch);
+	  ERROR ("Long character (>16 bits) in VF file.\nI can't handle long characters!\n");
+	}
 	break;
       }
       if (code == POST) {
@@ -261,19 +274,33 @@ int vf_locate_font (char *tex_name, mpt_t ptsize)
   full_vf_file_name = kpse_find_file (tex_name, 
 				      kpse_vf_format,
 				      1);
+#ifdef HAVE_OMEGA_FORMATS
+  if (!full_vf_file_name) {
+    full_vf_file_name = kpse_find_file (tex_name, 
+					kpse_ovf_format,
+					1);
+  }
+#endif
   if (full_vf_file_name &&
       (vf_file = FOPEN (full_vf_file_name, FOPEN_RBIN_MODE)) != NULL) {
-    if (verbose) {
-      fprintf (stderr, "(%s)", full_vf_file_name);
-    }
+    if (verbose == 1)
+      fprintf (stderr, "(VF:%s", tex_name);
+    if (verbose > 1)
+      fprintf (stderr, "(VF:%s", full_vf_file_name);
     if (num_vf_fonts >= max_vf_fonts) {
       resize_vf_fonts (max_vf_fonts + VF_ALLOC_SIZE);
     }
     thisfont = num_vf_fonts++;
-    vf_fonts[thisfont].ptsize = ptsize;
+    { /* Initialize some pointers and such */
+      vf_fonts[thisfont].ptsize = ptsize;
+      vf_fonts[thisfont].num_chars = 0;
+      vf_fonts[thisfont].ch_pkt = NULL;
+      vf_fonts[thisfont].pkt_len = NULL;
+    }
     read_header(vf_file, thisfont);
-    clear_vf_characters(thisfont);
     process_vf_file (vf_file, thisfont);
+    if (verbose)
+      fprintf (stderr, ")");
     FCLOSE (vf_file);
   }
   return thisfont;
@@ -408,6 +435,12 @@ static void vf_set1(unsigned char **start, unsigned char *end)
   return;
 }
 
+static void vf_set2(unsigned char **start, unsigned char *end) 
+{
+  vf_set (unsigned_pair(start, end));
+  return;
+}
+
 static void vf_putrule(unsigned char **start, unsigned char *end, mpt_t ptsize)
 {
   SIGNED_QUAD width, height;
@@ -435,6 +468,12 @@ static void vf_setrule(unsigned char **start, unsigned char *end, mpt_t ptsize)
 static void vf_put1(unsigned char **start, unsigned char *end)
 {
   dvi_put (unsigned_byte(start, end));
+  return;
+}
+
+static void vf_put2(unsigned char **start, unsigned char *end)
+{
+  dvi_put (unsigned_pair(start, end));
   return;
 }
 
@@ -735,7 +774,7 @@ static void vf_xxx4(unsigned char **start, unsigned char *end)
   return;
 }
 
-void vf_set_char(int ch, int vf_font)
+void vf_set_char(unsigned ch, int vf_font)
 {
   unsigned char opcode;
   unsigned char *start, *end;
@@ -747,24 +786,29 @@ void vf_set_char(int ch, int vf_font)
     if (vf_fonts[vf_font].num_dev_fonts > 0)
       default_font = ((vf_fonts[vf_font].dev_fonts)[0]).dev_id;
     dvi_vf_init (default_font);
-    start = (vf_fonts[vf_font].ch_pkt)[ch];
+    if (ch >= vf_fonts[vf_font].num_chars ||
+	!(start = (vf_fonts[vf_font].ch_pkt)[ch])) {
+      ERROR ("Tried to set a nonexistent character in a virtual font");
+    }
     end = start + (vf_fonts[vf_font].pkt_len)[ch];
-    while (start < end) {
+    while (start && start < end) {
       opcode = *(start++);
       if (debug) {
-	fprintf (stderr, "Opcode: %d", opcode);
-	if (isprint (opcode)) fprintf (stderr, " (%c)\n", opcode);
+	fprintf (stderr, "VF opcode: %d", opcode);
+	if (isprint (opcode)) fprintf (stderr, " (\'%c\')\n", opcode);
 	else  fprintf (stderr, "\n");
       }
       switch (opcode)
 	{
 	case SET1:
 	  vf_set1(&start, end);
-	break;
+	  break;
 	case SET2:
+	  vf_set2(&start, end);
+	  break;
 	case SET3:
 	case SET4:
-	  ERROR ("dvi_do_page: Multibyte byte character in DVI file.  I can't handle this!");
+	  ERROR ("Multibyte (>16 bits) character in VF packet.\nI can't handle this!");
 	  break;
 	case SET_RULE:
 	  vf_setrule(&start, end, ptsize);
@@ -773,9 +817,11 @@ void vf_set_char(int ch, int vf_font)
 	  vf_put1(&start, end);
 	  break;
 	case PUT2:
+	  vf_put2(&start, end);
+	  break;
 	case PUT3:
 	case PUT4:
-	  ERROR ("dvi_do_page: Multibyte byte character in DVI file.  I can't handle this!");
+	  ERROR ("Multibyte (>16 bits) character in VF packet.\nI can't handle this!");
 	  break;
 	case PUT_RULE:
 	  vf_putrule(&start, end, ptsize);
@@ -926,10 +972,15 @@ MEM_START
 #endif
   for (i=0; i<num_vf_fonts; i++) {
     /* Release the packet for each character */
-    for (j=0; j<256; j++) {
-      if ((vf_fonts[i].ch_pkt)[j] != NULL)
-	RELEASE ((vf_fonts[i].ch_pkt)[j]);
+    if (vf_fonts[i].ch_pkt) {
+      for (j=0; j<vf_fonts[i].num_chars; j++) {
+	if ((vf_fonts[i].ch_pkt)[j] != NULL)
+	  RELEASE ((vf_fonts[i].ch_pkt)[j]);
+      }
+      RELEASE (vf_fonts[i].ch_pkt);
     }
+    if (vf_fonts[i].pkt_len)
+      RELEASE (vf_fonts[i].pkt_len);
     /* Release each font record */
     for (j=0; j<vf_fonts[i].num_dev_fonts; j++) {
       one_font = &(vf_fonts[i].dev_fonts)[j];

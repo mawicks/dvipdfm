@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.117 2000/07/24 01:45:13 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.118 2000/07/30 16:40:15 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -221,9 +221,10 @@ int get_encoding (const char *enc_name)
     sprintf (work_buffer, "Error opening encoding file: %s", enc_name) ;
     ERROR (work_buffer);
   }
-  if (verbose) {
-    fprintf (stderr, "(%s", full_enc_filename);
-  }
+  if (verbose == 1)
+    fprintf (stderr, "(ENC:%s", enc_name);
+  if (verbose > 1)
+    fprintf (stderr, "(ENC:%s", full_enc_filename);
   {  /* Got one and opened it */
     char *buffer, *start, *end, *junk_ident;
     pdf_obj *junk_obj, *encoding, *differences;
@@ -833,7 +834,10 @@ static unsigned char *get_pfb_segment (unsigned long *length,
   /* Unfortunately, there can be several segments that need to be
      concatenated, so we loop through all of them */
   for (;;) {
-    if ((ch = fgetc (file)) < 0 || ch != 128){
+    if ((ch = fgetc (file)) < 0) /* Some files don't terminate
+				    properly */
+      break;
+    if (ch != 128){
       sprintf (work_buffer, "get_pfb_segment:  Not a pfb file.\n");
       sprintf (work_buffer, "get_pfb_segment:  pfb header has %d, expecting 128\n", ch);
       ERROR (work_buffer);
@@ -843,7 +847,7 @@ static unsigned char *get_pfb_segment (unsigned long *length,
       break;
     }
     new_length = get_low_endian_quad (file);
-    if (verbose > 3) {
+    if (verbose > 4) {
       fprintf (stderr, "Length of next PFB segment: %ld\n",
 	       new_length);
     }
@@ -1029,7 +1033,7 @@ MEM_END
 
 static unsigned long parse_body (unsigned char *filtered, unsigned char
 				 *unfiltered, unsigned long length, 
-				 char **used_glyphs, unsigned n_used,
+				 char **used_glyphs, unsigned *n_used,
 				 pdf_obj *descriptor)
 {
   char *start, *end, *tail, *ident;
@@ -1038,7 +1042,7 @@ static unsigned long parse_body (unsigned char *filtered, unsigned char
   int state = 0;
   if (verbose > 2) {
     fprintf (stderr, "\nSearching for following glyphs in font:\n");
-    dump_glyphs (used_glyphs, n_used, 0);
+    dump_glyphs (used_glyphs, *n_used, 0);
   }
   start = (char *) unfiltered, end = (char *) unfiltered+length;
   /* Skip first four bytes */
@@ -1116,19 +1120,17 @@ static unsigned long parse_body (unsigned char *filtered, unsigned char
      been copied to the output.  The remainder of the routine need not
      be executed if not doing font subsetting */  
   if (filtered) {
-    unsigned nleft;
     char **this_glyph;
-    nleft = n_used;
     filtered_pointer += sprintf ((char *) filtered_pointer, " %d",
-				 n_used);
+				 *n_used);
     skip_white(&start, end);
     /* The following ident *should* be the number of glyphs in this
        file */
     ident = parse_ident (&start, end);
     if (verbose>1) {
-      fprintf (stderr, "\nEmbedding %d of %s glyphs\n", n_used, ident);
+      fprintf (stderr, "\n  Embedding %d of %s glyphs\n", *n_used, ident);
     }
-    if (ident == NULL || !is_an_int (ident) || n_used > atof (ident)) 
+    if (ident == NULL || !is_an_int (ident) || *n_used > atof (ident)) 
       ERROR ("More glyphs needed than present in file");
     RELEASE (ident);
     tail = start;
@@ -1143,9 +1145,6 @@ static unsigned long parse_body (unsigned char *filtered, unsigned char
       tail = start;
       start += 1;
       glyph = parse_ident (&start, end);
-      this_glyph = bsearch (glyph, used_glyphs, n_used, sizeof (char
-								*),
-			    glyph_match);
       /* Get the number that should follow the glyph name */
       skip_white(&start, end);
       ident = parse_ident (&start, end);
@@ -1167,22 +1166,32 @@ static unsigned long parse_body (unsigned char *filtered, unsigned char
       ident = parse_ident (&start, end);
       RELEASE (ident);
       skip_white (&start, end);
-      if (this_glyph) {
+      if (*n_used != 0 && (this_glyph = bsearch (glyph, used_glyphs, *n_used, sizeof (char *),
+						glyph_match))) {
 	memcpy (filtered_pointer, tail, start-tail);
 	filtered_pointer += start-tail;
-	nleft--;
+	(*n_used)--;
+	/* Remove glyph and rearrange used_glyphs array */
+	{
+	  RELEASE (*this_glyph);
+	  (*this_glyph) = used_glyphs[*n_used];
+	  qsort (used_glyphs, *n_used, sizeof (char *), glyph_cmp);
+	}
       }
       RELEASE (glyph);
     }
-    if (nleft != 0)
-      ERROR ("Didn't find all the required glyphs in the font.\nPossibly the encoding is incorrect.");
+    if (*n_used != 0) {
+      fprintf (stderr,  "Didn't find following required glyphs in the font:\n");
+      dump_glyphs (used_glyphs, *n_used, 0);
+      ERROR ("Possibly the encoding is incorrect.");
+    }
     /* Include the rest of the file verbatim */
     if (start < end){
       memcpy (filtered_pointer, start, end-start);
       filtered_pointer += end-start;
     }
     if (verbose>1) {
-      fprintf (stderr, " (subsetting eliminated %ld bytes)", length-(filtered_pointer-filtered));
+      fprintf (stderr, "  (subsetting eliminated %ld bytes)", length-(filtered_pointer-filtered));
     }
   }
   return (filtered? filtered_pointer-filtered: length);
@@ -1208,7 +1217,7 @@ static unsigned long do_pfb_body (FILE *file, int pfb_id)
   }
   length = parse_body (filtered, buffer, length, 
 	 	       pfbs[pfb_id].used_glyphs,
-		       pfbs[pfb_id].n_used_glyphs,
+		       &pfbs[pfb_id].n_used_glyphs,
 		       pfbs[pfb_id].descriptor);
   /* And reencrypt the whole thing */
   t1_crypt_init (EEKEY);
@@ -1414,9 +1423,10 @@ static void do_pfb (int pfb_id)
   int ch;
   full_pfb_name = kpse_find_file (pfbs[pfb_id].pfb_name, kpse_type1_format,
 				  1);
-  if (verbose) {
-    fprintf (stderr, "(%s)", full_pfb_name);
-  }
+  if (verbose == 1)
+    fprintf (stderr, "(PFB:%s", pfbs[pfb_id].pfb_name);
+  if (verbose > 1)
+    fprintf (stderr, "(PFB:%s", full_pfb_name);
   if (full_pfb_name == NULL ||
       (type1_binary_file = FOPEN (full_pfb_name, FOPEN_RBIN_MODE)) == NULL) {
     fprintf (stderr, "type1_fontfile:  Unable to find or open binary font file (%s)",
@@ -1450,9 +1460,15 @@ static void do_pfb (int pfb_id)
   length2 = do_pfb_body (type1_binary_file, pfb_id);
   length3 = do_pfb_trailer (type1_binary_file, pfbs[pfb_id].direct);
   if ((ch = fgetc (type1_binary_file)) != 128 ||
-      (ch = fgetc (type1_binary_file)) != 3)
-    ERROR ("type1_fontfile:  Are you sure this is a pfb?");
+      (ch = fgetc (type1_binary_file)) != 3) {
+    fprintf (stderr, "\n\nWarning:  PFB file may be improperly terminated\n");
+  }
   /* Got entire file! */
+  if (verbose > 1)
+    fprintf (stderr, "\n  Embedded size: %ld bytes\n", length1+length2+length3);
+  if (verbose) {
+    fprintf (stderr, ")");
+  }
   FCLOSE (type1_binary_file);
   stream_dict = pdf_stream_dict (pfbs[pfb_id].direct);
   pdf_add_dict (stream_dict, pdf_new_name("Length1"),
@@ -1463,8 +1479,6 @@ static void do_pfb (int pfb_id)
 		pdf_new_number (length3));
   /* Finally, flush the descriptor */
   pdf_release_obj (pfbs[pfb_id].descriptor);
-  if (verbose > 1)
-    fprintf (stderr, "\nEmbedded size: %ld bytes\n", length1+length2+length3);
   return;
 }
 
@@ -1683,14 +1697,14 @@ int type1_font (const char *tex_name, int tfm_font_id, char *resource_name)
 	  if ((t=untwiddle(i)) <= tfm_lastchar && t>=tfm_firstchar)
 	    pdf_add_array (tmp1,
 			   pdf_new_number(ROUND(tfm_get_width
-						(tfm_font_id,t)*1000.0,0.01)));
+						(tfm_font_id,t)*1000.0,0.1)));
 	  else
 	    pdf_add_array (tmp1,
 			   pdf_new_number(0.0));
 	} else
 	  pdf_add_array (tmp1,
 			 pdf_new_number(ROUND(tfm_get_width
-					      (tfm_font_id, i)*1000.0,0.01)));
+					      (tfm_font_id, i)*1000.0,0.1)));
       }
       pdf_add_dict (font_resource,
 		    pdf_new_name ("Widths"),

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.h,v 1.13 1999/09/19 04:56:41 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/tfm.h,v 1.14 2000/07/30 16:40:15 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -35,12 +35,12 @@ extern void tfm_set_debug(void);
 extern int tfm_open(const char * tex_font_name);
 extern void tfm_close_all (void);
 
-extern double tfm_get_width (int font_id, UNSIGNED_BYTE ch);
-extern double tfm_get_height (int font_id, UNSIGNED_BYTE ch);
-extern double tfm_get_depth (int font_id, UNSIGNED_BYTE ch);
-extern fixword tfm_get_fw_width (int font_id, UNSIGNED_BYTE ch);
-extern fixword tfm_get_fw_height (int font_id, UNSIGNED_BYTE ch);
-extern fixword tfm_get_fw_depth (int font_id, UNSIGNED_BYTE ch);
+extern double tfm_get_width (int font_id, UNSIGNED_QUAD ch);
+extern double tfm_get_height (int font_id, UNSIGNED_QUAD ch);
+extern double tfm_get_depth (int font_id, UNSIGNED_QUAD ch);
+extern fixword tfm_get_fw_width (int font_id, UNSIGNED_QUAD ch);
+extern fixword tfm_get_fw_height (int font_id, UNSIGNED_QUAD ch);
+extern fixword tfm_get_fw_depth (int font_id, UNSIGNED_QUAD ch);
 extern fixword tfm_string_width (int font_id, unsigned char *s,
 				 unsigned len);
 extern fixword tfm_string_depth (int font_id, unsigned char *s,
