@@ -19,7 +19,7 @@ pdfspecial.o: pdfspecial.c system.h mem.h mfileio.h numbers.h dvi.h \
  error.h pdfdev.h pdfobj.h pdflimits.h pdfspecial.h pdfdoc.h \
  pdfparse.h jpeg.h epdf.h mpost.h psimage.h config.h pngimage.h
 tfm.o: tfm.c system.h mem.h error.h mfileio.h numbers.h pdflimits.h \
- tfm.h
+ tfm.h config.h
 type1.o: type1.c system.h mem.h error.h mfileio.h numbers.h pdfobj.h \
  type1.h tfm.h pdfparse.h pdflimits.h t1crypt.h twiddle.h winansi.h \
  standardenc.h
@@ -29,7 +29,7 @@ dvipdfm.o: dvipdfm.c system.h config.h mem.h mfileio.h numbers.h dvi.h \
 epdf.o: epdf.c system.h mem.h mfileio.h numbers.h pdfobj.h pdfdoc.h \
  pdfspecial.h epdf.h
 vf.o: vf.c system.h mfileio.h numbers.h pdflimits.h mem.h error.h \
- tfm.h pdfdev.h pdfobj.h dvi.h vf.h dvicodes.h
+ tfm.h pdfdev.h pdfobj.h dvi.h vf.h config.h dvicodes.h
 t1crypt.o: t1crypt.c t1crypt.h
 pkfont.o: pkfont.c system.h mem.h error.h mfileio.h numbers.h pkfont.h \
  pdfobj.h pdflimits.h tfm.h
