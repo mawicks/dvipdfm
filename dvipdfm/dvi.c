@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.66 1999/10/08 15:56:04 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.67 2000/05/14 15:58:00 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -931,7 +931,7 @@ void dvi_do_page(unsigned n)  /* Most of the work of actually interpreting
 			  page_loc[n]);
   seek_absolute (dvi_file, page_loc[n]);
   dvi_stack_depth = 0;
-  while (1) {
+  for (;;) {
     /* The most likely opcodes are individual setchars.  These are
        buffered for speed */
     s_len = 0;

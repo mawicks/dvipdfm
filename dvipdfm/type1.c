@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.102 2000/01/17 15:47:21 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.103 2000/05/14 15:58:00 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -639,7 +639,7 @@ static unsigned char *get_pfb_segment (unsigned long *length,
   *length = 0;
   /* Unfortunately, there can be several segments that need to be
      concatenated, so we loop through all of them */
-  while (1) {
+  for (;;) {
     if ((ch = fgetc (file)) < 0 || ch != 128){
       sprintf (work_buffer, "get_pfb_segment:  Not a pfb file.\n");
       sprintf (work_buffer, "get_pfb_segment:  pfb header has %d, expecting 128\n", ch);

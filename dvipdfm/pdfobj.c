@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.67 2000/02/09 12:52:06 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfobj.c,v 1.68 2000/05/14 15:58:00 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -113,7 +113,7 @@ void pdf_obj_set_compression (int level)
   return;
 }
 
-static unsigned pdf_version = 2;
+static unsigned pdf_version = 3;
 void pdf_set_version (unsigned version)
 {
   if (version >= 2 && version <= 3) {
@@ -1515,7 +1515,7 @@ static int parse_xref (void)
     return 0;
   }
   /* Next line in file has first item and size of table */
-  while (1) {
+  for (;;) {
     unsigned long current_pos;
     current_pos = tell_position (pdf_input_file);
     if (mfgets (work_buffer, WORK_BUFFER_SIZE, pdf_input_file) ==
