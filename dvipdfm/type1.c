@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.110 2000/07/12 00:05:07 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.111 2000/07/12 01:17:58 mwicks Exp $
 
     This is dvipdfm, a DVI to PDF translator.
     Copyright (C) 1998, 1999 by Mark A. Wicks
@@ -495,7 +495,7 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
      sets copy = 0 */
   lead = start;
   skip_white (&start, end);
-  if (lead != start) {
+  if (filtered && lead != start) {
     memcpy (filtered_pointer, lead, start-lead);
     filtered_pointer += start-lead;
   }
@@ -526,8 +526,9 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
 	}
 	pdf_release_obj (pdfobj);
 	if (state == 1) {
-	  filtered_pointer += sprintf ((char *)filtered_pointer, "/%s ",
-				       pfbs[pfb_id].fontname);
+	  if (filtered)
+	    filtered_pointer += sprintf ((char *)filtered_pointer, "/%s ",
+					 pfbs[pfb_id].fontname);
 	  copy = 0; /* Don't copy old string to output */
 	  lead = start; /* Forget what we've seen */
 	  state = 0;
@@ -547,8 +548,9 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
 	} else if (state == 0 && !strcmp (ident, "ItalicAngle")) {
 	  state = 8;
 	} else if (state == 1) {
-	  filtered_pointer += sprintf ((char *)filtered_pointer, "/%s ",
-				       pfbs[pfb_id].fontname);
+	  if (filtered)
+	    filtered_pointer += sprintf ((char *)filtered_pointer, "/%s ",
+					 pfbs[pfb_id].fontname);
 	  copy = 0;	/* Don't copy old string to putput */
 	  lead = start;	/* Forget the name we've seen  */
 	  state = 0;
@@ -608,7 +610,7 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
 	lead = start;  /* Remove this entry (it may or may not be
 			  replaced with a rewritten entry) */
 	copy = 0;
-	if ((pfbs[pfb_id].used_chars)[last_number]) {
+	if (filtered && (pfbs[pfb_id].used_chars)[last_number]) {
 	  filtered_pointer += 
 	    sprintf((char *) filtered_pointer, "dup %d /%s put\n",
 		    pfbs[pfb_id].remap?twiddle(last_number):last_number,
@@ -693,15 +695,17 @@ static unsigned long parse_header (unsigned char *filtered, unsigned char *buffe
     }
     skip_white (&start, end);
     if (copy && start != lead) { /* Flush everything back to "lead" */
-      memcpy (filtered_pointer, lead, start-lead);
-      filtered_pointer += start-lead;
+      if (filtered) {
+	memcpy (filtered_pointer, lead, start-lead);
+	filtered_pointer += start-lead;
+      }
       lead = start;
     }
   }
 #ifdef MEM_DEBUG
   MEM_END
 #endif /* MEM_DEBUG */
-  return filtered_pointer-filtered;
+  return filtered? filtered_pointer-filtered: length;
 }
 
 
@@ -852,7 +856,7 @@ static char *pfb_find_name (FILE *pfb_file)
 static unsigned long do_pfb_header (FILE *file, int pfb_id,
 				    char **glyphs)
 {
-  unsigned char *buffer, *filtered;
+  unsigned char *buffer, *filtered = NULL;
   unsigned long length = 0;
 #ifdef MEM_DEBUG
 MEM_START
@@ -861,7 +865,12 @@ MEM_START
   if (partial_enabled) {
     filtered = NEW (length+strlen(pfbs[pfb_id].fontname)+1+1024, unsigned
 		    char);
-    length = parse_header (filtered, buffer, length, pfb_id, glyphs);
+  }
+  /* We must parse the header even if not doing font subsetting so
+     that we can determine the parameters for the font descriptor.
+     parse_head() won't write to a null pointer */
+  length = parse_header (filtered, buffer, length, pfb_id, glyphs);
+  if (filtered) {	
     pdf_add_stream (pfbs[pfb_id].direct, (char *) filtered, length);
     RELEASE (filtered);
   } else {
@@ -889,13 +898,15 @@ int CDECL glyph_match (const void *key, const void *v)
   return (strcmp (key, s));
 }
 
-static unsigned long do_partial_body (unsigned char *filtered, unsigned char
+static unsigned long parse_body (unsigned char *filtered, unsigned char
 				      *unfiltered, unsigned long length, 
-				      char *used_chars, char **glyphs)
+				      char *used_chars, char **glyphs,
+				      pdf_obj *descriptor)
 {
   char *start, *end, *tail, *ident;
   unsigned char *filtered_pointer;
   double last_number = 0.0;
+  int state = 0;
   start = (char *) unfiltered, end = (char *) unfiltered+length;
   /* Skip first four bytes */
   tail = start; filtered_pointer = filtered;
@@ -904,6 +915,9 @@ static unsigned long do_partial_body (unsigned char *filtered, unsigned char
   while (start < end) {
     pdf_obj *pdfobj;
     skip_white (&start, end);
+    /* Very simple state machine
+       state = 0: nothing special
+       state = 1: Saw StdVW, but waiting for number after it */
     switch (*start) {
     case '[':
     case ']':
@@ -920,23 +934,31 @@ static unsigned long do_partial_body (unsigned char *filtered, unsigned char
       continue;
     case '/':
       start += 1;
-      ident = parse_ident (&start, end);
-      if (ident == NULL)
-	ERROR ("Error processing a name in a PFB file.");
-      if (!strcmp ((char *) ident, "CharStrings")) {
+      if ((ident = parse_ident (&start, end)) &&
+	  !strcmp ((char *) ident, "CharStrings")) {
 	RELEASE (ident);
 	break;
+      } else if (ident && !strcmp ((char *) ident, "StdVW")) {
+	state = 1; /* Saw StdVW */
       }
-      else {
+      if (ident) {
 	RELEASE (ident);
-	continue;
+      } else {
+	fprintf (stderr, "\nError processing identifier in PFB file.\n");
+	dump (start, end);
       }
+      continue;
     default:
       ident = parse_ident (&start, end);
       if (ident == NULL)
 	ERROR ("Error processing a symbol in the PFB file.");
       if (is_an_int(ident))
-	last_number = atof (ident);
+	if (state == 1) {
+	  pdf_add_dict (descriptor, pdf_new_name ("StemV"),
+			pdf_new_number (atof (ident)));
+	  state = 0;  /* Return to normal processing */
+	} else
+	  last_number = atof (ident); /* Might be start of RD */
       else {
 	if (!strcmp (ident, "RD") ||
 	    !strcmp (ident, "-|")) {
@@ -951,13 +973,16 @@ static unsigned long do_partial_body (unsigned char *filtered, unsigned char
   if (start >= end)
     ERROR ("Unexpected end of binary portion of PFB file");
   /* Copy what we have so far over to the new buffer */
-  memcpy (filtered_pointer, tail, start-tail);
-  /* Advance pointer into new buffer */
-  filtered_pointer += (start-tail);
+  if (filtered) {
+    memcpy (filtered_pointer, tail, start-tail);
+    /* Advance pointer into new buffer */
+    filtered_pointer += (start-tail);
+  }
   /* At this point, start is positioned just before the beginning of the glyphs, just after
      the word /CharStrings.  The earlier portion of the input buffer has
-     been copied to the output */
-  {
+     been copied to the output.  The remainder of the routine need not
+     be executed if not doing font subsetting */  
+  if (filtered) {
     int nused = 0;
     int nleft;
     static char *used_glyphs[256];
@@ -998,8 +1023,10 @@ static unsigned long do_partial_body (unsigned char *filtered, unsigned char
     RELEASE (ident);
     tail = start;
     while (start < end && *start != '/') start++;
-    memcpy (filtered_pointer, tail, start-tail);
-    filtered_pointer += (start-tail);
+    if (filtered) {
+      memcpy (filtered_pointer, tail, start-tail);
+      filtered_pointer += (start-tail);
+    }
     /* Now we are exactly at the beginning of the glyphs */
     while (start < end && *start == '/') {
       char *glyph;
@@ -1042,14 +1069,12 @@ static unsigned long do_partial_body (unsigned char *filtered, unsigned char
       memcpy (filtered_pointer, start, end-start);
       filtered_pointer += end-start;
     }
+    if (verbose>1) {
+      fprintf (stderr, " (subsetting eliminated %ld bytes)", length-(filtered_pointer-filtered));
+    }
   }
-  if (verbose>1) {
-    fprintf (stderr, " (eliminated %ld bytes)\n", length-(filtered_pointer-filtered));
-  }
-  return (filtered_pointer-filtered);
+  return (filtered? filtered_pointer-filtered: length);
 }
-
-
 
 static unsigned long do_pfb_body (FILE *file, int pfb_id,
 				  char **glyphs)
@@ -1061,25 +1086,26 @@ static unsigned long do_pfb_body (FILE *file, int pfb_id,
   MEM_START
 #endif
   buffer = get_pfb_segment (&length, file, BINARY);
+  /* We need to decrypt the binary
+     portion of the pfb */
+  t1_crypt_init(EEKEY);
+  for (i=0; i<length; i++) {
+    buffer[i] = t1_decrypt(buffer[i]);
+  }
   if (partial_enabled && glyphs != NULL) {
-    /* For partial font embedding we need to decrypt the binary
-       portion of the pfb */
-    t1_crypt_init(EEKEY);
-    for (i=0; i<length; i++) {
-      buffer[i] = t1_decrypt(buffer[i]);
-    }
     /* Now we do the partial embedding */
     filtered = NEW (length, unsigned char);
-    length = do_partial_body (filtered, buffer, length, 
-			      pfbs[pfb_id].used_chars,
-			      glyphs);
-    /* And reencrypt the whole thing */
-    t1_crypt_init (EEKEY);
-    for (i=0; i<length; i++) {
-      buffer[i] = t1_encrypt(filtered[i]);
-    }
-    RELEASE (filtered);
   }
+  length = parse_body (filtered, buffer, length, 
+		       pfbs[pfb_id].used_chars,
+		       glyphs, pfbs[pfb_id].descriptor);
+  /* And reencrypt the whole thing */
+  t1_crypt_init (EEKEY);
+  for (i=0; i<length; i++) {
+    buffer[i] = t1_encrypt(partial_enabled? filtered[i]: buffer[i]);
+  }
+  if (filtered)
+    RELEASE (filtered);
   pdf_add_stream (pfbs[pfb_id].direct, (char *) buffer, length);
   RELEASE (buffer);
 #ifdef MEM_DEBUG
@@ -1297,7 +1323,7 @@ static void do_pfb (int pfb_id)
   /* Finally, flush the descriptor */
   pdf_release_obj (pfbs[pfb_id].descriptor);
   if (verbose > 1)
-    fprintf (stderr, "Embedded size: %ld bytes\n", length1+length2+length3);
+    fprintf (stderr, "\nEmbedded size: %ld bytes\n", length1+length2+length3);
   return;
 }
 
