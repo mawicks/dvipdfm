@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.c,v 1.6 1998/12/01 05:19:43 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfparse.c,v 1.7 1998/12/02 16:28:56 mwicks Exp $
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
 
@@ -99,28 +99,38 @@ int is_a_number(const char *s)
 pdf_obj *parse_pdf_dict (char **start, char *end)
 {
   pdf_obj *result, *tmp1, *tmp2;
+  char *save = *start;
   skip_white(start, end);
   if (*((*start)++) != '<' ||
-      *((*start)++) != '<')
+      *((*start)++) != '<') {
+    *start = save;
     return NULL;
+  }
   result = pdf_new_dict ();
     skip_white(start, end);
   while (*start < end &&
 	 **start != '>') {
     if ((tmp1 = parse_pdf_name (start, end)) == NULL) {
-      pdf_release_obj (result);
-      return NULL;
+      pdf_release_obj (result); 
+      {
+	*start = save;
+	return NULL;
+      }
     };
     if ((tmp2 = parse_pdf_object (start, end)) == NULL) {
       pdf_release_obj (result);
-      pdf_release_obj (tmp1);
-      return NULL;
+      pdf_release_obj (tmp1); 
+      {
+	*start = save;
+	return NULL;
+      }
     }
     pdf_add_dict (result, tmp1, tmp2);
     skip_white(start, end);
   }
   if (*start >= end) {
     pdf_release_obj (result);
+    *start = save;
     return NULL;
   }
   if (*((*start)++) == '>' &&
@@ -129,6 +139,7 @@ pdf_obj *parse_pdf_dict (char **start, char *end)
   } else {
     pdf_release_obj (result);
     fprintf (stderr, "\nDictionary object ended prematurely\n");
+    *start = save;
     return NULL;
   }
 }

@@ -14,7 +14,7 @@
 /* Define if your struct tm has tm_gmtoff as a member */
 #undef HAVE_TM_GMTOFF
 
-#define PACKAGE dvipdf
+#define PACKAGE dvipdfm
 #define VERSION 0
 
 /* Define if you have the basename function.  */

@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.8 1998/11/30 20:47:03 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/type1.c,v 1.9 1998/12/02 16:28:56 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -168,7 +168,7 @@ struct font_record *get_font_record (const char *tex_name)
   struct font_record *result;
   static first = 1;
   static FILE *mapfile;
-  char *full_map_filename, *start, *end, *record_name;
+  char *full_map_filename, *start, *end = NULL, *record_name;
   result = NEW (1, struct font_record);
   result -> enc_name = NULL;
   result -> afm_name = NULL;

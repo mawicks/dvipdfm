@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mfileio.c,v 1.1 1998/11/30 20:47:02 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mfileio.c,v 1.2 1998/12/02 16:28:56 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -88,9 +88,9 @@ long file_size (FILE *file)
 }
 
 /* Unlike fgets, mfgets works with \r, \n, or \r\n end of lines. */
-char *mfgets (char *buffer, long length, FILE *file) 
+char *mfgets (char *buffer, unsigned long length, FILE *file) 
 {
-  int ch, i = 0;
+  int ch = 0, i = 0;
   while (i < length-1 && (ch = fgetc (file)) >= 0 && ch != '\n' && ch != '\r')
     buffer[i++] = ch;
   buffer[i] = 0;

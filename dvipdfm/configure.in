@@ -1,8 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(dvipdfm.c)
 
-AC_DEFINE(PACKAGE,"dvipdfm")
-AC_DEFINE(VERSION,"0.7.3")
+AC_DEFINE(VERSION,"0.7.4dev")
 sinclude(../kpathsea/common.ac)
 
 AC_EXT_TIMEZONE

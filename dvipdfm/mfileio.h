@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mfileio.h,v 1.1 1998/11/30 20:47:02 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/mfileio.h,v 1.2 1998/12/02 16:28:56 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -37,7 +37,7 @@ long tell_position (FILE *file);
 
 long file_size (FILE *file);
 
-char *mfgets (char *buffer, long size, FILE *file);
+char *mfgets (char *buffer, unsigned long size, FILE *file);
 
 extern char work_buffer[];
 #define WORK_BUFFER_SIZE 1024

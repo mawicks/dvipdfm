@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.6 1998/11/30 20:47:03 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfspecial.c,v 1.7 1998/12/02 16:28:56 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -266,7 +266,7 @@ static int parse_dimension (char **start, char *end,
 			    struct xform_info *p)
 {
   char *number_string, *save = *start;
-  double units;
+  double units = 0.0;
   int key;
   save = *start; 
   skip_white(start, end);
@@ -584,14 +584,17 @@ static void do_article(char **start, char *end)
     fprintf (stderr, "Article name expected.\n");
     *start = save;
     dump(*start, end);
+    return;
   }
   if ((info_dict = parse_pdf_dict(start, end)) == NULL) {
     release (name);
     fprintf (stderr, "Ignoring invalid dictionary\n");  
+    return;
   }
   add_reference (name, pdf_doc_add_article (name, info_dict));
   release (name);
   parse_crap(start, end);
+  return;
 }
 
 static void do_bead(char **start, char *end)
@@ -604,6 +607,7 @@ static void do_bead(char **start, char *end)
     fprintf (stderr, "Article reference expected.\nWhich article does this go with?\n");
     *start = save;
     dump(*start, end);
+    return;
   }
   skip_white(start, end);
   p = new_xform_info();
@@ -789,17 +793,27 @@ static void do_dest(char **start, char *end)
 
 static void do_docinfo(char **start, char *end)
 {
-  pdf_obj *result = parse_pdf_dict(start, end);
-  pdf_doc_merge_with_docinfo (result);
-  parse_crap(start, end);
+  pdf_obj *result;
+  if ((result = parse_pdf_dict(start, end)) != NULL) {
+    pdf_doc_merge_with_docinfo (result);
+    parse_crap(start, end);
+  } else {
+    fprintf (stderr, "\nSpecial: docinfo: Dictionary expected and not found\n");
+    dump (*start, end);
+  }
   return;
 }
 
 static void do_docview(char **start, char *end)
 {
-  pdf_obj *result = parse_pdf_dict(start, end);
-  pdf_doc_merge_with_catalog (result);
-  parse_crap(start, end);
+  pdf_obj *result;
+  if ((result = parse_pdf_dict(start, end)) != NULL) {
+    pdf_doc_merge_with_catalog (result);
+    parse_crap(start, end);
+  } else {
+    fprintf (stderr, "\nSpecial: docview: Dictionary expected and not found\n");
+    dump (*start, end);
+  }
   return;
 }
 

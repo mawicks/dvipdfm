@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.3 1998/11/30 20:38:24 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/ebb.c,v 1.4 1998/12/02 16:28:55 mwicks Exp $
 
     This is ebb, a bounding box extraction program.
     Copyright (C) 1998  by Mark A. Wicks
@@ -148,10 +148,10 @@ void do_pdf (FILE *file, char *filename)
 	(bburx = pdf_get_array (media_box, 3)) == NULL ||
 	(bbury = pdf_get_array (media_box, 4)) == NULL) {
       fprintf (stderr, "Invalid mediabox\n");
-    }
-    write_bb (filename,
-	      (int) pdf_number_value (bbllx), (int) pdf_number_value (bblly),
-	      (int) pdf_number_value (bburx), (int) pdf_number_value (bbury));
+    } else
+      write_bb (filename,
+		(int) pdf_number_value (bbllx), (int) pdf_number_value (bblly),
+		(int) pdf_number_value (bburx), (int) pdf_number_value (bbury));
   }
   pdf_release_obj (media_box);
   pdf_release_obj (page_tree);
