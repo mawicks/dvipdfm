@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.22 1998/12/30 21:05:31 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvipdfm.c,v 1.23 1998/12/30 21:10:43 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -263,7 +263,7 @@ static void do_args (int argc, char *argv[])
 	{
 	  int level = 9;
 #ifndef HAVE_ZLIB
-	  fprintf (stderr, "\n\nYou don't have compression compiled in.  Possibly libz wasn't found by configure.\nCompression specification will be ignored\n\n");
+	  fprintf (stderr, "\nYou don't have compression compiled in.  Possibly libz wasn't found by configure.\nCompression specification will be ignored.\n\n");
 #endif  /* HAVE_ZLIB */
 	  if (isdigit (*(flag+1))) {
 	    level = *(++flag) - '0';
@@ -302,7 +302,7 @@ static void do_args (int argc, char *argv[])
     argv += 1;
   }
   if (argc < 1) {
-    fprintf (stderr, "No dvi filename specified\n");
+    fprintf (stderr, "No dvi filename specified.\n");
     usage();
   }
   if (argc > 0) {
