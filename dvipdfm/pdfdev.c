@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.39 1998/12/13 22:37:55 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/pdfdev.c,v 1.40 1998/12/13 23:56:38 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -46,6 +46,8 @@ static void dev_clear_xform_stack (void);
 #define HOFFSET 72
 #define VOFFSET 72
 #define DPI 72u 
+
+static double dvi2pts = 0.0;
 
  /* Acrobat doesn't seem to like coordinate systems
     that involve scalings around 0.01, so we use
@@ -309,10 +311,10 @@ void dev_set_string (mpt_t xpos, mpt_t ypos, unsigned char *s, int
   }
 }
 
-void dev_init (char *outputfile)
+void dev_init (double scale)
 {
+  dvi2pts = scale;
   if (debug) fprintf (stderr, "dev_init:\n");
-  pdf_doc_init (outputfile);
   graphics_mode();
   dev_clear_color_stack();
   dev_clear_xform_stack();

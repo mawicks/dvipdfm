@@ -1,4 +1,4 @@
-/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.27 1998/12/13 23:09:47 mwicks Exp $
+/*  $Header: /home/mwicks/Projects/Gaspra-projects/cvs2darcs/Repository-for-sourceforge/dvipdfm/dvi.c,v 1.28 1998/12/13 23:56:38 mwicks Exp $
 
     This is dvipdf, a DVI to PDF translator.
     Copyright (C) 1998  by Mark A. Wicks
@@ -242,11 +242,11 @@ static void get_a_font_record (struct font_def * a_font)
   dir_length = get_unsigned_byte (dvi_file);
   name_length = get_unsigned_byte (dvi_file);
   a_font -> directory = NEW (dir_length+1, char);
-  a_font -> name = NEW (name_length+1, char);
   if (fread (a_font -> directory, 1, dir_length, dvi_file) !=
       dir_length) {
     invalid_signature();
   }
+  a_font -> name = NEW (name_length+1, char);
   if (fread (a_font -> name, 1, name_length, dvi_file) !=
       name_length) {
     invalid_signature();
@@ -1047,9 +1047,9 @@ error_t dvi_init (char * filename)
   /* DVI files are most easily read backwards by searching
      for post_post and then post opcode */
   find_post ();
-
   get_dvi_info();
   do_scales();
+  dev_init(dvi2pts);
   get_page_info();
   get_dvi_fonts();
   get_comment();
