@@ -1,5 +1,4 @@
-Dvipdfm
-=======
+# Dvipdfm
 This is dvipdfm, a DVI to PDF translator.
 
 I originally wrote this so I could
